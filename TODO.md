@@ -1,0 +1,8 @@
+#missing tables
+
+storeHours
+collectionPointPresence
+employeeWorkdays
+taskEmployee
+
+taskScheduleEmployee

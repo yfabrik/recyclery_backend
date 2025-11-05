@@ -1,0 +1,33 @@
+"use strict";
+import { Model } from "sequelize";
+export default (sequelize, DataTypes) => {
+  class Category extends Model {
+    /**
+     * Helper method for defining associations.
+     * This method is not a part of Sequelize lifecycle.
+     * The `models/index` file will call this method automatically.
+     */
+    static associate(models) {
+      Category.hasMany(models.Category, {
+        as: "subcategories",
+        foreignKey: "parent_id",
+      });
+      Category.belongsTo(models.Category, { as: "parent", foreignKey: "parent_id" });
+      Category.hasMany(models.Item, { foreignKey: "category_id" });
+      Category.hasMany(models.LabeledItem, { foreignKey: "category_id" });
+    }
+  }
+  Category.init(
+    {
+      name: DataTypes.STRING,
+      description: DataTypes.TEXT,
+      icon: DataTypes.STRING,
+      // parent_id: DataTypes.INTEGER,//assoc
+    },
+    {
+      sequelize,
+      modelName: "Category",
+    }
+  );
+  return Category;
+};
