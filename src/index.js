@@ -1,4 +1,5 @@
-import db from "./models/index.js";
+const db = require("./models");
+
 const {User} = db
 
 db.sequelize.sync();

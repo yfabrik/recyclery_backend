@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Backend pour le système de gestion de recyclerie",
   "main": "src/index.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "nodemon"
   },

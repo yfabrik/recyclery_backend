@@ -1,14 +1,8 @@
-"use strict";
-/**
- * @typedef {import('sequelize').Model} Model
- * @typedef {import('sequelize').Sequelize} Sequelize
- */
-import { Model } from "sequelize";
-/**
- * @param {Sequelize} sequelize
- * @param {import('sequelize').DataTypes} DataTypes
- */
-export default (sequelize, DataTypes) => {
+'use strict';
+const {
+  Model
+} = require('sequelize');
+module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     /**
      * Helper method for defining associations.
