@@ -8,7 +8,7 @@ export default (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      this.belongsTo(models.Item, { foreignKey: "item_id" });
+      this.belongsTo(models.LabeledItem, { foreignKey: "item_id" });
       this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
     }
   }

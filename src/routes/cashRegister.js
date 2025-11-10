@@ -1,7 +1,6 @@
 import { Router } from "express";
 import db from "../models/index.js";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
-import cashregister from "../models/cashregister.js";
 const { CashRegister, CashSession } = db;
 
 export const router = Router();
@@ -51,6 +50,7 @@ router.post(
     const { money } = req.body;
     const caisse = await CashRegister.findByPk(id);
     const session = await CashSession.create({
+      cash_register_id: caisse.id,
       opening_amount: money,
     });
     await caisse.addSession(session);

@@ -1,14 +1,13 @@
 import { Router } from "express";
 import db from "../models/index.js";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
-const { Item } = db;
+const { LabeledItem } = db;
 
 export const router = Router();
 router.get(
   "/",
-
   asyncHandler(async (req, res) => {
-    const items = await Item.findAll();
+    const items = await LabeledItem.findAll();
     res.json(items);
   })
 );
@@ -16,15 +15,8 @@ router.get(
 router.post(
   "/",
   asyncHandler(async (req, res) => {
-    const data = {
-      name: "prout",
-      category_id: 2,
-    //   barcode,
-      purchase_price: 0,
-      selling_price: 2.25,
-      recyclery_id: 1,
-    };
-    const response = await Item.create(data);
+    const data = req.body;
+    const response = await LabeledItem.create(data);
     res.json(response);
   })
 );

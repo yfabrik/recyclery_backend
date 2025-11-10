@@ -41,10 +41,6 @@ const files = readdirSync(__dirname).filter((file) => {
   );
 });
 
-/**
- * @typedef {import('./user')} User
- * @typedef {import('./recyclery')} Recyclery
- */
 for (const file of files) {
   const { default: modelInit } = await import(join(__dirname, file));
   const model = modelInit(sequelize, DataTypes);

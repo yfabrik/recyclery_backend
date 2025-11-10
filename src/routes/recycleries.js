@@ -1,8 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
 import db from "../models/index.js";
-import cashregister from "../models/cashregister.js";
-import recyclery from "../models/recyclery.js";
 const { Recyclery, User, CashRegister } = db;
 
 export const router = Router();
@@ -32,13 +30,8 @@ router.get(
 router.post(
   "/",
   asyncHandler(async (req, res) => {
-    const data = {
-      name: "a",
-      address: "address",
-      phone: "0123456789",
-      email: "why@a.com",
-    };
-    const recyclerie = await Recyclery.create(data);
+    const { name, address, phone, email } = req.body;
+    const recyclerie = await Recyclery.create(name, address, phone, email);
     res.json(recyclerie);
   })
 );

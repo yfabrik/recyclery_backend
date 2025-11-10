@@ -13,8 +13,7 @@ export default (sequelize, DataTypes) => {
         foreignKey: "parent_id",
       });
       this.belongsTo(models.Category, { as: "parent", foreignKey: "parent_id" });
-      this.hasMany(models.Item, { foreignKey: "category_id" });
-      this.hasMany(models.LabeledItem, { foreignKey: "category_id" });
+      this.hasMany(models.LabeledItem, { foreignKey: "category_id" });//TODO item et labeleditem c'est des doublons ?
     }
   }
   Category.init(

@@ -1,33 +1,31 @@
-'use strict';
-import { Model } from 'sequelize';
+"use strict";
+import { Model } from "sequelize";
 export default (sequelize, DataTypes) => {
   class SalesTransaction extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
-      // define association here
+      this.hasMany(models.SalesItem, { foreignKey: "transaction_id" });
     }
   }
-  SalesTransaction.init({
-    transaction_number: DataTypes.STRING,//id ??? //assoc ???
-    cash_session_id: DataTypes.INTEGER,//assoc
-    store_id: DataTypes.INTEGER,//assoc
-    total_amount: DataTypes.DECIMAL,
-    payment_method: DataTypes.STRING,
-    payment_amount: DataTypes.DECIMAL,
-    change_amount: DataTypes.DECIMAL,
-    customer_name: DataTypes.STRING,
-    customer_email: DataTypes.STRING,
-    customer_postal_code: DataTypes.STRING,
-    status: DataTypes.STRING,
-    refunded_amount: DataTypes.DECIMAL,//??????
-    created_by: DataTypes.INTEGER//assoc
-  }, {
-    sequelize,
-    modelName: 'SalesTransaction',
-  });
+  SalesTransaction.init(
+    {
+      transaction_number: DataTypes.STRING, //id ??? //assoc ???
+      cash_session_id: DataTypes.INTEGER, //assoc
+      store_id: DataTypes.INTEGER, //assoc
+      total_amount: DataTypes.DECIMAL,
+      payment_method: DataTypes.STRING,
+      payment_amount: DataTypes.DECIMAL,
+      change_amount: DataTypes.DECIMAL,
+      customer_name: DataTypes.STRING,
+      customer_email: DataTypes.STRING,
+      customer_postal_code: DataTypes.STRING,
+      status: DataTypes.STRING,
+      refunded_amount: DataTypes.DECIMAL, //??????
+      created_by: DataTypes.INTEGER, //assoc
+    },
+    {
+      sequelize,
+      modelName: "SalesTransaction",
+    }
+  );
   return SalesTransaction;
 };

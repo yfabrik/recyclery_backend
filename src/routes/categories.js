@@ -6,7 +6,6 @@ const { Category } = db;
 export const router = Router();
 router.get(
   "/",
-
   asyncHandler(async (req, res) => {
     const categories = await Category.findAll();
     res.json(categories);
