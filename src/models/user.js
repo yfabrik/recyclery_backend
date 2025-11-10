@@ -3,7 +3,6 @@ import { Model } from "sequelize";
 export default (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
-      this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
       this.hasMany(models.Donation, { foreignKey: "received_by" });
       this.hasMany(models.Collection, { foreignKey: "assigned_to" });
       this.hasMany(models.Sale, { foreignKey: "sold_by" });
@@ -11,9 +10,28 @@ export default (sequelize, DataTypes) => {
       this.hasMany(models.CollectionReceipt, { foreignKey: "processed_by" });
       this.hasMany(models.LabeledItem, { foreignKey: "created_by" });
       this.hasMany(models.Task, { foreignKey: "assigned_to" });
-      this.belongsToMany(models.Store, {
-        through: "EmployeeStore",
+      // this.belongsToMany(models.Store, {
+      //   through: "EmployeeStore",
+      //   foreignKey: "employee_id",
+      // });
+
+      // this.belongsToMany(Store, {
+      //   through: "employee_stores",
+      //   foreignKey: "employee_id",
+      //   as: "stores",
+      // });
+      // this.hasMany(Store, {
+      //   foreignKey: "manager_id",
+      //   as: "managedStores",
+      // });
+      this.belongsToMany(models.Recyclery, {
+        through: "employee_recyclery",
         foreignKey: "employee_id",
+        as: "recycleries",
+      });
+      this.hasMany(models.Recyclery, {
+        foreignKey: "manager_id",
+        as: "managedStores",
       });
     }
   }
