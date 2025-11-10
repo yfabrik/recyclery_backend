@@ -1,21 +1,34 @@
 import { Router } from "express";
-import db from "../models";
-import { authenticateToken } from "../middlewares/auth";
-import { asyncHandler } from "../middlewares/asyncHandler";
-import { where } from "sequelize";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
+import db from "../models/index.js";
+const { Arrival } = db;
 
-const { Arrival, User } = db;
+export const router = Router();
 
-const router = Router();
-
-/**
- * @param {import('../models').User} User
- */
 router.get(
   "/",
-  authenticateToken,
   asyncHandler(async (req, res) => {
-    const { date_from, date_to, category_id, source_type, status } = req.query;
-    Arrival.findAll({ include: Category });
+    const arrivals = await Arrival.findAll();
+    res.json(arrivals);
+  })
+);
+router.post(
+  "/",
+  asyncHandler(async (req, res) => {
+    const arrival = await Arrival.create({
+      //     category_id,
+      // subcategory_id,
+      weight: 10,
+      arrival_date: () => Date.now(),
+    //   arrival_time,
+      source_type,
+      source_details,
+      collection_point_id,
+      collection_point_name,
+      collection_point_address,
+      volunteer_donation,
+      house_clearance,
+      notes,
+    });
   })
 );

@@ -1,5 +1,16 @@
+import express from "express";
 import db from "./models/index.js";
-const {User} = db
 
-db.sequelize.sync();
-User.findAll().then(console.log("hello"))
+const app = express();
+
+const recycleryRouter = app.use(express.json());
+
+app.use("/api/users", (await import("./routes/users.js")).router);
+app.use("/api/recycleries", (await import("./routes/recycleries.js")).router);
+app.use("/api/categories", (await import("./routes/categories.js")).router);
+app.use("/api/items", (await import("./routes/items.js")).router);
+
+app.listen(3000, () => {
+  db.sequelize.sync();
+  console.log(`server started on http://0.0.0.0:3000`);
+});
