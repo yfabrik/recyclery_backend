@@ -2,20 +2,18 @@
 import { Model } from "sequelize";
 export default (sequelize, DataTypes) => {
   class Item extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
       this.belongsTo(models.Category, { foreignKey: "category_id" });
-      this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
+      // this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
     }
   }
+
+  //TODO ya plus oumoins doublon avec labeledItem
   Item.init(
     {
       name: DataTypes.STRING,
       description: DataTypes.TEXT,
+      weight: DataTypes.DECIMAL,
       // category_id: DataTypes.INTEGER,//assoc
       barcode: DataTypes.STRING,
       purchase_price: DataTypes.DECIMAL,

@@ -8,16 +8,27 @@ export default (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      this.belongsTo(models.User, { as: "manager", foreignKey: "manager_id" });
+      // this.belongsTo(models.User, { as: "manager", foreignKey: "manager_id" });
       this.hasMany(models.LabeledItem, { foreignKey: "store_id" });
+      // this.belongsToMany(models.User, {
+      //   through: "EmployeeStore",
+      //   foreignKey: "store_id",
+      // });
+
       this.belongsToMany(models.User, {
-        through: "EmployeeStore",
+        through: "employee_stores",
         foreignKey: "store_id",
+        as: "employees",
+      });
+
+      this.belongsTo(models.User, {
+        foreignKey: "manager_id",
+        as: "manager",
       });
     }
   }
 
-  //duplicate avec recyclerie ?????
+  //TODO duplicate avec recyclerie ?????
   Store.init(
     {
       name: DataTypes.STRING,
@@ -26,7 +37,7 @@ export default (sequelize, DataTypes) => {
       postal_code: DataTypes.STRING,
       phone: DataTypes.STRING,
       email: DataTypes.STRING,
-      manager_id: DataTypes.INTEGER,//assoc
+      // manager_id: DataTypes.INTEGER,//assoc
       is_active: DataTypes.BOOLEAN,
     },
     {
