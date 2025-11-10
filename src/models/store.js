@@ -8,9 +8,9 @@ export default (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      Store.belongsTo(models.User, { as: "manager", foreignKey: "manager_id" });
-      Store.hasMany(models.LabeledItem, { foreignKey: "store_id" });
-      Store.belongsToMany(models.User, {
+      this.belongsTo(models.User, { as: "manager", foreignKey: "manager_id" });
+      this.hasMany(models.LabeledItem, { foreignKey: "store_id" });
+      this.belongsToMany(models.User, {
         through: "EmployeeStore",
         foreignKey: "store_id",
       });

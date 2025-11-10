@@ -8,13 +8,13 @@ export default (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      Category.hasMany(models.Category, {
+      this.hasMany(models.Category, {
         as: "subcategories",
         foreignKey: "parent_id",
       });
-      Category.belongsTo(models.Category, { as: "parent", foreignKey: "parent_id" });
-      Category.hasMany(models.Item, { foreignKey: "category_id" });
-      Category.hasMany(models.LabeledItem, { foreignKey: "category_id" });
+      this.belongsTo(models.Category, { as: "parent", foreignKey: "parent_id" });
+      this.hasMany(models.Item, { foreignKey: "category_id" });
+      this.hasMany(models.LabeledItem, { foreignKey: "category_id" });
     }
   }
   Category.init(

@@ -8,11 +8,11 @@ export default (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      Recyclery.hasMany(models.User, { foreignKey: "recyclery_id" });
-      Recyclery.hasMany(models.Item, { foreignKey: "recyclery_id" });
-      Recyclery.hasMany(models.Donation, { foreignKey: "recyclery_id" });
-      Recyclery.hasMany(models.Collection, { foreignKey: "recyclery_id" });
-      Recyclery.belongsTo(models.User, { as: "manager", foreignKey: "manager_id" });
+      this.hasMany(models.User, { foreignKey: "recyclery_id" });
+      this.hasMany(models.Item, { foreignKey: "recyclery_id" });
+      this.hasMany(models.Donation, { foreignKey: "recyclery_id" });
+      this.hasMany(models.Collection, { foreignKey: "recyclery_id" });
+      this.belongsTo(models.User, { as: "manager", foreignKey: "manager_id" });
     }
   }
   Recyclery.init(
