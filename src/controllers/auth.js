@@ -105,3 +105,51 @@ export const login = async (req, res, next) => {
     },
   });
 };
+
+export const userProfile = async (req, res) => {
+  const id = req.user.id;
+  const user = await User.findOne(id);
+
+  let permissions = [];
+  let permissionsByModule = {};
+
+  if (user.role === "admin") {
+    permissions.push("*"); // Tous les droits
+    permissionsByModule = {
+      dashboard: ["read", "write"],
+      inventory: ["read", "write", "delete"],
+      sales: ["read", "write", "delete"],
+      logistics: ["read", "write", "delete"],
+      management: ["read", "write", "delete"],
+      planning: ["read", "write", "delete"],
+      administration: ["read", "write", "delete"],
+    };
+  } else if (user.role === "manager") {
+    permissions.push("read", "write");
+    permissionsByModule = {
+      dashboard: ["read", "write"],
+      inventory: ["read", "write"],
+      sales: ["read", "write"],
+      logistics: ["read", "write"],
+      management: ["read", "write"],
+      planning: ["read", "write"],
+    };
+  } else if (user.role === "employee") {
+    permissions.push("read");
+    permissionsByModule = {
+      dashboard: ["read"],
+      inventory: ["read"],
+      sales: ["read", "write"],
+      logistics: ["read"],
+    };
+  }
+  res.json({
+    success: true,
+    user: {
+      ...user,
+      password: undefined, // Ne jamais renvoyer le mot de passe
+    },
+    permissions,
+    permissionsByModule,
+  });
+};
