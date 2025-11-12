@@ -1,9 +1,6 @@
 import { Router } from "express";
-import db from "../models/index.js";
-import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
-import createHttpError from "http-errors";
-import { listCaisses } from "../../services/caisse.js";
 import {
   createCaisse,
   createRecyclerie,
@@ -14,20 +11,19 @@ import {
   updateRecyclerie,
 } from "../../controllers/recycleries.js";
 
-const { CashRegister, CashSession, Recyclery, User } = db;
-
 export const router = Router();
+router.use(authenticateToken);
 
 // Obtenir toutes les recycleries
-router.get("/", authenticateToken, asyncHandler(listRecycleries));
+router.get("/", asyncHandler(listRecycleries));
 
 // Obtenir une recyclerie par ID
-router.get("/:id", authenticateToken, asyncHandler(detailRecyclerie));
+router.get("/:id", asyncHandler(detailRecyclerie));
 
 // Créer une nouvelle recyclerie
 router.post(
   "/",
-  authenticateToken,
+
   // adminMiddleware,
   asyncHandler(createRecyclerie)
 );
@@ -35,7 +31,7 @@ router.post(
 // Mettre à jour une recyclerie
 router.put(
   "/:id",
-  authenticateToken,
+
   //   adminMiddleware,
   asyncHandler(updateRecyclerie)
 );
@@ -43,7 +39,7 @@ router.put(
 // Supprimer une recyclerie
 router.delete(
   "/:id",
-  authenticateToken,
+
   //   adminMiddleware,
   asyncHandler(deleteRecyclerie)
 );
@@ -51,7 +47,7 @@ router.delete(
 // Obtenir les statistiques d'une recyclerie
 // router.get(
 //   "/:id/stats",
-//   authenticateToken,
+//
 //   asyncHandler(async (req, res) => {
 //     const { id } = req.params;
 
@@ -104,14 +100,14 @@ router.delete(
 // GET - Récupérer les caisses d'un magasin
 router.get(
   "/:id/cash-registers",
-  authenticateToken,
+
   asyncHandler(listCaissesRecyclerie)
 );
 
 // POST - Créer une nouvelle caisse pour un magasin
 router.post(
   "/:id/cash-registers",
-  authenticateToken,
+
   //   requireRole(["admin", "manager"]),
   asyncHandler(createCaisse)
 );
