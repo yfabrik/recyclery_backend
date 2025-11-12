@@ -19,7 +19,7 @@ export const listCashSessions = async (req, res) => {
       { model: User, attributes: ["username"] },
       {
         model: SalesTransaction,
-        // attributes: [],
+        attributes: [],
       },
     ],
     // attributes: {
@@ -31,7 +31,7 @@ export const listCashSessions = async (req, res) => {
     //     ],
     //   ],
     // },
-    group: ["CashSession.id"],
+    // group: ["CashSession.id"],
     // order: [["opened_at", "DESC"]],
   });
 
