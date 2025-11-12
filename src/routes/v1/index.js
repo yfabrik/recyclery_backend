@@ -3,9 +3,9 @@ import { Router } from "express";
 export const router = Router();
 
 router.use('/auth', (await import("../auth.js")).router);
-// router.use('/recycleries',  (await import("./recycleries.js")).router);
+router.use('/recycleries',  (await import("./recycleries.js")).router);
 router.use("/users", (await import("./users.js")).router);
-// router.use('/items', itemsRoutes);
+router.use('/items', itemsRoutes);
 // router.use('/donations', donationsRoutes);
 // router.use('/collections', collectionsRoutes);
 // router.use('/sales', salesRoutes);
