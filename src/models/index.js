@@ -1,13 +1,12 @@
 "use strict";
 import { readdirSync } from "fs";
-import { basename as _basename, join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { basename as _basename, join } from "path";
 import Sequelize, { DataTypes } from "sequelize";
 import { env as _env } from "process";
 
 // Replace __dirname and __filename
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __filename = import.meta.filename;
+const __dirname = import.meta.dirname;
 const basename = _basename(__filename);
 const env = _env.NODE_ENV || "development";
 
