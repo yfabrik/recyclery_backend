@@ -4,8 +4,12 @@
   "description": "Backend pour le système de gestion de recyclerie",
   "main": "src/index.js",
   "type": "module",
+  "transform": {},
   "scripts": {
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "test": "node --experimental-vm-modules ./node_modules/.bin/jest",
+    "jest": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "mocha":"mocha"
   },
   "author": "",
   "license": "ISC",
@@ -21,8 +25,13 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
+    "jest": "^30.2.0",
+    "mocha": "^11.7.5",
     "nodemon": "^3.1.10",
     "sequelize-cli": "^6.6.3",
     "typescript": "^5.9.3"
+  },
+  "jest":{
+    "setupFilesAfterEnv": ["<rootDir>/test/setup.js"]
   }
 }
