@@ -8,8 +8,8 @@
   "scripts": {
     "dev": "nodemon",
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest",
-    "jest": "NODE_OPTIONS=--experimental-vm-modules jest",
-    "mocha":"mocha"
+    "jest": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
+    "mocha": "mocha"
   },
   "author": "",
   "license": "ISC",
@@ -24,14 +24,24 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@eslint/json": "^0.14.0",
     "@types/node": "^24.10.0",
+    "eslint": "^9.39.1",
+    "eslint-plugin-jest": "^29.1.0",
+    "globals": "^16.5.0",
     "jest": "^30.2.0",
     "mocha": "^11.7.5",
     "nodemon": "^3.1.10",
     "sequelize-cli": "^6.6.3",
+    "supertest": "^7.1.4",
     "typescript": "^5.9.3"
   },
-  "jest":{
-    "setupFilesAfterEnv": ["<rootDir>/test/setup.js"]
+  "jest": {
+    "setupFilesAfterEnv": [
+      "<rootDir>/test/setup.js"
+    ],
+    "testEnvironment": "node",
+    "transform": {}
   }
 }
