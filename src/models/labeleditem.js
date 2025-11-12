@@ -8,10 +8,10 @@ export default (sequelize, DataTypes) => {
         foreignKey: "category_id",
       });
 
-      // this.belongsTo(models.Category, {
-      //   as: "subcategory",
-      //   foreignKey: "subcategory_id",
-      // });
+      this.belongsTo(models.Category, {
+        as: "subcategory",
+        foreignKey: "subcategory_id",
+      });
 
       this.belongsTo(models.Recyclery, {
         as: "recyclery",
@@ -28,10 +28,10 @@ export default (sequelize, DataTypes) => {
       //   foreignKey: "sold_by",
       // });
 
-      // this.belongsTo(models.User, {
-      //   as: "createdBy",
-      //   foreignKey: "created_by",
-      // });
+      this.belongsTo(models.User, {
+        as: "createdBy",
+        foreignKey: "created_by",
+      });
     }
   }
   LabeledItem.init(
