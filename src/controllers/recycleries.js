@@ -80,21 +80,18 @@ export const listCaissesRecyclerie = async (req, res) => {
   res.json({ success: true, cash_registers: caisses });
 };
 
+export const createCaisse = async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
 
-export const createCaisse=async (req, res) => {
-    const { id } = req.params;
-    const { name } = req.body;
-
-    if (!name) {
-      throw new createHttpError.BadRequest(
-        "Le nom de la caisse est obligatoire"
-      );
-    }
-    const caisse = CashRegister.create({ name, recyclery_id: id });
-
-    res.status(201).json({
-      success: true,
-      message: "Caisse créée avec succès",
-      cash_register_id: caisse.id,
-    });
+  if (!name) {
+    throw new createHttpError.BadRequest("Le nom de la caisse est obligatoire");
   }
+  const caisse = CashRegister.create({ name, recyclery_id: id });
+
+  res.status(201).json({
+    success: true,
+    message: "Caisse créée avec succès",
+    cash_register_id: caisse.id,
+  });
+};
