@@ -9,7 +9,7 @@ router.use("/items", (await import("./items.js")).router);
 // router.use('/donations', donationsRoutes);
 // router.use('/collections', collectionsRoutes);
 router.use("/sales", (await import("./sales.js")).router);
-// router.use('/categories', categoriesRoutes);
+router.use("/categories", (await import("./categories.js")).router);
 // router.use('/subcategories', subcategoriesRoutes);
 // router.use('/collection-points', collectionPointsRoutes);
 // router.use('/collection-schedules', collectionSchedulesRoutes);
