@@ -10,7 +10,6 @@ router.use(authenticateToken);
 // Obtenir toutes les ventes
 router.get(
   "/",
-  authenticateToken,
   asyncHandler(async (req, res) => {
     const { recyclery_id } = req.query;
     const where = {};
@@ -25,7 +24,6 @@ router.get(
 // Créer une nouvelle vente
 router.post(
   "/",
-  authenticateToken,
   asyncHandler(async (req, res) => {
     const {
       customer_name,
