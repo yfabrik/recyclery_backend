@@ -1,0 +1,32 @@
+import { Router } from "express";
+
+export const router = Router();
+
+// router.use('/auth', authRoutes);
+// router.use('/recycleries',  (await import("./recycleries.js")).router);
+router.use("/users", (await import("./users.js")).router);
+// router.use('/items', itemsRoutes);
+// router.use('/donations', donationsRoutes);
+// router.use('/collections', collectionsRoutes);
+// router.use('/sales', salesRoutes);
+// router.use('/categories', categoriesRoutes);
+// router.use('/subcategories', subcategoriesRoutes);
+// router.use('/collection-points', collectionPointsRoutes);
+// router.use('/collection-schedules', collectionSchedulesRoutes);
+// router.use('/arrivals', arrivalsRoutes);
+// router.use('/labeled-items', labeledItemsRoutes);
+// router.use('/stores', storesRoutes);
+router.use("/cash-sessions", (await import("./cashSessions.js")).router);
+router.use("/cash-registers", (await import("./cash-register.js")).router);
+// router.use('/sales-transactions', salesTransactionsRoutes);
+// router.use('/refunds', refundsRoutes);
+// router.use('/eco-organisms', ecoOrganismsRoutes);
+// router.use('/waste-disposals', wasteDisposalsRoutes);
+// router.use('/dashboard', dashboardRoutes);
+// router.use('/tasks', tasksRoutes);
+// router.use('/planning', planningRoutes);
+// router.use('/store-hours', storeHoursRoutes);
+// router.use('/store-locations', storeLocationsRoutes);
+// router.use('/collection-point-presence', collectionPointPresenceRoutes);
+// router.use('/employee-stores', employeeStoresRoutes);
+// router.use('/employee-workdays', employeeWorkdaysRoutes);

@@ -1,3 +1,5 @@
+import createHttpError from "http-errors";
+
 export const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers["authorization"];
