@@ -10,7 +10,6 @@ router.use(authenticateToken);
 // Obtenir toutes les sous-catégories
 router.get(
   "/",
-  authenticateToken,
   asyncHandler(async (req, res) => {
     const subcategories = await Category.findAll({
       where: { parent_id: { [Op.ne]: null } },
