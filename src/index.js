@@ -18,6 +18,12 @@ app.use(express.json());
 import { router } from "./routes/v1/index.js";
 app.use(router);
 
+// Gestion des routes non trouvées
+app.use("*splat", (req, res, next) => {
+  return next(new createHttpError[404]("Route non trouvée"));
+});
+app.use(errorHandler);
+
 app.listen(3000, () => {
   db.sequelize.sync({ force: true });
   console.log(`server started on http://0.0.0.0:3000`);
