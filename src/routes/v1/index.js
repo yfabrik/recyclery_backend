@@ -10,15 +10,18 @@ router.use("/items", (await import("./items.js")).router);
 // router.use('/collections', collectionsRoutes);
 router.use("/sales", (await import("./sales.js")).router);
 router.use("/categories", (await import("./categories.js")).router);
-// router.use('/subcategories', subcategoriesRoutes);
+router.use("/subcategories", (await import("./subcategories.js")).router);
 // router.use('/collection-points', collectionPointsRoutes);
 // router.use('/collection-schedules', collectionSchedulesRoutes);
 // router.use('/arrivals', arrivalsRoutes);
-// router.use('/labeled-items', labeledItemsRoutes);
+router.use("/labeled-items", (await import("./labeledItems.js")).router);
 // router.use('/stores', storesRoutes);
 router.use("/cash-sessions", (await import("./cashSessions.js")).router);
 router.use("/cash-registers", (await import("./cash-register.js")).router);
-// router.use('/sales-transactions', salesTransactionsRoutes);
+router.use(
+  "/sales-transactions",
+  (await import("./salesTransactions.js")).router
+);
 // router.use('/refunds', refundsRoutes);
 // router.use('/eco-organisms', ecoOrganismsRoutes);
 // router.use('/waste-disposals', wasteDisposalsRoutes);
@@ -28,5 +31,5 @@ router.use("/cash-registers", (await import("./cash-register.js")).router);
 // router.use('/store-hours', storeHoursRoutes);
 // router.use('/store-locations', storeLocationsRoutes);
 // router.use('/collection-point-presence', collectionPointPresenceRoutes);
-// router.use('/employee-stores', employeeStoresRoutes);
+router.use("/employee-stores", (await import("./employeeStore.js")).router);
 // router.use('/employee-workdays', employeeWorkdaysRoutes);
