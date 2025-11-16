@@ -5,5 +5,5 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  // await db.sequelize.close();
+  await db.sequelize.close();
 });

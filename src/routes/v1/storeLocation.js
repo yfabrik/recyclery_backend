@@ -4,6 +4,7 @@ import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 import { Op, where } from "sequelize";
 import salestransaction from "../../models/salestransaction.js";
+import { detailRecyclerie, listRecycleries } from "../../controllers/recycleries.js";
 const { LabeledItem, Category, User, SalesTransaction, Store, Refund } = db;
 
 export const router = Router();
@@ -47,59 +48,12 @@ const initStoreLocationsTable = () => {
 initStoreLocationsTable();
 
 // GET /api/store-locations - Récupérer tous les lieux
-router.get("/", (req, res) => {
-  const db = new sqlite3.Database(dbPath);
-
-  const query = `
-    SELECT 
-      sl.*,
-      s.name as store_name
-    FROM store_locations sl
-    LEFT JOIN stores s ON sl.store_id = s.id
-    ORDER BY sl.name
-  `;
-
-  db.all(query, [], (err, rows) => {
-    if (err) {
-      console.error("Erreur lors de la récupération des lieux:", err);
-      res
-        .status(500)
-        .json({ message: "Erreur lors de la récupération des lieux" });
-    } else {
-      res.json({ locations: rows });
-    }
-    db.close();
-  });
-});
+router.get("/",
+  asyncHandler(listRecycleries));
 
 // GET /api/store-locations/:id - Récupérer un lieu par ID
-router.get("/:id", (req, res) => {
-  const db = new sqlite3.Database(dbPath);
-  const { id } = req.params;
-
-  const query = `
-    SELECT 
-      sl.*,
-      s.name as store_name
-    FROM store_locations sl
-    LEFT JOIN stores s ON sl.store_id = s.id
-    WHERE sl.id = ?
-  `;
-
-  db.get(query, [id], (err, row) => {
-    if (err) {
-      console.error("Erreur lors de la récupération du lieu:", err);
-      res
-        .status(500)
-        .json({ message: "Erreur lors de la récupération du lieu" });
-    } else if (!row) {
-      res.status(404).json({ message: "Lieu non trouvé" });
-    } else {
-      res.json({ location: row });
-    }
-    db.close();
-  });
-});
+router.get("/:id",asyncHandler(detailRecyclerie)
+);
 
 // POST /api/store-locations - Créer un nouveau lieu
 router.post("/", (req, res) => {

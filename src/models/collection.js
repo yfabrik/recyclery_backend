@@ -20,8 +20,8 @@ export default (sequelize, DataTypes) => {
       contact_phone: DataTypes.STRING,
       description: DataTypes.TEXT,
       status: { type: DataTypes.STRING, defaultValue: "scheduled" },
-      assigned_to: DataTypes.INTEGER, //assoc
-      recyclery_id: DataTypes.INTEGER, //assoc
+      // assigned_to: DataTypes.INTEGER, //assoc
+      // recyclery_id: DataTypes.INTEGER, //assoc
     },
     {
       sequelize,

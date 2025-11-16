@@ -1,17 +1,14 @@
 import { isHttpError } from "http-errors";
 import {
-  JsonWebTokenError,
-  TokenExpiredError,
-  NotBeforeError,
-} from "jsonwebtoken";
-import {
   ValidationError,
   UniqueConstraintError,
   DatabaseError,
 } from "sequelize";
 import logger from "../services/logger";
+import jwt from "jsonwebtoken";
+const { JsonWebTokenError, NotBeforeError, TokenExpiredError } = jwt
 
-const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err, req, res, next) => {
   logger.error(err?.message || "Unhandled error", {
     method: req?.method,
     url: req?.originalUrl,
@@ -85,8 +82,4 @@ const errorHandler = (err, req, res, next) => {
     message: "server error",
     status: 500,
   });
-};
-
-export default {
-  errorHandler,
 };

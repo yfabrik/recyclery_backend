@@ -1,9 +1,9 @@
-import express from "express";
 
+import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 
-export const router = express.Router();
+export const router = Router();
 // Obtenir tous les jours de travail
 router.get(
   "/",

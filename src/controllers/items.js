@@ -219,7 +219,7 @@ export const updateItem = async (req, res) => {
 
 export const deleteLabeledItem = async (req, res) => {
     const { id } = req.params;
-    const deleted = await LabeledItem.destroy(id);
+    const deleted = await LabeledItem.destroy({ where: { id } });
 
     if (deleted === 0) {
         return res

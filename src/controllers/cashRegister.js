@@ -3,7 +3,7 @@ import db from "../models/index.js";
 import createHttpError from "http-errors";
 import { Op } from "sequelize";
 
-const { CashRegister, CashSession, Recyclery } = db;
+const { CashRegister, CashSession, Recyclery, Sequelize } = db;
 
 
 export const listCaisses = async (req, res) => {
@@ -23,20 +23,20 @@ export const listCaisses = async (req, res) => {
         attributes: [
             "id",
             "name",
-            "store_id",
+            "recyclery_id",
             "is_active",
-            "created_at",
+            "createdAt",
             [Sequelize.col("Recyclery.name"), "store_name"],
             // COUNT(cs.id) as total_sessions
-            [
-                Sequelize.fn("COUNT", Sequelize.col("CashSessions.id")),
-                "total_sessions",
-            ],
-            // MAX(cs.opened_at) as last_session
-            [
-                Sequelize.fn("MAX", Sequelize.col("CashSessions.opened_at")),
-                "last_session",
-            ],
+            // [
+            //     Sequelize.fn("COUNT", Sequelize.col("CashSessions.id")),
+            //     "total_sessions",
+            // ],
+            // // MAX(cs.opened_at) as last_session
+            // [
+            //     Sequelize.fn("MAX", Sequelize.col("CashSession.opened_at")),
+            //     "last_session",
+            // ],
         ],
         include: [
             {
@@ -46,11 +46,12 @@ export const listCaisses = async (req, res) => {
             },
             {
                 model: CashSession,
+                as: "sessions",
                 attributes: [],
                 required: false,
             },
         ],
-        where,
+        // where,
         group: ["CashRegister.id", "Recyclery.name"],
         order: [
             ["recyclery_id", "ASC"],
@@ -96,7 +97,7 @@ export const createCaisse = async (req, res) => {
     if (!store) throw new createHttpError.NotFound("Magasin non trouvé");
 
     // Vérifier qu'une caisse avec ce nom n'existe pas déjà dans ce magasin
-    const existingRegister = await CashRegister.findAll({
+    const existingRegister = await CashRegister.findOne({
         where: { [Op.and]: [{ name: name }, { recyclery_id: store_id }] },
     });
 
@@ -172,13 +173,13 @@ export const deleteCaisse = async (req, res) => {
         where: { [Op.and]: [{ cash_register_id: id }, { status: "open" }] },
     });
 
-    if (openSessions) {
+    if (openSessions[0]) {
         throw new createHttpError[400](
             "Impossible de supprimer une caisse avec des sessions ouvertes"
         );
     }
 
-    await CashRegister.destroy(id);
+    await CashRegister.destroy({ where: { id } });
 
     res.json({
         success: true,

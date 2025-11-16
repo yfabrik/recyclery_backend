@@ -1,10 +1,9 @@
-const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
-const { authenticateToken, requireModuleAccess } = require('../middleware/auth');
 
-const router = express.Router();
-const db = new sqlite3.Database('./database/recyclerie.db');
+import { Router } from "express";
+import { asyncHandler } from "../../middlewares/asyncHandler.js";
+import { authenticateToken } from "../../middlewares/auth.js";
 
+export const router = Router();
 // Helper pour générer un numéro de sortie unique
 const generateDisposalNumber = () => {
   const timestamp = Date.now().toString().slice(-6);

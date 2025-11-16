@@ -13,6 +13,8 @@ export default (sequelize, DataTypes) => {
       this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
     }
   }
+
+  //TODO DOUBLON avec Collection
   CollectionSchedule.init(
     {
       // collection_point_id: DataTypes.INTEGER, //assoc

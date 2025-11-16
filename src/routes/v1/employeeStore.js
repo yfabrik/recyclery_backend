@@ -2,7 +2,8 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-const { User, Store } = db;
+import { findUserById, listUsers } from "../../controllers/users.js";
+const { User, Store, Recyclery } = db;
 
 export const router = Router();
 router.use(authenticateToken);
@@ -11,8 +12,8 @@ router.get(
   "/",
   authenticateToken,
   asyncHandler(async (req, res) => {
-    const assignments = await UserActivation.findAll({
-      include: [{ model: Store }],
+    const assignments = await User.findAll({
+      include: [{ model: Recyclery, as: "recycleries" }],
     });
     res.json({
       success: true,
@@ -25,33 +26,17 @@ router.get(
 router.get(
   "/employee/:employeeId",
   authenticateToken,
-  asyncHandler(async (req, res) => {
-    const { employeeId } = req.params;
+  asyncHandler(
+    // const { employeeId } = req.params;
+    findUserById
 
-    const assignments = await User.findByPk(employeeId, {
-      include: [{ model: Store }],
-    });
-    res.json({
-      success: true,
-      assignments,
-    });
-  })
-);
+  ));
 
 // Obtenir les employés d'un magasin
 router.get(
   "/store/:storeId",
   authenticateToken,
-  asyncHandler(async (req, res) => {
-    const { storeId } = req.params;
-
-    const employees = await User.findAll({ where: { store_id: storeId } });
-
-    res.json({
-      success: true,
-      employees,
-    });
-  })
+  asyncHandler(listUsers)
 );
 
 // Créer une nouvelle affectation

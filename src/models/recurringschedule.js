@@ -11,6 +11,8 @@ export default (sequelize, DataTypes) => {
       // define association here
     }
   }
+
+  //TODO doublon avec TaskSchedule ?
   RecurringSchedule.init({
     task_id: DataTypes.INTEGER,//assoc
     assigned_to: DataTypes.INTEGER,//assoc

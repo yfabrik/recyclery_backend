@@ -31,7 +31,7 @@ export const listCashSessions = async (req, res) => {
     //     ],
     //   ],
     // },
-    // group: ["CashSession.id"],
+    group: ["CashSession.id"],
     // order: [["opened_at", "DESC"]],
   });
 
@@ -74,7 +74,7 @@ export const openCashSession = async (req, res) => {
   const session = await CashSession.create({
     session_number: sessionNumber,
     cash_register_id,
-    user_id: userId,
+    user_id:1,
     store_id,
     opening_amount,
     notes,
@@ -85,54 +85,52 @@ export const openCashSession = async (req, res) => {
 
 // 🧠 PUT /cash-sessions/:id/close
 export const closeCashSession = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { closing_amount, notes } = req.body;
-    const userId = req.user.id;
 
-    if (closing_amount === undefined)
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing closing amount" });
+  const { id } = req.params;
+  const { closing_amount, notes } = req.body;
+  const userId = req.user.id;
 
-    const session = await CashSession.findOne({
-      where: { id, user_id: userId, status: "open" },
-    });
-    if (!session)
-      return res.status(404).json({
-        success: false,
-        message: "Session not found or already closed",
-      });
+  if (closing_amount === undefined)
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing closing amount" });
 
-    const sales = await SalesTransaction.findAll({
-      where: { cash_session_id: id },
-      attributes: [
-        [fn("COALESCE", fn("SUM", col("total_amount")), 0), "total_sales"],
-      ],
-      raw: true,
+  const session = await CashSession.findOne({
+    where: { id, user_id: userId, status: "open" },
+  });
+  if (!session)
+    return res.status(404).json({
+      success: false,
+      message: "Session not found or already closed",
     });
 
-    const totalSales = parseFloat(sales[0].total_sales);
-    const expected = parseFloat(session.opening_amount) + totalSales;
-    const difference = parseFloat(closing_amount) - expected;
+  const sales = await SalesTransaction.findAll({
+    where: { cash_session_id: id },
+    attributes: [
+      [fn("COALESCE", fn("SUM", col("total_amount")), 0), "total_sales"],
+    ],
+    raw: true,
+  });
 
-    await session.update({
-      closing_amount,
-      expected_amount: expected,
-      difference_amount: difference,
-      closed_at: new Date(),
-      status: "closed",
-      notes: notes || session.notes,
-    });
+  const totalSales = parseFloat(sales[0].total_sales);
+  const expected = parseFloat(session.opening_amount) + totalSales;
+  const difference = parseFloat(closing_amount) - expected;
 
-    res.json({
-      success: true,
-      expected_amount: expected,
-      difference_amount: difference,
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
+  await session.update({
+    closing_amount,
+    expected_amount: expected,
+    difference_amount: difference,
+    closed_at: new Date(),
+    status: "closed",
+    notes: notes || session.notes,
+  });
+
+  res.json({
+    success: true,
+    expected_amount: expected,
+    difference_amount: difference,
+  });
+
 };
 
 export const getSessionById = async (req, res) => {
@@ -178,7 +176,7 @@ export const getRegistersByStore = async (req, res) => {
 
     const registers = await CashRegister.findAll({
       where: { store_id, is_active: 1 },
-      include: [{ model: CashSession, as: "cash_sessions", attributes: [] }],
+      include: [{ model: CashSession, as: "sessions", attributes: [] }],
       attributes: {
         include: [
           [fn("COUNT", col("cash_sessions.id")), "total_sessions"],

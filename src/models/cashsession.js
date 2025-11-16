@@ -2,23 +2,17 @@
 import { Model } from "sequelize";
 export default (sequelize, DataTypes) => {
   class CashSession extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
+
     static associate(models) {
       this.belongsTo(models.CashRegister, { foreignKey: "cash_register_id" });
       this.hasMany(models.SalesTransaction, { foreignKey: "sale_id" });
       this.belongsTo(models.User, { foreignKey: "user_id" });
+      this.belongsTo(models.Recyclery, { foreignKey: "store_id" })
     }
   }
   CashSession.init(
     {
       session_number: DataTypes.STRING, //could be id
-      // cash_register_id: DataTypes.INTEGER,//relation
-      // user_id: DataTypes.INTEGER, //relation
-      // store_id: DataTypes.INTEGER, //relation
       opening_amount: DataTypes.DECIMAL,
       closing_amount: DataTypes.DECIMAL,
       expected_amount: DataTypes.DECIMAL, //computed field ?

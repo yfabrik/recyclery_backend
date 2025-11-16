@@ -16,7 +16,7 @@ export default (sequelize, DataTypes) => {
   EmployeeStore.init({
     employee_id: DataTypes.INTEGER,//assoc
     store_id: DataTypes.INTEGER,//assoc
-    // is_primary: DataTypes.BOOLEAN//assoc ? sans doute le manager 
+    // is_primary: DataTypes.BOOLEAN//assoc ? user peut avoir plusieur recyclerie assigné
   }, {
     sequelize,
     modelName: 'EmployeeStore',

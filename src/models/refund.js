@@ -8,7 +8,8 @@ export default (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+      this.belongsTo(models.User, { foreignKey: "created_by" })
+      // this.belongTo(models.SaleTransaction, { foreignKey: "transaction_id" })
     }
   }
   Refund.init(
@@ -22,7 +23,6 @@ export default (sequelize, DataTypes) => {
         defaultValue: "completed",
         allowNull: false,
       },
-      created_by: DataTypes.INTEGER, //assoc
       refund_type: DataTypes.ENUM("full", "partial"),
       refund_method: DataTypes.ENUM("cash", "card", "check"),
     },

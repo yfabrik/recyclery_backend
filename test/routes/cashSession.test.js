@@ -41,8 +41,8 @@ const mockSalesItem = {};
 // }));
 
 // 3) Now import app (routes will use the mocked middleware and models)
-import app from "../../src/index.js";
-import db from "../src/models/index.js";
+import {app} from "../../src/index.js";
+import db from "../../src/models/index.js";
 
 describe("CashSession controllers (unit)", () => {
   beforeEach(() => {

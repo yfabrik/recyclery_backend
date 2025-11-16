@@ -11,9 +11,7 @@ router.use(authenticateToken);
 
 // Récupérer tous les horaires des magasins
 router.get('/', authenticateToken, async (req, res) => {
-  try {
-    await database.connect();
-    
+
     const storeHours = await database.query(`
       SELECT sh.*, s.name as store_name
       FROM store_hours sh
@@ -26,20 +24,12 @@ router.get('/', authenticateToken, async (req, res) => {
       storeHours
     });
     
-  } catch (error) {
-    console.error('Erreur récupération horaires magasins:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération des horaires',
-      error: error.message
-    });
-  }
+ 
 });
 
 // Récupérer les horaires d'un magasin spécifique
 router.get('/store/:storeId', authenticateToken, async (req, res) => {
-  try {
-    await database.connect();
+
     
     const { storeId } = req.params;
     
@@ -56,20 +46,12 @@ router.get('/store/:storeId', authenticateToken, async (req, res) => {
       storeHours
     });
     
-  } catch (error) {
-    console.error('Erreur récupération horaires magasin:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération des horaires du magasin',
-      error: error.message
-    });
-  }
+
 });
 
 // Créer de nouveaux horaires
 router.post('/', authenticateToken, async (req, res) => {
-  try {
-    await database.connect();
+
     
     console.log('Requête store-hours reçue:', req.body);
     
@@ -134,21 +116,12 @@ router.post('/', authenticateToken, async (req, res) => {
       id: result.lastID
     });
     
-  } catch (error) {
-    console.error('Erreur création horaires:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la création des horaires',
-      error: error.message
-    });
-  }
+ 
 });
 
 // Mettre à jour des horaires
 router.put('/:id', authenticateToken, async (req, res) => {
-  try {
-    await database.connect();
-    
+ 
     const { id } = req.params;
     const {
       store_id,
@@ -210,20 +183,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
       message: 'Horaires mis à jour avec succès'
     });
     
-  } catch (error) {
-    console.error('Erreur mise à jour horaires:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la mise à jour des horaires',
-      error: error.message
-    });
-  }
+ 
 });
 
 // Supprimer des horaires
 router.delete('/:id', authenticateToken, async (req, res) => {
-  try {
-    await database.connect();
+ 
     
     const { id } = req.params;
     
@@ -243,20 +208,12 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       message: 'Horaires supprimés avec succès'
     });
     
-  } catch (error) {
-    console.error('Erreur suppression horaires:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la suppression des horaires',
-      error: error.message
-    });
-  }
+  
 });
 
 // Fonction pour synchroniser les horaires d'ouverture avec le planning
 const syncStoreHoursToPlanning = async (storeId, startDate, endDate) => {
-  try {
-    await database.connect();
+ 
     
     // Récupérer les horaires d'ouverture du magasin
     const storeHours = await database.query(`
@@ -420,10 +377,7 @@ const syncStoreHoursToPlanning = async (storeId, startDate, endDate) => {
       }
     };
     
-  } catch (error) {
-    console.error('Erreur lors de la synchronisation des horaires:', error);
-    return { success: false, message: 'Erreur lors de la synchronisation', error: error.message };
-  }
+  
 };
 
 // Route pour synchroniser les horaires d'ouverture avec le planning

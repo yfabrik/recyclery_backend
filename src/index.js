@@ -16,6 +16,7 @@ app.use(express.json());
 // app.use("/api/auth", (await import("./routes/auth.js")).router);
 
 import { router } from "./routes/v1/index.js";
+import {errorHandler} from "./middlewares/errorHandler.js";
 app.use(router);
 
 // Gestion des routes non trouvées

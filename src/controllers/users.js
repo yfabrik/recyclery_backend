@@ -35,7 +35,7 @@ export const listEmployees = async (req, res) => {
 
 export const findUserById = async (req, res) => {
   const { id } = req.params;
-  const user = await User.findByPk(id);
+  const user = await User.findByPk(id, { include: [{ model: Recyclery, as: "recycleries" }, { model: Recyclery, as: "managedStores" }] });
   if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
 
   res.json({
@@ -98,5 +98,9 @@ export const updateUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   const { id } = req.params;
-  await User.destroy(id);
+  await User.destroy({ where: { id } });
+  res.json({
+    success: true,
+    message: "user removed"
+  })
 };

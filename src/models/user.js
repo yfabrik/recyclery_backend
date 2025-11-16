@@ -10,20 +10,7 @@ export default (sequelize, DataTypes) => {
       this.hasMany(models.CollectionReceipt, { foreignKey: "processed_by" });
       this.hasMany(models.LabeledItem, { foreignKey: "created_by" });
       this.hasMany(models.Task, { foreignKey: "assigned_to" });
-      // this.belongsToMany(models.Store, {
-      //   through: "EmployeeStore",
-      //   foreignKey: "employee_id",
-      // });
 
-      // this.belongsToMany(Store, {
-      //   through: "employee_stores",
-      //   foreignKey: "employee_id",
-      //   as: "stores",
-      // });
-      // this.hasMany(Store, {
-      //   foreignKey: "manager_id",
-      //   as: "managedStores",
-      // });
       this.belongsToMany(models.Recyclery, {
         through: "employee_recyclery",
         foreignKey: "employee_id",
@@ -44,7 +31,6 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.STRING, //TODO foreignkey role
         defaultValue: "employee",
       },
-      // recyclery_id: DataTypes.INTEGER, //assoc
       phone: DataTypes.STRING,
       contract_hours: { type: DataTypes.INTEGER, defaultValue: 35 },
     },

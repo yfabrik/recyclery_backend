@@ -1,9 +1,9 @@
-const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
-const { authenticateToken } = require('../middleware/auth');
 
-const router = express.Router();
-const db = new sqlite3.Database('./database/recyclerie.db');
+import { Router } from "express";
+import { asyncHandler } from "../../middlewares/asyncHandler.js";
+import { authenticateToken } from "../../middlewares/auth.js";
+
+export const router = Router();
 
 // Obtenir toutes les collectes
 router.get('/', authenticateToken, (req, res) => {
