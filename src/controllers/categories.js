@@ -1,10 +1,16 @@
 
+import { Op } from "sequelize";
 import db from "../models/index.js";
 const { Category } = db
 
+const findExistingCategory = async (name, parent_id = null) => {
+    return await Category.findOne({
+        where: { [Op.and]: [{ name: name }, { parent_id: parent_id }] }
+    });
+}
 
 export const listCategories = async (req, res) => {
-    const categories = Category.findAll();
+    const categories = await Category.findAll();
 
     res.json({
         success: true,
@@ -14,7 +20,7 @@ export const listCategories = async (req, res) => {
 
 export const listSubcategories = async (req, res) => {
     const subcategories = await Category.findAll({
-        where: { parent_id: { [Op.ne]: null } },
+        where: { parent_id: { [Op.gt]: 0 } },
     });
 
     res.json({
@@ -26,6 +32,7 @@ export const listSubcategories = async (req, res) => {
 
 export const createCategorie = async (req, res) => {
     const { name, description, icon, parent_id } = req.body;
+    const parent = parent_id ?? null
 
     // Validation
     if (!name) {
@@ -39,7 +46,7 @@ export const createCategorie = async (req, res) => {
     const finalDescription = description || "Aucune description";
 
     // Vérifier si la catégorie existe déjà
-    const existingCategory = await existingCategory(name, parent_id)
+    const existingCategory = await findExistingCategory(name, parent_id)
 
     if (existingCategory) {
         return res.status(400).json({
@@ -51,7 +58,7 @@ export const createCategorie = async (req, res) => {
         name,
         description,
         icon,
-        parent_id,
+        parent_id: parent
     });
 
     res.status(201).json({
@@ -64,7 +71,9 @@ export const createCategorie = async (req, res) => {
 export const deleteCategorie = async (req, res) => {
     const { id } = req.params;
     //TODO cascade delete les subcategories
-    const deleted = await Category.destroy(id);
+    // const subcategories = await Category.findOne({ where: {parent_id: id} })
+    // if(subcategories) return res.status(403).json({succes:false,message:"cant delete, still subcategories"})
+    const deleted = await Category.destroy({ where: { id } });
     if (deleted == 0)
         return res.status(404).json({
             success: false,
@@ -100,7 +109,7 @@ export const updateCategorie = async (req, res) => {
     }
 
     // Vérifier si le nouveau nom n'est pas déjà utilisé
-    const existingCategory = await existingCategory(name, category.parent_id)
+    const existingCategory = await findExistingCategory(name, category.parent_id)
 
     if (existingCategory) {
         return res.status(400).json({
@@ -121,9 +130,3 @@ export const updateCategorie = async (req, res) => {
     });
 }
 
-
-export const existingCategory = async (name, parent_id) => {
-    return await Category.findOne({
-        where: { name, parent_id },
-    });
-}
