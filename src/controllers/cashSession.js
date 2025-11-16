@@ -1,6 +1,6 @@
 import { Op, fn, col, literal } from "sequelize";
 import db from "../models/index.js";
-const { CashSession, CashRegister, Store, User, SalesTransaction } = db;
+const { CashSession, CashRegister, Recyclery, User, SalesTransaction, SalesItem } = db;
 
 // 🧠 GET /cash-sessions
 export const listCashSessions = async (req, res) => {
@@ -15,7 +15,7 @@ export const listCashSessions = async (req, res) => {
     where,
     include: [
       { model: CashRegister, attributes: ["name"] },
-      //   { model: Store, as: "store", attributes: ["name"] },
+      { model: Recyclery, attributes: ["name"] },
       { model: User, attributes: ["username"] },
       {
         model: SalesTransaction,
@@ -44,10 +44,10 @@ export const getActiveSession = async (req, res) => {
   const session = await CashSession.findOne({
     where: { user_id: userId, status: "open" },
     include: [
-      { model: CashRegister, as: "cash_register", attributes: ["name"] },
-      { model: Store, as: "store", attributes: ["name"] },
+      { model: CashRegister, attributes: ["name"] },
+      { model: Recyclery, attributes: ["name"] },
     ],
-    order: [["opened_at", "DESC"]],
+    // order: [["opened_at", "DESC"]],
   });
 
   res.json({ success: true, session });
@@ -74,7 +74,7 @@ export const openCashSession = async (req, res) => {
   const session = await CashSession.create({
     session_number: sessionNumber,
     cash_register_id,
-    user_id:1,
+    user_id: 1,
     store_id,
     opening_amount,
     notes,
@@ -134,62 +134,59 @@ export const closeCashSession = async (req, res) => {
 };
 
 export const getSessionById = async (req, res) => {
-  try {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    const session = await CashSession.findByPk(id, {
-      include: [
-        { model: CashRegister, as: "cash_register", attributes: ["name"] },
-        { model: Store, as: "store", attributes: ["name"] },
-        { model: User, as: "user", attributes: ["username"] },
-      ],
-    });
+  const session = await CashSession.findByPk(id, {
+    include: [
+      { model: CashRegister, attributes: ["name"] },
+      { model: Recyclery, attributes: ["name"] },
+      { model: User, attributes: ["username"] },
+    ],
+  });
 
-    if (!session) return res.status(404).json({ success: false });
+  if (!session) return res.status(404).json({ success: false });
 
-    // transactions with joined sales_items info
-    const transactions = await SalesTransaction.findAll({
-      where: { cash_session_id: id },
-      include: [
-        {
-          model: SalesItem,
-          as: "sales_items",
-          attributes: ["name", "barcode"],
-        },
-      ],
-      order: [["created_at", "DESC"]],
-    });
+  // transactions with joined sales_items info
+  const transactions = await SalesTransaction.findAll({
+    where: { cash_session_id: id },
+    include: [
+      {
+        model: SalesItem,
+        // attributes: ["name", "barcode"],
+      },
+    ],
+    // order: [[SalesTransaction,"createdAt", "DESC"]],
+  });
 
-    res.json({ success: true, session: { ...session.toJSON(), transactions } });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
+  res.json({ success: true, session: { ...session.toJSON(), transactions } });
+
+
 };
 
 export const getRegistersByStore = async (req, res) => {
-  try {
-    const { store_id } = req.params;
-    if (!store_id)
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing store_id" });
 
-    const registers = await CashRegister.findAll({
-      where: { store_id, is_active: 1 },
-      include: [{ model: CashSession, as: "sessions", attributes: [] }],
-      attributes: {
-        include: [
-          [fn("COUNT", col("cash_sessions.id")), "total_sessions"],
-          [fn("MAX", col("cash_sessions.opened_at")), "last_session"],
-        ],
-      },
-      group: ["CashRegister.id"],
-      order: [["name", "ASC"]],
-    });
+  const { store_id } = req.params;
+  if (!store_id)
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing store_id" });
 
-    res.json({ success: true, registers });
-  } catch (err) {
-    console.error("err", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
+  req.query.store_id = store_id
+  return await listCaisses(req, res)
+
+  const registers = await CashRegister.findAll({
+    where: { store_id, is_active: 1 },
+    include: [{ model: CashSession, as: "sessions", attributes: [] }],
+    attributes: {
+      include: [
+        [fn("COUNT", col("cash_sessions.id")), "total_sessions"],
+        [fn("MAX", col("cash_sessions.opened_at")), "last_session"],
+      ],
+    },
+    group: ["CashRegister.id"],
+    order: [["name", "ASC"]],
+  });
+
+  res.json({ success: true, registers });
+
 };

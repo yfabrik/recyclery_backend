@@ -1,11 +1,11 @@
 import { beforeAll, expect, jest } from "@jest/globals";
 import db from "../../src/models";
-import { closeCashSession, listCashSessions, openCashSession } from "../../src/controllers/cashSession";
-const { Recyclery, CashRegister,User } = db
+import { closeCashSession, getActiveSession, getSessionById, listCashSessions, openCashSession } from "../../src/controllers/cashSession";
+const { Recyclery, CashRegister, User } = db
 
 beforeAll(async () => {
     await db.sequelize.sync({ force: true });
-    await User.create({email:"a@example.com"})
+    await User.create({ email: "a@example.com" })
     await Recyclery.create({
         name: "recyclerie test",
         address: "address test",
@@ -49,6 +49,33 @@ describe("caisseSessions controller functions", () => {
             })
         );
     });
+    it("should find the session id 1", async () => {
+        const body = {
+            cash_register_id: 1,
+            store_id: 1,
+            opening_amount: 500
+        };
+        const req = {
+            query: {},
+            user: { id: 1, role: "admin" },
+            body,
+            params: { id: 1 }
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        await getSessionById(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                session: expect.any(Object),
+                success: true
+            })
+        );
+    });
 
     it("should deny a session for caisse 1", async () => {
         const body = {
@@ -74,6 +101,33 @@ describe("caisseSessions controller functions", () => {
     });
 
     it("should list open sessions for caisse 1", async () => {
+        const body = {
+            cash_register_id: 1,
+            store_id: 1,
+            opening_amount: 500
+        };
+        const req = {
+            params: { store_id: 1 },
+            query: { store_id: 1 },
+            user: { id: 1, role: "admin" },
+            body,
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        await getActiveSession(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                session: expect.any(Object),
+                success: true
+            })
+        );
+    });
+    it("should list sessions for caisse 1", async () => {
         const body = {
             cash_register_id: 1,
             store_id: 1,
