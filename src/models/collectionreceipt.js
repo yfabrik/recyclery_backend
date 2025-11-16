@@ -15,10 +15,10 @@ export default (sequelize, DataTypes) => {
     {
       // schedule_id: DataTypes.INTEGER,//assoc
       receipt_number: DataTypes.STRING, //id ? assoc ?
-      collection_date: DataTypes.DATE,
-      collector_name: DataTypes.STRING,
-      collection_point_name: DataTypes.STRING,
-      collection_point_address: DataTypes.TEXT,
+      // collection_date: DataTypes.DATE,//c'est dans collection schedule 
+      // collector_name: DataTypes.STRING,
+      // collection_point_name: DataTypes.STRING,
+      // collection_point_address: DataTypes.TEXT,
       items_collected: DataTypes.TEXT,
       total_weight: DataTypes.DECIMAL,
       notes: DataTypes.TEXT,

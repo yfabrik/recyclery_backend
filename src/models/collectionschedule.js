@@ -11,6 +11,7 @@ export default (sequelize, DataTypes) => {
       this.belongsTo(models.CollectionPoint, { foreignKey: "collection_point_id" });
       this.belongsTo(models.User, { foreignKey: "employee_id" });
       this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
+      this.hasOne(models.collectionReceipt, { foreignKey: "receipt_number" })
     }
   }
 
@@ -22,10 +23,16 @@ export default (sequelize, DataTypes) => {
       scheduled_time: DataTypes.TIME,
       // employee_id: DataTypes.INTEGER, //assoc
       vehicle: DataTypes.STRING,
-      status: {type:DataTypes.STRING,defaultValue:"planned"},
+      status: { type: DataTypes.STRING, defaultValue: "planned" },
       estimated_duration: DataTypes.INTEGER,
       notes: DataTypes.TEXT,
-      receipt_number: DataTypes.STRING, //assoc ?
+
+      //si jamais c'est pas dans un point collect defini
+      address: DataTypes.TEXT,
+      contact_name: DataTypes.STRING,
+      contact_phone: DataTypes.STRING,
+      
+      // receipt_number: DataTypes.STRING, //assoc ?
     },
     {
       sequelize,
