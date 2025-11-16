@@ -1,7 +1,7 @@
 import { beforeAll, expect, jest } from "@jest/globals";
 import db from "../../src/models";
 import { closeCashSession, listCashSessions, openCashSession } from "../../src/controllers/cashSession";
-import { createTransaction, listTransactions } from "../../src/controllers/salesTransactions";
+import { createRefund, createTransaction, listRefunds, listTransactions } from "../../src/controllers/salesTransactions";
 const { Recyclery, CashRegister, User, CashSession } = db
 
 beforeAll(async () => {
@@ -87,8 +87,11 @@ describe("transactions controller functions", () => {
     it("should create a refund", async () => {
         const body = {
             cash_register_id: 1,
-            store_id: 1,
-            opening_amount: 500
+
+            transaction_id: 1,
+            refund_type: 'full',
+            refund_amount: 10,
+            refund_reason: "a"
         };
         const req = {
             params: { store_id: 1 },
@@ -102,17 +105,17 @@ describe("transactions controller functions", () => {
             status: jest.fn().mockReturnThis()
         };
 
-        await listCashSessions(req, res);
+        await createRefund(req, res);
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
-                sessions: expect.any(Array),
+                refund: expect.any(Object),
                 success: true
             })
         );
     });
 
-    it("should close the session ", async () => {
+    it("should list refund for transaction", async () => {
         const req = {
             params: { id: 1 },
             query: { store_id: 1 },
@@ -125,13 +128,12 @@ describe("transactions controller functions", () => {
             status: jest.fn().mockReturnThis()
         };
 
-        await closeCashSession(req, res);
+        await listRefunds(req, res);
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 success: true,
-                expected_amount: expect.any(Number),
-                difference_amount: expect.any(Number),
+                refunds: expect.any(Array),
             })
         );
     });

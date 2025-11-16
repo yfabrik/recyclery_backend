@@ -9,12 +9,12 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.belongsTo(models.User, { foreignKey: "created_by" })
-      // this.belongTo(models.SaleTransaction, { foreignKey: "transaction_id" })
+      this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" })
     }
   }
   Refund.init(
     {
-      transaction_id: DataTypes.INTEGER, //assoc
+      // transaction_id: DataTypes.INTEGER, //assoc
       reason: DataTypes.STRING,
       refund_amount: DataTypes.DECIMAL,
       notes: DataTypes.TEXT,

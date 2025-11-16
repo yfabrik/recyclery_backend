@@ -2,8 +2,9 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-import { Op, where } from "sequelize";
-import salestransaction from "../../models/salestransaction.js";
+import { Op } from "sequelize";
+
+import { createRefund, createTransaction, listRefunds, listTransactions } from "../../controllers/salesTransactions.js";
 const { LabeledItem, Category, User, SalesTransaction, Store, Refund } = db;
 
 export const router = Router();
@@ -56,8 +57,8 @@ router.get(
         [
           literal(
             "COALESCE(SUM(total_amount) - COALESCE(SUM((" +
-              refundSubquery.val +
-              ")), 0), 0)"
+            refundSubquery.val +
+            ")), 0), 0)"
           ),
           "total_sales",
         ],
@@ -139,200 +140,28 @@ router.get(
 router.get(
   "/",
   authenticateToken,
-  asyncHandler(async (req, res) => {
-    const {
-      store_id,
-      period,
-      date_from,
-      date_to,
-      limit = 50,
-      offset = 0,
-    } = req.query;
-    const where = {};
-    if (store_id) where.store_id = store_id;
-    if (date_from && date_to)
-      where.createdAt = { [Op.between]: [date_from, date_to] };
-
-    const transactions = await SalesTransaction.findAll({
-      where,
-      include: [{ model: Store }, { model: User }],
-      order: ["createdAt", "DESC"],
-    });
-
-    res.json({
-      success: true,
-      transactions: transactions,
-      pagination: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        total: transactions.length,
-      },
-    });
-  })
+  asyncHandler(listTransactions)
 );
 
 // POST - Créer une nouvelle transaction (version simplifiée)
 router.post(
   "/",
   authenticateToken,
-  asyncHandler(async (req, res) => {
-    const {
-      cash_session_id,
-      store_id,
-      total_amount,
-      payment_method = "cash",
-      payment_amount,
-      change_amount = 0,
-      customer_name,
-      customer_email,
-      customer_postal_code,
-      items = [],
-    } = req.body;
-
-    // Validation
-    if (!cash_session_id || !store_id || !total_amount || !payment_amount) {
-      return res.status(400).json({
-        success: false,
-        error: "Données de transaction incomplètes",
-      });
-    }
-
-    // Générer un numéro de transaction unique
-    const timestamp = Date.now().toString();
-    const transactionNumber = `TXN${timestamp.slice(-8)}`;
-
-    // Insérer la transaction
-    const result = SalesTransaction.create({
-      transaction_number: transactionNumber,
-      cash_session_id,
-      store_id,
-      total_amount,
-      payment_method,
-      payment_amount,
-      change_amount,
-      customer_name,
-      customer_email,
-      customer_postal_code,
-      createdBy: req.user.id,
-    });
-
-    res.json({
-      success: true,
-      data: {
-        id: result.lastID,
-        transactionNumber,
-        message: "Transaction créée avec succès",
-      },
-    });
-  })
+  asyncHandler(createTransaction)
 );
 
 // POST - Créer un remboursement
 router.post(
   "/refund",
   authenticateToken,
-  asyncHandler(async (req, res) => {
-    const {
-      transaction_id,
-      refund_type,
-      refund_amount,
-      refund_reason,
-      refund_method,
-      notes,
-    } = req.body;
-
-    // Validation des champs requis
-    if (!transaction_id || !refund_type || !refund_amount || !refund_reason) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Les champs transaction_id, refund_type, refund_amount et refund_reason sont obligatoires",
-      });
-    }
-
-    // Vérifier que la transaction existe
-    const transaction = await SalesTransaction.findByPk(transaction_id);
-
-    if (!transaction) {
-      return res.status(404).json({
-        success: false,
-        message: "Transaction non trouvée",
-      });
-    }
-
-    // Vérifier que le montant de remboursement ne dépasse pas le montant de la transaction
-    if (parseFloat(refund_amount) > transaction.total_amount) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Le montant de remboursement ne peut pas dépasser le montant de la transaction",
-      });
-    }
-
-    // Créer le remboursement dans la table refunds
-    const refundQuery = `
-      INSERT INTO refunds (
-        transaction_id, refund_type, refund_amount, refund_reason, 
-        refund_method, notes, created_by, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'completed')
-    `;
-    const refund = await Refund.create({
-      transaction_id,
-      refund_type,
-      refund_amount,
-      refund_reason,
-      refund_method,
-      notes,
-      created_by,
-      status: "completed",
-    });
-
-    // Mettre à jour le statut de la transaction si c'est un remboursement total
-    if (refund_type === "full") {
-      // Note: La table sales_transactions pourrait ne pas avoir de colonne status
-      // On peut ajouter une colonne refunded_at pour marquer les transactions remboursées
-      await salestransaction.update(
-        { refundedAt: new Date() },
-        { where: { id: transaction_id } }
-      );
-    }
-
-    // Récupérer les informations du remboursement créé
-    const refundInfo = await Refund.FindOne({
-      where: { id: refund.id },
-      include: [{ model: SalesTransaction }, { model: User }],
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Remboursement créé avec succès",
-      refund: refundInfo,
-    });
-  })
+  asyncHandler(createRefund)
 );
 
 // GET - Récupérer les remboursements d'une transaction
 router.get(
   "/:id/refunds",
   authenticateToken,
-  asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const transaction = await SalesTransaction.findByPk(id);
-    if (!transaction) {
-      return res.status(404).json({
-        success: false,
-        message: "Transaction non trouvée",
-      });
-    }
-
-    const refunds = await Refund.findByPk(id);
-    // Récupérer les remboursements de cette transaction
-
-    res.json({
-      success: true,
-      refunds: refunds,
-    });
-  })
+  asyncHandler(listRefunds)
 );
 
 // POST - Créer un avoir (credit note)

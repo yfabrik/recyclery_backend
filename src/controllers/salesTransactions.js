@@ -132,7 +132,7 @@ export const createRefund = async (req, res) => {
         refund_reason,
         refund_method,
         notes,
-        created_by,
+        created_by: req.user.id,
         status: "completed",
     });
 
@@ -147,7 +147,7 @@ export const createRefund = async (req, res) => {
     }
 
     // Récupérer les informations du remboursement créé
-    const refundInfo = await Refund.FindOne({
+    const refundInfo = await Refund.findOne({
         where: { id: refund.id },
         include: [{ model: SalesTransaction }, { model: User }],
     });
@@ -156,5 +156,27 @@ export const createRefund = async (req, res) => {
         success: true,
         message: "Remboursement créé avec succès",
         refund: refundInfo,
+    });
+}
+
+export const listRefunds = async (req, res) => {
+    const { id } = req.params;
+
+    const refunds = await Refund.findAll({
+        where: { transaction_id: id },
+        include: [
+            { model: SalesTransaction }
+        ]
+    });
+    if (!refunds[0]) {
+        return res.status(404).json({
+            success: false,
+            message: "Transaction non trouvée",
+        });
+    }
+
+    res.json({
+        success: true,
+        refunds: refunds,
     });
 }
