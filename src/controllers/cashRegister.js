@@ -71,7 +71,7 @@ export const detailCaisse = async (req, res) => {
     const register = await CashRegister.findByPk(id, {
         include: [
             { model: CashSession, as: "sessions" },
-            { model: Recyclery, as: "recyclerie" },
+            { model: Recyclery },
         ],
     });
 

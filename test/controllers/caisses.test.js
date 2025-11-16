@@ -1,6 +1,6 @@
 import { beforeAll, jest } from "@jest/globals";
 import db from "../../src/models";
-import { createCaisse, deleteCaisse, listCaisses } from "../../src/controllers/cashRegister";
+import { createCaisse, deleteCaisse, detailCaisse, listCaisses } from "../../src/controllers/cashRegister";
 const { Recyclery } = db
 
 beforeAll(async () => {
@@ -42,6 +42,32 @@ describe("caisses controller functions", () => {
                 data: expect.any(Object),
                 success: true,
                 message: "Caisse créée avec succès",
+            })
+        );
+    });
+    it("should find the caisse 1", async () => {
+        const body = {
+            name: "caisse 1",
+            store_id: 1
+        };
+        const req = {
+            query: {},
+            user: { id: 1, role: "admin" },
+            body,
+            params: { id: 1 }
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        await detailCaisse(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.any(Object),
+                success: true,
             })
         );
     });
