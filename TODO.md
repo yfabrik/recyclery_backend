@@ -1,8 +1,8 @@
 # missing tables
 
-storeHours
-collectionPointPresence
-employeeWorkdays
+<!-- storeHours -->
+<!-- collectionPointPresence -->
+<!-- employeeWorkdays -->
 taskEmployee
 
 taskScheduleEmployee
