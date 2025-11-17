@@ -11,10 +11,10 @@ export default (sequelize, DataTypes) => {
         as: "subcategory",
         foreignKey: "subcategory_id",
       });
-    //   this.belongsTo(models.EcoOrganism, {
-    //     as: "eco_organism",
-    //     foreignKey: "eco_organism_id",
-    //   });
+      this.belongsTo(models.EcoOrganism, {
+        as: "eco_organism",
+        foreignKey: "eco_organism_id",
+      });
       this.belongsTo(models.User, {
         as: "created_by_user",
         foreignKey: "created_by",

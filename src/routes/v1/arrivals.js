@@ -1,68 +1,123 @@
-
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-import { createArrival, deleteArrival, detailArrival, listArrivals, updateArrival } from "../../controllers/arrivals.js";
+import {
+  createArrival,
+  deleteArrival,
+  detailArrival,
+  listArrivals,
+  updateArrival,
+} from "../../controllers/arrivals.js";
+
+const { Sequelize } = db;
 
 export const router = Router();
 
 // Obtenir tous les arrivages
-router.get('/', authenticateToken, asyncHandler(listArrivals))
+router.get("/", authenticateToken, asyncHandler(listArrivals));
 
 // Obtenir un arrivage spécifique
-router.get('/:id', authenticateToken, asyncHandler(detailArrival))
+router.get("/:id", authenticateToken, asyncHandler(detailArrival));
 
 // Créer un nouvel arrivage
-router.post('/', authenticateToken, asyncHandler(createArrival))
+router.post("/", authenticateToken, asyncHandler(createArrival));
 
 // Mettre à jour un arrivage
-router.put('/:id',
-  authenticateToken,
-  // requireRole(['admin', 'manager']), 
-  asyncHandler(updateArrival))
-
-// Supprimer un arrivage
-router.delete('/:id',
+router.put(
+  "/:id",
   authenticateToken,
   // requireRole(['admin', 'manager']),
-  asyncHandler(deleteArrival))
+  asyncHandler(updateArrival)
+);
+
+// Supprimer un arrivage
+router.delete(
+  "/:id",
+  authenticateToken,
+  // requireRole(['admin', 'manager']),
+  asyncHandler(deleteArrival)
+);
 
 // Obtenir les statistiques des arrivages
-router.get('/stats/summary', authenticateToken, (req, res) => {
-  const { date_from, date_to } = req.query;
+router.get(
+  "/stats/summary",
+  authenticateToken,
+  asyncHandler(async (req, res) => {
+    const { date_from, date_to } = req.query;
 
-  let whereClause = 'WHERE 1=1';
-  const params = [];
+    const where = {};
 
-  if (date_from) {
-    whereClause += ' AND arrival_date >= ?';
-    params.push(date_from);
-  }
-
-  if (date_to) {
-    whereClause += ' AND arrival_date <= ?';
-    params.push(date_to);
-  }
-
-  db.get(`
-    SELECT 
-      COUNT(*) as total_arrivals,
-      SUM(weight) as total_weight,
-      COUNT(CASE WHEN source_type = 'collection_point' THEN 1 END) as from_collection_points,
-      COUNT(CASE WHEN volunteer_donation = 1 THEN 1 END) as volunteer_donations,
-      COUNT(CASE WHEN house_clearance = 1 THEN 1 END) as house_clearances,
-      COUNT(CASE WHEN status = 'received' THEN 1 END) as pending_processing,
-      COUNT(CASE WHEN status = 'processed' THEN 1 END) as processed
-    FROM arrivals ${whereClause}
-  `, params, (err, stats) => {
-    if (err) {
-      console.error('Erreur lors de la récupération des statistiques:', err);
-      return res.status(500).json({
-        success: false,
-        error: 'Erreur lors de la récupération des statistiques'
-      });
+    if (date_from) {
+      where.arrival_date = {
+        ...(where.arrival_date || {}),
+        [Op.gte]: date_from,
+      };
     }
+
+    if (date_to) {
+      where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
+    }
+
+    const result = await Arrival.findOne({
+      attributes: [
+        // COUNT(*)
+        [Sequelize.fn("COUNT", Sequelize.col("*")), "total_arrivals"],
+
+        // SUM(weight)
+        [Sequelize.fn("SUM", Sequelize.col("weight")), "total_weight"],
+
+        // COUNT(CASE WHEN source_type = 'collection_point')
+        [
+          Sequelize.fn(
+            "COUNT",
+            Sequelize.literal(
+              "CASE WHEN source_type = 'collection_point' THEN 1 END"
+            )
+          ),
+          "from_collection_points",
+        ],
+
+        // volunteer_donation = 1
+        [
+          Sequelize.fn(
+            "COUNT",
+            Sequelize.literal("CASE WHEN volunteer_donation = 1 THEN 1 END")
+          ),
+          "volunteer_donations",
+        ],
+
+        // house_clearance = 1
+        [
+          Sequelize.fn(
+            "COUNT",
+            Sequelize.literal("CASE WHEN house_clearance = 1 THEN 1 END")
+          ),
+          "house_clearances",
+        ],
+
+        // status = 'received'
+        [
+          Sequelize.fn(
+            "COUNT",
+            Sequelize.literal("CASE WHEN status = 'received' THEN 1 END")
+          ),
+          "pending_processing",
+        ],
+
+        // status = 'processed'
+        [
+          Sequelize.fn(
+            "COUNT",
+            Sequelize.literal("CASE WHEN status = 'processed' THEN 1 END")
+          ),
+          "processed",
+        ],
+      ],
+
+      where,
+      raw: true,
+    });
 
     res.json({
       success: true,
@@ -73,53 +128,42 @@ router.get('/stats/summary', authenticateToken, (req, res) => {
         volunteer_donations: 0,
         house_clearances: 0,
         pending_processing: 0,
-        processed: 0
-      }
+        processed: 0,
+      },
     });
-  });
-});
+  })
+);
 
 // Obtenir les arrivages par catégorie
-router.get('/stats/by-category', authenticateToken, (req, res) => {
-  const { date_from, date_to } = req.query;
-
-  let whereClause = 'WHERE 1=1';
-  const params = [];
-
-  if (date_from) {
-    whereClause += ' AND a.arrival_date >= ?';
-    params.push(date_from);
-  }
-
-  if (date_to) {
-    whereClause += ' AND a.arrival_date <= ?';
-    params.push(date_to);
-  }
-
-  db.all(`
-    SELECT 
-      c.name as category_name,
-      c.icon as category_icon,
-      COUNT(a.id) as count,
-      SUM(a.weight) as total_weight
-    FROM arrivals a
-    LEFT JOIN categories c ON a.category_id = c.id
-    ${whereClause}
-    GROUP BY c.id, c.name, c.icon
-    ORDER BY total_weight DESC
-  `, params, (err, stats) => {
-    if (err) {
-      console.error('Erreur lors de la récupération des statistiques par catégorie:', err);
-      return res.status(500).json({
-        success: false,
-        error: 'Erreur lors de la récupération des statistiques'
-      });
+router.get(
+  "/stats/by-category",
+  authenticateToken,
+  asyncHandler(async (req, res) => {
+    const { date_from, date_to } = req.query;
+    const where = {};
+    if (date_from) {
+      where.arrival_date = {
+        ...(where.arrival_date || {}),
+        [Op.gte]: date_from,
+      };
     }
+
+    if (date_to) {
+      where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
+    }
+
+    const stats = await Arrival.findAll({
+      attributes: [
+        "*",
+        [Sequelize.fn("COUNT", Sequelize.col("*")), "count"],
+        [Sequelize.fn("SUM", Sequelize.col("weight")), "total_weight"],
+      ],
+      include: [{ model: category, as: "categorie" }],
+    });
 
     res.json({
       success: true,
-      categories: stats || []
+      categories: stats || [],
     });
-  });
-});
-
+  })
+);

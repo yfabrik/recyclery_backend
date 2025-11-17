@@ -11,7 +11,7 @@ export const listRecycleries = async (req, res) => {
       { model: User, as: "manager" },
     ],
   });
-  res.json({ success: true, stores: recycleries });
+  res.json({ success: true, stores: recycleries, recycleries });
 };
 
 export const detailRecyclerie = async (req, res) => {
@@ -27,7 +27,8 @@ export const detailRecyclerie = async (req, res) => {
 };
 
 export const createRecyclerie = async (req, res) => {
-  const { name, address, phone, email, manager_id, city, postal_code } = req.body;
+  const { name, address, phone, email, manager_id, city, postal_code } =
+    req.body;
 
   if (!name)
     throw new createHttpError.BadRequest("Le nom de la recyclerie est requis");
@@ -49,7 +50,16 @@ export const createRecyclerie = async (req, res) => {
 
 export const updateRecyclerie = async (req, res) => {
   const { id } = req.params;
-  const { name, address, phone, email, manager_id, city, postal_code, is_active, } = req.body;
+  const {
+    name,
+    address,
+    phone,
+    email,
+    manager_id,
+    city,
+    postal_code,
+    is_active,
+  } = req.body;
 
   if (!name)
     throw new createHttpError.BadRequest("Le nom de la recyclerie est requis");
@@ -57,16 +67,14 @@ export const updateRecyclerie = async (req, res) => {
   const recyclerie = await Recyclery.findByPk(id);
   if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
 
-
-
   recyclerie.name ??= name;
   recyclerie.address ??= address;
   recyclerie.phone ??= phone;
   recyclerie.email ??= email;
   recyclerie.manager_id ??= manager_id;
-  recyclerie.city ??= city
-  recyclerie.postal_code ??= postal_code
-  recyclerie.is_active ??= is_active
+  recyclerie.city ??= city;
+  recyclerie.postal_code ??= postal_code;
+  recyclerie.is_active ??= is_active;
   await recyclerie.save();
 
   res.json({

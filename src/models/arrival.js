@@ -8,8 +8,8 @@ export default (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      this.belongsTo(models.Category, { foreignKey: "category_id" });
-      this.belongsTo(models.Category, { foreignKey: "subcategory_id" });
+      this.belongsTo(models.Category, { foreignKey: "category_id" ,as:"categorie"});
+      this.belongsTo(models.Category, { foreignKey: "subcategory_id",as:"subcategorie" });
       this.belongsTo(models.CollectionPoint, {
         foreignKey: "collection_point_id",
       });

@@ -1,6 +1,15 @@
 import { Op, fn, col, literal } from "sequelize";
 import db from "../models/index.js";
-const { CashSession, CashRegister, Recyclery, User, SalesTransaction, SalesItem } = db;
+import { listCaisses } from "./cashRegister.js";
+const {
+  CashSession,
+  CashRegister,
+  Recyclery,
+  User,
+  SalesTransaction,
+  SalesItem,
+  Sequelize
+} = db;
 
 // 🧠 GET /cash-sessions
 export const listCashSessions = async (req, res) => {
@@ -12,6 +21,21 @@ export const listCashSessions = async (req, res) => {
   if (user_id) where.user_id = user_id;
 
   const sessions = await CashSession.findAll({
+    attributes: [
+      "*",
+      [
+        Sequelize.fn("COUNT", Sequelize.col("SalesTransactions.id")),
+        "transactions_count",
+      ],
+      [
+        Sequelize.fn(
+          "COALESCE",
+          Sequelize.fn("SUM", Sequelize.col("SalesTransactions.total_amount")),
+          0
+        ),
+        "total_sales",
+      ],
+    ],
     where,
     include: [
       { model: CashRegister, attributes: ["name"] },
@@ -22,15 +46,6 @@ export const listCashSessions = async (req, res) => {
         attributes: [],
       },
     ],
-    // attributes: {
-    //   include: [
-    //     [fn("COUNT", col("sales_transactions.id")), "transactions_count"],
-    //     [
-    //       fn("COALESCE", fn("SUM", col("sales_transactions.total_amount")), 0),
-    //       "total_sales",
-    //     ],
-    //   ],
-    // },
     group: ["CashSession.id"],
     // order: [["opened_at", "DESC"]],
   });
@@ -47,7 +62,7 @@ export const getActiveSession = async (req, res) => {
       { model: CashRegister, attributes: ["name"] },
       { model: Recyclery, attributes: ["name"] },
     ],
-    // order: [["opened_at", "DESC"]],
+    order: [["createdAt", "DESC"]],
   });
 
   res.json({ success: true, session });
@@ -85,7 +100,6 @@ export const openCashSession = async (req, res) => {
 
 // 🧠 PUT /cash-sessions/:id/close
 export const closeCashSession = async (req, res) => {
-
   const { id } = req.params;
   const { closing_amount, notes } = req.body;
   const userId = req.user.id;
@@ -130,7 +144,6 @@ export const closeCashSession = async (req, res) => {
     expected_amount: expected,
     difference_amount: difference,
   });
-
 };
 
 export const getSessionById = async (req, res) => {
@@ -159,20 +172,17 @@ export const getSessionById = async (req, res) => {
   });
 
   res.json({ success: true, session: { ...session.toJSON(), transactions } });
-
-
 };
 
 export const getRegistersByStore = async (req, res) => {
-
   const { store_id } = req.params;
   if (!store_id)
     return res
       .status(400)
       .json({ success: false, message: "Missing store_id" });
 
-  req.query.store_id = store_id
-  return await listCaisses(req, res)
+  req.query.store_id = store_id;
+  return await listCaisses(req, res);
 
   const registers = await CashRegister.findAll({
     where: { store_id, is_active: 1 },
@@ -188,5 +198,4 @@ export const getRegistersByStore = async (req, res) => {
   });
 
   res.json({ success: true, registers });
-
 };

@@ -4,7 +4,7 @@ export default (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
       this.hasMany(models.Donation, { foreignKey: "received_by" });
-      this.hasMany(models.Collection, { foreignKey: "assigned_to" });
+      // this.hasMany(models.Collection, { foreignKey: "assigned_to" });
       this.hasMany(models.SalesTransaction, { foreignKey: "sold_by" });
       this.hasMany(models.CollectionSchedule, { foreignKey: "employee_id" });
       this.hasMany(models.CollectionReceipt, { foreignKey: "processed_by" });

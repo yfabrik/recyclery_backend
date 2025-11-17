@@ -4,9 +4,9 @@ export default (sequelize, DataTypes) => {
   class SalesTransaction extends Model {
     static associate(models) {
       this.hasMany(models.SalesItem, { foreignKey: "transaction_id" });
-      this.belongsTo(models.User, { foreignKey: "created_by" })
-      this.belongsTo(models.Recyclery, { foreignKey: "store_id" })
-      this.belongsTo(models.CashSession, { foreignKey: "cash_session_id" })
+      this.belongsTo(models.User, { foreignKey: "created_by" });
+      this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
+      this.belongsTo(models.CashSession, { foreignKey: "cash_session_id" });
     }
   }
   SalesTransaction.init(

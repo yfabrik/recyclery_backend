@@ -1,232 +1,227 @@
-
 import db from "../models/index.js";
 import createHttpError from "http-errors";
 import { Op } from "sequelize";
 
 const { CashRegister, CashSession, Recyclery, Sequelize } = db;
 
-
 export const listCaisses = async (req, res) => {
-    const { is_active, store_id } = req.query;
-    const where = {};
-    if (store_id) {
-        where.store_id = store_id;
-    }
+  const { is_active, store_id } = req.query;
+  const where = {};
+  if (store_id) {
+    where.store_id = store_id;
+  }
 
-    if (is_active !== undefined) {
-        // Convert 'true'/'false' to boolean or 1/0
-        where.is_active = is_active === "true" ? 1 : 0;
-    }
+  if (is_active !== undefined) {
+    // Convert 'true'/'false' to boolean or 1/0
+    where.is_active = is_active === "true" ? 1 : 0;
+  }
 
-    //TODO filter + COUNT sessions + last_session
-    const cashRegister = await CashRegister.findAll({
-        attributes: [
-            "id",
-            "name",
-            "recyclery_id",
-            "is_active",
-            "createdAt",
-            [Sequelize.col("Recyclery.name"), "store_name"],
-            // COUNT(cs.id) as total_sessions
-            // [
-            //     Sequelize.fn("COUNT", Sequelize.col("CashSessions.id")),
-            //     "total_sessions",
-            // ],
-            // // MAX(cs.opened_at) as last_session
-            // [
-            //     Sequelize.fn("MAX", Sequelize.col("CashSession.opened_at")),
-            //     "last_session",
-            // ],
-        ],
-        include: [
-            {
-                model: Recyclery,
-                attributes: [],
-                required: false,
-            },
-            {
-                model: CashSession,
-                as: "sessions",
-                attributes: [],
-                required: false,
-            },
-        ],
-        // where,
-        group: ["CashRegister.id", "Recyclery.name"],
-        order: [
-            ["recyclery_id", "ASC"],
-            ["name", "ASC"],
-        ],
-    });
+  //TODO filter + COUNT sessions + last_session
+  const cashRegister = await CashRegister.findAll({
+    attributes: [
+      "*",
+      [Sequelize.col("Recyclery.name"), "store_name"],
+      [Sequelize.fn("COUNT", Sequelize.col("sessions.id")), "total_sessions"],
+      [
+        Sequelize.fn("MAX", Sequelize.col("sessions.createdAt")),
+        "last_session",
+      ],
+    ],
+    include: [
+      {
+        model: Recyclery,
+        attributes: [],
+        required: false,
+      },
+      {
+        model: CashSession,
+        as: "sessions",
+        attributes: [],
+        required: false,
+      },
+    ],
+    // where,
+    group: ["CashRegister.id", "Recyclery.name"],
+    order: [
+      ["recyclery_id", "ASC"],
+      ["name", "ASC"],
+    ],
+  });
 
-    res.json({
-        success: true,
-        data: cashRegister,
-    });
-}
+  res.json({
+    success: true,
+    data: cashRegister,
+  });
+};
 
 export const detailCaisse = async (req, res) => {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    const register = await CashRegister.findByPk(id, {
-        include: [
-            { model: CashSession, as: "sessions" },
-            { model: Recyclery },
-        ],
-    });
+  const register = await CashRegister.findByPk(id, {
+    attributes: [
+      "*",
+      [Sequelize.col("Recyclery.name"), "store_name"],
+      [Sequelize.fn("COUNT", Sequelize.col("sessions.id")), "total_sessions"],
+      [
+        Sequelize.fn("MAX", Sequelize.col("sessions.createdAt")),
+        "last_session",
+      ],
+    ],
+    include: [{ model: CashSession, as: "sessions" }, { model: Recyclery }],
+  });
 
-    if (!register) throw new createHttpError.NotFound("Caisse non trouvée");
+  if (!register) throw new createHttpError.NotFound("Caisse non trouvée");
 
-    res.json({
-        success: true,
-        data: register,
-    });
-}
+  res.json({
+    success: true,
+    data: register,
+  });
+};
 
 export const createCaisse = async (req, res) => {
-    const { name, store_id, is_active = true } = req.body;
+  const { name, store_id, is_active = true } = req.body;
 
-    // Validation
-    if (!name || !store_id)
-        throw new createHttpError.BadRequest(
-            "Le nom et le magasin sont obligatoires"
-        );
+  // Validation
+  if (!name || !store_id)
+    throw new createHttpError.BadRequest(
+      "Le nom et le magasin sont obligatoires"
+    );
 
-    // Vérifier que le magasin existe
-    const store = await Recyclery.findByPk(store_id);
-    if (!store) throw new createHttpError.NotFound("Magasin non trouvé");
+  // Vérifier que le magasin existe
+  const store = await Recyclery.findByPk(store_id);
+  if (!store) throw new createHttpError.NotFound("Magasin non trouvé");
 
-    // Vérifier qu'une caisse avec ce nom n'existe pas déjà dans ce magasin
-    const existingRegister = await CashRegister.findOne({
-        where: { [Op.and]: [{ name: name }, { recyclery_id: store_id }] },
-    });
+  // Vérifier qu'une caisse avec ce nom n'existe pas déjà dans ce magasin
+  const existingRegister = await CashRegister.findOne({
+    where: { [Op.and]: [{ name: name }, { recyclery_id: store_id }] },
+  });
 
-    if (existingRegister)
-        throw new createHttpError.Conflict(
-            "Une caisse avec ce nom existe déjà dans ce magasin"
-        );
+  if (existingRegister)
+    throw new createHttpError.Conflict(
+      "Une caisse avec ce nom existe déjà dans ce magasin"
+    );
 
-    // Créer la caisse
-    const result = await CashRegister.create({
-        name,
-        recyclery_id: store_id,
-    });
+  // Créer la caisse
+  const result = await CashRegister.create({
+    name,
+    recyclery_id: store_id,
+  });
 
-    res.status(201).json({
-        success: true,
-        message: "Caisse créée avec succès",
-        data: result,
-    });
-}
+  res.status(201).json({
+    success: true,
+    message: "Caisse créée avec succès",
+    data: result,
+  });
+};
 
 export const updateCaisse = async (req, res) => {
-    const { id } = req.params;
-    const { name, is_active } = req.body;
+  const { id } = req.params;
+  const { name, is_active } = req.body;
 
-    // Validation
-    if (!name) {
-        throw new createHttpError.BadRequest("Le nom est obligatoire");
-    }
+  // Validation
+  if (!name) {
+    throw new createHttpError.BadRequest("Le nom est obligatoire");
+  }
 
-    // Vérifier que la caisse existe
-    const existingRegister = await CashRegister.findByPk(id);
+  // Vérifier que la caisse existe
+  const existingRegister = await CashRegister.findByPk(id);
 
-    if (!existingRegister) {
-        throw new createHttpError.NotFound("Caisse non trouvée");
-    }
+  if (!existingRegister) {
+    throw new createHttpError.NotFound("Caisse non trouvée");
+  }
 
-    // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
-    const duplicateRegister = await CashRegister.findAll({
-        where: { [Op.and]: [{ name: name }, { recyclery_id: store_id }] },
-    });
+  // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
+  const duplicateRegister = await CashRegister.findAll({
+    where: { [Op.and]: [{ name: name }, { recyclery_id: store_id }] },
+  });
 
-    if (duplicateRegister) {
-        throw new createHttpError.Conflict(
-            "Une autre caisse avec ce nom existe déjà dans ce magasin"
-        );
-    }
+  if (duplicateRegister) {
+    throw new createHttpError.Conflict(
+      "Une autre caisse avec ce nom existe déjà dans ce magasin"
+    );
+  }
 
-    // Mettre à jour la caisse
-    existingRegister.name ??= name;
-    existingRegister.is_active ??= is_active;
-    await existingRegister.save();
+  // Mettre à jour la caisse
+  existingRegister.name ??= name;
+  existingRegister.is_active ??= is_active;
+  await existingRegister.save();
 
-    res.json({
-        success: true,
-        message: "Caisse mise à jour avec succès",
-        data: existingRegister,
-    });
-}
+  res.json({
+    success: true,
+    message: "Caisse mise à jour avec succès",
+    data: existingRegister,
+  });
+};
 
 export const deleteCaisse = async (req, res) => {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    // Vérifier que la caisse existe
-    const existingRegister = await CashRegister.findByPk(id);
+  // Vérifier que la caisse existe
+  const existingRegister = await CashRegister.findByPk(id);
 
-    if (!existingRegister) {
-        throw new createHttpError.NotFound("Caisse non trouvée");
-    }
+  if (!existingRegister) {
+    throw new createHttpError.NotFound("Caisse non trouvée");
+  }
 
-    // Vérifier qu'il n'y a pas de sessions ouvertes pour cette caisse
-    const openSessions = await CashSession.findAll({
-        where: { [Op.and]: [{ cash_register_id: id }, { status: "open" }] },
-    });
+  // Vérifier qu'il n'y a pas de sessions ouvertes pour cette caisse
+  const openSessions = await CashSession.findAll({
+    where: { [Op.and]: [{ cash_register_id: id }, { status: "open" }] },
+  });
 
-    if (openSessions[0]) {
-        throw new createHttpError[400](
-            "Impossible de supprimer une caisse avec des sessions ouvertes"
-        );
-    }
+  if (openSessions[0]) {
+    throw new createHttpError[400](
+      "Impossible de supprimer une caisse avec des sessions ouvertes"
+    );
+  }
 
-    await CashRegister.destroy({ where: { id } });
+  await CashRegister.destroy({ where: { id } });
 
-    res.json({
-        success: true,
-        message: "Caisse supprimée avec succès",
-    });
-}
+  res.json({
+    success: true,
+    message: "Caisse supprimée avec succès",
+  });
+};
 
 export const listCaissesMagasin = async (req, res) => {
-    const { store_id } = req.params;
-    req.query.store_id = store_id
-    listCaisses(req, res)
+  const { store_id } = req.params;
+  req.query.store_id = store_id;
+  listCaisses(req, res);
 
-    // const registers = await CashRegister.findAll({
-    //     attributes: [
-    //         "id",
-    //         "name",
-    //         "is_active",
-    //         "created_at",
-    //         [Sequelize.col("Recyclery.name"), "store_name"],
-    //         // COUNT(cs.id) as total_sessions
-    //         [
-    //             Sequelize.fn("COUNT", Sequelize.col("CashSessions.id")),
-    //             "total_sessions",
-    //         ],
-    //         // MAX(cs.opened_at) as last_session
-    //         [
-    //             Sequelize.fn("MAX", Sequelize.col("CashSessions.opened_at")),
-    //             "last_session",
-    //         ],
-    //     ],
-    //     include: [
-    //         {
-    //             model: Recyclery,
-    //             attributes: [],
-    //             required: false,
-    //         },
-    //         {
-    //             model: CashSession,
-    //             attributes: [],
-    //             required: false,
-    //         },
-    //     ],
-    //     where: { [Op.and]: [{ recyclery_id: store_id }, { is_active: true }] },
-    // });
+  // const registers = await CashRegister.findAll({
+  //     attributes: [
+  //         "id",
+  //         "name",
+  //         "is_active",
+  //         "created_at",
+  //         [Sequelize.col("Recyclery.name"), "store_name"],
+  //         // COUNT(cs.id) as total_sessions
+  //         [
+  //             Sequelize.fn("COUNT", Sequelize.col("CashSessions.id")),
+  //             "total_sessions",
+  //         ],
+  //         // MAX(cs.opened_at) as last_session
+  //         [
+  //             Sequelize.fn("MAX", Sequelize.col("CashSessions.opened_at")),
+  //             "last_session",
+  //         ],
+  //     ],
+  //     include: [
+  //         {
+  //             model: Recyclery,
+  //             attributes: [],
+  //             required: false,
+  //         },
+  //         {
+  //             model: CashSession,
+  //             attributes: [],
+  //             required: false,
+  //         },
+  //     ],
+  //     where: { [Op.and]: [{ recyclery_id: store_id }, { is_active: true }] },
+  // });
 
-    // res.json({
-    //     success: true,
-    //     data: registers,
-    // });
-}
+  // res.json({
+  //     success: true,
+  //     data: registers,
+  // });
+};

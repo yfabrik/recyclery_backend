@@ -9,6 +9,9 @@ import {
 } from "../../controllers/users.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
+import db from "../../models/index.js";
+import { fn, Op } from "sequelize";
+const { User } = db;
 
 export const router = Router();
 router.use(authenticateToken);
@@ -54,33 +57,29 @@ router.get("/roles", async (req, res) => {
 });
 
 // Obtenir les statistiques des utilisateurs
-router.get("/stats", async (req, res) => {
-  try {
-    await database.connect();
-
+router.get(
+  "/stats",
+  asyncHandler(async (req, res) => {
+    const totalUsers = await User.count();
     // Statistiques générales des utilisateurs
-    const totalUsers = await database.query(
-      "SELECT COUNT(*) as count FROM users"
-    );
-    const usersByRole = await database.query(`
-      SELECT role, COUNT(*) as count 
-      FROM users 
-      GROUP BY role
-    `);
+
+    const usersByRole = await User.findAll({
+      attributes: ["role", [fn("COUNT", col("*")), "count"]],
+      group: ["role"],
+      raw: true,
+    });
 
     // Statistiques des connexions récentes (dernières 30 jours)
-    const recentLogins = await database.query(`
-      SELECT COUNT(*) as count 
-      FROM users 
-      WHERE last_login >= datetime('now', '-30 days')
-    `);
+    const recentLogins = await User.count({
+      where: {
+        last_login: { [Op.gte]: new Date(new Date().setDate(1)) },
+      },
+    });
 
     // Statistiques des employés actifs
-    const activeEmployees = await database.query(`
-      SELECT COUNT(*) as count 
-      FROM users 
-      WHERE role IN ('employee', 'manager', 'admin')
-    `);
+    const activeEmployees = await User.count({
+      where: { role: { [Op.in]: ["employee", "manager", "admin"] } },
+    });
 
     res.json({
       success: true,
@@ -91,12 +90,5 @@ router.get("/stats", async (req, res) => {
         activeEmployees: activeEmployees[0]?.count || 0,
       },
     });
-  } catch (error) {
-    console.error("Erreur récupération des statistiques:", error);
-    res.status(500).json({
-      success: false,
-      message: "Erreur lors de la récupération des statistiques",
-      error: error.message,
-    });
-  }
-});
+  })
+);

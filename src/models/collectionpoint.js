@@ -2,9 +2,11 @@
 import { Model } from "sequelize";
 export default (sequelize, DataTypes) => {
   class CollectionPoint extends Model {
-
     static associate(models) {
       this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
+      this.hasMany(models.CollectionPoint, {
+        foreignKey: "collection_point_id",
+      });
     }
   }
   CollectionPoint.init(
@@ -19,7 +21,6 @@ export default (sequelize, DataTypes) => {
       type: { type: DataTypes.STRING, defaultValue: "standard" },
       notes: DataTypes.TEXT,
       is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
-
     },
     {
       sequelize,
