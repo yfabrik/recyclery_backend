@@ -17,8 +17,9 @@ router.get(
 
     const sales = await SalesTransaction.findAll({where,include:[{
       model:User
-    }]
-  ,order:["createdAt","DESC"]});
+    }]  ,
+    order:[["createdAt","DESC"]]
+});
 
     res.json({ sales });
   })

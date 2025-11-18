@@ -9,7 +9,7 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.belongsTo(models.CollectionPoint, { foreignKey: "collection_point_id" });
-      this.belongsTo(models.User, { foreignKey: "employee_id" });
+      this.belongsToMany(models.User, { foreignKey: "schedule_id",through:"user_schedule" });
       this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
       this.hasOne(models.CollectionReceipt, { foreignKey: "receipt_number" })
     }

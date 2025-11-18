@@ -4,7 +4,7 @@ export default (sequelize, DataTypes) => {
   class CollectionPoint extends Model {
     static associate(models) {
       this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
-      this.hasMany(models.CollectionPoint, {
+      this.hasMany(models.CollectionSchedule, {
         foreignKey: "collection_point_id",
       });
     }

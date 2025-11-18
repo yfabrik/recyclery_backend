@@ -30,22 +30,6 @@ router.get(
       limit = 50,
     } = req.query;
 
-    let query = `
-    SELECT 
-      wd.id, wd.disposal_number, wd.disposal_date, wd.disposal_type,
-      wd.weight_kg, wd.volume_m3, wd.transport_method, wd.transport_company,
-      wd.transport_cost, wd.notes, wd.created_at, wd.updated_at,
-      c.name AS category_name,
-      sc.name AS subcategory_name,
-      eo.name AS eco_organism_name,
-      u.username AS created_by_name
-    FROM waste_disposals wd
-    LEFT JOIN categories c ON wd.category_id = c.id
-    LEFT JOIN categories sc ON wd.subcategory_id = sc.id
-    LEFT JOIN eco_organisms eo ON wd.eco_organism_id = eo.id
-    LEFT JOIN users u ON wd.created_by = u.id
-    WHERE 1=1
-  `;
     const where = {};
     if (category_id) where.category_id = category_id;
     if (subcategory_id) where.subcategory_id = subcategory_id;
@@ -74,7 +58,7 @@ router.get(
         { model: EcoOrganism },
         { model: User },
       ],
-      order: ["disposal_date", "DESC"],
+      order: [["disposal_date", "DESC"]],
       offset,
       limit,
     });
@@ -371,7 +355,7 @@ router.get(
       ],
       where,
       include: [{ model: Category, as: "categorie" }],
-      order: ["total_weight_kg", "DESC"],
+      order: [["total_weight_kg", "DESC"]],
       group: ["id", "categorie.name"],
     });
 

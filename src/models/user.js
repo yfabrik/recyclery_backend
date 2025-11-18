@@ -6,10 +6,10 @@ export default (sequelize, DataTypes) => {
       this.hasMany(models.Donation, { foreignKey: "received_by" });
       // this.hasMany(models.Collection, { foreignKey: "assigned_to" });
       this.hasMany(models.SalesTransaction, { foreignKey: "sold_by" });
-      this.hasMany(models.CollectionSchedule, { foreignKey: "employee_id" });
+      this.belongsToMany(models.CollectionSchedule, { foreignKey: "employee_id", through: "user_schedule" });
       this.hasMany(models.CollectionReceipt, { foreignKey: "processed_by" });
       this.hasMany(models.LabeledItem, { foreignKey: "created_by" });
-      this.hasMany(models.Task, { foreignKey: "assigned_to" });
+      this.belongsToMany(models.Task, { through: "task_user" });
 
       this.belongsToMany(models.Recyclery, {
         through: "employee_recyclery",
@@ -25,7 +25,7 @@ export default (sequelize, DataTypes) => {
   User.init(
     {
       username: DataTypes.STRING,
-      email: {type: DataTypes.STRING,unique:true,validate:{isEmail:true}},
+      email: { type: DataTypes.STRING, unique: true, validate: { isEmail: true } },
       password: DataTypes.STRING,
       role: {
         type: DataTypes.STRING, //TODO foreignkey role

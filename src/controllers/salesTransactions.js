@@ -14,13 +14,20 @@ export const listTransactions = async (req, res) => {
     } = req.query;
     const where = {};
     if (store_id) where.store_id = store_id;
-    if (date_from && date_to)
-        where.createdAt = { [Op.between]: [date_from, date_to] };
+    if (date_from) {
+        where.createdAt = {
+            ...(where.createdAt || {}),
+            [Op.gte]: date_from,
+        };
+    }
+    if (date_to) {
+        where.createdAt = { ...(where.createdAt || {}), [Op.lte]: date_to };
+    }
 
     const transactions = await SalesTransaction.findAll({
-        // where,
+        where,
         include: [{ model: Recyclery }, { model: User }],
-        // order: ["createdAt", "DESC"],
+        order: [["createdAt", "DESC"]],
     });
 
     res.json({

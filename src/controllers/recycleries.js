@@ -5,7 +5,7 @@ const { Recyclery, CashRegister, User } = db;
 
 export const listRecycleries = async (req, res) => {
   const recycleries = await Recyclery.findAll({
-    // order: ["name", "ASC"],
+    order: [["name", "ASC"]],
     include: [
       { model: CashRegister, as: "caisses" },
       { model: User, as: "manager" },

@@ -21,7 +21,7 @@ router.get(
     const collections = await CollectionSchedule.findAll({
       where,
       include: [{ model: User }],
-      order: ["scheduled_date", "ASC"],
+      order: [["scheduled_date", "ASC"]],
     });
 
     res.json({ collections });

@@ -26,7 +26,7 @@ router.get(
         ),
       ],
       include: [{ model: User }],
-      order: ["createdAt", "DESC"],
+      order: [["createdAt", "DESC"]],
     });
 
     res.json({ donations });

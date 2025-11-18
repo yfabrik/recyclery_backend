@@ -32,7 +32,7 @@ router.get(
     const { collectionPointId } = req.params;
     const presence_hours = await CollectionPointPresence.findByPk(
       collectionPointId,
-      { include: [{ model: CollectionPoint }], order: ["day_of_week"] }
+      { include: [{ model: CollectionPoint }], order: [["day_of_week"]] }
     );
 
     res.json({
@@ -571,7 +571,7 @@ router.get("/debug-tasks/:date",
 
 
     const { date } = req.params;
-    const tasks = await TaskSchedule.findAll({include:[{model:Task}],where:{scheduled_task:date},order:["start_time"]})
+    const tasks = await TaskSchedule.findAll({include:[{model:Task}],where:{scheduled_task:date},order:[["start_time"]]})
     // Vérifier toutes les tâches pour cette date
     
 
