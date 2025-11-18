@@ -1,12 +1,12 @@
 import { beforeAll, expect, jest } from "@jest/globals";
 import db from "../../src/models";
-import { createCollectionSchedule, deleteCollectionSchedule, detailBSD, generateBSD } from "../../src/controllers/CollectionSchedule";
+import { addUserToSchedule, createCollectionSchedule, deleteCollectionSchedule, detailBSD, generateBSD, removeUserFromSchedule } from "../../src/controllers/CollectionSchedule";
 const { User, CollectionPoint } = db
 
 beforeAll(async () => {
     await db.sequelize.sync({ force: true });
 
-    await User.create({ email: "a@example.com" })
+    await User.create({ email: "a@example.com" ,role:"employee"})
     await CollectionPoint.create({
         name: "a",
         address: "ailleur",
@@ -93,6 +93,72 @@ describe("collection schedule controller functions", () => {
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 receipt: expect.any(Object),
+                success: true
+            }))
+
+    });
+    it("should add user 1 to schedule 1", async () => {
+
+        const req = {
+            query: {},
+            user: { id: 1, role: "admin" },
+            params: { scheduleId: 1 },
+            body: { employee_id: 1 }
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        await addUserToSchedule(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                success: true
+            }))
+
+    });
+    it("should fail to add user 1 to schedule 1", async () => {
+
+        const req = {
+            query: {},
+            user: { id: 1, role: "admin" },
+            params: { scheduleId: 1 },
+            body: { employee_id: 1 }
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        await addUserToSchedule(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                success: false
+            }))
+
+    });
+    it("should remove user 1 from schedule 1", async () => {
+
+        const req = {
+            query: {},
+            user: { id: 1, role: "admin" },
+            params: { scheduleId: 1,employee_id: 1 },
+
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        await removeUserFromSchedule(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
                 success: true
             }))
 
