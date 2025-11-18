@@ -7,6 +7,7 @@ export default (sequelize, DataTypes) => {
       this.hasMany(models.LabeledItem, { foreignKey: "recyclery_id" });
       this.hasMany(models.Donation, { foreignKey: "recyclery_id" });
       this.hasMany(models.CollectionSchedule, { foreignKey: "recyclery_id" });
+      this.hasMany(models.StoreHours, { foreignKey: "store_id", as: "horaires" })
 
       this.belongsToMany(models.User, {
         through: "employee_recyclery",

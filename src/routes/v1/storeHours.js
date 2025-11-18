@@ -4,212 +4,26 @@ import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 import { Op, where } from "sequelize";
 import salestransaction from "../../models/salestransaction.js";
+import { addHoraire, horairesMagasin, listHoraires, removeHoraires, updateHoraire } from "../../controllers/storeHours.js";
 const { LabeledItem, Category, User, SalesTransaction, Store, Refund } = db;
 
 export const router = Router();
 router.use(authenticateToken);
 
 // Récupérer tous les horaires des magasins
-router.get('/', authenticateToken, async (req, res) => {
-
-    const storeHours = await database.query(`
-      SELECT sh.*, s.name as store_name
-      FROM store_hours sh
-      LEFT JOIN stores s ON sh.store_id = s.id
-      ORDER BY s.name, sh.day_of_week
-    `);
-    
-    res.json({
-      success: true,
-      storeHours
-    });
-    
- 
-});
+router.get('/', authenticateToken, asyncHandler(listHoraires));
 
 // Récupérer les horaires d'un magasin spécifique
-router.get('/store/:storeId', authenticateToken, async (req, res) => {
-
-    
-    const { storeId } = req.params;
-    
-    const storeHours = await database.query(`
-      SELECT sh.*, s.name as store_name
-      FROM store_hours sh
-      LEFT JOIN stores s ON sh.store_id = s.id
-      WHERE sh.store_id = ?
-      ORDER BY sh.day_of_week
-    `, [storeId]);
-    
-    res.json({
-      success: true,
-      storeHours
-    });
-    
-
-});
+router.get('/store/:storeId', authenticateToken, asyncHandler(horairesMagasin));
 
 // Créer de nouveaux horaires
-router.post('/', authenticateToken, async (req, res) => {
-
-    
-    console.log('Requête store-hours reçue:', req.body);
-    
-    const {
-      store_id,
-      day_of_week,
-      time_slot_name,
-      is_open,
-      open_time,
-      close_time,
-      is_24h,
-      notes
-    } = req.body;
-    
-    // Validation des champs requis
-    if (!store_id || !day_of_week) {
-      console.log('Erreur validation: store_id ou day_of_week manquant');
-      return res.status(400).json({
-        success: false,
-        message: 'ID du magasin et jour de la semaine sont obligatoires'
-      });
-    }
-    
-    // Vérifier si des horaires existent déjà pour ce magasin, ce jour et ce créneau
-    const existingHours = await database.query(
-      'SELECT id FROM store_hours WHERE store_id = ? AND day_of_week = ? AND time_slot_name = ?',
-      [store_id, day_of_week, time_slot_name || 'Ouverture']
-    );
-    
-    if (existingHours.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Des horaires existent déjà pour ce magasin, ce jour et ce créneau'
-      });
-    }
-    
-    const query = `
-      INSERT INTO store_hours (
-        store_id, day_of_week, time_slot_name, is_open, open_time, close_time, 
-        is_24h, notes, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-    `;
-    
-    const params = [
-      store_id,
-      day_of_week,
-      time_slot_name || 'Ouverture',
-      is_open === true || is_open === 'true' ? 1 : 0,
-      is_open && !is_24h ? open_time : null,
-      is_open && !is_24h ? close_time : null,
-      is_24h === true || is_24h === 'true' ? 1 : 0,
-      notes || ''
-    ];
-    
-    console.log('Paramètres SQL:', params);
-    
-    const result = await database.run(query, params);
-    
-    res.json({
-      success: true,
-      message: 'Horaires créés avec succès',
-      id: result.lastID
-    });
-    
- 
-});
+router.post('/', authenticateToken, asyncHandler(addHoraire));
 
 // Mettre à jour des horaires
-router.put('/:id', authenticateToken, async (req, res) => {
- 
-    const { id } = req.params;
-    const {
-      store_id,
-      day_of_week,
-      time_slot_name,
-      is_open,
-      open_time,
-      close_time,
-      is_24h,
-      notes
-    } = req.body;
-    
-    // Vérifier que les horaires existent
-    const existingHours = await database.query('SELECT * FROM store_hours WHERE id = ?', [id]);
-    if (existingHours.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horaires non trouvés'
-      });
-    }
-    
-    // Vérifier s'il n'y a pas de conflit avec d'autres horaires du même magasin, jour et créneau
-    const conflictHours = await database.query(
-      'SELECT id FROM store_hours WHERE store_id = ? AND day_of_week = ? AND time_slot_name = ? AND id != ?',
-      [store_id, day_of_week, time_slot_name || 'Ouverture', id]
-    );
-    
-    if (conflictHours.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Des horaires existent déjà pour ce magasin, ce jour et ce créneau'
-      });
-    }
-    
-    const query = `
-      UPDATE store_hours SET
-        store_id = ?, day_of_week = ?, time_slot_name = ?, is_open = ?, 
-        open_time = ?, close_time = ?, is_24h = ?, 
-        notes = ?, updated_at = datetime('now')
-      WHERE id = ?
-    `;
-    
-    const params = [
-      store_id,
-      day_of_week,
-      time_slot_name || 'Ouverture',
-      is_open ? 1 : 0,
-      is_open && !is_24h ? open_time : null,
-      is_open && !is_24h ? close_time : null,
-      is_24h ? 1 : 0,
-      notes || '',
-      id
-    ];
-    
-    await database.run(query, params);
-    
-    res.json({
-      success: true,
-      message: 'Horaires mis à jour avec succès'
-    });
-    
- 
-});
+router.put('/:id', authenticateToken, asyncHandler(updateHoraire));
 
 // Supprimer des horaires
-router.delete('/:id', authenticateToken, async (req, res) => {
- 
-    
-    const { id } = req.params;
-    
-    // Vérifier que les horaires existent
-    const existingHours = await database.query('SELECT * FROM store_hours WHERE id = ?', [id]);
-    if (existingHours.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horaires non trouvés'
-      });
-    }
-    
-    await database.run('DELETE FROM store_hours WHERE id = ?', [id]);
-    
-    res.json({
-      success: true,
-      message: 'Horaires supprimés avec succès'
-    });
-    
-  
-});
+router.delete('/:id', authenticateToken,asyncHandler(removeHoraires));
 
 // Fonction pour synchroniser les horaires d'ouverture avec le planning
 const syncStoreHoursToPlanning = async (storeId, startDate, endDate) => {

@@ -1,7 +1,7 @@
 import { Op } from "sequelize";
 import db from "../models";
 
-const { Arrival, Category, User, CollectionPoints: CollectionPoint } = db;
+const { Arrival, Category, User, CollectionPoint } = db;
 
 export const listArrivals = async (req, res) => {
   const { date_from, date_to, category_id, source_type, status } = req.query;
@@ -24,10 +24,10 @@ export const listArrivals = async (req, res) => {
     include: [
       { model: Category, as: "categorie" },
       { model: Category, as: "subcategorie" },
-      // { model: User, as: "processed_by" },
-      // { model: CollectionPoint },
+      { model: User },
+      { model: CollectionPoint },
     ],
-    // order: [[Arrival, "createdAt", "DESC"]],
+    order: [["createdAt", "DESC"]],
   });
 
   res.json({
@@ -103,9 +103,9 @@ export const createArrival = async (req, res) => {
     arrival_time,
     source_type,
     source_details,
-    // collection_point_id,
-    // collection_point_name,
-    // collection_point_address,
+    collection_point_id,
+    collection_point_name,
+    collection_point_address,
     volunteer_donation,
     house_clearance,
     notes,

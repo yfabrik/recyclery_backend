@@ -2,7 +2,7 @@ import { beforeAll, jest } from "@jest/globals";
 import db from "../../src/models";
 
 import { createArrival, listArrivals } from "../../src/controllers/arrivals";
-const { Recyclery, Category, User } = db
+const { Recyclery, Category, User, CollectionPoint } = db
 
 beforeAll(async () => {
     await db.sequelize.sync({ force: true });
@@ -18,6 +18,12 @@ beforeAll(async () => {
     await Category.create({ name: "a" })
     await Category.create({ name: "b" })
     await User.create({ email: "a@example.com" })
+    await CollectionPoint.create({
+        name: "a",
+        address: "ailleur",
+        city: "orgelet",
+        postal_code: "39270",
+    })
 
 })
 

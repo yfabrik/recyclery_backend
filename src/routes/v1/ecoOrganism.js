@@ -2,9 +2,8 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-import createHttpError from "http-errors";
-import { fn, Op } from "sequelize";
-import { add } from "winston";
+import { Op } from "sequelize";
+
 
 const { EcoOrganism, Sequelize, WasteDisposal } = db;
 export const router = Router();

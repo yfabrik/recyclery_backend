@@ -15,10 +15,10 @@ export const listTasks = async (req, res) => {
             { description: { [Op.like]: searchTerm } },
         ];
 
-    const tasks = await Task.findAll({ 
-        where, 
-        order:[ ["createdAt", "DESC"]]
-     });
+    const tasks = await Task.findAll({
+        where,
+        order: [["createdAt", "DESC"]]
+    });
 
     // Parser les champs JSON
     const parsedTasks = tasks.map((task) => ({
@@ -229,7 +229,7 @@ export const addUserToTask = async (req, res) => {
         });
     }
 
-
+    //FIXME
     // if (task.hasUser(employee))
     //     return res.status(400).json({
     //         success: false,

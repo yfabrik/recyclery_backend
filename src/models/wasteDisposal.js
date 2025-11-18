@@ -16,7 +16,6 @@ export default (sequelize, DataTypes) => {
         foreignKey: "eco_organism_id",
       });
       this.belongsTo(models.User, {
-        as: "created_by_user",
         foreignKey: "created_by",
       });
     }

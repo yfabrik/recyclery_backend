@@ -1,4 +1,4 @@
-import { Op, fn, col, literal } from "sequelize";
+import {  fn, col } from "sequelize";
 import db from "../models/index.js";
 import { listCaisses } from "./cashRegister.js";
 const {
@@ -47,7 +47,7 @@ export const listCashSessions = async (req, res) => {
       },
     ],
     group: ["CashSession.id"],
-    // order: [["opened_at", "DESC"]],
+    order: [["createdAt", "DESC"]],
   });
 
   res.json({ success: true, sessions });
@@ -168,7 +168,7 @@ export const getSessionById = async (req, res) => {
         // attributes: ["name", "barcode"],
       },
     ],
-    // order: [[SalesTransaction,"createdAt", "DESC"]],
+    order: [["createdAt", "DESC"]],
   });
 
   res.json({ success: true, session: { ...session.toJSON(), transactions } });

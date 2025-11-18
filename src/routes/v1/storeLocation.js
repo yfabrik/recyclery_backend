@@ -2,10 +2,9 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-import { Op, where } from "sequelize";
-import salestransaction from "../../models/salestransaction.js";
+
 import { detailRecyclerie, listRecycleries } from "../../controllers/recycleries.js";
-const { LabeledItem, Category, User, SalesTransaction, Store, Refund } = db;
+const { } = db;
 
 export const router = Router();
 

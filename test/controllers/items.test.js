@@ -1,7 +1,5 @@
 import { beforeAll, jest } from "@jest/globals";
 import db from "../../src/models";
-
-import { createArrival, listArrivals } from "../../src/controllers/arrivals";
 import { createLabeledItem, deleteLabeledItem, listLabeledItem } from "../../src/controllers/items";
 const { Recyclery, Category, User } = db
 

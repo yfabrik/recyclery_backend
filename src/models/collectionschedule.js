@@ -11,7 +11,7 @@ export default (sequelize, DataTypes) => {
       this.belongsTo(models.CollectionPoint, { foreignKey: "collection_point_id" });
       this.belongsToMany(models.User, { foreignKey: "schedule_id",through:"user_schedule" });
       this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
-      this.hasOne(models.CollectionReceipt, { foreignKey: "receipt_number" })
+      this.hasOne(models.CollectionReceipt, { foreignKey: "schedule_id" })
     }
   }
 

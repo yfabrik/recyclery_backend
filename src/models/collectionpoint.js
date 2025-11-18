@@ -7,6 +7,7 @@ export default (sequelize, DataTypes) => {
       this.hasMany(models.CollectionSchedule, {
         foreignKey: "collection_point_id",
       });
+      this.hasMany(models.Arrival, { foreignKey: "collection_point_id" })
     }
   }
   CollectionPoint.init(

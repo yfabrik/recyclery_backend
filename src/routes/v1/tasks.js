@@ -50,5 +50,4 @@ router.post("/:taskId/employees", authenticateToken, asyncHandler(addUserToTask)
 router.delete(
   "/:taskId/employees/:employeeId",
   authenticateToken,
-  asyncHandler(removeUserFromTask
-  ))
+  asyncHandler(removeUserFromTask))

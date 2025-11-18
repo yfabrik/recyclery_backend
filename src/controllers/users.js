@@ -70,8 +70,8 @@ export const createUser = async (req, res) => {
     password,
     role,
     recyclery_id,
-    // phone,
-    // contract_hours,
+    phone,
+    contract_hours,
   });
 
   res.json({
