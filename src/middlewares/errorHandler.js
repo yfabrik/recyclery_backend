@@ -4,7 +4,7 @@ import {
   UniqueConstraintError,
   DatabaseError,
 } from "sequelize";
-import logger from "../services/logger";
+import logger from "../services/logger.js";
 import jwt from "jsonwebtoken";
 const { JsonWebTokenError, NotBeforeError, TokenExpiredError } = jwt
 

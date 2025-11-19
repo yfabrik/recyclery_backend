@@ -1,4 +1,5 @@
 import createHttpError from "http-errors";
+import jwt from "jsonwebtoken";
 
 export const authenticateToken = async (req, res, next) => {
   try {

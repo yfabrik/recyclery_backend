@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import jwt from "jsonwebtoken";
 import db from "../models/index.js";
 import bcrypt from "bcryptjs";

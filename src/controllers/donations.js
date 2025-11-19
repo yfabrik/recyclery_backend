@@ -1,6 +1,6 @@
 import createHttpError from "http-errors";
 import { col, fn } from "sequelize";
-import db from "../models";
+import db from "../models/index.js";
 
 
 const { Donation, User } = db

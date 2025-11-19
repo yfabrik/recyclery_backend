@@ -1,4 +1,4 @@
-import db from "../models";
+import db from "../models/index.js";
 
 const { Refund, Recyclery, User, SalesTransaction } = db
 

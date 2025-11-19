@@ -1,6 +1,9 @@
 "use strict";
 import { Model } from "sequelize";
 export default (sequelize, DataTypes) => {
+  /**
+   * @typedef {import("sequelize").Model<ArrivalAttributes, ArrivalCreationAttributes>} Arrival
+   */
   class Arrival extends Model {
     /**
      * Helper method for defining associations.
@@ -8,8 +11,14 @@ export default (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      this.belongsTo(models.Category, { foreignKey: "category_id" ,as:"categorie"});
-      this.belongsTo(models.Category, { foreignKey: "subcategory_id",as:"subcategorie" });
+      this.belongsTo(models.Category, {
+        foreignKey: "category_id",
+        as: "categorie",
+      });
+      this.belongsTo(models.Category, {
+        foreignKey: "subcategory_id",
+        as: "subcategorie",
+      });
       this.belongsTo(models.CollectionPoint, {
         foreignKey: "collection_point_id",
       });

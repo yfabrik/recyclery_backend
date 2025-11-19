@@ -16,8 +16,9 @@ app.use(express.json());
 // app.use("/api/auth", (await import("./routes/auth.js")).router);
 
 import { router } from "./routes/v1/index.js";
-import {errorHandler} from "./middlewares/errorHandler.js";
-app.use(router);
+import { errorHandler } from "./middlewares/errorHandler.js";
+import createHttpError from "http-errors";
+app.use("/api", router);
 
 // Gestion des routes non trouvées
 app.use("*splat", (req, res, next) => {
@@ -25,7 +26,8 @@ app.use("*splat", (req, res, next) => {
 });
 app.use(errorHandler);
 
-app.listen(3000, () => {
+app.listen(5000, () => {
   db.sequelize.sync({ force: true });
-  console.log(`server started on http://0.0.0.0:3000`);
+
+  console.log(`server started on http://0.0.0.0:5000`);
 });
