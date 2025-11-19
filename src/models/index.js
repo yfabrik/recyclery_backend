@@ -16,7 +16,11 @@ const configModule = await import(`../../config/config.json`, {
 });
 const config = configModule.default[env];
 
+
+
+/** @type {DB} */
 const db = {};
+
 let sequelize;
 
 if (config.use_env_variable) {
