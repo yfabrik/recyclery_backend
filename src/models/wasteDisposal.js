@@ -1,7 +1,13 @@
 "use strict";
 import { Model } from "sequelize";
+/**
+ * @param {import("sequelize").DataTypes} DataTypes
+ */
 export default (sequelize, DataTypes) => {
   class WasteDisposal extends Model {
+    /**
+     *@param {models} models
+     */
     static associate(models) {
       this.belongsTo(models.Category, {
         as: "category",

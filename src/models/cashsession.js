@@ -1,8 +1,13 @@
 "use strict";
 import { Model } from "sequelize";
+/**
+ * @param {import("sequelize").DataTypes} DataTypes
+ */
 export default (sequelize, DataTypes) => {
   class CashSession extends Model {
-
+/**
+     *@param {models} models
+     */
     static associate(models) {
       this.belongsTo(models.CashRegister, { foreignKey: "cash_register_id" });
       this.hasMany(models.SalesTransaction, { foreignKey: "sale_id" });

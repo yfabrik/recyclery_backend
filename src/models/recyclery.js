@@ -1,8 +1,13 @@
 "use strict";
 import { Model } from "sequelize";
+/**
+ * @param {import("sequelize").DataTypes} DataTypes
+ */
 export default (sequelize, DataTypes) => {
   class Recyclery extends Model {
-
+/**
+     *@param {models} models
+     */
     static associate(models) {
       this.hasMany(models.LabeledItem, { foreignKey: "recyclery_id" });
       this.hasMany(models.Donation, { foreignKey: "recyclery_id" });

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-const { SalesTransaction, SaleItem, Item ,User} = db;
+const { SalesTransaction, SaleItem, Item, User } = db;
 
 export const router = Router();
 router.use(authenticateToken);
@@ -15,11 +15,13 @@ router.get(
     const where = {};
     if (recyclery_id) where.recyclery_id = recyclery_id;
 
-    const sales = await SalesTransaction.findAll({where,include:[{
-      model:User
-    }]  ,
-    order:[["createdAt","DESC"]]
-});
+    const sales = await SalesTransaction.findAll({
+      where,
+      include: [
+        { model: User }
+      ],
+      order: [["createdAt", "DESC"]]
+    });
 
     res.json({ sales });
   })
@@ -56,7 +58,7 @@ router.post(
           total_amount,
           payment_method,
           created_by: req.user.id,
-          store_id:recyclery_id,
+          store_id: recyclery_id,
         },
         { transaction }
       );

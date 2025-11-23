@@ -1,7 +1,13 @@
 "use strict";
 import { Model } from "sequelize";
+/**
+ * @param {import("sequelize").DataTypes} DataTypes
+ */
 export default (sequelize, DataTypes) => {
   class CollectionPointPresence extends Model {
+    /**
+     *@param {models} models
+     */
     static associate(models) {
       this.belongsTo(models.CollectionPoint, {
         foreignKey: "collection_point_id",

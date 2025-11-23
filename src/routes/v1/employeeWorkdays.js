@@ -2,19 +2,16 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
+import db from "../../models/index.js";
 
+const { EmployeeWorkdays, User } = db
 export const router = Router();
 // Obtenir tous les jours de travail
 router.get(
   "/",
   authenticateToken,
   asyncHandler(async (req, res) => {
-    const workdays = await database.query(`
-      SELECT ew.*, u.username as employee_name, u.email as employee_email
-      FROM employee_workdays ew
-      LEFT JOIN users u ON ew.employee_id = u.id
-      ORDER BY u.username, ew.day_of_week, ew.time_slot
-    `);
+    const workdays = await EmployeeWorkdays.findAll({ include: [{ model: User }], order: [[User, "username"], ["day_of_week"], ["time_slot"]] })
 
     res.json({
       success: true,
@@ -30,27 +27,28 @@ router.get(
   asyncHandler(async (req, res) => {
     const { employeeId } = req.params;
 
-    const workdays = await database.query(
-      `
-      SELECT * FROM employee_workdays 
-      WHERE employee_id = ?
-      ORDER BY 
-        CASE day_of_week 
-          WHEN 'monday' THEN 1
-          WHEN 'tuesday' THEN 2
-          WHEN 'wednesday' THEN 3
-          WHEN 'thursday' THEN 4
-          WHEN 'friday' THEN 5
-          WHEN 'saturday' THEN 6
-          WHEN 'sunday' THEN 7
-        END,
-        CASE time_slot
-          WHEN 'morning' THEN 1
-          WHEN 'afternoon' THEN 2
-        END
-    `,
-      [employeeId]
-    );
+    const workdays = await EmployeeWorkdays.findAll({ where: { employee_id: employeeId } })
+    // const workdays = await database.query(
+    //   `
+    //   SELECT * FROM employee_workdays 
+    //   WHERE employee_id = ?
+    //   ORDER BY 
+    //     CASE day_of_week 
+    //       WHEN 'monday' THEN 1
+    //       WHEN 'tuesday' THEN 2
+    //       WHEN 'wednesday' THEN 3
+    //       WHEN 'thursday' THEN 4
+    //       WHEN 'friday' THEN 5
+    //       WHEN 'saturday' THEN 6
+    //       WHEN 'sunday' THEN 7
+    //     END,
+    //     CASE time_slot
+    //       WHEN 'morning' THEN 1
+    //       WHEN 'afternoon' THEN 2
+    //     END
+    // `,
+    //   [employeeId]
+    // );
 
     res.json({
       success: true,
@@ -75,20 +73,18 @@ router.post(
     }
 
     // Vérifier que l'employé existe
-    const employee = await database.query("SELECT id FROM users WHERE id = ?", [
-      employeeId,
-    ]);
-    if (employee.length === 0) {
+    const employee = await User.findByPk(employeeId)
+
+
+    if (!employee) {
       return res.status(404).json({
         success: false,
         error: "Employé non trouvé",
       });
     }
-
+    await employee.removeEmployeeWorkdays()
     // Supprimer les anciens jours de travail de cet employé
-    await database.run("DELETE FROM employee_workdays WHERE employee_id = ?", [
-      employeeId,
-    ]);
+
 
     // Insérer les nouveaux jours de travail
     const validDays = [
@@ -118,24 +114,16 @@ router.post(
       ) {
         continue; // Ignorer les entrées invalides
       }
+      await EmployeeWorkdays.create({
+        employeeId,
+        day_of_week,
+        time_slot,
+        is_working: is_working ? 1 : 0,
+        start_time,
+        end_time,
+        notes
+      })
 
-      await database.run(
-        `
-        INSERT INTO employee_workdays (
-          employee_id, day_of_week, time_slot, is_working, 
-          start_time, end_time, notes, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-      `,
-        [
-          employeeId,
-          day_of_week,
-          time_slot,
-          is_working ? 1 : 0,
-          start_time || null,
-          end_time || null,
-          notes || null,
-        ]
-      );
     }
 
     res.json({
@@ -168,38 +156,29 @@ router.post(
     }
 
     // Vérifier que l'employé existe
-    const employee = await database.query("SELECT id FROM users WHERE id = ?", [
-      employee_id,
-    ]);
-    if (employee.length === 0) {
+    const employee = await User.findByPk(employeeId)
+
+    if (!employee) {
       return res.status(404).json({
         success: false,
         error: "Employé non trouvé",
       });
     }
+    const result = await EmployeeWorkdays.create({
+      employee_id,
+      day_of_week,
+      time_slot,
+      is_working: is_working ? 1 : 0,
+      start_time,
+      end_time,
+      notes,
+    })
 
-    const result = await database.run(
-      `
-      INSERT INTO employee_workdays (
-        employee_id, day_of_week, time_slot, is_working, 
-        start_time, end_time, notes, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-    `,
-      [
-        employee_id,
-        day_of_week,
-        time_slot,
-        is_working ? 1 : 0,
-        start_time || null,
-        end_time || null,
-        notes || null,
-      ]
-    );
 
     res.status(201).json({
       success: true,
       message: "Jour de travail créé avec succès",
-      workday_id: result.lastID,
+      workday_id: result.id,
     });
   })
 );
@@ -212,27 +191,20 @@ router.put(
     const { id } = req.params;
     const { is_working, start_time, end_time, notes } = req.body;
 
-    const result = await database.run(
-      `
-      UPDATE employee_workdays 
-      SET is_working = ?, start_time = ?, end_time = ?, notes = ?, updated_at = datetime('now')
-      WHERE id = ?
-    `,
-      [
-        is_working ? 1 : 0,
-        start_time || null,
-        end_time || null,
-        notes || null,
-        id,
-      ]
-    );
+    const result = await EmployeeWorkdays.findByPk(id)
 
-    if (result.changes === 0) {
+
+    if (!result) {
       return res.status(404).json({
         success: false,
         error: "Jour de travail non trouvé",
       });
     }
+    result.is_working = is_working ? 1 : 0,
+      result.start_time = start_time || null,
+      result.end_time = end_time || null,
+      result.notes = notes || null,
+      await result.save()
 
     res.json({
       success: true,
@@ -248,12 +220,9 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const result = await database.run(
-      "DELETE FROM employee_workdays WHERE id = ?",
-      [id]
-    );
+    const result = await EmployeeWorkdays.destroy({ where: { id } })
 
-    if (result.changes === 0) {
+    if (result == 0) {
       return res.status(404).json({
         success: false,
         error: "Jour de travail non trouvé",
@@ -274,10 +243,7 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { employeeId } = req.params;
 
-    const result = await database.run(
-      "DELETE FROM employee_workdays WHERE employee_id = ?",
-      [employeeId]
-    );
+    const result = await EmployeeWorkdays.destroy({ where: { employee_id: employeeId } })
 
     res.json({
       success: true,

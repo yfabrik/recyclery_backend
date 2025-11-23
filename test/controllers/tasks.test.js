@@ -1,6 +1,6 @@
 import { beforeAll, expect, jest } from "@jest/globals";
 import db from "../../src/models";
-import { addUserToTask, createTask, detailTask, getTaskUsers, listTasks, removeUserFromTask } from "../../src/controllers/tasks";
+import { addUserToTask, createTask, detailTask, getUsersFromTask, listTasks, removeUserFromTask } from "../../src/controllers/tasks";
 const { User } = db
 
 beforeAll(async () => {
@@ -130,7 +130,7 @@ describe("tasks controller functions", () => {
             status: jest.fn().mockReturnThis()
         };
 
-        await getTaskUsers(req, res);
+        await getUsersFromTask(req, res);
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({

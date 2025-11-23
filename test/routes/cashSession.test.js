@@ -42,7 +42,7 @@ const mockSalesItem = {};
 
 // 3) Now import app (routes will use the mocked middleware and models)
 import {app} from "../../src/index.js";
-import db from "../../src/models/index.js";
+
 
 describe("CashSession controllers (unit)", () => {
   beforeEach(() => {
@@ -52,7 +52,7 @@ describe("CashSession controllers (unit)", () => {
   test("GET /cash-sessions -> listCashSessions", async () => {
     mockCashSession.findAll.mockResolvedValue([{ id: 1, status: "open" }]);
 
-    const res = await request(app).get("/cash-sessions");
+    const res = await request(app).get("/api/cash-sessions");
 
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
@@ -63,7 +63,7 @@ describe("CashSession controllers (unit)", () => {
   test("GET /cash-sessions/active -> getActiveSession", async () => {
     mockCashSession.findOne.mockResolvedValue({ id: 2, status: "open" });
 
-    const res = await request(app).get("/cash-sessions/active");
+    const res = await request(app).get("/api/cash-sessions/active");
 
     expect(res.statusCode).toBe(200);
     expect(res.body.session).toBeDefined();
@@ -82,7 +82,7 @@ describe("CashSession controllers (unit)", () => {
     });
 
     const res = await request(app)
-      .post("/cash-sessions/open")
+      .post("/api/cash-sessions/open")
       .send({ cash_register_id: 1, store_id: 1, opening_amount: 50 });
 
     expect(res.statusCode).toBe(201);
@@ -110,7 +110,7 @@ describe("CashSession controllers (unit)", () => {
     mockSalesTransaction.findAll.mockResolvedValue([{ total_sales: 50 }]);
 
     const res = await request(app)
-      .put("/cash-sessions/4/close")
+      .put("/api/cash-sessions/4/close")
       .send({ closing_amount: 160 });
 
     expect(res.statusCode).toBe(200);
@@ -132,7 +132,7 @@ describe("CashSession controllers (unit)", () => {
       { id: 10, total_amount: 25, sales_items: [{ name: "Item" }] },
     ]);
 
-    const res = await request(app).get("/cash-sessions/5");
+    const res = await request(app).get("/api/cash-sessions/5");
 
     expect(res.statusCode).toBe(200);
     expect(res.body.session).toBeDefined();
@@ -152,7 +152,7 @@ describe("CashSession controllers (unit)", () => {
       { id: 7, name: "Reg 1", total_sessions: 2 },
     ]);
 
-    const res = await request(app).get("/cash-sessions/store/2/registers");
+    const res = await request(app).get("/api/cash-sessions/store/2/registers");
 
     expect(res.statusCode).toBe(200);
     expect(res.body.registers).toBeDefined();

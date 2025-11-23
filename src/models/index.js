@@ -18,7 +18,7 @@ const config = configModule.default[env];
 
 
 
-/** @type {DB} */
+/** @type {db} */
 const db = {};
 
 let sequelize;

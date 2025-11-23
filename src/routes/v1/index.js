@@ -31,11 +31,11 @@ router.use(
 router.use('/refunds', (await import("./refunds.js")).router);
 router.use('/eco-organisms', (await import("./ecoOrganism.js")).router);
 router.use('/waste-disposals', (await import("./wasteDisposals.js")).router);
-// router.use('/dashboard', dashboardRoutes);
-// router.use('/tasks', tasksRoutes);
+router.use('/dashboard', (await import("./wasteDisposals.js")).router);
+router.use('/tasks', (await import("./dashboard.js")).router);
 // router.use('/planning', planningRoutes);
-// router.use('/store-hours', storeHoursRoutes);
-// router.use('/store-locations', storeLocationsRoutes);
-router.use('/collection-point-presence',  (await import("./collectionPoint_presences.js")).router);
+router.use('/store-hours', (await import("./storeHours.js")).router);
+router.use('/store-locations', (await import("./storeLocation.js")).router);
+router.use('/collection-point-presence', (await import("./collectionPoint_presences.js")).router);
 router.use("/employee-stores", (await import("./employeeStore.js")).router);
-// router.use('/employee-workdays', employeeWorkdaysRoutes);
+router.use('/employee-workdays', (await import("./employeeWorkdays.js")).router);

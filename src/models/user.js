@@ -1,7 +1,13 @@
 "use strict";
-import { Model } from "sequelize";
+import { Model, Sequelize } from "sequelize";
+/**
+ * @param {import("sequelize").DataTypes} DataTypes
+ */
 export default (sequelize, DataTypes) => {
   class User extends Model {
+    /**
+     *@param {models} models
+     */
     static associate(models) {
       this.hasMany(models.Donation, { foreignKey: "received_by" });
       // this.hasMany(models.Collection, { foreignKey: "assigned_to" });
@@ -20,6 +26,7 @@ export default (sequelize, DataTypes) => {
         foreignKey: "manager_id",
         as: "managedStores",
       });
+      this.hasMany(models.EmployeeWorkdays)
     }
   }
   User.init(
@@ -33,6 +40,7 @@ export default (sequelize, DataTypes) => {
       },
       phone: DataTypes.STRING,
       contract_hours: { type: DataTypes.INTEGER, defaultValue: 35 },
+      isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
     },
     {
       sequelize,

@@ -21,6 +21,8 @@ export const register = async (req, res, next) => {
     );
   }
 
+
+  //FIXME
   const existingUser = await User.findOne({
     where: { [Op.or]: [{ email: email }, { username: username }] },
   });

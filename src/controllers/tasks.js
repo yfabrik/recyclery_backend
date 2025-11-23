@@ -183,7 +183,7 @@ export const deleteTask = async (req, res) => {
     });
 }
 
-export const getTaskUsers = async (req, res) => {
+export const getUsersFromTask = async (req, res) => {
     const { taskId } = req.params;
 
     const tasks = await Task.findByPk(taskId, { include: [{ model: User }] })

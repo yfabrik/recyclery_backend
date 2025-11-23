@@ -1,5 +1,8 @@
 import createHttpError from "http-errors";
 import jwt from "jsonwebtoken";
+import db from "../models/index.js";
+
+const { User } = db
 
 export const authenticateToken = async (req, res, next) => {
   try {
@@ -11,13 +14,13 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     // Vérifier le token
-    const decoded = jwt.verify(
+    const decoded =jwt.verify(
       token,
       process.env.JWT_SECRET || "adapemont-secret-key"
     );
 
     // Récupérer l'utilisateur
-    const user = await User.findByPk(decoded.userId);
+    const user = await User.findByPk(decoded.id);
 
     if (!user || !user.isActive) {
       throw new createHttpError.Unauthorized(

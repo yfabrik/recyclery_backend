@@ -1,10 +1,15 @@
 /**
  * @typedef {Object} DB
  * @property {import("sequelize").Sequelize} Sequelize
- * @property {typeof import("sequelize").Sequelize} sequelize
+ * @property {import("sequelize").Sequelize} sequelize
+ * @typedef {DB & models} db
+ */
+
+/**
+ * @typedef {Object} models
  * @property {typeof import("sequelize").Model} Arrival
  * @property {typeof import("sequelize").Model} CashRegister
- * @property {typeof import("sequelize").Model} cashSession
+ * @property {typeof import("sequelize").Model} CashSession
  * @property {typeof import("sequelize").Model} Category
  * @property {typeof import("sequelize").Model} CollectionPoint
  * @property {typeof import("sequelize").Model} CollectionPointPresence
@@ -20,6 +25,7 @@
  * @property {typeof import("sequelize").Model} Role
  * @property {typeof import("sequelize").Model} SalesItem
  * @property {typeof import("sequelize").Model} SalesTransaction
+ * @property {typeof import("sequelize").Model} StoreLocation
  * @property {typeof import("sequelize").Model} StoreHours
  * @property {typeof import("sequelize").Model} Task
  * @property {typeof import("sequelize").Model} TaskSchedule

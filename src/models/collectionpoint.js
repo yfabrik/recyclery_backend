@@ -1,7 +1,13 @@
 "use strict";
 import { Model } from "sequelize";
+/**
+ * @param {import("sequelize").DataTypes} DataTypes
+ */
 export default (sequelize, DataTypes) => {
   class CollectionPoint extends Model {
+    /**
+     *@param {models} models
+     */
     static associate(models) {
       this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
       this.hasMany(models.CollectionSchedule, {

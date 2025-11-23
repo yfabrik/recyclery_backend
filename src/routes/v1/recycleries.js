@@ -11,6 +11,7 @@ import {
 } from "../../controllers/recycleries.js";
 import { createCaisse } from "../../controllers/cashRegister.js";
 import db from "../../models/index.js";
+import { Op } from "sequelize";
 
 const { Recyclery, LabeledItem, SalesTransaction } = db;
 

@@ -72,6 +72,7 @@ export const createUser = async (req, res) => {
     recyclery_id,
     phone,
     contract_hours,
+    isActive: true
   });
 
   res.json({

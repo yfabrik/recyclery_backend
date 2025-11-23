@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authenticateToken } from "../../middlewares/auth.js";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 
-import { addUserToTask, createTask, deleteTask, detailTask, getTaskUsers, getUsersFromTask, listTasks, removeUserFromTask, updateTask } from "../../controllers/tasks.js";
+import { addUserToTask, createTask, deleteTask, detailTask, getUsersFromTask, listTasks, removeUserFromTask, updateTask } from "../../controllers/tasks.js";
 
 export const router = Router();
 // Récupérer toutes les tâches
@@ -41,7 +41,7 @@ router.delete(
 );
 
 // Récupérer les employés assignés à une tâche
-router.get("/:taskId/employees", authenticateToken, asyncHandler(getTaskUsers))
+router.get("/:taskId/employees", authenticateToken, asyncHandler(getUsersFromTask))
 
 // Assigner un employé à une tâche
 router.post("/:taskId/employees", authenticateToken, asyncHandler(addUserToTask))

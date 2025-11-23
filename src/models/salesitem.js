@@ -1,8 +1,13 @@
 "use strict";
 import { Model } from "sequelize";
+/**
+ * @param {import("sequelize").DataTypes} DataTypes
+ */
 export default (sequelize, DataTypes) => {
   class SalesItem extends Model {
-
+/**
+     *@param {models} models
+     */
     static associate(models) {
       // define association here
       this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" });
