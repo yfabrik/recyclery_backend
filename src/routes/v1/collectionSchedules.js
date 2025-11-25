@@ -3,9 +3,10 @@ import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 import { addUserToSchedule, createCollectionSchedule, deleteCollectionSchedule, detailBSD, generateBSD, listcollectionSchedule, removeUserFromSchedule, updateCollectionSchedule } from "../../controllers/CollectionSchedule.js";
+import { Op } from "sequelize";
 
 
-const { CollectionSchedule, CollectionPoint, User, CollectionReceipt } = db;
+const { CollectionSchedule, CollectionPoint, User } = db;
 
 export const router = Router();
 

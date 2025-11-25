@@ -1,7 +1,7 @@
 import { Op } from "sequelize";
 import db from "../models/index.js";
 
-const { CollectionPointPresence, CollectionPoint,Task } = db;
+const { CollectionPointPresence, CollectionPoint } = db;
 
 export const listPointPrecense = async (req, res) => {
     const presence_hours = await CollectionPointPresence.findAll({

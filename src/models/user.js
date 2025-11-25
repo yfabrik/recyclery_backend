@@ -1,5 +1,5 @@
 "use strict";
-import { Model, Sequelize } from "sequelize";
+import { Model } from "sequelize";
 /**
  * @param {import("sequelize").DataTypes} DataTypes
  */

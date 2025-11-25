@@ -5,7 +5,7 @@ import db from "../../models/index.js";
 import { fn, literal, Op } from "sequelize";
 
 import { createRefund, createTransaction, listRefunds, listTransactions } from "../../controllers/salesTransactions.js";
-const { LabeledItem, Category, User, SalesTransaction, Store, Refund } = db;
+const { SalesTransaction, Refund } = db;
 
 export const router = Router();
 router.use(authenticateToken);

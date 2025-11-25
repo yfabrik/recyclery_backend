@@ -4,9 +4,6 @@ import { Model } from "sequelize";
  * @param {import("sequelize").DataTypes} DataTypes
  */
 export default (sequelize, DataTypes) => {
-  /**
-   * @typedef {import("sequelize").Model<ArrivalAttributes, ArrivalCreationAttributes>} Arrival
-   */
   class Arrival extends Model {
     /**
      *@param {models} models

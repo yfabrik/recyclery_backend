@@ -1,7 +1,7 @@
 import db from "../models/index.js";
 import { Op } from "sequelize";
 
-const { Item, LabeledItem, Category, User } = db;
+const { LabeledItem, Category, User } = db;
 
 // export const listItems = async (req, res) => {
 //     const { recyclery_id, category_id, status } = req.query;

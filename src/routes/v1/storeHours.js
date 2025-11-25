@@ -1,11 +1,9 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
-import db from "../../models/index.js";
-import { Op, where } from "sequelize";
-import salestransaction from "../../models/salestransaction.js";
+
 import { addHoraire, horairesMagasin, listHoraires, removeHoraires, updateHoraire } from "../../controllers/storeHours.js";
-const { LabeledItem, Category, User, SalesTransaction, Store, Refund } = db;
+
 
 export const router = Router();
 router.use(authenticateToken);

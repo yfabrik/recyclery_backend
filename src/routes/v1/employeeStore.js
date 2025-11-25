@@ -3,7 +3,7 @@ import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 import { findUserById, listUsers } from "../../controllers/users.js";
-const { User, Store, Recyclery } = db;
+const { User,  Recyclery } = db;
 
 export const router = Router();
 router.use(authenticateToken);
@@ -62,7 +62,7 @@ router.post(
         error: "Employé non trouvé",
       });
     }
-    const store = await Store.findByPk(store_id);
+    const store = await Recyclery.findByPk(store_id);
 
     if (!store) {
       return res.status(404).json({
@@ -79,7 +79,7 @@ router.post(
     //   );
     // }
 
-    await employee.addStore(store_id);
+    await employee.addRecyclery(store_id);
 
     // const result = await database.run(
     //   `
@@ -167,7 +167,7 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { employeeId } = req.params;
     const employee = await User.findByPk(employeeId);
-    employee.removeStores();
+    employee.removeRecycleries();
 
     // const result = await EmployeeStore.destroy(employeeId);
 

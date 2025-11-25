@@ -31,4 +31,5 @@
  * @property {typeof import("sequelize").Model} TaskSchedule
  * @property {typeof import("sequelize").Model} User
  * @property {typeof import("sequelize").Model} WasteDisposal
+ * @property {typeof import("sequelize").Model} EmployeeWorkdays
  */

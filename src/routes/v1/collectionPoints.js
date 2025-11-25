@@ -5,7 +5,7 @@ import db from "../../models/index.js";
 import { fn } from "sequelize";
 import { createCollectionPoint, deleteCollectionPoint, detailCollectionPoint, listCollectionPoints, updateCollectionPoint } from "../../controllers/collectionPoints.js";
 
-const { CollectionPoint, Recyclery, CollectionSchedule } = db;
+const { CollectionSchedule } = db;
 export const router = Router();
 
 // Obtenir tous les points de collecte

@@ -5,7 +5,7 @@ import db from "../../models/index.js";
 import { createWaste, deleteWaste, detailWaste, listWaste, updateWaste } from "../../controllers/waste.js";
 import { Op } from "sequelize";
 
-const { WasteDisposal, Category, EcoOrganism, User, Sequelize } = db;
+const { WasteDisposal, Category, Sequelize } = db;
 export const router = Router();
 // Helper pour générer un numéro de sortie unique
 

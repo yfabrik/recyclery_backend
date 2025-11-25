@@ -4,9 +4,7 @@ import db from "../models/index.js";
 const { CollectionSchedule,
     CollectionPoint,
     User,
-    CollectionReceipt,
-    EmployeeWorkday,
-    sequelize } = db
+    CollectionReceipt } = db
 
 const generateReceiptNumber = () => {
     const date = new Date();
