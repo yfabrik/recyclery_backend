@@ -166,6 +166,8 @@ export const createRefund = async (req, res) => {
     });
 }
 
+
+//FIXME y'a le meme truc dans refunds
 export const listRefunds = async (req, res) => {
     const { id } = req.params;
 

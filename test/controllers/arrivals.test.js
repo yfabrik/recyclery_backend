@@ -1,7 +1,7 @@
 import { beforeAll, jest } from "@jest/globals";
 import db from "../../src/models";
 
-import { createArrival, listArrivals } from "../../src/controllers/arrivals";
+import { createArrival, deleteArrival, detailArrival, listArrivals } from "../../src/controllers/arrivals";
 const { Recyclery, Category, User, CollectionPoint } = db
 
 beforeAll(async () => {
@@ -81,6 +81,40 @@ describe("arrival controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({ arrivals: expect.any(Array), success: true })
+        );
+    });
+    it("should find arrival 1", async () => {
+        const req = {
+            query: { store_id: 1 },
+            user: { id: 1, role: "admin" },
+            params: { id: 1 }
+        };
+
+        const res = {
+            json: jest.fn(),
+        };
+
+        await detailArrival(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ arrival: expect.any(Object), success: true })
+        );
+    });
+    it("should delete arrival 1", async () => {
+        const req = {
+            query: { store_id: 1 },
+            user: { id: 1, role: "admin" },
+            params: { id: 1 }
+        };
+
+        const res = {
+            json: jest.fn(),
+        };
+
+        await deleteArrival(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ success: true })
         );
     });
 

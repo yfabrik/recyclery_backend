@@ -1,7 +1,8 @@
 import { jest } from "@jest/globals";
-import { createRecyclerie, deleteRecyclerie, listRecycleries } from "../../src/controllers/recycleries";
+import { createRecyclerie, deleteRecyclerie, detailRecyclerie, listRecycleries } from "../../src/controllers/recycleries";
 
 describe("recyclery controller functions", () => {
+
   it("should create recyclery", async () => {
     const body = {
       name: "recyclerie test",
@@ -52,7 +53,23 @@ describe("recyclery controller functions", () => {
     );
   });
   
+  it("should find recyclery 1", async () => {
+    const req = {
+      query: {},
+      user: { id: 1, role: "admin" },
+      params:{id:1}
+    };
 
+    const res = {
+      json: jest.fn(),
+    };
+
+    await detailRecyclerie(req, res);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ store: expect.any(Object) })
+    );
+  });
   it("should delete recyclery", async () => {
     const req = {
       query: {},

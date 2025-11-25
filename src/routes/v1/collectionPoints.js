@@ -5,7 +5,7 @@ import db from "../../models/index.js";
 import { fn } from "sequelize";
 import { createCollectionPoint, deleteCollectionPoint, detailCollectionPoint, listCollectionPoints, updateCollectionPoint } from "../../controllers/collectionPoints.js";
 
-const { CollectionPoint, Recyclery, Collectionschedule } = db;
+const { CollectionPoint, Recyclery, CollectionSchedule } = db;
 export const router = Router();
 
 // Obtenir tous les points de collecte
@@ -53,7 +53,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const stats = await Collectionschedule.findOne({
+    const stats = await CollectionSchedule.findOne({
       attributes: [
         [
           fn("COUNT", where(col("status"), "=", "completed")),

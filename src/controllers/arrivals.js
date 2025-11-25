@@ -42,7 +42,7 @@ export const detailArrival = async (req, res) => {
     include: [
       { model: Category, as: "categorie" },
       { model: Category, as: "subcategorie" },
-      { model: User, as: "processed_by" },
+      { model: User },
       { model: CollectionPoint },
     ],
   });
@@ -180,7 +180,7 @@ export const updateArrival = async (req, res) => {
 
 export const deleteArrival = async (req, res) => {
   const { id } = req.params;
-  const arrival = await Arrival.destroy(id);
+  const arrival = await Arrival.destroy({where:{id}});
   // Vérifier si l'arrivage existe
   if (!arrival) {
     return res.status(404).json({

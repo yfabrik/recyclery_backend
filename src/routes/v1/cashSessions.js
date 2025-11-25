@@ -13,7 +13,7 @@ import {
 
 export const router = express.Router();
 
-// router.use(authenticateToken);
+router.use(authenticateToken);
 
 router.get("/", asyncHandler(listCashSessions));
 router.get("/active", asyncHandler(getActiveSession));

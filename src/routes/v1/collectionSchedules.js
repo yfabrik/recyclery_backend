@@ -4,7 +4,7 @@ import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 import { addUserToSchedule, createCollectionSchedule, deleteCollectionSchedule, detailBSD, generateBSD, listcollectionSchedule, removeUserFromSchedule, updateCollectionSchedule } from "../../controllers/CollectionSchedule.js";
 
-/** @type {import('../../models/types').DbModels} */
+
 const { CollectionSchedule, CollectionPoint, User, CollectionReceipt } = db;
 
 export const router = Router();

@@ -186,7 +186,7 @@ export const generateBSD = async (req, res) => {
 
     const receipt = await CollectionReceipt.create({
         schedule_id: id,
-        receipt_number:generateReceiptNumber(),
+        receipt_number: generateReceiptNumber(),
         collection_date: new Date().toISOString(),
         collector_name: schedule.collector_name || "Non assigné",
         collection_point_name: schedule.collection_point_name,
