@@ -21,7 +21,6 @@ export const register = async (req, res, next) => {
     );
   }
 
-
   //FIXME
   const existingUser = await User.findOne({
     where: { [Op.or]: [{ email: email }, { username: username }] },
@@ -110,7 +109,7 @@ export const login = async (req, res, next) => {
 
 export const userProfile = async (req, res) => {
   const id = req.user.id;
-  const user = await User.findOne(id);
+  const user = await User.findByPk(id);
 
   let permissions = [];
   let permissionsByModule = {};

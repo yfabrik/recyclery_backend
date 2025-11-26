@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-import { fn, literal, Op } from "sequelize";
+import { col, fn, literal, Op } from "sequelize";
 
 import { createRefund, createTransaction, listRefunds, listTransactions } from "../../controllers/salesTransactions.js";
 const { SalesTransaction, Refund } = db;
@@ -87,7 +87,7 @@ router.get(
         total_refunded: parseFloat(stats[0].total_refunded || 0),
         average_transaction: parseFloat(stats[0].average_transaction || 0),
         sessions_count: stats[0].sessions_count || 0,
-        payment_methods: paymentMethods.map((method) => ({
+        payment_methods: stats.map((method) => ({
           payment_method: method.payment_method,
           count: method.count,
           total: parseFloat(method.total || 0),

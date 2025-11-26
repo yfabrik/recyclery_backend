@@ -34,26 +34,17 @@ router.put("/:id", asyncHandler(updateUser));
 router.delete("/:id", asyncHandler(deleteUser));
 
 // Obtenir les rôles disponibles
-router.get("/roles", async (req, res) => {
-  try {
-    const roles = [
-      { value: "admin", label: "Administrateur" },
-      { value: "manager", label: "Gestionnaire" },
-      { value: "employee", label: "Employé" },
-    ];
+router.get("/roles", (req, res) => {
+  const roles = [
+    { value: "admin", label: "Administrateur" },
+    { value: "manager", label: "Gestionnaire" },
+    { value: "employee", label: "Employé" },
+  ];
 
-    res.json({
-      success: true,
-      roles,
-    });
-  } catch (error) {
-    console.error("Erreur récupération des rôles:", error);
-    res.status(500).json({
-      success: false,
-      message: "Erreur lors de la récupération des rôles",
-      error: error.message,
-    });
-  }
+  res.json({
+    success: true,
+    roles,
+  });
 });
 
 // Obtenir les statistiques des utilisateurs
@@ -72,7 +63,9 @@ router.get(
     // Statistiques des connexions récentes (dernières 30 jours)
     const recentLogins = await User.count({
       where: {
-        last_login: { [Op.gte]: new Date(new Date().setDate(1)) },
+        last_login: {
+          [Op.gte]: new Date(new Date() - 30 * 24 * 60 * 60 * 1000),
+        },
       },
     });
 
@@ -84,10 +77,10 @@ router.get(
     res.json({
       success: true,
       stats: {
-        totalUsers: totalUsers[0]?.count || 0,
+        totalUsers: totalUsers,
         usersByRole: usersByRole,
-        recentLogins: recentLogins[0]?.count || 0,
-        activeEmployees: activeEmployees[0]?.count || 0,
+        recentLogins: recentLogins,
+        activeEmployees: activeEmployees,
       },
     });
   })

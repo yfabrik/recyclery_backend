@@ -3,7 +3,14 @@ import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 
-import { createEcoOrganism, deleteEcoOrganism, detailEcoOrganism, listActiveEcoOrganism, listEcoOrganism, updateEcoOrganism } from "../../controllers/ecoOrganism.js";
+import {
+  createEcoOrganism,
+  deleteEcoOrganism,
+  detailEcoOrganism,
+  listActiveEcoOrganism,
+  listEcoOrganism,
+  updateEcoOrganism,
+} from "../../controllers/ecoOrganism.js";
 
 const { EcoOrganism, Sequelize, WasteDisposal } = db;
 export const router = Router();
@@ -18,11 +25,7 @@ router.get(
 
 // GET active eco-organisms only
 //TODO query params dans all
-router.get(
-  "/active",
-  authenticateToken,
-  asyncHandler(listActiveEcoOrganism)
-);
+router.get("/active", authenticateToken, asyncHandler(listActiveEcoOrganism));
 
 // GET single eco-organism by ID
 router.get(
@@ -64,20 +67,20 @@ router.get(
   asyncHandler(async (req, res) => {
     const stats = await EcoOrganism.findAll({
       attributes: [
-        [Sequelize.fn("COUNT", Sequelize.col("*")), "active_eco_organisms"],
+        [Sequelize.fn("COUNT", Sequelize.col("*")), "total_eco_organisms"],
         [
           Sequelize.fn(
-            "COUNT",
-            Sequelize.literal(`CASE WHEN "is_active"= 1 THEN 1 ELSE 0 END`),
-            "active_eco_organisms"
+            "SUM",
+            Sequelize.literal(`CASE WHEN "is_active" = 1 THEN 1 ELSE 0 END`)
           ),
+          "active_eco_organisms",
         ],
         [
           Sequelize.fn(
-            "COUNT",
-            Sequelize.literal(`CASE WHEN "is_active"= 0 THEN 1 ELSE 0 END`),
-            "inactive_eco_organisms"
+            "SUM",
+            Sequelize.literal(`CASE WHEN "is_active" = 0 THEN 1 ELSE 0 END`)
           ),
+          "inactive_eco_organisms",
         ],
       ],
     });

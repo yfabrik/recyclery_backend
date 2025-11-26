@@ -4,7 +4,6 @@ import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 import { Op } from "sequelize";
-import labeleditem from "../../models/labeleditem.js";
 
 const { LabeledItem, SalesTransaction, Donation, CollectionSchedule, Category, User, CollectionPoint, Recyclery, CashSession } = db
 export const router = Router();
@@ -93,7 +92,7 @@ router.get('/activities', authenticateToken, asyncHandler(async (req, res) => {
   const activities = [];
 
   // 1. Ventes récentes
-  const recentSales = await labeleditem.findAll({ where: { status: "sold" }, include: [{ model: Category }], limit: 5, order: [["updatedAt", "DESC"]] })
+  const recentSales = await LabeledItem.findAll({ where: { status: "sold" }, include: [{ model: Category,as:"category" }], limit: 5, order: [["updatedAt", "DESC"]] })
 
   recentSales.forEach(sale => {
     activities.push({
@@ -224,7 +223,7 @@ function formatDate(dateString) {
 router.get('/stores-stats', authenticateToken, asyncHandler(async (req, res) => {
 
   // Récupérer tous les magasins actifs
-  const stores = await Recyclery.findAll({ where: { is_active }, order: [["name"]] })
+  const stores = await Recyclery.findAll({ where: { is_active:true }, order: [["name"]] })
 
   const storesStats = [];
 
