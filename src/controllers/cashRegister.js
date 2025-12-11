@@ -5,10 +5,12 @@ import { Op } from "sequelize";
 const { CashRegister, CashSession, Recyclery, Sequelize } = db;
 
 export const listCaisses = async (req, res) => {
-  const { is_active, store_id } = req.query;
+  const { is_active } = req.query;
+  const store_id = req.query.store_id || req.params.id;
+
   const where = {};
   if (store_id) {
-    where.store_id = store_id;
+    where.recyclery_id = store_id;
   }
 
   if (is_active !== undefined) {
@@ -18,32 +20,30 @@ export const listCaisses = async (req, res) => {
 
   //TODO filter + COUNT sessions + last_session
   const cashRegister = await CashRegister.findAll({
-    attributes: [
-      "*",
+    attributes: {
+      include:[
       [Sequelize.col("Recyclery.name"), "store_name"],
       [Sequelize.fn("COUNT", Sequelize.col("sessions.id")), "total_sessions"],
       [
         Sequelize.fn("MAX", Sequelize.col("sessions.createdAt")),
         "last_session",
       ],
-    ],
+    ]},
     include: [
       {
         model: Recyclery,
-        attributes: [],
-        required: false,
+        required: true,
       },
       {
         model: CashSession,
         as: "sessions",
-        attributes: [],
         required: false,
       },
     ],
-    // where,
+    where,
     group: ["CashRegister.id", "Recyclery.name"],
     order: [
-      ["recyclery_id", "ASC"],
+      // ["recyclery_id", "ASC"],
       ["name", "ASC"],
     ],
   });
@@ -51,6 +51,8 @@ export const listCaisses = async (req, res) => {
   res.json({
     success: true,
     data: cashRegister,
+    cash_registers:cashRegister,
+    registers:cashRegister
   });
 };
 
@@ -59,7 +61,6 @@ export const detailCaisse = async (req, res) => {
 
   const register = await CashRegister.findByPk(id, {
     attributes: [
-      "*",
       [Sequelize.col("Recyclery.name"), "store_name"],
       [Sequelize.fn("COUNT", Sequelize.col("sessions.id")), "total_sessions"],
       [
@@ -80,6 +81,7 @@ export const detailCaisse = async (req, res) => {
 
 export const createCaisse = async (req, res) => {
   const { name, store_id, is_active = true } = req.body;
+  console.log(name, store_id);
 
   // Validation
   if (!name || !store_id)
@@ -103,13 +105,14 @@ export const createCaisse = async (req, res) => {
 
   // Créer la caisse
   const result = await CashRegister.create({
-    name,
+    name:name,
     recyclery_id: store_id,
   });
 
   res.status(201).json({
     success: true,
     message: "Caisse créée avec succès",
+    cash_register_id:result.id,
     data: result,
   });
 };

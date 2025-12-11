@@ -1,15 +1,27 @@
 import createHttpError from "http-errors";
 import db from "../models/index.js";
 import { listCaisses } from "../services/caisse.js";
+import { Sequelize } from "sequelize";
 const { Recyclery, CashRegister, User } = db;
 
 export const listRecycleries = async (req, res) => {
   const recycleries = await Recyclery.findAll({
-    order: [["name", "ASC"]],
+    attributes:{
+      include:[
+         [Sequelize.fn("COUNT", Sequelize.col("caisses.id")), "cash_registers_count"],
+      ]
+    },
     include: [
-      { model: CashRegister, as: "caisses" },
+      {
+        model: CashRegister,
+        required:false,
+        as: "caisses",
+      },
       { model: User, as: "manager" },
     ],
+    group: ["Recyclery.id", "manager.id"],
+    order: [["name", "ASC"]],
+
   });
   res.json({ success: true, stores: recycleries, recycleries });
 };
@@ -32,19 +44,20 @@ export const createRecyclerie = async (req, res) => {
 
   if (!name)
     throw new createHttpError.BadRequest("Le nom de la recyclerie est requis");
-  const recyclery = await Recyclery.create(
+  const recyclery = await Recyclery.create({
     name,
     address,
     phone,
     email,
     manager_id,
     city,
-    postal_code
-  );
+    postal_code,
+  });
 
   res.status(201).json({
     message: "Recyclerie créée avec succès",
     recyclery,
+    store: recyclery,
   });
 };
 

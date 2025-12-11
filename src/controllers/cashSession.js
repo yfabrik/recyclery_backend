@@ -1,4 +1,4 @@
-import {  fn, col } from "sequelize";
+import { fn, col } from "sequelize";
 import db from "../models/index.js";
 import { listCaisses } from "./cashRegister.js";
 const {
@@ -8,7 +8,7 @@ const {
   User,
   SalesTransaction,
   SalesItem,
-  Sequelize
+  Sequelize,
 } = db;
 
 // 🧠 GET /cash-sessions
@@ -95,7 +95,14 @@ export const openCashSession = async (req, res) => {
     notes,
   });
 
-  res.status(201).json({ success: true, session });
+  res
+    .status(201)
+    .json({
+      success: true,
+      session,
+      session_id: session.id,
+      session_number: sessionNumber,
+    });
 };
 
 // 🧠 PUT /cash-sessions/:id/close
@@ -141,6 +148,7 @@ export const closeCashSession = async (req, res) => {
 
   res.json({
     success: true,
+    message: 'Session fermée avec succès',
     expected_amount: expected,
     difference_amount: difference,
   });

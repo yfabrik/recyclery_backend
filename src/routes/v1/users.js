@@ -21,33 +21,6 @@ router.get("/", asyncHandler(listUsers));
 // Obtenir tous les employés (utilisateurs avec rôles employee, admin, manager)
 router.get("/employees", asyncHandler(listEmployees));
 
-// Obtenir un utilisateur par ID
-router.get("/:id", asyncHandler(findUserById));
-
-// Créer un nouvel utilisateur
-router.post("/", asyncHandler(createUser));
-
-// Mettre à jour un utilisateur
-router.put("/:id", asyncHandler(updateUser));
-
-// Supprimer un utilisateur
-router.delete("/:id", asyncHandler(deleteUser));
-
-// Obtenir les rôles disponibles
-router.get("/roles", (req, res) => {
-  const roles = [
-    { value: "admin", label: "Administrateur" },
-    { value: "manager", label: "Gestionnaire" },
-    { value: "employee", label: "Employé" },
-  ];
-
-  res.json({
-    success: true,
-    roles,
-  });
-});
-
-// Obtenir les statistiques des utilisateurs
 router.get(
   "/stats",
   asyncHandler(async (req, res) => {
@@ -85,3 +58,30 @@ router.get(
     });
   })
 );
+
+// Obtenir les rôles disponibles
+router.get("/roles", (req, res) => {
+  const roles = [
+    { value: "admin", label: "Administrateur" },
+    { value: "manager", label: "Gestionnaire" },
+    { value: "employee", label: "Employé" },
+  ];
+
+  res.json({
+    success: true,
+    roles,
+  });
+});
+// Obtenir un utilisateur par ID
+router.get("/:id", asyncHandler(findUserById));
+
+// Créer un nouvel utilisateur
+router.post("/", asyncHandler(createUser));
+
+// Mettre à jour un utilisateur
+router.put("/:id", asyncHandler(updateUser));
+
+// Supprimer un utilisateur
+router.delete("/:id", asyncHandler(deleteUser));
+
+// Obtenir les statistiques des utilisateurs

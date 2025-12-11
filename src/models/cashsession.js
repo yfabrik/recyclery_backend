@@ -1,18 +1,19 @@
 "use strict";
 import { Model } from "sequelize";
 /**
+ * @param {import("sequelize").Sequelize} sequelize
  * @param {import("sequelize").DataTypes} DataTypes
  */
 export default (sequelize, DataTypes) => {
   class CashSession extends Model {
-/**
-     *@param {models} models
+    /**
+     *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
       this.belongsTo(models.CashRegister, { foreignKey: "cash_register_id" });
       this.hasMany(models.SalesTransaction, { foreignKey: "sale_id" });
       this.belongsTo(models.User, { foreignKey: "user_id" });
-      this.belongsTo(models.Recyclery, { foreignKey: "store_id" })
+      this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
     }
   }
   CashSession.init(

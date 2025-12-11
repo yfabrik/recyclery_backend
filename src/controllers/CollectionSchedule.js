@@ -139,14 +139,14 @@ export const updateCollectionSchedule = async (req, res) => {
             error: "Planning non trouvé",
         });
     }
-    schedule.collection_point_id ??= collection_point_id;
-    schedule.scheduled_date ??= scheduled_date;
-    schedule.scheduled_time ??= scheduled_time;
-    schedule.employee_id ??= employee_id;
-    schedule.vehicle ??= vehicle;
-    schedule.estimated_duration ??= estimated_duration;
-    schedule.notes ??= notes;
-    schedule.status ??= status;
+    schedule.collection_point_id = collection_point_id;
+    schedule.scheduled_date = scheduled_date;
+    schedule.scheduled_time = scheduled_time;
+    schedule.employee_id = employee_id;
+    schedule.vehicle = vehicle;
+    schedule.estimated_duration = estimated_duration;
+    schedule.notes = notes;
+    schedule.status = status;
     await schedule.save();
 
     res.json({

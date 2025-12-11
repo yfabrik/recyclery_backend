@@ -11,14 +11,21 @@ const basename = _basename(__filename);
 const env = _env.NODE_ENV || "development";
 
 // Use dynamic import for JSON files
+/**
+ * @type {{ default: Record<string, import("./types/models.js").DbConfig> }}
+ */
 const configModule = await import(`../../config/config.json`, {
   with: { type: "json" },
 });
+
+/**
+ * @type {import("./types/models.js").dbObject}
+ */
 const config = configModule.default[env];
 
 
 
-/** @type {db} */
+/** @type { import("./types/models.js").db} */
 const db = {};
 
 let sequelize;

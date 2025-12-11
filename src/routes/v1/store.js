@@ -12,7 +12,7 @@ import { createCaisse, listCaisses } from "../../controllers/cashRegister.js";
 
 export const router = Router();
 
-const { Labeleditem, CashSession, Recyclery } = db;
+const { LabeledItem, CashSession, Recyclery,CashRegister } = db;
 
 // GET - Récupérer tous les magasins
 router.get("/", authenticateToken, asyncHandler(listRecycleries));
@@ -92,7 +92,7 @@ router.post(
     const { id } = req.params;
     const { name } = req.body;
 
-    req.body.id = id;
+    req.body.store_id = id;
     req.body.name = name;
     await createCaisse(req, res);
   })

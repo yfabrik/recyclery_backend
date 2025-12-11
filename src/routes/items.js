@@ -16,7 +16,7 @@ router.post(
   "/",
   asyncHandler(async (req, res) => {
     const data = req.body;
-    const response = await LabeledItem.create(data);
+    const response = await LabeledItem.create({data});
     res.json(response);
   })
 );

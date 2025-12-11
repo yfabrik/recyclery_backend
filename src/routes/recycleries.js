@@ -31,7 +31,7 @@ router.post(
   "/",
   asyncHandler(async (req, res) => {
     const { name, address, phone, email } = req.body;
-    const recyclerie = await Recyclery.create(name, address, phone, email);
+    const recyclerie = await Recyclery.create({name, address, phone, email});
     res.json(recyclerie);
   })
 );

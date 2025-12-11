@@ -60,7 +60,7 @@ export const createPointPrecense = async (req, res) => {
         });
     }
 
-    const precence = await CollectionPointPresence.create({
+    const presence = await CollectionPointPresence.create({
         collection_point_id,
         store_id,
         day_of_week,
@@ -75,7 +75,8 @@ export const createPointPrecense = async (req, res) => {
     res.json({
         success: true,
         message: "Jours de présence créés avec succès",
-        id: precence.id,
+        id: presence.id,
+        presence
     });
 }
 
@@ -122,15 +123,15 @@ export const updatePointPrecense = async (req, res) => {
         });
     }
 
-    existing.collection_point_id ??= collection_point_id;
-    existing.store_id ??= store_id;
-    existing.day_of_week ??= day_of_week;
-    existing.time_slot_name ??= time_slot_name;
-    existing.is_present ??= is_present;
-    existing.start_time ??= start_time;
-    existing.end_time ??= end_time;
-    existing.is_24h ??= is_24h;
-    existing.notes ??= notes;
+    existing.collection_point_id = collection_point_id;
+    existing.store_id = store_id;
+    existing.day_of_week = day_of_week;
+    existing.time_slot_name = time_slot_name;
+    existing.is_present = is_present;
+    existing.start_time = start_time;
+    existing.end_time= end_time;
+    existing.is_24h = is_24h;
+    existing.notes = notes;
     await existing.save();
 
     res.json({

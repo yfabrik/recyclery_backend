@@ -14,8 +14,8 @@ router.get('/test', async (req, res) => {
     success: true,
     message: 'API Dashboard fonctionne',
     data: {
-      itemsCount: testQuery[0].count,
-      transactionsCount: transactionsQuery[0].count,
+      itemsCount:0,
+      transactionsCount: 0,
       timestamp: new Date().toISOString()
     }
   });
@@ -28,7 +28,7 @@ router.post('/create-test-data', authenticateToken, async (req, res) => {
   res.json({
     success: true,
     message: 'Données de test créées avec succès',
-    data: testData
+    data: "testData"
   });
 });
 
@@ -57,13 +57,14 @@ router.get('/stats', authenticateToken, asyncHandler(async (req, res) => {
   stats.pendingDonations = await Donation.count({ where: { status: "pending" } })
 
   // 6. Collections programmées ce mois
-  stats.scheduledCollections = CollectionSchedule.findAll({ where: { scheduled_date: { [Op.gt]: currentMonth } } })
+  // console.log(CollectionSchedule.findAll({ where: { scheduled_date: { [Op.gt]: currentMonth } } }))
+  stats.scheduledCollections = await CollectionSchedule.findAll({ where: { scheduled_date: { [Op.gt]: currentMonth } } })
 
   // 7. Nombre de catégories actives
   stats.categoriesCount = await LabeledItem.count({ distinct: "category_id", where: { status: "available" } })
 
   // 8. Nombre d'utilisateurs actifs
-  stats.usersCount = User.count()
+  stats.usersCount = await User.count()
 
   // 9. Chiffre d'affaires du mois dernier pour comparaison
   const lastMonth = new Date();

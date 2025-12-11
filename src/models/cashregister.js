@@ -1,12 +1,13 @@
 "use strict";
 import { Model } from "sequelize";
 /**
+ * @param {import("sequelize").Sequelize} sequelize
  * @param {import("sequelize").DataTypes} DataTypes
  */
 export default (sequelize, DataTypes) => {
   class CashRegister extends Model {
     /**
-     *@param {models} models
+     *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
       this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
@@ -18,7 +19,7 @@ export default (sequelize, DataTypes) => {
   }
   CashRegister.init(
     {
-      name: DataTypes.STRING,
+      name: { type: DataTypes.STRING },
       is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
     },
     {

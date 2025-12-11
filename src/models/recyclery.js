@@ -1,18 +1,22 @@
 "use strict";
 import { Model } from "sequelize";
 /**
+ * @param {import("sequelize").Sequelize} sequelize
  * @param {import("sequelize").DataTypes} DataTypes
  */
 export default (sequelize, DataTypes) => {
   class Recyclery extends Model {
-/**
-     *@param {models} models
+    /**
+     *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
       this.hasMany(models.LabeledItem, { foreignKey: "recyclery_id" });
       this.hasMany(models.Donation, { foreignKey: "recyclery_id" });
       this.hasMany(models.CollectionSchedule, { foreignKey: "recyclery_id" });
-      this.hasMany(models.StoreHours, { foreignKey: "store_id", as: "horaires" })
+      this.hasMany(models.StoreHours, {
+        foreignKey: "store_id",
+        as: "horaires",
+      });
 
       this.belongsToMany(models.User, {
         through: "employee_recyclery",
@@ -32,13 +36,13 @@ export default (sequelize, DataTypes) => {
   }
   Recyclery.init(
     {
-      name: DataTypes.STRING,
+      name: { type: DataTypes.STRING, allowNull: false },
       address: DataTypes.TEXT,
       phone: DataTypes.STRING,
       email: DataTypes.STRING,
       city: DataTypes.STRING,
       postal_code: DataTypes.STRING,
-      is_active: { type: DataTypes.BOOLEAN, defaultValue: true }
+      is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
     },
     {
       sequelize,

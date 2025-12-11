@@ -119,10 +119,10 @@ export const createWaste = async (req, res) => {
     const waste = await WasteDisposal.create({
         disposal_number,
         disposal_date,
+        disposal_type,
         category_id,
         subcategory_id,
         eco_organism_id,
-        disposal_type,
         weight_kg,
         volume_m3,
         transport_method,

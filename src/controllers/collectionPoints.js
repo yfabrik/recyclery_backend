@@ -135,16 +135,16 @@ export const updateCollectionPoint = async (req, res) => {
             error: "Un point de collecte avec ce nom existe déjà",
         });
     }
-    point.name ??= name;
-    point.address ??= address;
-    point.city ??= city;
-    point.postal_code ??= postal_code;
-    point.contact_person ??= contact_person;
-    point.contact_phone ??= contact_phone;
-    point.contact_email ??= contact_email;
-    point.type ??= type;
-    point.is_active ??= is_active;
-    point.recyclery_id ??= recyclery_id;
+    point.name = name;
+    point.address = address;
+    point.city = city;
+    point.postal_code = postal_code;
+    point.contact_person = contact_person;
+    point.contact_phone = contact_phone;
+    point.contact_email = contact_email;
+    point.type = type;
+    point.is_active = is_active;
+    point.recyclery_id = recyclery_id;
     await point.save();
 
     res.json({

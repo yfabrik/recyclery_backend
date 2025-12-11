@@ -117,10 +117,10 @@ export const updateCategorie = async (req, res) => {
             error: "Une catégorie avec ce nom existe déjà",
         });
     }
-    category.name ??= name;
-    category.icon ??= icon;
-    category.description ??= description;
-    category.parent_id ??= parent_id;
+    category.name = name;
+    category.icon = icon;
+    category.description = description;
+    // category.parent_id = parent;
     await category.save();
 
     res.json({
