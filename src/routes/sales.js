@@ -1,7 +1,7 @@
 import { Router } from "express";
 import db from "../models/index.js";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
-const { Sale, SalesTransaction, SalesItem, CashSession, LabeledItem } = db;
+const {  SalesTransaction, SalesItem, CashSession, LabeledItem } = db;
 
 export const router = Router();
 router.get(

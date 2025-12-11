@@ -155,20 +155,20 @@ export const updateArrival = async (req, res) => {
       error: "Arrivage non trouvé",
     });
   }
-  arrival.category_id ??= category_id;
-  arrival.subcategory_id ??= subcategory_id;
-  arrival.weight ??= weight;
-  arrival.arrival_date ??= arrival_date;
-  arrival.arrival_time ??= arrival_time;
-  arrival.source_type ??= source_type;
-  arrival.source_details ??= source_details;
-  arrival.collection_point_id ??= collection_point_id;
-  arrival.collection_point_name ??= collection_point_name;
-  arrival.collection_point_address ??= collection_point_address;
-  arrival.volunteer_donation ??= volunteer_donation;
-  arrival.house_clearance ??= house_clearance;
-  arrival.notes ??= notes;
-  arrival.status ??= status;
+  arrival.category_id = category_id;
+  arrival.subcategory_id = subcategory_id;
+  arrival.weight = weight;
+  arrival.arrival_date = arrival_date;
+  arrival.arrival_time = arrival_time;
+  arrival.source_type = source_type;
+  arrival.source_details = source_details;
+  arrival.collection_point_id = collection_point_id;
+  arrival.collection_point_name = collection_point_name;
+  arrival.collection_point_address = collection_point_address;
+  arrival.volunteer_donation = volunteer_donation;
+  arrival.house_clearance = house_clearance;
+  arrival.notes = notes;
+  arrival.status = status;
 
   await arrival.save();
 
