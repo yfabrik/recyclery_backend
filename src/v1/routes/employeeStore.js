@@ -27,9 +27,7 @@ router.get(
   "/employee/:employeeId",
   authenticateToken,
   asyncHandler(
-    // const { employeeId } = req.params;
     findUserById
-
   ));
 
 // Obtenir les employés d'un magasin

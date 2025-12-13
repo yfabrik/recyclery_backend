@@ -1,6 +1,7 @@
+import { Op, Sequelize } from "sequelize";
 import db from  "../models/index.js"
 
-const { CashRegister, CashSession } = db;
+const { CashRegister, CashSession,Recyclery } = db;
 
 export const listCaisses = async (store_id) => {
   const registers = await CashRegister.findAll({

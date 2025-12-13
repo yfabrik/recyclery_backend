@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-import { col, fn } from "sequelize";
+import { col, fn, literal } from "sequelize";
 import { createDon, listDons, updateDon } from "../controllers/donations.js";
 
 const { Donation ,Sequelize} = db;
@@ -27,7 +27,7 @@ router.get(
         [
           fn(
             "SUM",
-            Sequelize.literal(
+            literal(
               `CASE WHEN "status" = 'pending' THEN 1 ELSE 0 END`
             )
           ),
@@ -36,7 +36,7 @@ router.get(
         [
           fn(
             "SUM",
-            Sequelize.literal(
+            literal(
               `CASE WHEN "status" = 'accepted' THEN 1 ELSE 0 END`
             )
           ),
@@ -45,7 +45,7 @@ router.get(
         [
           fn(
             "SUM",
-            Sequelize.literal(
+            literal(
               `CASE WHEN "status" = 'rejected' THEN 1 ELSE 0 END`
             )
           ),

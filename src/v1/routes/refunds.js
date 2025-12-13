@@ -4,7 +4,8 @@ import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 
 import { detailRefund, listRefunds, updateRefund } from "../controllers/refund.js";
-const { Refund, SalesTransaction, Recyclery, User, Sequelize } = db;
+import { fn, Op } from "sequelize";
+const { Refund, SalesTransaction, Sequelize } = db;
 
 export const router = Router();
 // GET - Récupérer tous les avoirs
@@ -63,7 +64,7 @@ router.get(
       include: [{ model: SalesTransaction }],
     });
 
-    const raison = await Refund({
+    const reasons = await Refund.findAll({
       attributes: [
         "reason",
         [fn("COUNT", Sequelize.col("*")), "count"],

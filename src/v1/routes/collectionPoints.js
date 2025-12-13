@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-import { fn } from "sequelize";
+import { fn, col, where } from "sequelize";
 import { createCollectionPoint, deleteCollectionPoint, detailCollectionPoint, listCollectionPoints, updateCollectionPoint } from "../controllers/collectionPoints.js";
 
 const { CollectionSchedule } = db;

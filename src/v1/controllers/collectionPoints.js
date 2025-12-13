@@ -115,7 +115,7 @@ export const updateCollectionPoint = async (req, res) => {
         });
     }
 
-    const point = CollectionPoint.findByPk(id);
+    const point = await CollectionPoint.findByPk(id);
     // Vérifier si le point existe
 
     if (!point) {

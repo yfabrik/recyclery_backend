@@ -143,7 +143,7 @@ export const createLabeledItem = async (req, res) => {
     const barcode = `REC${timestamp}${random}`;
 
     // Récupérer le nom de la catégorie pour l'utiliser comme nom de l'article
-    const category = Category.findByPk(category_id);
+    const category = await  Category.findByPk(category_id);
     if (!name) name = category ? category.name : "Article";
 
     const item = await LabeledItem.create({

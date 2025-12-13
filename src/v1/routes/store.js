@@ -44,7 +44,7 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const items = await Labeleditem.findAll({ where: { recyclery_id: id } });
+    const items = await LabeledItem.findAll({ where: { recyclery_id: id } });
     const openSessions = await CashSession.findAll({
       where: { status: "open" },
 

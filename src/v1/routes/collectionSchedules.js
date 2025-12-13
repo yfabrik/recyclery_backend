@@ -3,10 +3,10 @@ import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 import { addUserToSchedule, createCollectionSchedule, deleteCollectionSchedule, detailBSD, generateBSD, listcollectionSchedule, removeUserFromSchedule, updateCollectionSchedule } from "../controllers/CollectionSchedule.js";
-import { Op } from "sequelize";
+import { col, fn, Op, QueryTypes } from "sequelize";
 
 
-const { CollectionSchedule, CollectionPoint, User } = db;
+const { CollectionSchedule, CollectionPoint, User, EmployeeWorkdays ,sequelize} = db;
 
 export const router = Router();
 
@@ -26,7 +26,7 @@ router.get(
     const where = {};
     if (month && year)
       where = {
-        [Op.eq]: [fn("strftime", "%Y-%m", col("scheduled_date")), yearMonth],
+        [Op.eq]: [fn("strftime", "%Y-%m", col("scheduled_date")), "yearMonth"],
       };
 
     const events = await CollectionSchedule.findAll({
@@ -38,26 +38,25 @@ router.get(
     // Transformer les données pour le calendrier
     const calendarEvents = events.map((event) => ({
       id: event.id,
-      title: `${event.collection_point_name} - ${
-        event.employee_name || "Non assigné"
-      }`,
+      title: `${event.collection_point_name} - ${event.employee_name || "Non assigné"
+        }`,
       start: `${event.scheduled_date}T${event.scheduled_time}`,
       end: event.estimated_duration
         ? new Date(
-            new Date(
-              `${event.scheduled_date}T${event.scheduled_time}`
-            ).getTime() +
-              event.estimated_duration * 60000
-          ).toISOString()
+          new Date(
+            `${event.scheduled_date}T${event.scheduled_time}`
+          ).getTime() +
+          event.estimated_duration * 60000
+        ).toISOString()
         : `${event.scheduled_date}T${event.scheduled_time}`,
       backgroundColor:
         event.status === "completed"
           ? "#4caf50"
           : event.status === "cancelled"
-          ? "#f44336"
-          : event.status === "in_progress"
-          ? "#ff9800"
-          : "#2196f3",
+            ? "#f44336"
+            : event.status === "in_progress"
+              ? "#ff9800"
+              : "#2196f3",
       extendedProps: {
         status: event.status,
         collection_point_name: event.collection_point_name,
@@ -139,7 +138,7 @@ router.get(
 
     const allEmployees = await User.findAll({
       attributes: [
-        [Sequelize.fn("DISTINCT", Sequelize.col("User.id")), "id"],
+        [fn("DISTINCT", col("User.id")), "id"],
         "username",
         "email",
         "role",
@@ -147,7 +146,7 @@ router.get(
 
       include: [
         {
-          model: EmployeeWorkday,
+          model: EmployeeWorkdays,
           attributes: [],
           required: true, // INNER JOIN
           where: {
@@ -218,7 +217,7 @@ router.get(
             scheduleId: schedule.id,
             startTime: schedule.scheduled_time,
           },
-          type: sequelize.QueryTypes.SELECT,
+          type: QueryTypes.SELECT,
         }
       );
       const endTime = new Date(

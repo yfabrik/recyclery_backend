@@ -169,17 +169,17 @@ export const updateWaste = async (req, res) => {
     }
 
     const waste = await WasteDisposal.findByPk(id);
-    waste.disposal_date ??= disposal_date;
-    waste.disposal_type ??= disposal_type;
-    waste.category_id ??= category_id;
-    waste.subcategory_id ??= subcategory_id;
-    waste.eco_organism_id ??= eco_organism_id;
-    waste.weight_kg ??= weight_kg;
-    waste.volume_m3 ??= volume_m3;
-    waste.transport_method ??= transport_method;
-    waste.transport_company ??= transport_company;
-    waste.transport_cost ??= transport_cost;
-    waste.notes ??= notes;
+    waste.disposal_date = disposal_date;
+    waste.disposal_type =disposal_type;
+    waste.category_id = category_id;
+    waste.subcategory_id = subcategory_id;
+    waste.eco_organism_id = eco_organism_id;
+    waste.weight_kg = weight_kg;
+    waste.volume_m3 = volume_m3;
+    waste.transport_method = transport_method;
+    waste.transport_company = transport_company;
+    waste.transport_cost = transport_cost;
+    waste.notes = notes;
     await waste.save();
 
     res.json({ message: "Sortie de déchets mise à jour avec succès" });

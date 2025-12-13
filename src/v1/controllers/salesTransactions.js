@@ -69,7 +69,7 @@ export const createTransaction = async (req, res) => {
     const transactionNumber = `TXN${timestamp.slice(-8)}`;
 
     // Insérer la transaction
-    const result = SalesTransaction.create({
+    const result = await SalesTransaction.create({
         transaction_number: transactionNumber,
         cash_session_id,
         store_id,
@@ -86,9 +86,10 @@ export const createTransaction = async (req, res) => {
     res.json({
         success: true,
         data: {
-            id: result.lastID,
+            id: result.id,
             transactionNumber,
             message: "Transaction créée avec succès",
+            result
         },
     });
 }

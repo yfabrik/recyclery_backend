@@ -9,8 +9,9 @@ import {
   listArrivals,
   updateArrival,
 } from "../controllers/arrivals.js";
+import { Op } from "sequelize";
 
-const { Sequelize } = db;
+const { Sequelize, Arrival, Category } = db;
 
 export const router = Router();
 
@@ -153,12 +154,16 @@ router.get(
     }
 
     const stats = await Arrival.findAll({
-      attributes: [
-        "*",
-        [Sequelize.fn("COUNT", Sequelize.col("*")), "count"],
-        [Sequelize.fn("SUM", Sequelize.col("weight")), "total_weight"],
-      ],
-      include: [{ model: category, as: "categorie" }],
+      attributes: {
+        include: [
+
+
+          [Sequelize.fn("COUNT", Sequelize.col("*")), "count"],
+          [Sequelize.fn("SUM", Sequelize.col("weight")), "total_weight"],
+
+        ]
+      },
+      include: [{ model: Category, as: "categorie" }],
     });
 
     res.json({

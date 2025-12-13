@@ -2,7 +2,8 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-const { SalesTransaction, SaleItem, Item, User } = db;
+import { isTemplateLiteral } from "typescript";
+const { SalesTransaction, SalesItem, LabeledItem, User } = db;
 
 export const router = Router();
 router.use(authenticateToken);
@@ -66,7 +67,7 @@ router.post(
       // 2️⃣ Insert sale items
       const saleItems = await Promise.all(
         items.map(async (item) => {
-          const saleItem = await SaleItem.create(
+          const saleItem = await SalesItem.create(
             {
               sale_id: sale.id,
               item_id: item.item_id,
@@ -77,7 +78,7 @@ router.post(
           );
 
           // 3️⃣ Mark the item as sold
-          await Item.update(
+          await LabeledItem.update(
             { status: "sold" },
             { where: { id: item.item_id }, transaction }
           );

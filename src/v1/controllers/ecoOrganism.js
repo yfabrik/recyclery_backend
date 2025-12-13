@@ -102,13 +102,13 @@ export const updateEcoOrganism = async (req, res) => {
 
     const activeStatus = is_active === undefined ? 1 : is_active ? 1 : 0;
     const eco_organism = await EcoOrganism.findByPk(id);
-    eco_organism.name ??= name;
-    eco_organism.description ??= description;
-    eco_organism.contact_email ??= contact_email;
-    eco_organism.contact_phone ??= contact_phone;
-    eco_organism.address ??= address;
-    eco_organism.website ??= website;
-    eco_organism.is_active ??= is_active;
+    eco_organism.name = name;
+    eco_organism.description = description;
+    eco_organism.contact_email = contact_email;
+    eco_organism.contact_phone = contact_phone;
+    eco_organism.address = address;
+    eco_organism.website = website;
+    eco_organism.is_active = is_active;
 
     await eco_organism.save();
 

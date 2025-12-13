@@ -10,7 +10,7 @@ import {
 import { authenticateToken } from "../../middlewares/auth.js";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import db from "../../models/index.js";
-import { fn, Op } from "sequelize";
+import { col, fn, Op } from "sequelize";
 const { User } = db;
 
 export const router = Router();

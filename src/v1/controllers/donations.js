@@ -89,14 +89,14 @@ export const updateDon = async (req, res) => {
   const donor_email = isEmail ? donor_contact : null;
   const donor_phone = !isEmail ? donor_contact : null;
 
-  const donation = Donation.findByPk(id);
+  const donation = await Donation.findByPk(id);
   if (!donation) throw new createHttpError.NotFound();
-  donation.donor_name ??= donor_name;
-  donation.donor_phone ??= donor_phone;
-  donation.donor_email ??= donor_email;
-  donation.item_description ??= item_description;
-  donation.estimated_value ??= estimated_value;
-  donation.stats ??= status;
+  donation.donor_name = donor_name;
+  donation.donor_phone = donor_phone;
+  donation.donor_email = donor_email;
+  donation.item_description = item_description;
+  donation.estimated_value = estimated_value;
+  donation.stats = status;
 
   await donation.save();
 

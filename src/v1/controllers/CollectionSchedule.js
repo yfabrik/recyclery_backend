@@ -281,7 +281,7 @@ export const addUserToSchedule = async (req, res) => {
         where: {
             id: employee_id,
             role: "employee",
-            ...(schedule.recyclery_id && { recyclery_id: recycleryId }),
+            // ...(schedule.recyclery_id && { recyclery_id: recycleryId }),
         },
 
         // raw: true,

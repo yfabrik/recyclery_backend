@@ -143,19 +143,19 @@ export const updateTask = async (req, res) => {
             message: "Tâche non trouvée",
         });
     }
-    existing.name ??= name;
-    existing.description ??= description;
-    existing.category ??= category;
-    existing.priority ??= priority;
-    existing.estimated_duration ??= estimated_duration;
-    existing.required_skills ??= JSON.stringify(required_skills || [])
-    existing.location ??= location
-    existing.equipment_needed ??= JSON.stringify(equipment_needed || [])
-    existing.hourly_rate ??= hourly_rate
-    existing.is_recurring ??= is_recurring;
-    existing.recurrence_pattern ??= recurrence_pattern;
-    existing.assigned_to ??= assigned_to;
-    existing.notes ??= notes;
+    existing.name = name;
+    existing.description = description;
+    existing.category = category;
+    existing.priority = priority;
+    existing.estimated_duration = estimated_duration;
+    existing.required_skills = JSON.stringify(required_skills || [])
+    existing.location = location
+    existing.equipment_needed = JSON.stringify(equipment_needed || [])
+    existing.hourly_rate = hourly_rate
+    existing.is_recurring = is_recurring;
+    existing.recurrence_pattern = recurrence_pattern;
+    existing.assigned_to = assigned_to;
+    existing.notes = notes;
     await existing.save();
 
     res.json({
