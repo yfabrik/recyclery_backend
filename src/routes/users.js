@@ -1,5 +1,6 @@
 import { Router } from "express";
-import db from "../models/index.js";
+import db from  "../../models/index.js"
+
 import { authenticateToken } from "../middlewares/auth.js";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
 const { User, Recyclery } = db;

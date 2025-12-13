@@ -1,5 +1,5 @@
 import { jest } from "@jest/globals";
-import { createCategorie, deleteCategorie, listCategories, listSubcategories } from "../../src/controllers/categories";
+import { createCategorie, deleteCategorie, listCategories, listSubcategories } from "../../src/v1/controllers/categories";
 
 describe("categories controller functions", () => {
 

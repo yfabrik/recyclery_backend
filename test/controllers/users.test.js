@@ -1,5 +1,5 @@
 import { jest } from "@jest/globals";
-import { createUser, deleteUser, listUsers } from "../../src/controllers/users";
+import { createUser, deleteUser, listUsers } from "../../src/v1/controllers/users";
 
 describe("User controller functions", () => {
   it("should create user", async () => {

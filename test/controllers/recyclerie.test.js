@@ -1,5 +1,5 @@
 import { jest } from "@jest/globals";
-import { createRecyclerie, deleteRecyclerie, detailRecyclerie, listRecycleries } from "../../src/controllers/recycleries";
+import { createRecyclerie, deleteRecyclerie, detailRecyclerie, listRecycleries } from "../../src/v1/controllers/recycleries";
 
 describe("recyclery controller functions", () => {
 

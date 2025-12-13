@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
-import db from "../models/index.js";
+import db from  "../../models/index.js"
+
 const { Recyclery, User, CashRegister } = db;
 
 export const router = Router();

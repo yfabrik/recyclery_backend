@@ -1,6 +1,6 @@
 import { beforeAll, expect, jest } from "@jest/globals";
 import db from "../../src/models";
-import { createWaste, detailWaste, listWaste } from "../../src/controllers/waste";
+import { createWaste, detailWaste, listWaste } from "../../src/v1/controllers/waste";
 const { User, Category } = db
 
 beforeAll(async () => {

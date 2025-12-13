@@ -1,6 +1,6 @@
 import { beforeAll, expect, jest } from "@jest/globals";
 import db from "../../src/models";
-import { createRefund, createTransaction, listRefunds, listTransactions } from "../../src/controllers/salesTransactions";
+import { createRefund, createTransaction, listRefunds, listTransactions } from "../../src/v1/controllers/salesTransactions";
 const { Recyclery, CashRegister, User, CashSession } = db
 
 beforeAll(async () => {

@@ -1,4 +1,5 @@
-import db from "../models/index.js";
+import db from  "../models/index.js"
+
 const { CashRegister, CashSession } = db;
 
 export const listCaisses = async (store_id) => {

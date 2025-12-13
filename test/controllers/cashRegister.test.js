@@ -1,6 +1,6 @@
 import { beforeAll, jest } from "@jest/globals";
 import db from "../../src/models";
-import { createCaisse, deleteCaisse, detailCaisse, listCaisses } from "../../src/controllers/cashRegister";
+import { createCaisse, deleteCaisse, detailCaisse, listCaisses } from "../../src/v1/controllers/cashRegister";
 const { Recyclery } = db
 
 beforeAll(async () => {

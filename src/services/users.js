@@ -1,4 +1,5 @@
-import db from "../models/index.js";
+import db from  "../models/index.js"
+
 const { User } = db;
 
 export const findUserByEmail = async (email) => {

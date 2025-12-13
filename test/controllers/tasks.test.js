@@ -1,6 +1,6 @@
 import { beforeAll, expect, jest } from "@jest/globals";
 import db from "../../src/models";
-import { addUserToTask, createTask, detailTask, getUsersFromTask, listTasks, removeUserFromTask } from "../../src/controllers/tasks";
+import { addUserToTask, createTask, detailTask, getUsersFromTask, listTasks, removeUserFromTask } from "../../src/v1/controllers/tasks";
 const { User } = db
 
 beforeAll(async () => {

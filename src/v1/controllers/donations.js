@@ -1,0 +1,104 @@
+import createHttpError from "http-errors";
+import { col, fn } from "sequelize";
+import db from  "../../models/index.js"
+
+
+
+const { Donation, User } = db
+
+export const listDons = async (req, res) => {
+  const { recyclery_id, status } = req.query;
+  const where = {};
+  if (recyclery_id) where.recyclery_id = recyclery_id;
+  if (status) where.status = status;
+
+  const donations = await Donation.findAll({
+    where,
+    attributes: [
+      "*",
+      [fn("COALESCE", col("donor_email"), col("donor_phone")), "donor_contact"],
+    ],
+    include: [{ model: User }],
+    order: [["createdAt", "DESC"]],
+  });
+
+  res.json({ donations });
+}
+
+export const createDon = async (req, res) => {
+  const { donor_name, donor_contact, item_description, estimated_value } =
+    req.body;
+
+  if (!donor_name || !item_description) {
+    return res
+      .status(400)
+      .json({ error: "Nom du donateur et description requis" });
+  }
+
+  // Validation du estimated_value (optionnel mais doit être numérique si fourni)
+  if (
+    estimated_value !== undefined &&
+    estimated_value !== null &&
+    estimated_value !== "" &&
+    isNaN(parseFloat(estimated_value))
+  ) {
+    return res
+      .status(400)
+      .json({ error: "La valeur estimée doit être un nombre valide" });
+  }
+
+  // Séparer email et téléphone du contact
+  const isEmail = donor_contact && donor_contact.includes("@");
+  const donor_email = isEmail ? donor_contact : null;
+  const donor_phone = !isEmail ? donor_contact : null;
+
+  const donation = await Donation.create({
+    donor_name,
+    donor_phone,
+    donor_email,
+    item_description,
+    estimated_value,
+    recyclery_id: 1, //FIXME
+    received_by: req.user.id,
+  });
+
+  res.status(201).json({
+    message: "Don enregistré avec succès",
+    donation,
+  });
+}
+
+export const updateDon = async (req, res) => {
+  const { id } = req.params;
+  const {
+    donor_name,
+    donor_contact,
+    item_description,
+    estimated_value,
+    status,
+  } = req.body;
+
+  if (!donor_name || !item_description) {
+    return res
+      .status(400)
+      .json({ error: "Nom du donateur et description requis" });
+  }
+
+  // Séparer email et téléphone du contact
+  const isEmail = donor_contact && donor_contact.includes("@");
+  const donor_email = isEmail ? donor_contact : null;
+  const donor_phone = !isEmail ? donor_contact : null;
+
+  const donation = Donation.findByPk(id);
+  if (!donation) throw new createHttpError.NotFound();
+  donation.donor_name ??= donor_name;
+  donation.donor_phone ??= donor_phone;
+  donation.donor_email ??= donor_email;
+  donation.item_description ??= item_description;
+  donation.estimated_value ??= estimated_value;
+  donation.stats ??= status;
+
+  await donation.save();
+
+  res.json({ message: "Don mis à jour avec succès" });
+}

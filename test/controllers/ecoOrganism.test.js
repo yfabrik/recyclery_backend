@@ -1,6 +1,6 @@
 import { beforeAll, expect, jest } from "@jest/globals";
 import db from "../../src/models";
-import { createEcoOrganism, deleteEcoOrganism, detailEcoOrganism, listActiveEcoOrganism, listEcoOrganism } from "../../src/controllers/ecoOrganism";
+import { createEcoOrganism, deleteEcoOrganism, detailEcoOrganism, listActiveEcoOrganism, listEcoOrganism } from "../../src/v1/controllers/ecoOrganism";
 
 const { User, CollectionPoint, Recyclery } = db
 

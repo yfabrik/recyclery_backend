@@ -15,7 +15,7 @@ app.use(express.json());
 // app.use("/api/sales", (await import("./routes/sales.js")).router);
 // app.use("/api/auth", (await import("./routes/auth.js")).router);
 
-import { router } from "./routes/v1/index.js";
+import { router } from "./v1/routes/index.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import createHttpError from "http-errors";
 import cors from "cors";

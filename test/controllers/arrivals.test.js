@@ -1,7 +1,7 @@
 import { beforeAll, jest } from "@jest/globals";
 import db from "../../src/models";
 
-import { createArrival, deleteArrival, detailArrival, listArrivals } from "../../src/controllers/arrivals";
+import { createArrival, deleteArrival, detailArrival, listArrivals } from "../../src/v1/controllers/arrivals";
 const { Recyclery, Category, User, CollectionPoint } = db
 
 beforeAll(async () => {
