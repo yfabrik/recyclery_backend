@@ -1,5 +1,5 @@
-import { jest } from "@jest/globals";
-import { createCategorie, deleteCategorie, listCategories, listSubcategories } from "../../src/v1/controllers/categories";
+import { expect, jest } from "@jest/globals";
+import { createCategorie, deleteCategorie, listCategories, listSubcategories, updateCategorie } from "../../src/v1/controllers/categories";
 
 describe("categories controller functions", () => {
 
@@ -124,6 +124,31 @@ describe("categories controller functions", () => {
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 subcategories: expect.any(Array),
+                success: true,
+            })
+        );
+    });
+        it("should update categorie 1", async () => {
+        const body = {
+            name: "categorie 1.0",
+        };
+        const req = {
+            query: {},
+            user: { id: 1, role: "admin" },
+            body,
+            params: { id: 1 }
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        await updateCategorie(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                category:expect.objectContaining({name:"categorie 1.0"}),
                 success: true,
             })
         );

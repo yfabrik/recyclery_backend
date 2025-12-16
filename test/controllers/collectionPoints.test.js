@@ -1,6 +1,6 @@
 import { beforeAll, expect, jest } from "@jest/globals";
 import db from "../../src/models";
-import { createCollectionPoint, deleteCollectionPoint, detailCollectionPoint, listCollectionPoints } from "../../src/v1/controllers/collectionPoints";
+import { createCollectionPoint, deleteCollectionPoint, detailCollectionPoint, listCollectionPoints, updateCollectionPoint } from "../../src/v1/controllers/collectionPoints";
 const { User } = db
 
 beforeAll(async () => {
@@ -54,7 +54,7 @@ describe("collection points controller functions", () => {
             postal_code: "39270",
             // contact_person,
             // contact_phone,
-            // contact_email,
+            contact_email:"c@example.com",
             // type,
             // notes,
             // recyclery_id,
@@ -96,6 +96,38 @@ describe("collection points controller functions", () => {
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 collection_point: expect.any(Object),
+                success: true
+            })
+        );
+    });
+        it("should update the point id 1", async () => {
+
+        const req = {
+            query: { 
+              
+        },
+            user: { id: 1, role: "admin" },
+            params: { id: 1 },
+            body:{
+  name: "updated name",
+                address: "autres",
+                city:"b",
+                postal_code:"01000"
+            }
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        await updateCollectionPoint(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                collection_point: expect.objectContaining({name: "updated name",
+            address: "autres",city:"b",
+                postal_code:"01000", contact_email:"c@example.com",}),
                 success: true
             })
         );

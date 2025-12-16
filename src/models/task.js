@@ -11,6 +11,7 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.belongsToMany(models.User, { through: "task_user" })
+      this.hasMany(models.TaskSchedule,{foreignKey:"task_id"})
     }
   }
   Task.init({

@@ -19,5 +19,5 @@ router.get("/", asyncHandler(listCashSessions));
 router.get("/active", asyncHandler(getActiveSession));
 router.post("/open", asyncHandler(openCashSession));
 router.put("/:id/close", asyncHandler(closeCashSession));
-router.get("/:id", asyncHandler(getSessionById));
 router.get("/store/:store_id/registers", asyncHandler(getRegistersByStore));
+router.get("/:id", asyncHandler(getSessionById));

@@ -1,5 +1,5 @@
 import createHttpError from "http-errors";
-import { col, fn } from "sequelize";
+import { col, fn, literal } from "sequelize";
 import db from  "../../models/index.js"
 
 
@@ -14,10 +14,11 @@ export const listDons = async (req, res) => {
 
   const donations = await Donation.findAll({
     where,
-    attributes: [
-      "*",
-      [fn("COALESCE", col("donor_email"), col("donor_phone")), "donor_contact"],
-    ],
+    attributes: {
+      include:[
+        [fn("COALESCE", col("donor_email"), col("donor_phone")), "donor_contact"],
+      ]
+    },
     include: [{ model: User }],
     order: [["createdAt", "DESC"]],
   });
@@ -37,9 +38,9 @@ export const createDon = async (req, res) => {
 
   // Validation du estimated_value (optionnel mais doit être numérique si fourni)
   if (
-    estimated_value !== undefined &&
-    estimated_value !== null &&
-    estimated_value !== "" &&
+    estimated_value !== undefined ||
+    estimated_value !== null ||
+    estimated_value !== "" ||
     isNaN(parseFloat(estimated_value))
   ) {
     return res
@@ -102,3 +103,42 @@ export const updateDon = async (req, res) => {
 
   res.json({ message: "Don mis à jour avec succès" });
 }
+
+export const donStats = async (req, res) => {
+    const stats = await Donation.findOne({
+      attributes: [
+        [fn("COUNT", col("*")), "total_donations"],
+        [
+          fn(
+            "SUM",
+            literal(
+              `CASE WHEN "status" = 'pending' THEN 1 ELSE 0 END`
+            )
+          ),
+          "pending_donations",
+        ],
+        [
+          fn(
+            "SUM",
+            literal(
+              `CASE WHEN "status" = 'accepted' THEN 1 ELSE 0 END`
+            )
+          ),
+          "accepted_donations",
+        ],
+        [
+          fn(
+            "SUM",
+            literal(
+              `CASE WHEN "status" = 'rejected' THEN 1 ELSE 0 END`
+            )
+          ),
+          "rejected_donations",
+        ],
+        [fn("SUM", col("estimated_value")), "total_estimated_value"],
+      ],
+      raw: true,
+    });
+
+    res.json({ stats });
+  }

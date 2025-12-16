@@ -12,7 +12,7 @@ export default (sequelize, DataTypes) => {
     static associate(models) {
       this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
       this.hasMany(models.CashSession, {
-        foreignKey: "session_id",
+        foreignKey: "cash_register_id",
         as: "sessions",
       });
     }

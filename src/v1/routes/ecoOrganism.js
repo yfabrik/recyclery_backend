@@ -1,18 +1,16 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
-import db from "../../models/index.js";
-
 import {
   createEcoOrganism,
   deleteEcoOrganism,
   detailEcoOrganism,
+  ecoOrgaStats,
   listActiveEcoOrganism,
   listEcoOrganism,
   updateEcoOrganism,
 } from "../controllers/ecoOrganism.js";
 
-const { EcoOrganism, Sequelize, WasteDisposal } = db;
 export const router = Router();
 
 // GET all eco-organisms
@@ -64,27 +62,5 @@ router.get(
   "/stats/summary",
   authenticateToken,
   //  requireModuleAccess('admin.eco_organisms', 'view'),
-  asyncHandler(async (req, res) => {
-    const stats = await EcoOrganism.findAll({
-      attributes: [
-        [Sequelize.fn("COUNT", Sequelize.col("*")), "total_eco_organisms"],
-        [
-          Sequelize.fn(
-            "SUM",
-            Sequelize.literal(`CASE WHEN "is_active" = 1 THEN 1 ELSE 0 END`)
-          ),
-          "active_eco_organisms",
-        ],
-        [
-          Sequelize.fn(
-            "SUM",
-            Sequelize.literal(`CASE WHEN "is_active" = 0 THEN 1 ELSE 0 END`)
-          ),
-          "inactive_eco_organisms",
-        ],
-      ],
-    });
-
-    res.json({ stats });
-  })
+  asyncHandler(ecoOrgaStats)
 );

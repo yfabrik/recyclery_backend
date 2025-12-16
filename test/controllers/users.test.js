@@ -1,5 +1,11 @@
 import { jest } from "@jest/globals";
-import { createUser, deleteUser, listUsers } from "../../src/v1/controllers/users";
+import {
+  createUser,
+  deleteUser,
+  findUserById,
+  listUsers,
+  updateUser,
+} from "../../src/v1/controllers/users";
 
 describe("User controller functions", () => {
   it("should create user", async () => {
@@ -11,7 +17,7 @@ describe("User controller functions", () => {
     };
     const req = {
       query: {},
-      user: { id: 1, role: "admin" },
+      // user: { id: 1, role: "admin" },
       body,
     };
 
@@ -23,9 +29,60 @@ describe("User controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        user: expect.any(Object),
+        user: expect.objectContaining({
+          username: "john",
+          email: "john@example.com",
+          role: "employee",
+        }),
         success: true,
         message: "Utilisateur créé avec succès",
+      })
+    );
+  });
+
+  it("should find john", async () => {
+    const req = {
+      params: { id: 1 },
+      // user: { id: 1, role: "admin" },
+    };
+
+    const res = {
+      json: jest.fn(),
+    };
+
+    await findUserById(req, res);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user: expect.objectContaining({
+          username: "john",
+          email: "john@example.com",
+          role: "employee",
+        }),
+      })
+    );
+  });
+  it("should update john", async () => {
+    const req = {
+      params: { id: 1 },
+      // user: { id: 1, role: "admin" },
+      body:{
+        email:"john2@example.com",
+        role:"admin"
+      }
+    };
+
+    const res = {
+      json: jest.fn(),
+    };
+
+    await updateUser(req, res);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user: expect.objectContaining({
+          username: "john",
+          email: "john2@example.com",
+          role: "admin",
+        }),
       })
     );
   });
@@ -33,7 +90,7 @@ describe("User controller functions", () => {
   it("should list users", async () => {
     const req = {
       query: {},
-      user: { id: 1, role: "admin" },
+      // user: { id: 1, role: "admin" },
     };
 
     const res = {
@@ -50,8 +107,8 @@ describe("User controller functions", () => {
   it("should delete the user", async () => {
     const req = {
       query: {},
-      user: { id: 1, role: "admin" },
-      params: { id: 1 }
+      // user: { id: 1, role: "admin" },
+      params: { id: 1 },
     };
 
     const res = {
@@ -63,8 +120,22 @@ describe("User controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        message: "user removed"
+        message: "user removed",
       })
     );
+  });
+  it("shouldn't find john", async () => {
+    const req = {
+      params: { id: 1 },
+      // user: { id: 1, role: "admin" },
+    };
+
+    const res = {
+      json: jest.fn(),
+    };
+
+    expect(async() => {
+      await findUserById(req, res);
+    }).rejects.toThrow("NotFoundError");
   });
 });

@@ -1,8 +1,13 @@
 import { jest } from "@jest/globals";
-import { createRecyclerie, deleteRecyclerie, detailRecyclerie, listRecycleries } from "../../src/v1/controllers/recycleries";
+import {
+  createRecyclerie,
+  deleteRecyclerie,
+  detailRecyclerie,
+  listRecycleries,
+  updateRecyclerie,
+} from "../../src/v1/controllers/recycleries";
 
 describe("recyclery controller functions", () => {
-
   it("should create recyclery", async () => {
     const body = {
       name: "recyclerie test",
@@ -11,8 +16,7 @@ describe("recyclery controller functions", () => {
       email: "recyclery@test.com",
       // manager_id,
       city: "orgelet",
-      postal_code: "39270"
-
+      postal_code: "39270",
     };
     const req = {
       query: {},
@@ -22,7 +26,7 @@ describe("recyclery controller functions", () => {
 
     const res = {
       json: jest.fn(),
-      status: jest.fn().mockReturnThis()
+      status: jest.fn().mockReturnThis(),
     };
 
     await createRecyclerie(req, res);
@@ -52,8 +56,64 @@ describe("recyclery controller functions", () => {
       expect.objectContaining({ stores: expect.any(Array) })
     );
   });
-  
+
   it("should find recyclery 1", async () => {
+    const req = {
+      query: {},
+      user: { id: 1, role: "admin" },
+      params: { id: 1 },
+    };
+
+    const res = {
+      json: jest.fn(),
+    };
+
+    await detailRecyclerie(req, res);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ store: expect.any(Object) })
+    );
+  });
+
+  it("should update recyclery 1", async () => {
+    const req = {
+      query: {},
+      user: { id: 1, role: "admin" },
+      params: { id: 1 },
+      body: { name: "updated" },
+    };
+
+    const res = {
+      json: jest.fn(),
+    };
+
+    await updateRecyclerie(req, res);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        store: expect.objectContaining({ name: "updated" }),
+      })
+    );
+  });
+
+  it("should delete recyclery", async () => {
+    const req = {
+      query: {},
+      user: { id: 1, role: "admin" },
+      params: { id: 1 },
+    };
+
+    const res = {
+      json: jest.fn(),
+    };
+
+    await deleteRecyclerie(req, res);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Recyclerie supprimée avec succès" })
+    );
+  });
+   it("shouldn't find recyclery 1", async () => {
     const req = {
       query: {},
       user: { id: 1, role: "admin" },
@@ -67,24 +127,7 @@ describe("recyclery controller functions", () => {
     await detailRecyclerie(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ store: expect.any(Object) })
-    );
-  });
-  it("should delete recyclery", async () => {
-    const req = {
-      query: {},
-      user: { id: 1, role: "admin" },
-      params:{id:1}
-    };
-
-    const res = {
-      json: jest.fn(),
-    };
-
-    await deleteRecyclerie(req, res);
-
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Recyclerie supprimée avec succès" })
+      expect.objectContaining({ store: null })
     );
   });
 });

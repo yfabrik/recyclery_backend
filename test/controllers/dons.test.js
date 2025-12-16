@@ -27,7 +27,7 @@ describe("dons controller functions", () => {
             donor_name: "non",
             donor_contact: "0123456789",
             item_description: "non",
-            estimated_value: 1
+            estimated_value: "1"
 
         };
         const req = {

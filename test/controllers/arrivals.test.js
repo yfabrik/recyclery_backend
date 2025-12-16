@@ -80,7 +80,7 @@ describe("arrival controller functions", () => {
         await listArrivals(req, res);
 
         expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({ arrivals: expect.any(Array), success: true })
+            expect.objectContaining({ arrivals: expect(array.every(obj => obj.hasOwnProperty("id"))).toBe(true), success: true })
         );
     });
     it("should find arrival 1", async () => {

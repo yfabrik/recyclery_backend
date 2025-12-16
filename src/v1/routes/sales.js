@@ -2,7 +2,6 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-import { isTemplateLiteral } from "typescript";
 const { SalesTransaction, SalesItem, LabeledItem, User } = db;
 
 export const router = Router();

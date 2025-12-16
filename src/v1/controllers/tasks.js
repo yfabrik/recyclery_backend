@@ -12,8 +12,8 @@ export const listTasks = async (req, res) => {
 
     if (search)
         where[Op.or] = [
-            { name: { [Op.like]: searchTerm } },
-            { description: { [Op.like]: searchTerm } },
+            { name: { [Op.like]: search } },
+            { description: { [Op.like]: search } },
         ];
 
     const tasks = await Task.findAll({
@@ -34,7 +34,8 @@ export const listTasks = async (req, res) => {
 
     res.json({
         success: true,
-        tasks: parsedTasks,
+        tasksx: parsedTasks,
+        tasks:tasks
     });
 }
 
@@ -62,7 +63,7 @@ export const detailTask = async (req, res) => {
 
     res.json({
         success: true,
-        task: task,
+        task: tasks,
     });
 }
 
@@ -161,6 +162,7 @@ export const updateTask = async (req, res) => {
     res.json({
         success: true,
         message: "Tâche mise à jour avec succès",
+        task:existing
     });
 }
 

@@ -1,5 +1,5 @@
-import { Op } from "sequelize";
-import db from  "../../models/index.js"
+import { col, fn, literal, Op } from "sequelize";
+import db from "../../models/index.js";
 
 const { Arrival, Category, User, CollectionPoint } = db;
 
@@ -180,7 +180,7 @@ export const updateArrival = async (req, res) => {
 
 export const deleteArrival = async (req, res) => {
   const { id } = req.params;
-  const arrival = await Arrival.destroy({where:{id}});
+  const arrival = await Arrival.destroy({ where: { id } });
   // Vérifier si l'arrivage existe
   if (!arrival) {
     return res.status(404).json({
@@ -191,6 +191,112 @@ export const deleteArrival = async (req, res) => {
   res.json({
     success: true,
     message: "Arrivage supprimé avec succès",
+  });
+};
+
+export const statsSummary = async (req, res) => {
+  const { date_from, date_to } = req.query;
+
+  const where = {};
+
+  if (date_from) {
+    where.arrival_date = {
+      ...(where.arrival_date || {}),
+      [Op.gte]: date_from,
+    };
+  }
+
+  if (date_to) {
+    where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
+  }
+
+  const stats = await Arrival.findOne({
+    attributes: [
+      // COUNT(*)
+      [fn("COUNT", col("*")), "total_arrivals"],
+
+      // SUM(weight)
+      [fn("SUM", col("weight")), "total_weight"],
+
+      // COUNT(CASE WHEN source_type = 'collection_point')
+      [
+        fn(
+          "COUNT",
+          literal("CASE WHEN source_type = 'collection_point' THEN 1 END")
+        ),
+        "from_collection_points",
+      ],
+
+      // volunteer_donation = 1
+      [
+        fn("COUNT", literal("CASE WHEN volunteer_donation = 1 THEN 1 END")),
+        "volunteer_donations",
+      ],
+
+      // house_clearance = 1
+      [
+        fn("COUNT", literal("CASE WHEN house_clearance = 1 THEN 1 END")),
+        "house_clearances",
+      ],
+
+      // status = 'received'
+      [
+        fn("COUNT", literal("CASE WHEN status = 'received' THEN 1 END")),
+        "pending_processing",
+      ],
+
+      // status = 'processed'
+      [
+        fn("COUNT", literal("CASE WHEN status = 'processed' THEN 1 END")),
+        "processed",
+      ],
+    ],
+
+    where,
+    raw: true,
+  });
+
+  res.json({
+    success: true,
+    stats: stats || {
+      total_arrivals: 0,
+      total_weight: 0,
+      from_collection_points: 0,
+      volunteer_donations: 0,
+      house_clearances: 0,
+      pending_processing: 0,
+      processed: 0,
+    },
+  });
+};
+
+export const statsByCategories = async (req, res) => {
+  const { date_from, date_to } = req.query;
+  const where = {};
+  if (date_from) {
+    where.arrival_date = {
+      ...(where.arrival_date || {}),
+      [Op.gte]: date_from,
+    };
+  }
+
+  if (date_to) {
+    where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
+  }
+
+  const stats = await Arrival.findAll({
+    attributes: {
+      include: [
+        [fn("COUNT", col("*")), "count"],
+        [fn("SUM", col("weight")), "total_weight"],
+      ],
+    },
+    include: [{ model: Category, as: "categorie" }],
+  });
+
+  res.json({
+    success: true,
+    categories: stats || [],
   });
 };
 

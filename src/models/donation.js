@@ -20,7 +20,7 @@ export default (sequelize, DataTypes) => {
       donor_phone: DataTypes.STRING,
       donor_email: DataTypes.STRING,
       item_description: DataTypes.TEXT,
-      estimated_value: DataTypes.DECIMAL,
+      estimated_value: DataTypes.FLOAT,
       status: { type: DataTypes.STRING, defaultValue: "pending" },
       // recyclery_id: DataTypes.INTEGER,//assoc
       // received_by: DataTypes.INTEGER,//assoc

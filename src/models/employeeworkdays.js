@@ -10,6 +10,7 @@ export default (sequelize, DataTypes) => {
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
+      this.belongsTo(models.User,{foreignKey:"employee_id"})
       // define association here
     }
   }

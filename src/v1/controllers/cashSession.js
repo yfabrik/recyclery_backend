@@ -1,5 +1,5 @@
 import { fn, col } from "sequelize";
-import db from  "../../models/index.js"
+import db from "../../models/index.js";
 
 import { listCaisses } from "./cashRegister.js";
 const {
@@ -22,21 +22,25 @@ export const listCashSessions = async (req, res) => {
   if (user_id) where.user_id = user_id;
 
   const sessions = await CashSession.findAll({
-    attributes: [
-      "*",
-      [
-        Sequelize.fn("COUNT", Sequelize.col("SalesTransactions.id")),
-        "transactions_count",
+    attributes: {
+      include: [
+        [
+          Sequelize.fn("COUNT", Sequelize.col("SalesTransactions.id")),
+          "transactions_count",
+        ],
+        [
+          Sequelize.fn(
+            "COALESCE",
+            Sequelize.fn(
+              "SUM",
+              Sequelize.col("SalesTransactions.total_amount")
+            ),
+            0
+          ),
+          "total_sales",
+        ],
       ],
-      [
-        Sequelize.fn(
-          "COALESCE",
-          Sequelize.fn("SUM", Sequelize.col("SalesTransactions.total_amount")),
-          0
-        ),
-        "total_sales",
-      ],
-    ],
+    },
     where,
     include: [
       { model: CashRegister, attributes: ["name"] },
@@ -96,14 +100,12 @@ export const openCashSession = async (req, res) => {
     notes,
   });
 
-  res
-    .status(201)
-    .json({
-      success: true,
-      session,
-      session_id: session.id,
-      session_number: sessionNumber,
-    });
+  res.status(201).json({
+    success: true,
+    session,
+    session_id: session.id,
+    session_number: sessionNumber,
+  });
 };
 
 // 🧠 PUT /cash-sessions/:id/close
@@ -149,7 +151,7 @@ export const closeCashSession = async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Session fermée avec succès',
+    message: "Session fermée avec succès",
     expected_amount: expected,
     difference_amount: difference,
   });

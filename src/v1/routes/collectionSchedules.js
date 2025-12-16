@@ -158,7 +158,7 @@ router.get(
 
       where: {
         role: "employee",
-        ...(schedule.recyclery_id && { recyclery_id: recycleryId }),
+        ...(schedule.recyclery_id && { recyclery_id: schedule.recyclery_id }),
       },
 
       raw: true,
@@ -184,7 +184,7 @@ router.get(
     //FIXME c'est immonde
     allEmployees.forEach(async (employee, index) => {
       // Vérifier les conflits d'horaires pour cet employé
-      await sequelize.query(
+      const conflicts = await sequelize.query(
         `
     SELECT cs.id, cs.scheduled_date, cs.scheduled_time
     FROM collection_schedules cs

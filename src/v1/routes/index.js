@@ -33,7 +33,7 @@ router.use('/eco-organisms', (await import("./ecoOrganism.js")).router);
 router.use('/waste-disposals', (await import("./wasteDisposals.js")).router);
 router.use('/dashboard', (await import("./dashboard.js")).router);
 router.use('/tasks', (await import("./tasks.js")).router);
-// router.use('/planning', planningRoutes);
+router.use('/planning', (await import("./planning.js")).router);
 router.use('/store-hours', (await import("./storeHours.js")).router);
 router.use('/store-locations', (await import("./storeLocation.js")).router);
 router.use('/collection-point-presence', (await import("./collectionPoint_presences.js")).router);

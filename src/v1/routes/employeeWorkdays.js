@@ -247,7 +247,7 @@ router.delete(
 
     res.json({
       success: true,
-      message: `${result.changes} jour(s) de travail supprimé(s) avec succès`,
+      message: `${result} jour(s) de travail supprimé(s) avec succès`,
     });
   })
 );

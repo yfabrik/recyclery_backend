@@ -6,12 +6,10 @@ import {
   listEmployees,
   listUsers,
   updateUser,
+  userStats,
 } from "../controllers/users.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
-import db from "../../models/index.js";
-import { col, fn, Op } from "sequelize";
-const { User } = db;
 
 export const router = Router();
 router.use(authenticateToken);
@@ -23,40 +21,7 @@ router.get("/employees", asyncHandler(listEmployees));
 
 router.get(
   "/stats",
-  asyncHandler(async (req, res) => {
-    const totalUsers = await User.count();
-    // Statistiques générales des utilisateurs
-
-    const usersByRole = await User.findAll({
-      attributes: ["role", [fn("COUNT", col("*")), "count"]],
-      group: ["role"],
-      raw: true,
-    });
-
-    // Statistiques des connexions récentes (dernières 30 jours)
-    const recentLogins = await User.count({
-      where: {
-        last_login: {
-          [Op.gte]: new Date(new Date() - 30 * 24 * 60 * 60 * 1000),
-        },
-      },
-    });
-
-    // Statistiques des employés actifs
-    const activeEmployees = await User.count({
-      where: { role: { [Op.in]: ["employee", "manager", "admin"] } },
-    });
-
-    res.json({
-      success: true,
-      stats: {
-        totalUsers: totalUsers,
-        usersByRole: usersByRole,
-        recentLogins: recentLogins,
-        activeEmployees: activeEmployees,
-      },
-    });
-  })
+  asyncHandler(userStats)
 );
 
 // Obtenir les rôles disponibles

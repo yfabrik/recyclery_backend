@@ -93,13 +93,13 @@ export const updateCategorie = async (req, res) => {
     const { name, description, icon } = req.body;
 
     // Validation
-    if (!name || !description) {
+    if (!name) {
         return res.status(400).json({
             success: false,
             error: "Le nom et la description sont requis",
         });
     }
-    const category = await Category.findOne(id);
+    const category = await Category.findByPk(id);
 
     // Vérifier si la catégorie existe
     if (!category) {

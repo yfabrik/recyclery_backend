@@ -1,8 +1,7 @@
 import { Op } from "sequelize";
-import db from  "../../models/index.js"
+import db from "../../models/index.js";
 
-
-const { StoreHours, Recyclery } = db;
+const { StoreHours, Recyclery, TaskSchedule, Task } = db;
 
 export const listHoraires = async (req, res) => {
   const horaires = await StoreHours.findAll({
@@ -100,13 +99,12 @@ export const updateHoraire = async (req, res) => {
   const store = await Recyclery.findByPk(store_id, {
     include: [{ model: StoreHours, as: "horaires" }],
   });
-  console.log(store);
+
 
   // Vérifier s'il n'y a pas de conflit avec d'autres horaires du même magasin, jour et créneau
   const duplicate = await store.countHoraires({
     where: { day_of_week, time_slot_name, id: { [Op.ne]: id } },
   });
-  console.log(duplicate);
   if (duplicate) {
     return res.status(400).json({
       success: false,
@@ -127,6 +125,7 @@ export const updateHoraire = async (req, res) => {
   res.json({
     success: true,
     message: "Horaires mis à jour avec succès",
+    horaire:existing
   });
 };
 
@@ -139,4 +138,156 @@ export const removeHoraires = async (req, res) => {
     success: true,
     message: "Horaires supprimés avec succès",
   });
+};
+
+const syncStoreHoursToPlanning = async (storeId, startDate, endDate) => {
+  // Récupérer les horaires d'ouverture du magasin
+  const storeHours = await StoreHours.findAll({
+    where: { store_id: storeId },
+    order: [["day_of_week"], ["time_slot_name"]],
+  });
+
+  if (storeHours.length === 0) {
+    return {
+      success: false,
+      message: "Aucun horaire d'ouverture trouvé pour ce magasin",
+    };
+  }
+
+  // Récupérer les informations du magasin
+  const store = await Recyclery.findByPk(storeId);
+
+  if (!store) {
+    return { success: false, message: "Magasin non trouvé" };
+  }
+
+  const storeName = store.name;
+  const createdTasks = [];
+
+  // Générer les tâches pour chaque jour dans la plage de dates
+  const currentDate = new Date(startDate);
+  const endDateObj = new Date(endDate);
+
+  // Mapping des jours de la semaine
+  const dayNames = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
+
+  while (currentDate <= endDateObj) {
+    const dayOfWeek = currentDate.getDay(); // 0 = dimanche, 1 = lundi, etc.
+    const dayName = dayNames[dayOfWeek]; // Nom du jour en anglais
+
+    // Trouver les horaires pour ce jour de la semaine (par nom de jour)
+    const dayHours = storeHours.filter((hour) => hour.day_of_week === dayName);
+
+    for (const hour of dayHours) {
+      // Vérifier si l'horaire est valide (ouvert et pas 24h/24)
+      const isValidHour =
+        (hour.is_open === 1 || hour.is_open === true) &&
+        (hour.is_24h === 0 || hour.is_24h === false || hour.is_24h === null) &&
+        hour.open_time &&
+        hour.close_time;
+
+      if (isValidHour) {
+        // Créer une tâche pour cet horaire
+        const taskName = `${storeName} - Ouverture (${
+          hour.time_slot_name || "Standard"
+        })`;
+        const taskDescription = `Ouverture du magasin ${storeName} de ${hour.open_time} à ${hour.close_time}`;
+
+        // Vérifier si une tâche similaire existe déjà pour cette date
+        const existingTask = await TaskSchedule.findAll({
+          where: {
+            store_id: storeId,
+            scheduled_date: currentDate.toISOString().split("T")[0],
+            start_time: hour.open_time,
+            end_time: hour.close_time,
+          },
+        });
+
+        if (existingTask.length === 0) {
+          // D'abord, créer ou récupérer la tâche "Ouverture de magasin"
+          let storeOpeningTask = await Task.findAll({
+            where: {
+              name: `Ouverture de magasin - ${storeName}`,
+              category: "store_operations",
+            },
+          });
+
+          let taskId;
+          if (storeOpeningTask.length === 0) {
+            // Créer la tâche si elle n'existe pas
+            const taskResult = await Task.create({
+              name: `Ouverture de magasin - ${storeName}`,
+              description: `Tâche d'ouverture du magasin ${storeName}`,
+              category: "store_operations",
+              priority: "high",
+              estimated_duration: 480, // 8 heures par défaut
+              location: storeName,
+              is_recurring: true,
+              recurrence_pattern: "weekly",
+              status: "active",
+            });
+
+            taskId = taskResult.id;
+          } else {
+            taskId = storeOpeningTask[0].id;
+          }
+
+          // Créer la tâche dans le planning (sans assignation initiale)
+          const result = await TaskSchedule.create({
+            task_id: taskId,
+            store_id: storeId,
+            scheduled_date: currentDate.toISOString().split("T")[0],
+            start_time: hour.open_time,
+            end_time: hour.close_time,
+
+            notes: taskDescription,
+          });
+
+          createdTasks.push({
+            id: result.id,
+            task_name: taskName,
+            scheduled_date: currentDate.toISOString().split("T")[0],
+            start_time: hour.open_time,
+            end_time: hour.close_time,
+            store_name: storeName,
+          });
+        }
+      }
+    }
+
+    // Passer au jour suivant
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return {
+    success: true,
+    message: `${createdTasks.length} tâches d'ouverture créées`,
+    tasks: createdTasks,
+  };
+};
+
+export const syncHoraires = async (req, res) => {
+  const { store_id, start_date, end_date } = req.body;
+
+  if (!store_id || !start_date || !end_date) {
+    return res.status(400).json({
+      success: false,
+      message: "store_id, start_date et end_date sont requis",
+    });
+  }
+  const result = await syncStoreHoursToPlanning(store_id, start_date, end_date);
+
+  if (result.success) {
+    res.json(result);
+  } else {
+    res.status(400).json(result);
+  }
 };

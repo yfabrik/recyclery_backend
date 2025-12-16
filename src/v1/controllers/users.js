@@ -1,7 +1,8 @@
 import createHttpError from "http-errors";
-import db from  "../../models/index.js"
+import db from "../../models/index.js";
 
 import { findUserByEmail } from "../../services/users.js";
+import { col, fn, Op } from "sequelize";
 const { User, Recyclery } = db;
 
 export const listUsers = async (req, res) => {
@@ -36,7 +37,12 @@ export const listEmployees = async (req, res) => {
 
 export const findUserById = async (req, res) => {
   const { id } = req.params;
-  const user = await User.findByPk(id, { include: [{ model: Recyclery, as: "recycleries" }, { model: Recyclery, as: "managedStores" }] });
+  const user = await User.findByPk(id, {
+    include: [
+      { model: Recyclery, as: "recycleries" },
+      { model: Recyclery, as: "managedStores" },
+    ],
+  });
   if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
 
   res.json({
@@ -73,7 +79,7 @@ export const createUser = async (req, res) => {
     recyclery_id,
     phone,
     contract_hours,
-    isActive: true
+    isActive: true,
   });
 
   res.json({
@@ -90,12 +96,18 @@ export const updateUser = async (req, res) => {
   const user = await User.findByPk(id);
   if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
 
-  user.username ??= username;
-  user.email ??= email;
-  user.role ??= role;
-  user.recyclery_id ??= recyclery_id;
-  user.phone ??= phone;
-  user.contract_hours ??= contract_hours;
+  user.username = username || user.username;
+  user.email = email || user.email;
+  user.role = role || user.role;
+  user.recyclery_id = recyclery_id || user.recyclery_id;
+  user.phone = phone || user.phone;
+  user.contract_hours = contract_hours || user.contract_hours;
+  await user.save();
+  res.json({
+    success: true,
+    user,
+    message: "Utilisateur mis à jour",
+  });
 };
 
 export const deleteUser = async (req, res) => {
@@ -103,6 +115,41 @@ export const deleteUser = async (req, res) => {
   await User.destroy({ where: { id } });
   res.json({
     success: true,
-    message: "user removed"
-  })
+    message: "user removed",
+  });
+};
+
+export const userStats = async (req, res) => {
+  const totalUsers = await User.count();
+  // Statistiques générales des utilisateurs
+
+  const usersByRole = await User.findAll({
+    attributes: ["role", [fn("COUNT", col("*")), "count"]],
+    group: ["role"],
+    raw: true,
+  });
+
+  // Statistiques des connexions récentes (dernières 30 jours)
+  const recentLogins = await User.count({
+    where: {
+      last_login: {
+        [Op.gte]: new Date(new Date() - 30 * 24 * 60 * 60 * 1000),
+      },
+    },
+  });
+
+  // Statistiques des employés actifs
+  const activeEmployees = await User.count({
+    where: { role: { [Op.in]: ["employee", "manager", "admin"] } },
+  });
+
+  res.json({
+    success: true,
+    stats: {
+      totalUsers: totalUsers,
+      usersByRole: usersByRole,
+      recentLogins: recentLogins,
+      activeEmployees: activeEmployees,
+    },
+  });
 };
