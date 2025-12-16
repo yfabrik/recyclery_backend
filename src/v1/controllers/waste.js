@@ -1,4 +1,4 @@
-import { col, fn, literal, Op } from "sequelize"
+import { col, fn, literal, Op } from "sequelize";
 import db from "../../models/index.js";
 
 const { WasteDisposal, Category, EcoOrganism, User } = db;
@@ -120,9 +120,9 @@ export const createWaste = async (req, res) => {
     disposal_number,
     disposal_date,
     disposal_type,
-    category_id,
-    subcategory_id,
-    eco_organism_id,
+    category_id: category_id || null,
+    subcategory_id: subcategory_id || null,
+    eco_organism_id: eco_organism_id || null,
     weight_kg,
     volume_m3,
     transport_method,
@@ -199,6 +199,58 @@ export const wasteStats = async (req, res) => {
   const { date_from, date_to } = req.query;
 
   const where = {};
+  // if (date_from) {
+  //   where.disposal_date = {
+  //     ...(where.disposal_date || {}),
+  //     [Op.gte]: date_from,
+  //   };
+  // }
+
+  // if (date_to) {
+  //   where.disposal_date = {
+  //     ...(where.disposal_date || {}),
+  //     [Op.lte]: date_to,
+  //   };
+  // }
+
+  const stats = await WasteDisposal.findOne({
+    attributes: [
+      [fn("COUNT", col("*")), "total_disposals"],
+      [fn("SUM", col("weight_kg")), "total_weight_kg"],
+      [fn("SUM", col("volume_m3")), "total_volume_m3"],
+      [fn("SUM", col("transport_cost")), "total_transport_cost"],
+      [
+        fn(
+          "SUM",
+          literal("CASE WHEN disposal_type = 'eco_organism' THEN 1 ELSE 0 END")
+        ),
+        "eco_organism_disposals",
+      ],
+      [
+        fn(
+          "SUM",
+          literal("CASE WHEN disposal_type = 'landfill' THEN 1 ELSE 0 END")
+        ),
+        "landfill_disposals",
+      ],
+      [
+        fn(
+          "SUM",
+          literal("CASE WHEN disposal_type = 'other' THEN 1 ELSE 0 END")
+        ),
+        "other_disposals",
+      ],
+    ],
+    where,
+  });
+
+  res.json({ stats });
+};
+
+export const wasteStatsCategory = async (req, res) => {
+  const { date_from, date_to } = req.query;
+
+  const where = {};
   if (date_from) {
     where.disposal_date = {
       ...(where.disposal_date || {}),
@@ -242,72 +294,10 @@ export const wasteStats = async (req, res) => {
       ],
     ],
     where,
+    include: [{ model: Category, as: "categorie" }],
+    order: [["total_weight_kg", "DESC"]],
+    group: ["id", "categorie.name"],
   });
 
   res.json({ stats });
 };
-
-
-export const wasteStatsCategory = async (req, res) => {
-    const { date_from, date_to } = req.query;
-
-    const where = {};
-    if (date_from) {
-      where.disposal_date = {
-        ...(where.disposal_date || {}),
-        [Op.gte]: date_from,
-      };
-    }
-
-    if (date_to) {
-      where.disposal_date = {
-        ...(where.disposal_date || {}),
-        [Op.lte]: date_to,
-      };
-    }
-
-    const stats = await WasteDisposal.findAll({
-      attributes: [
-        [fn("COUNT", col("*")), "total_disposals"],
-        [fn("SUM", col("weight_kg")), "total_weight_kg"],
-        [fn("SUM", col("volume_m3")), "total_volume_m3"],
-        [
-          fn("SUM", col("transport_cost")),
-          "total_transport_cost",
-        ],
-        [
-          fn(
-            "SUM",
-            literal(
-              "CASE WHEN disposal_type = 'eco_organism' THEN 1 ELSE 0 END"
-            )
-          ),
-          "eco_organism_disposals",
-        ],
-        [
-          fn(
-            "SUM",
-            literal(
-              "CASE WHEN disposal_type = 'landfill' THEN 1 ELSE 0 END"
-            )
-          ),
-          "landfill_disposals",
-        ],
-        [
-          fn(
-            "SUM",
-            literal(
-              "CASE WHEN disposal_type = 'other' THEN 1 ELSE 0 END"
-            )
-          ),
-          "other_disposals",
-        ],
-      ],
-      where,
-      include: [{ model: Category, as: "categorie" }],
-      order: [["total_weight_kg", "DESC"]],
-      group: ["id", "categorie.name"],
-    });
-
-    res.json({ stats });
-  }
