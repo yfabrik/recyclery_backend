@@ -94,6 +94,7 @@ export const createArrival = async (req, res) => {
     });
   }
 
+
   const arrival = await Arrival.create({
     arrival_number: generateArrivalNumber(),
     category_id,
@@ -103,9 +104,9 @@ export const createArrival = async (req, res) => {
     arrival_time,
     source_type,
     source_details,
-    collection_point_id,
-    collection_point_name,
-    collection_point_address,
+    collection_point_id:collection_point_id ? collection_point_id:null,
+    collection_point_name:collection_point_id ? collection_point_name:null,
+    collection_point_address:collection_point_id ? collection_point_address:null,
     volunteer_donation,
     house_clearance,
     notes,
