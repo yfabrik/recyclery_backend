@@ -19,7 +19,7 @@ export default (sequelize, DataTypes) => {
       });
 
       this.belongsToMany(models.User, {
-        through: "employee_recyclery",
+        through: "EmployeeStore",
         foreignKey: "store_id",
         as: "employees",
       });

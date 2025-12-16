@@ -3,6 +3,7 @@ import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 import { findUserById, listUsers } from "../controllers/users.js";
+import { assignUserToStore, getEmployeeStoreById, listEmployeeStore, listStoreEmployee, removeEmployeeStore } from "../controllers/employee_store.js";
 const { User,  Recyclery } = db;
 
 export const router = Router();
@@ -11,15 +12,7 @@ router.use(authenticateToken);
 router.get(
   "/",
   authenticateToken,
-  asyncHandler(async (req, res) => {
-    const assignments = await User.findAll({
-      include: [{ model: Recyclery, as: "recycleries" }],
-    });
-    res.json({
-      success: true,
-      assignments,
-    });
-  })
+  asyncHandler(listEmployeeStore)
 );
 
 // Obtenir les affectations d'un employé
@@ -27,72 +20,21 @@ router.get(
   "/employee/:employeeId",
   authenticateToken,
   asyncHandler(
-    findUserById
+    getEmployeeStoreById
   ));
 
 // Obtenir les employés d'un magasin
 router.get(
   "/store/:storeId",
   authenticateToken,
-  asyncHandler(listUsers)
+  asyncHandler(listStoreEmployee)
 );
 
 // Créer une nouvelle affectation
 router.post(
   "/",
   authenticateToken,
-  asyncHandler(async (req, res) => {
-    const { employee_id, store_id, is_primary = false } = req.body;
-
-    if (!employee_id || !store_id) {
-      return res.status(400).json({
-        success: false,
-        error: "employee_id et store_id sont requis",
-      });
-    }
-
-    // Vérifier que l'employé et le magasin existent
-    const employee = await User.findByPk(employee_id);
-
-    if (!employee) {
-      return res.status(404).json({
-        success: false,
-        error: "Employé non trouvé",
-      });
-    }
-    const store = await Recyclery.findByPk(store_id);
-
-    if (!store) {
-      return res.status(404).json({
-        success: false,
-        error: "Magasin non trouvé",
-      });
-    }
-
-    // // Si c'est une affectation principale, retirer le statut principal des autres affectations de cet employé
-    // if (is_primary) {
-    //   await database.run(
-    //     "UPDATE employee_stores SET is_primary = 0 WHERE employee_id = ?",
-    //     [employee_id]
-    //   );
-    // }
-
-    await employee.addRecyclery(store_id);
-
-    // const result = await database.run(
-    //   `
-    //   INSERT INTO employee_stores (employee_id, store_id, is_primary, created_at, updated_at)
-    //   VALUES (?, ?, ?, datetime('now'), datetime('now'))
-    // `,
-    //   [employee_id, store_id, is_primary ? 1 : 0]
-    // );
-
-    res.status(201).json({
-      success: true,
-      message: "Affectation créée avec succès",
-      assignment_id: employee.id,
-    });
-  })
+  asyncHandler(assignUserToStore)
 );
 
 // Mettre à jour une affectation
@@ -162,16 +104,5 @@ router.delete("/:id", authenticateToken, async (req, res) => {
 router.delete(
   "/employee/:employeeId",
   authenticateToken,
-  asyncHandler(async (req, res) => {
-    const { employeeId } = req.params;
-    const employee = await User.findByPk(employeeId);
-    employee.removeRecycleries();
-
-    // const result = await EmployeeStore.destroy(employeeId);
-
-    res.json({
-      success: true,
-      message: ` affectation(s) supprimée(s) avec succès`,
-    });
-  })
+  asyncHandler(removeEmployeeStore)
 );

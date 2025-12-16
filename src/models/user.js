@@ -22,9 +22,9 @@ export default (sequelize, DataTypes) => {
 
 
       this.belongsToMany(models.Recyclery, {
-        through: "employee_recyclery",
+        through: "EmployeeStore",
         foreignKey: "employee_id",
-        as: "recycleries",
+        as: "stores",
       });
       this.hasMany(models.Recyclery, {
         foreignKey: "manager_id",
