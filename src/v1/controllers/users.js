@@ -39,8 +39,8 @@ export const findUserById = async (req, res) => {
   const { id } = req.params;
   const user = await User.findByPk(id, {
     include: [
-      { model: Recyclery, as: "recycleries" },
-      { model: Recyclery, as: "managedStores" },
+      { model: Recyclery, as: "stores",required:false },
+      { model: Recyclery, as: "managedStores",required:false },
     ],
   });
   if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");

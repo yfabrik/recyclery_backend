@@ -185,7 +185,7 @@ router.get(
   authenticateToken,
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const schedules = await TaskSchedule.findAll({
+    const schedules = await TaskSchedule.findByPk(id,{
       attributes: {
         include: [
           [
@@ -200,10 +200,9 @@ router.get(
           model: Task,
         },
       ],
-      where: { id },
     });
 
-    if (schedules.length === 0) {
+    if (!schedules) {
       return res.status(404).json({
         success: false,
         message: "Planning non trouvé",
@@ -212,7 +211,7 @@ router.get(
 
     res.json({
       success: true,
-      schedule: schedules[0],
+      schedule: schedules,
     });
   })
 );

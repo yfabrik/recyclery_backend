@@ -40,7 +40,7 @@ export const createPointPrecense = async (req, res) => {
   } = req.body;
 
   // Validation des champs requis
-  if (!collection_point_id || !day_of_week) {
+  if (!collection_point_id) {
     return res.status(400).json({
       success: false,
       message:
@@ -48,23 +48,27 @@ export const createPointPrecense = async (req, res) => {
     });
   }
 
-  const existing = await CollectionPointPresence.findOne({
-    where: { collection_point_id, day_of_week, time_slot_name, store_id },
-  });
-  // Vérifier si des jours de présence existent déjà pour ce point, ce jour et ce créneau
-
-  if (existing) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Des jours de présence existent déjà pour ce point, ce jour et ce créneau",
-    });
-  }
+  // const where = {};
+  // if (day_of_week) where.day_of_week = day_of_week;
+  // if (time_slot_name) where.time_slot_name = time_slot_name;
+  // if (store_id) where.store_id = store_id;
+  // if (collection_point_id) where.collection_point_id = collection_point_id;
+  // const existing = await CollectionPointPresence.findOne({
+  //   where,
+  // });
+  // // Vérifier si des jours de présence existent déjà pour ce point, ce jour et ce créneau
+  // if (existing) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     message:
+  //       "Des jours de présence existent déjà pour ce point, ce jour et ce créneau",
+  //   });
+  // }
 
   const presence = await CollectionPointPresence.create({
     collection_point_id,
     store_id,
-    day_of_week,
+    day_of_week: day_of_week || null,
     time_slot_name,
     is_present,
     start_time,
