@@ -30,15 +30,16 @@ export default (sequelize, DataTypes) => {
       //   foreignKey: "arrival_id",
       // });
 
-      // this.belongsTo(models.User, {
-      //   as: "soldBy",
-      //   foreignKey: "sold_by",
-      // });
+      this.belongsTo(models.User, {
+        as: "soldBy",
+        foreignKey: "sold_by",
+      });
 
       this.belongsTo(models.User, {
         as: "createdBy",
         foreignKey: "created_by",
       });
+      this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" });
     }
   }
   LabeledItem.init(
