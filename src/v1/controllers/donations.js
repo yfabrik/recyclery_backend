@@ -38,10 +38,10 @@ export const createDon = async (req, res) => {
 
   // Validation du estimated_value (optionnel mais doit être numérique si fourni)
   if (
-    estimated_value !== undefined ||
-    estimated_value !== null ||
-    estimated_value !== "" ||
-    isNaN(parseFloat(estimated_value))
+    estimated_value == undefined ||
+    estimated_value == null ||
+    estimated_value == "" 
+    // isNaN(parseFloat(estimated_value))
   ) {
     return res
       .status(400)
@@ -97,7 +97,7 @@ export const updateDon = async (req, res) => {
   donation.donor_email = donor_email;
   donation.item_description = item_description;
   donation.estimated_value = estimated_value;
-  donation.stats = status;
+  donation.status = status;
 
   await donation.save();
 
