@@ -7,15 +7,15 @@ export const listArrivals = async (req, res) => {
   const { date_from, date_to, category_id, source_type, status } = req.query;
   const where = {};
 
-  if (date_from) {
-    where.arrival_date = {
-      ...(where.arrival_date || {}),
-      [Op.gte]: date_from,
-    };
-  }
-  if (date_to) {
-    where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
-  }
+  // if (date_from) {
+  //   where.arrival_date = {
+  //     ...(where.arrival_date || {}),
+  //     [Op.gte]: date_from,
+  //   };
+  // }
+  // if (date_to) {
+  //   where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
+  // }
   if (category_id) where.category_id = category_id;
   if (source_type) where.source_type = source_type;
   if (status) where.status = status;
