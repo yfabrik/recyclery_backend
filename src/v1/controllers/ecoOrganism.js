@@ -137,7 +137,7 @@ export const deleteEcoOrganism = async (req, res) => {
 };
 
 export const ecoOrgaStats = async (req, res) => {
-  const stats = await EcoOrganism.findAll({
+  const stats = await EcoOrganism.findOne({
     attributes: [
       [fn("COUNT", col("*")), "total_eco_organisms"],
       [
