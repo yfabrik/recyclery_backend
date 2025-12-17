@@ -26,30 +26,30 @@
 
 /**
  * @typedef {Object} models
- * @property { import("sequelize").ModelStatic<any>} Arrival
- * @property { import("sequelize").ModelStatic<any>} CashRegister
- * @property { import("sequelize").ModelStatic<any>} CashSession
+ * @property { import("sequelize").ModelStatic<import("./arrivalModel.js").ArrivalInstance>} Arrival
+ * @property { import("sequelize").ModelStatic<import("./cashRegisterModel.js").CashRegisterInstance>} CashRegister
+ * @property { import("sequelize").ModelStatic<import("./cashSessionModel.js").CashSessionInstance>} CashSession
  * @property { import("sequelize").ModelStatic<any>} Category
- * @property { import("sequelize").ModelStatic<any>} CollectionPoint
+ * @property { import("sequelize").ModelStatic<import("./collectionPointModel.js").CollectionPointInstance>} CollectionPoint
  * @property { import("sequelize").ModelStatic<any>} CollectionPointPresence
  * @property { import("sequelize").ModelStatic<any>} CollectionReceipt
- * @property { import("sequelize").ModelStatic<any>} CollectionSchedule
+ * @property { import("sequelize").ModelStatic<import("./collectionSchedule.js").CollectionScheduleInstance>} CollectionSchedule
  * @property { import("sequelize").ModelStatic<any>} Donation
  * @property { import("sequelize").ModelStatic<any>} EcoOrganism
  * @property { import("sequelize").ModelStatic<any>} EmployeeWorkdays
- * @property { import("sequelize").ModelStatic<any>} LabeledItem
+ * @property { import("sequelize").ModelStatic<import("./labeledItemModel.js").LabeledItemInstance>} LabeledItem
  * @property { import("sequelize").ModelStatic<any>} RecurringSchedule
- * @property { import("sequelize").ModelStatic<any>} Recyclery
+ * @property { import("sequelize").ModelStatic<import("./recycleryModel.js").RecycleryInstance>} Recyclery
  * @property { import("sequelize").ModelStatic<any>} Refund
  * @property { import("sequelize").ModelStatic<any>} Role
  * @property { import("sequelize").ModelStatic<any>} SalesItem
- * @property { import("sequelize").ModelStatic<any>} SalesTransaction
+ * @property { import("sequelize").ModelStatic<import("./salesTransactionModel.js").SalesTransactionInstance>} SalesTransaction
  * @property { import("sequelize").ModelStatic<any>} StoreLocation
  * @property { import("sequelize").ModelStatic<any>} StoreHours
  * @property { import("sequelize").ModelStatic<any>} Task
  * @property { import("sequelize").ModelStatic<any>} TaskSchedule
- * @property { import("sequelize").ModelStatic<any>} User
- * @property { import("sequelize").ModelStatic<any>} WasteDisposal
+ * @property { import("sequelize").ModelStatic<import("./userModel.js").UserInstance>} User
+ * @property { import("sequelize").ModelStatic<import("./wasteDisposalModel.js").WasteDisposalInstance>} WasteDisposal
  * @property { import("sequelize").ModelStatic<any>} EmployeeWorkdays
  * @property { import("sequelize").ModelStatic<any>} EmployeeStore
  */

@@ -2,7 +2,11 @@ import { col, fn, Op, where } from "sequelize";
 import db from "../../models/index.js";
 
 const { CollectionPoint, Recyclery, CollectionSchedule } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listCollectionPoints = async (req, res) => {
   const { active_only } = req.query;
   const where = {};
@@ -19,7 +23,11 @@ export const listCollectionPoints = async (req, res) => {
     collection_points,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const detailCollectionPoint = async (req, res) => {
   const { id } = req.params;
 
@@ -39,7 +47,11 @@ export const detailCollectionPoint = async (req, res) => {
     collection_point: point,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createCollectionPoint = async (req, res) => {
   const {
     name,
@@ -90,7 +102,11 @@ export const createCollectionPoint = async (req, res) => {
     collection_point: point,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateCollectionPoint = async (req, res) => {
   const { id } = req.params;
   const {
@@ -154,7 +170,11 @@ export const updateCollectionPoint = async (req, res) => {
     collection_point: point,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const deleteCollectionPoint = async (req, res) => {
   const { id } = req.params;
 
@@ -184,7 +204,11 @@ export const deleteCollectionPoint = async (req, res) => {
     message: "Point de collecte supprimé avec succès",
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const stats = async (req, res) => {
   const { id } = req.params;
 

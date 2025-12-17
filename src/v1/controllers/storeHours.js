@@ -2,7 +2,11 @@ import { Op } from "sequelize";
 import db from "../../models/index.js";
 
 const { StoreHours, Recyclery, TaskSchedule, Task } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listHoraires = async (req, res) => {
   const horaires = await StoreHours.findAll({
     include: [{ model: Recyclery }],
@@ -13,7 +17,11 @@ export const listHoraires = async (req, res) => {
     storeHours: horaires,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const horairesMagasin = async (req, res) => {
   const { storeId } = req.params;
 
@@ -27,7 +35,11 @@ export const horairesMagasin = async (req, res) => {
     storeHours,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const addHoraire = async (req, res) => {
   const {
     store_id,
@@ -128,7 +140,11 @@ export const updateHoraire = async (req, res) => {
     horaire:existing
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const removeHoraires = async (req, res) => {
   const { id } = req.params;
 
@@ -273,7 +289,11 @@ const syncStoreHoursToPlanning = async (storeId, startDate, endDate) => {
     tasks: createdTasks,
   };
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const syncHoraires = async (req, res) => {
   const { store_id, start_date, end_date } = req.body;
 

@@ -11,7 +11,11 @@ const {
   SalesItem,
   Sequelize,
 } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 // 🧠 GET /cash-sessions
 export const listCashSessions = async (req, res) => {
   const { store_id, status, user_id } = req.query;
@@ -57,7 +61,11 @@ export const listCashSessions = async (req, res) => {
 
   res.json({ success: true, sessions });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 // 🧠 GET /cash-sessions/active
 export const getActiveSession = async (req, res) => {
   const userId = req.user.id;
@@ -72,7 +80,11 @@ export const getActiveSession = async (req, res) => {
 
   res.json({ success: true, session });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 // 🧠 POST /cash-sessions/open
 export const openCashSession = async (req, res) => {
   const { cash_register_id, store_id, opening_amount, notes } = req.body;
@@ -107,7 +119,11 @@ export const openCashSession = async (req, res) => {
     session_number: sessionNumber,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 // 🧠 PUT /cash-sessions/:id/close
 export const closeCashSession = async (req, res) => {
   const { id } = req.params;
@@ -156,7 +172,11 @@ export const closeCashSession = async (req, res) => {
     difference_amount: difference,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const getSessionById = async (req, res) => {
   const { id } = req.params;
 
@@ -184,7 +204,11 @@ export const getSessionById = async (req, res) => {
 
   res.json({ success: true, session: { ...session.toJSON(), transactions } });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const getRegistersByStore = async (req, res) => {
   const { store_id } = req.params;
   if (!store_id)

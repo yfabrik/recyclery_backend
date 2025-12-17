@@ -3,7 +3,11 @@ import db from "../../models/index.js";
 import item from "../../models/poubelle/item.js";
 
 const { SalesTransaction, Recyclery, User, Refund, LabeledItem } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listTransactions = async (req, res) => {
   const {
     store_id,
@@ -41,7 +45,11 @@ export const listTransactions = async (req, res) => {
     },
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createTransaction = async (req, res) => {
   const {
     cash_session_id,
@@ -104,7 +112,11 @@ export const createTransaction = async (req, res) => {
     },
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createRefund = async (req, res) => {
   const {
     transaction_id,
@@ -179,6 +191,11 @@ export const createRefund = async (req, res) => {
   });
 };
 
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 //FIXME y'a le meme truc dans refunds
 export const listRefunds = async (req, res) => {
   const { id } = req.params;

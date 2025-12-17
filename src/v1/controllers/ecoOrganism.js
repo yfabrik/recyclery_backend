@@ -2,7 +2,11 @@ import { col, fn, literal, Op } from "sequelize";
 import db from "../../models/index.js";
 
 const { EcoOrganism, WasteDisposal } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listEcoOrganism = async (req, res) => {
   const { active } = req.query;
   const where = {};
@@ -11,7 +15,11 @@ export const listEcoOrganism = async (req, res) => {
 
   res.json({ eco_organisms });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listActiveEcoOrganism = async (req, res) => {
   req.query.active = 1;
   return listEcoOrganism(req, res);
@@ -19,7 +27,11 @@ export const listActiveEcoOrganism = async (req, res) => {
 
   // res.json({ eco_organisms });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const detailEcoOrganism = async (req, res) => {
   const { id } = req.params;
   const eco_organism = await EcoOrganism.findByPk(id);
@@ -29,7 +41,11 @@ export const detailEcoOrganism = async (req, res) => {
   }
   res.json({ eco_organism });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createEcoOrganism = async (req, res) => {
   const {
     name,
@@ -71,7 +87,11 @@ export const createEcoOrganism = async (req, res) => {
     eco_organism_id: created.id,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateEcoOrganism = async (req, res) => {
   const { id } = req.params;
   const {
@@ -113,7 +133,11 @@ export const updateEcoOrganism = async (req, res) => {
 
   res.json({ message: "Éco-organisme mis à jour avec succès" ,eco_organism});
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const deleteEcoOrganism = async (req, res) => {
   const { id } = req.params;
 
@@ -135,7 +159,11 @@ export const deleteEcoOrganism = async (req, res) => {
     res.json({ message: "Éco-organisme supprimé avec succès" });
   }
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const ecoOrgaStats = async (req, res) => {
   const stats = await EcoOrganism.findOne({
     attributes: [

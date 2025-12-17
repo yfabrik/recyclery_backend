@@ -4,7 +4,12 @@ import db from  "../../models/index.js"
 import bcrypt from "bcryptjs";
 import createHttpError from "http-errors";
 const { User } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ * @param {import("express").NextFunction} next
+ */
 export const register = async (req, res, next) => {
   const {
     username,
@@ -66,7 +71,12 @@ export const register = async (req, res, next) => {
     },
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ * @param {import("express").NextFunction} next
+ */
 export const login = async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -106,7 +116,11 @@ export const login = async (req, res, next) => {
     },
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const userProfile = async (req, res) => {
   const id = req.user.id;
   const user = await User.findByPk(id);

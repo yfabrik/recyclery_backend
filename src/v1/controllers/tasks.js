@@ -3,6 +3,12 @@ import db from  "../../models/index.js"
 
 
 const { Task, User } = db;
+
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listTasks = async (req, res) => {
     const { category, priority, search } = req.query;
     const where = {}
@@ -38,7 +44,11 @@ export const listTasks = async (req, res) => {
         tasks:tasks
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const detailTask = async (req, res) => {
     const { id } = req.params;
     const tasks = await Task.findByPk(id);
@@ -66,7 +76,11 @@ export const detailTask = async (req, res) => {
         task: tasks,
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createTask = async (req, res) => {
     const {
         name,
@@ -116,7 +130,11 @@ export const createTask = async (req, res) => {
         task,
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateTask = async (req, res) => {
     const { id } = req.params;
     const {
@@ -165,7 +183,11 @@ export const updateTask = async (req, res) => {
         task:existing
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const deleteTask = async (req, res) => {
     const { id } = req.params;
     const existing = await Task.findByPk(id);
@@ -185,7 +207,11 @@ export const deleteTask = async (req, res) => {
         message: "Tâche supprimée avec succès",
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const getUsersFromTask = async (req, res) => {
     const { taskId } = req.params;
 
@@ -197,7 +223,11 @@ export const getUsersFromTask = async (req, res) => {
     });
 
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const addUserToTask = async (req, res) => {
 
 
@@ -247,7 +277,11 @@ export const addUserToTask = async (req, res) => {
     });
 
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const removeUserFromTask = async (req, res) => {
 
     const { taskId, employeeId } = req.params;

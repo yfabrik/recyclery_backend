@@ -3,7 +3,11 @@ import db from "../../models/index.js";
 import { col, fn } from "sequelize";
 
 const { Refund, Recyclery, User, SalesTransaction } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listRefunds = async (req, res) => {
   const { status, store_id, date_from, date_to } = req.query;
 
@@ -42,7 +46,11 @@ export const listRefunds = async (req, res) => {
 
   res.json({ success: true, refunds: refundsWithStatus });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateRefund = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -63,7 +71,11 @@ export const updateRefund = async (req, res) => {
     message: "Statut mis à jour avec succès",
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const detailRefund = async (req, res) => {
   const { id } = req.params;
   const refund = await Refund.findByPk(id, {
@@ -102,7 +114,11 @@ export const detailRefund = async (req, res) => {
     },
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const refundStats = async (req, res) => {
   const { store_id, date_from, date_to } = req.query;
 

@@ -4,7 +4,11 @@ import db from "../../models/index.js";
 import { listCaisses } from "../../services/caisse.js";
 import { col, fn, Op, where } from "sequelize";
 const { Recyclery, CashRegister, User, SalesTransaction, LabeledItem } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listRecycleries = async (req, res) => {
   const recycleries = await Recyclery.findAll({
     attributes: {
@@ -23,7 +27,11 @@ export const listRecycleries = async (req, res) => {
   });
   res.json({ success: true, stores: recycleries, recycleries });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const detailRecyclerie = async (req, res) => {
   const { id } = req.params;
   const recyclerie = await Recyclery.findByPk(id, {
@@ -35,7 +43,11 @@ export const detailRecyclerie = async (req, res) => {
 
   res.json({ success: true, store: recyclerie });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createRecyclerie = async (req, res) => {
   const { name, address, phone, email, manager_id, city, postal_code } =
     req.body;

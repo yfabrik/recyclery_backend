@@ -2,7 +2,11 @@ import { col, fn, literal, Op } from "sequelize";
 import db from "../../models/index.js";
 
 const { Arrival, Category, User, CollectionPoint } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listArrivals = async (req, res) => {
   const { date_from, date_to, category_id, source_type, status } = req.query;
   const where = {};
@@ -35,7 +39,11 @@ export const listArrivals = async (req, res) => {
     arrivals: arrivals,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const detailArrival = async (req, res) => {
   const { id } = req.params;
   const arrival = await Arrival.findByPk(id, {
@@ -57,7 +65,11 @@ export const detailArrival = async (req, res) => {
     arrival: arrival,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createArrival = async (req, res) => {
   const {
     category_id,
@@ -119,7 +131,11 @@ export const createArrival = async (req, res) => {
     arrival,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateArrival = async (req, res) => {
   const { id } = req.params;
   const {
@@ -178,7 +194,11 @@ export const updateArrival = async (req, res) => {
     message: "Arrivage mis à jour avec succès",
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const deleteArrival = async (req, res) => {
   const { id } = req.params;
   const arrival = await Arrival.destroy({ where: { id } });
@@ -194,10 +214,17 @@ export const deleteArrival = async (req, res) => {
     message: "Arrivage supprimé avec succès",
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const statsSummary = async (req, res) => {
   const { date_from, date_to } = req.query;
 
+  /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
 
   if (date_from) {
@@ -270,7 +297,11 @@ export const statsSummary = async (req, res) => {
     },
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const statsByCategories = async (req, res) => {
   const { date_from, date_to } = req.query;
   const where = {};

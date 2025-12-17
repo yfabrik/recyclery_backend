@@ -4,7 +4,11 @@ import db from "../../models/index.js";
 import { findUserByEmail } from "../../services/users.js";
 import { col, fn, Op } from "sequelize";
 const { User, Recyclery } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listUsers = async (req, res) => {
   const { store_id, role } = req.query;
 
@@ -34,7 +38,11 @@ export const listEmployees = async (req, res) => {
 
   res.json({ users });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const findUserById = async (req, res) => {
   const { id } = req.params;
   const user = await User.findByPk(id, {
@@ -50,7 +58,11 @@ export const findUserById = async (req, res) => {
     user,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createUser = async (req, res) => {
   const {
     username,
@@ -88,7 +100,11 @@ export const createUser = async (req, res) => {
     user,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateUser = async (req, res) => {
   const { id } = req.params;
   const { username, email, role, recyclery_id, phone, contract_hours } =
@@ -99,7 +115,7 @@ export const updateUser = async (req, res) => {
   user.username = username || user.username;
   user.email = email || user.email;
   user.role = role || user.role;
-  user.recyclery_id = recyclery_id || user.recyclery_id;
+  // user.recyclery_id = recyclery_id || user.recyclery_id;
   user.phone = phone || user.phone;
   user.contract_hours = contract_hours || user.contract_hours;
   await user.save();
@@ -109,7 +125,11 @@ export const updateUser = async (req, res) => {
     message: "Utilisateur mis à jour",
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const deleteUser = async (req, res) => {
   const { id } = req.params;
   await User.destroy({ where: { id } });
@@ -118,7 +138,11 @@ export const deleteUser = async (req, res) => {
     message: "user removed",
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const userStats = async (req, res) => {
   const totalUsers = await User.count();
   // Statistiques générales des utilisateurs

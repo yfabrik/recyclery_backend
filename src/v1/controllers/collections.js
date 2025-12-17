@@ -3,7 +3,11 @@ import db from  "../../models/index.js"
 
 const { CollectionSchedule, User } = db;
 
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 //FIXME doublon avec collection schedule
 export const listCollections = async (req, res) => {
     const { recyclery_id, status } = req.query;
@@ -20,7 +24,11 @@ export const listCollections = async (req, res) => {
 
     res.json({ collections });
   }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
   export const createCollection = async (req, res) => {
     const {
       collection_date,

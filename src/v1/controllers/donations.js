@@ -5,7 +5,11 @@ import db from  "../../models/index.js"
 
 
 const { Donation, User } = db
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listDons = async (req, res) => {
   const { recyclery_id, status } = req.query;
   const where = {};
@@ -25,7 +29,11 @@ export const listDons = async (req, res) => {
 
   res.json({ donations });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createDon = async (req, res) => {
   const { donor_name, donor_contact, item_description, estimated_value } =
     req.body;
@@ -68,7 +76,11 @@ export const createDon = async (req, res) => {
     donation,
   });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateDon = async (req, res) => {
   const { id } = req.params;
   const {
@@ -103,7 +115,11 @@ export const updateDon = async (req, res) => {
 
   res.json({ message: "Don mis à jour avec succès" });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const donStats = async (req, res) => {
     const stats = await Donation.findOne({
       attributes: [

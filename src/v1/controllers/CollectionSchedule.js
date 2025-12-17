@@ -16,19 +16,23 @@ const generateReceiptNumber = () => {
     return `COL-${year}${month}${day}-${timestamp}`;
 };
 
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listcollectionSchedule = async (req, res) => {
     const { date_from, date_to, status, employee_id } = req.query;
     const where = {};
-    if (date_from) {
-        where.scheduled_date = {
-            ...(where.scheduled_date || {}),
-            [Op.gte]: date_from,
-        };
-    }
-    if (date_to) {
-        where.scheduled_date = { ...(where.scheduled_date || {}), [Op.lte]: date_to };
-    }
+    // if (date_from) {
+    //     where.scheduled_date = {
+    //         ...(where.scheduled_date || {}),
+    //         [Op.gte]: date_from,
+    //     };
+    // }
+    // if (date_to) {
+    //     where.scheduled_date = { ...(where.scheduled_date || {}), [Op.lte]: date_to };
+    // }
     if (status) where.status = status;
     if (employee_id) where.employee_id = employee_id;
 
@@ -41,7 +45,11 @@ export const listcollectionSchedule = async (req, res) => {
         schedules,
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createCollectionSchedule = async (req, res) => {
     const {
         collection_point_id,
@@ -109,7 +117,11 @@ export const createCollectionSchedule = async (req, res) => {
         });
     }
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateCollectionSchedule = async (req, res) => {
     const { id } = req.params;
     const {
@@ -155,7 +167,11 @@ export const updateCollectionSchedule = async (req, res) => {
         message: "Planning mis à jour avec succès",
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const deleteCollectionSchedule = async (req, res) => {
     const { id } = req.params;
 
@@ -166,7 +182,11 @@ export const deleteCollectionSchedule = async (req, res) => {
         message: "Planning supprimé avec succès",
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const generateBSD = async (req, res) => {
     const { id } = req.params;
     const { items_collected, total_weight, notes, signature_data } = req.body;
@@ -207,7 +227,11 @@ export const generateBSD = async (req, res) => {
         receipt,
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const detailBSD = async (req, res) => {
     const { id } = req.params;
 
@@ -236,7 +260,11 @@ export const detailBSD = async (req, res) => {
         },
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const addUserToSchedule = async (req, res) => {
     const { scheduleId } = req.params;
     const { employee_id } = req.body;
@@ -372,7 +400,11 @@ export const addUserToSchedule = async (req, res) => {
         message: "Employé assigné avec succès",
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const removeUserFromSchedule = async (req, res) => {
     const { scheduleId, employeeId } = req.params;
 

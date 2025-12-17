@@ -2,7 +2,11 @@ import createHttpError from "http-errors";
 import db from "../../models/index.js";
 import { cast, col, literal } from "sequelize";
 const { User, Recyclery, sequelize, EmployeeStore } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listEmployeeStore = async (req, res) => {
   const assignments = await User.findAll({
     include: [{ model: Recyclery, as: "stores" }],
@@ -13,7 +17,11 @@ export const listEmployeeStore = async (req, res) => {
     assignments,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const getEmployeeStoreById = async (req, res) => {
   const { id, employeeId } = req.params;
 
@@ -67,7 +75,11 @@ const employeeStores = await EmployeeStore.findAll({
     stores:user
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listStoreEmployee = async (req, res) => {
   const { storeId, role } = req.query;
 
@@ -87,7 +99,11 @@ export const listStoreEmployee = async (req, res) => {
 
   res.json({ users });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const assignUserToStore = async (req, res) => {
   const { employee_id, store_id, is_primary = false } = req.body;
 
@@ -157,7 +173,11 @@ export const assignUserToStore = async (req, res) => {
     employee,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const removeEmployeeStore = async (req, res) => {
   const { employeeId } = req.params;
   const employee = await User.findByPk(employeeId, {

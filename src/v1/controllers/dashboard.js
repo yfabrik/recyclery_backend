@@ -26,7 +26,11 @@ function formatDate(dateString) {
     minute: '2-digit'
   });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const dashboardStats = async (req, res) => {
   // Statistiques principales
   const stats = {};
@@ -78,7 +82,11 @@ export const dashboardStats = async (req, res) => {
 
 
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const dashboardActivities = async (req, res) => {
 
   const activities = [];
@@ -144,7 +152,11 @@ export const dashboardActivities = async (req, res) => {
   });
 
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const dashboardCharts = async (req, res) => {
 
   // Ventes des 7 derniers jours
@@ -183,7 +195,11 @@ export const dashboardCharts = async (req, res) => {
   });
 
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const dashboardStoreStats = async (req, res) => {
 
   // Récupérer tous les magasins actifs

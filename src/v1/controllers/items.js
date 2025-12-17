@@ -17,7 +17,11 @@ const { LabeledItem, Category, User } = db;
 
 //     res.json({ items });
 // }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listLabeledItem = async (req, res) => {
   const { status, category_id, search, recyclery_id } = req.query;
 
@@ -59,7 +63,11 @@ export const listLabeledItem = async (req, res) => {
 
   res.json({ success: true, items: labeledItems });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const getItemFromBarcode = async (req, res) => {
   const { barcode } = req.params;
   const item = await LabeledItem.findOne({ where: { barcode: barcode } });
@@ -103,7 +111,11 @@ export const getItemFromBarcode = async (req, res) => {
 //         item,
 //     });
 // }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createLabeledItem = async (req, res) => {
   let {
     name,
@@ -165,7 +177,11 @@ export const createLabeledItem = async (req, res) => {
     item,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateItem = async (req, res) => {
   const { id } = req.params;
   const {
@@ -214,7 +230,11 @@ export const updateItem = async (req, res) => {
 
   res.json({ success: true, message: "Article mis à jour avec succès" });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const deleteLabeledItem = async (req, res) => {
   const { id } = req.params;
   const deleted = await LabeledItem.destroy({ where: { id } });
@@ -227,7 +247,11 @@ export const deleteLabeledItem = async (req, res) => {
 
   res.json({ success: true, message: "Article supprimé avec succès" });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const tagItemAsSell = async (req, res) => {
   const { id } = req.params;
   const updated = await LabeledItem.update(

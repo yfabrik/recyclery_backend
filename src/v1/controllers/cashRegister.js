@@ -4,7 +4,11 @@ import createHttpError from "http-errors";
 import { Op } from "sequelize";
 
 const { CashRegister, CashSession, Recyclery, Sequelize } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listCaisses = async (req, res) => {
   const { is_active } = req.query;
   const store_id = req.query.store_id || req.params.id;
@@ -56,7 +60,11 @@ export const listCaisses = async (req, res) => {
     registers:cashRegister
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const detailCaisse = async (req, res) => {
   const { id } = req.params;
 
@@ -79,7 +87,11 @@ export const detailCaisse = async (req, res) => {
     data: register,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createCaisse = async (req, res) => {
   const { name, store_id, is_active = true } = req.body;
   console.log(name, store_id);
@@ -117,7 +129,11 @@ export const createCaisse = async (req, res) => {
     data: result,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateCaisse = async (req, res) => {
   const { id } = req.params;
   const { name, is_active } = req.body;
@@ -136,7 +152,7 @@ export const updateCaisse = async (req, res) => {
 
   // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
   const duplicateRegister = await CashRegister.findAll({
-    where: { [Op.and]: [{ name: name }, { recyclery_id: store_id }] },
+    where: { [Op.and]: [{ name: name }, { recyclery_id: existingRegister.recyclery_id }] },
   });
 
   if (duplicateRegister) {
@@ -146,8 +162,8 @@ export const updateCaisse = async (req, res) => {
   }
 
   // Mettre à jour la caisse
-  existingRegister.name ??= name;
-  existingRegister.is_active ??= is_active;
+  existingRegister.name = name;
+  existingRegister.is_active = is_active;
   await existingRegister.save();
 
   res.json({
@@ -156,7 +172,11 @@ export const updateCaisse = async (req, res) => {
     data: existingRegister,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const deleteCaisse = async (req, res) => {
   const { id } = req.params;
 
@@ -185,7 +205,11 @@ export const deleteCaisse = async (req, res) => {
     message: "Caisse supprimée avec succès",
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listCaissesMagasin = async (req, res) => {
   const { store_id } = req.params;
   req.query.store_id = store_id;

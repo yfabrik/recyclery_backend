@@ -9,7 +9,11 @@ const findExistingCategory = async (name, parent_id = null) => {
         where: { [Op.and]: [{ name: name }, { parent_id: parent_id }] }
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listCategories = async (req, res) => {
     const categories = await Category.findAll();
 
@@ -18,7 +22,11 @@ export const listCategories = async (req, res) => {
         categories,
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listSubcategories = async (req, res) => {
     const subcategories = await Category.findAll({
         where: { parent_id: { [Op.gt]: 0 } },
@@ -30,7 +38,11 @@ export const listSubcategories = async (req, res) => {
     });
 }
 
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createCategorie = async (req, res) => {
     const { name, description, icon, parent_id } = req.body;
     const parent = parent_id ?? null
@@ -68,7 +80,11 @@ export const createCategorie = async (req, res) => {
         category,
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const deleteCategorie = async (req, res) => {
     const { id } = req.params;
     //TODO cascade delete les subcategories
@@ -87,7 +103,11 @@ export const deleteCategorie = async (req, res) => {
         message: "Catégorie supprimée avec succès",
     });
 }
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateCategorie = async (req, res) => {
     const { id } = req.params;
     const { name, description, icon } = req.body;

@@ -3,7 +3,11 @@ import db from "../../models/index.js";
 import createHttpError from "http-errors";
 
 const { CollectionPointPresence, CollectionPoint, TaskSchedule, Task } = db;
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listPointPrecense = async (req, res) => {
   const presence_hours = await CollectionPointPresence.findAll({
     include: [{ model: CollectionPoint }],
@@ -13,7 +17,11 @@ export const listPointPrecense = async (req, res) => {
     presence_hours,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const detailPointPrecense = async (req, res) => {
   const { collectionPointId } = req.params;
   const presence_hours = await CollectionPointPresence.findByPk(
@@ -25,7 +33,11 @@ export const detailPointPrecense = async (req, res) => {
     presence_hours,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createPointPrecense = async (req, res) => {
   const {
     collection_point_id,
@@ -84,7 +96,11 @@ export const createPointPrecense = async (req, res) => {
     presence,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updatePointPrecense = async (req, res) => {
   const { id } = req.params;
   const {
@@ -144,7 +160,11 @@ export const updatePointPrecense = async (req, res) => {
     message: "Jours de présence mis à jour avec succès",
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const deletePointPrecense = async (req, res) => {
   const { id } = req.params;
 
@@ -322,7 +342,11 @@ const syncCollectionPointPresenceToPlanning = async (
     tasks: createdTasks,
   };
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const planningSync = async (req, res) => {
   const { collection_point_id, start_date, end_date } = req.body;
 

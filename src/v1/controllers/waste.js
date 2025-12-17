@@ -9,6 +9,11 @@ const generateDisposalNumber = () => {
     .padStart(2, "0");
   return `SORT-${timestamp}-${random}`;
 };
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 
 export const listWaste = async (req, res) => {
   const {
@@ -53,7 +58,7 @@ export const listWaste = async (req, res) => {
     ],
     order: [["disposal_date", "DESC"]],
     offset,
-    limit,
+    limit:5,
   });
 
   // Get total count for pagination
@@ -69,7 +74,11 @@ export const listWaste = async (req, res) => {
     },
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const detailWaste = async (req, res) => {
   const { id } = req.params;
   const waste = await WasteDisposal.findByPk(id, {
@@ -86,7 +95,11 @@ export const detailWaste = async (req, res) => {
   }
   res.json({ disposal: waste });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const createWaste = async (req, res) => {
   const {
     disposal_date,
@@ -138,7 +151,11 @@ export const createWaste = async (req, res) => {
     disposal_number: disposal_number,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateWaste = async (req, res) => {
   const { id } = req.params;
   const {
@@ -183,7 +200,11 @@ export const updateWaste = async (req, res) => {
 
   res.json({ message: "Sortie de déchets mise à jour avec succès" });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const deleteWaste = async (req, res) => {
   const { id } = req.params;
 
@@ -194,7 +215,11 @@ export const deleteWaste = async (req, res) => {
   }
   res.json({ message: "Sortie de déchets supprimée avec succès" });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const wasteStats = async (req, res) => {
   const { date_from, date_to } = req.query;
 
@@ -246,7 +271,11 @@ export const wasteStats = async (req, res) => {
 
   res.json({ stats });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const wasteStatsCategory = async (req, res) => {
   const { date_from, date_to } = req.query;
 
