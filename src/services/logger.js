@@ -40,6 +40,21 @@ const logger = createLogger({
           maxsize: 10 * 1024 * 1024,
           maxFiles: 5,
         }),
+        new _transports.Console({
+          level: "debug",
+          format: _format.combine(
+            _format.colorize(),
+            _format.timestamp(),
+            _format.printf(({ level, message, timestamp, stack, ...meta }) => {
+              const base = `${timestamp} ${level}: ${message}`;
+              const details = stack ? `\n${stack}` : "";
+              const metaStr = Object.keys(meta).length
+                ? `\n${JSON.stringify(meta)}`
+                : "";
+              return base + details + metaStr;
+            })
+          ),
+        }),
       ]
     : [
         new _transports.Console({
