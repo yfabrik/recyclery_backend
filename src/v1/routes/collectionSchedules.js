@@ -16,7 +16,6 @@ router.get(
   authenticateToken,
   asyncHandler(listcollectionSchedule)
 );
-
 // Obtenir les plannings pour le calendrier
 router.get(
   "/calendar",

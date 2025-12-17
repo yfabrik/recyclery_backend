@@ -16,19 +16,19 @@ router.get(
 
     const where = {};
 
-    if (start_date) {
-      where.scheduled_date = {
-        ...(where.scheduled_date || {}),
-        [Op.gte]: start_date,
-      };
-    }
+    // if (start_date) {
+    //   where.scheduled_date = {
+    //     ...(where.scheduled_date || {}),
+    //     [Op.gte]: start_date,
+    //   };
+    // }
 
-    if (end_date) {
-      where.scheduled_date = {
-        ...(where.scheduled_date || {}),
-        [Op.lte]: end_date,
-      };
-    }
+    // if (end_date) {
+    //   where.scheduled_date = {
+    //     ...(where.scheduled_date || {}),
+    //     [Op.lte]: end_date,
+    //   };
+    // }
 
     if (employee_id) {
       where.assigned_to = employee_id;
@@ -45,87 +45,87 @@ router.get(
     const schedules = await TaskSchedule.findAll({
       where,
 
-      attributes: {
-        include: [
-          // task_name
-          [
-            literal(`
-          CASE
-            WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture magasin'
-            WHEN "Task"."name" IS NULL THEN 'Tâche sans nom'
-            ELSE "Task"."name"
-          END
-        `),
-            "task_name",
-          ],
+      // attributes: {
+        // include: [
+        //   // task_name
+        //   [
+        //     literal(`
+        //   CASE
+        //     WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture magasin'
+        //     WHEN "Task"."name" IS NULL THEN 'Tâche sans nom'
+        //     ELSE "Task"."name"
+        //   END
+        // `),
+        //     "task_name",
+        //   ],
 
-          // task_description
-          [
-            literal(`
-          CASE
-            WHEN "TaskSchedule"."task_id" IS NULL THEN "TaskSchedule"."notes"
-            WHEN "Task"."description" IS NULL THEN "TaskSchedule"."notes"
-            ELSE "Task"."description"
-          END
-        `),
-            "task_description",
-          ],
+        //   // task_description
+        //   [
+        //     literal(`
+        //   CASE
+        //     WHEN "TaskSchedule"."task_id" IS NULL THEN "TaskSchedule"."notes"
+        //     WHEN "Task"."description" IS NULL THEN "TaskSchedule"."notes"
+        //     ELSE "Task"."description"
+        //   END
+        // `),
+        //     "task_description",
+        //   ],
 
-          // task_category
-          [
-            literal(`
-          CASE
-            WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture'
-            WHEN "Task"."category" IS NULL THEN 'collection_operations'
-            ELSE "Task"."category"
-          END
-        `),
-            "task_category",
-          ],
+        //   // task_category
+        //   [
+        //     literal(`
+        //   CASE
+        //     WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture'
+        //     WHEN "Task"."category" IS NULL THEN 'collection_operations'
+        //     ELSE "Task"."category"
+        //   END
+        // `),
+        //     "task_category",
+        //   ],
 
-          // task_priority
-          [
-            literal(`
-          CASE
-            WHEN "TaskSchedule"."task_id" IS NULL THEN 'medium'
-            WHEN "Task"."priority" IS NULL THEN 'high'
-            ELSE "Task"."priority"
-          END
-        `),
-            "task_priority",
-          ],
+        //   // task_priority
+        //   [
+        //     literal(`
+        //   CASE
+        //     WHEN "TaskSchedule"."task_id" IS NULL THEN 'medium'
+        //     WHEN "Task"."priority" IS NULL THEN 'high'
+        //     ELSE "Task"."priority"
+        //   END
+        // `),
+        //     "task_priority",
+        //   ],
 
-          // estimated_duration
-          [
-            literal(`
-          CASE
-            WHEN "TaskSchedule"."task_id" IS NULL THEN 480
-            WHEN "Task"."estimated_duration" IS NULL THEN 480
-            ELSE "Task"."estimated_duration"
-          END
-        `),
-            "estimated_duration",
-          ],
+        //   // estimated_duration
+        //   [
+        //     literal(`
+        //   CASE
+        //     WHEN "TaskSchedule"."task_id" IS NULL THEN 480
+        //     WHEN "Task"."estimated_duration" IS NULL THEN 480
+        //     ELSE "Task"."estimated_duration"
+        //   END
+        // `),
+        //     "estimated_duration",
+        //   ],
 
-          // employee_name
-          [
-            fn("COALESCE", col("User.username"), "Utilisateur inconnu"),
-            "employee_name",
-          ],
+        //   // employee_name
+        //   // [
+        //   //   fn("COALESCE", col("User.username"), "Utilisateur inconnu"),
+        //   //   "employee_name",
+        //   // ],
 
-          // employee_email
-          [col("User.email"), "employee_email"],
+        //   // // employee_email
+        //   // [col("User.email"), "employee_email"],
 
-          // employee_phone
-          [col("User.phone"), "employee_phone"],
+        //   // // employee_phone
+        //   // [col("User.phone"), "employee_phone"],
 
-          // store_name
-          [
-            fn("COALESCE", col("Recyclery.name"), "Magasin inconnu"),
-            "store_name",
-          ],
-        ],
-      },
+        //   // // store_name
+        //   // [
+        //   //   fn("COALESCE", col("Recyclery.name"), "Magasin inconnu"),
+        //   //   "store_name",
+        //   // ],
+        // ],
+      // },
 
       include: [
         {
@@ -159,13 +159,13 @@ router.get(
             model: TaskSchedule,
             required: true, // INNER JOIN
             where: {
-              schedule_id: schedule.id,
+              assigned_to: schedule.id,
             },
           },
         ],
       });
 
-      schedule.assigned_employees = assignedEmployees;
+      // schedule.assigned_employees = assignedEmployees;
 
       // Log pour déboguer
     }
@@ -319,7 +319,7 @@ router.post(
     res.status(201).json({
       success: true,
       message: "Planning créé avec succès",
-      schedule_id: result.id,
+      // schedule_id: result.id,
     });
   })
 );
@@ -646,7 +646,7 @@ router.post(
 
     // Vérifier si l'assignation existe déjà
     const existing = await TaskSchedule.findAll({
-      where: { schedule_id: scheduleId, employee_id },
+      // where: { schedule_id: scheduleId, employee_id },
     });
 
     if (existing.length > 0) {
@@ -709,7 +709,7 @@ router.post(
     // Créer l'assignation
 
     const created = await TaskSchedule.create({
-      schedule_id: scheduleId,
+      // schedule_id: scheduleId,
       employee_id,
       assigned_at: Date.now(),
     });
@@ -791,7 +791,7 @@ router.get(
       // Vérifier si l'employé est déjà assigné à cette tâche
 
       const alreadyAssigned = await TaskSchedule.findAll({
-        where: { schedule_id: scheduleId, employee_id: employee.id },
+        // where: { schedule_id: scheduleId, employee_id: employee.id },
       });
 
       availableEmployees.push({
@@ -826,7 +826,7 @@ router.delete(
     const query =
       "DELETE FROM task_schedule_employees WHERE schedule_id = ? AND employee_id = ?";
     const result = await TaskSchedule.destroy({
-      where: { schedule_id: scheduleId, employee_id: employeeId },
+      // where: { schedule_id: scheduleId, employee_id: employeeId },
     });
 
     if (result === 0) {

@@ -19,6 +19,7 @@ export default (sequelize, DataTypes) => {
       this.belongsToMany(models.Task, { through: "task_user" });
       this.hasMany(models.Arrival,{foreignKey:"processed_by"})
       // this.belongsToMany(models.TaskSchedule,{through:"taskSchedule_employee",foreignKey:"employee_id"})
+      this.hasMany(models.TaskSchedule,{foreignKey:"assigned_to"})
 
 
       this.belongsToMany(models.Recyclery, {
