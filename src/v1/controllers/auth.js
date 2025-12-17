@@ -92,7 +92,7 @@ export const login = async (req, res, next) => {
     throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
   }
 
-  user.lastLogin = new Date();
+  user.last_login = new Date();
   await user.save();
   const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
     expiresIn: "24h",
@@ -105,14 +105,14 @@ export const login = async (req, res, next) => {
       id: user.id,
       username: user.username,
       email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
+      // first_name: user.first_name,
+      // last_name: user.last_name,
       phone: user.phone,
       role: user.role,
-      role_display_name: user.role_display_name,
-      role_level: user.role_level,
-      recyclery_id: user.recyclery_id,
-      recyclery_name: user.recyclery_name,
+      // role_display_name: user.role_display_name,
+      // role_level: user.role_level,
+      // recyclery_id: user.recyclery_id,
+      // recyclery_name: user.recyclery_name,
     },
   });
 };
