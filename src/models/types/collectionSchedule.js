@@ -1,6 +1,5 @@
 /**
- * @typedef {Object} CollectionScheduleAttributes
- * @property {number} [id]
+ * @typedef {Object} CollectionScheduleAttribute
  * @property {Date} scheduled_date
  * @property {string} scheduled_time
  * @property {string} vehicle
@@ -10,6 +9,7 @@
  * @property {string} address
  * @property {string} contact_name
  * @property {string} contact_phone
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & CollectionScheduleAttribute} CollectionScheduleAttributes
  */
 
 /**

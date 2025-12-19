@@ -9,6 +9,9 @@ const { Arrival, Category, User, CollectionPoint } = db;
  */
 export const listArrivals = async (req, res) => {
   const { date_from, date_to, category_id, source_type, status } = req.query;
+  /**
+ * @type {import("sequelize").WhereOptions}
+ */
   const where = {};
 
   // if (date_from) {

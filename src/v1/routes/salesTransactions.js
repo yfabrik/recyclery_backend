@@ -31,7 +31,9 @@ router.get(
   authenticateToken,
   asyncHandler(async (req, res) => {
     const { store_id, date_from, date_to } = req.query;
-
+      /**
+   * @type {import("sequelize").WhereOptions}
+   */
     const where = {};
     if (store_id) where.store_id = store_id;
     if (date_from && date_to)
@@ -103,6 +105,9 @@ router.get(
   authenticateToken,
   asyncHandler(async (req, res) => {
     const { store_id, period, date_from, date_to } = req.query;
+          /**
+   * @type {import("sequelize").WhereOptions}
+   */
     const where = {};
 
     where.customer_postal_code = { [Op.ne]: null };

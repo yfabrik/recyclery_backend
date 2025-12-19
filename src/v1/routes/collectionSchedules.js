@@ -6,7 +6,7 @@ import { addUserToSchedule, createCollectionSchedule, deleteCollectionSchedule, 
 import { col, fn, Op, QueryTypes } from "sequelize";
 
 
-const { CollectionSchedule, CollectionPoint, User, EmployeeWorkdays ,sequelize} = db;
+const { CollectionSchedule, CollectionPoint, User, EmployeeWorkdays, sequelize } = db;
 
 export const router = Router();
 
@@ -22,11 +22,12 @@ router.get(
   authenticateToken,
   asyncHandler(async (req, res) => {
     const { month, year } = req.query;
+    /**
+* @type {import("sequelize").WhereOptions}
+*/
     const where = {};
     if (month && year)
-      where = {
-        [Op.eq]: [fn("strftime", "%Y-%m", col("scheduled_date")), "yearMonth"],
-      };
+      where[Op.eq] = [fn("strftime", "%Y-%m", col("scheduled_date")), "yearMonth"]
 
     const events = await CollectionSchedule.findAll({
       where,

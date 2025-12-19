@@ -1,9 +1,11 @@
 /**
- * @typedef {Object} CashRegisterAttributes
- * @property {number} [id]
+ * @typedef {Object} CashRegisterAttribute
  * @property {string} name
  * @property {boolean} is_active
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & CashRegisterAttribute} CashRegisterAttributes
  */
+
+
 
 /**
  * @typedef {import("sequelize").Model<CashRegisterAttributes, CashRegisterAttributes> & CashRegisterAttributes} CashRegisterInstance

@@ -47,7 +47,7 @@ export const dashboardStats = async (req, res) => {
 
   stats.soldThisMonth = month_transactions.length;
 
-  stats.totalRevenue = parseFloat(month_transactions.reduce((prev, current) => prev += current.total_amount, 0));
+  stats.totalRevenue = month_transactions.reduce((prev, current) => prev += current.total_amount, 0);
 
   // 5. Dons en attente
   stats.pendingDonations = await Donation.count({ where: { status: "pending" } })
@@ -69,7 +69,7 @@ export const dashboardStats = async (req, res) => {
 
   // Utiliser les transactions de vente
   const lastMonthRevenueResult = await SalesTransaction.findAll({ where: { createdAt: { [Op.between]: [lastMonthStr, currentMonth] } } })
-  stats.lastMonthRevenue = parseFloat(lastMonthRevenueResult.reduce((prev, current) => prev += current.total_amount, 0));
+  stats.lastMonthRevenue = lastMonthRevenueResult.reduce((prev, current) => prev += current.total_amount, 0);
 
   stats.lastMonthSales = lastMonthRevenueResult.length
 
@@ -175,7 +175,7 @@ export const dashboardCharts = async (req, res) => {
 
     // Utiliser les transactions de vente si elles existent
     const daySales = hasTransactions.length
-    const dayRevenue = parseFloat(hasTransactions.reduce((prev, current) => prev += current.total_amount, 0));
+    const dayRevenue = hasTransactions.reduce((prev, current) => prev += current.total_amount, 0);
 
 
     salesData.push(daySales);
@@ -220,11 +220,11 @@ export const dashboardStoreStats = async (req, res) => {
 
     const currentMonthSales = month_transactions.length;
 
-    const currentRevenue = parseFloat(month_transactions.reduce((prev, current) => prev += current.total_amount, 0));
+    const currentRevenue = month_transactions.reduce((prev, current) => prev += current.total_amount, 0);
 
     // Utiliser les transactions de vente
     const lastMonthRevenueResult = await SalesTransaction.findAll({ where: { createdAt: { [Op.between]: [lastMonthStr, currentMonth] } } })
-    const lastMonthRevenue = parseFloat(lastMonthRevenueResult.reduce((prev, current) => prev += current.total_amount, 0));
+    const lastMonthRevenue = lastMonthRevenueResult.reduce((prev, current) => prev += current.total_amount, 0);
 
     const sessions = await CashSession.count({ where: { store_id: store.id, createdAt: { [Op.between]: [lastMonthStr, currentMonth] } } })
 

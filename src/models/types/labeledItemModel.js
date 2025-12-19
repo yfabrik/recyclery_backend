@@ -1,6 +1,5 @@
 /**
- * @typedef {Object} LabeledItemAttributes
- * @property {number} [id]
+ * @typedef {Object} LabeledItemAttribute
  * @property {string} barcode
  * @property {string} name
  * @property {string} description
@@ -11,6 +10,7 @@
  * @property {string} location
  * @property {string} status
  * @property {Date} sold_at
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & LabeledItemAttribute} LabeledItemAttributes
  */
 
 /**

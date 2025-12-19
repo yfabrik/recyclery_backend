@@ -12,6 +12,9 @@ router.get(
   "/",
   asyncHandler(async (req, res) => {
     const { recyclery_id } = req.query;
+          /**
+   * @type {import("sequelize").WhereOptions}
+   */
     const where = {};
     if (recyclery_id) where.recyclery_id = recyclery_id;
 

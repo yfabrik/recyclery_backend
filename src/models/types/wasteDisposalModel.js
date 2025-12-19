@@ -1,5 +1,5 @@
 /**
- * @typedef {Object} WasteDisposalAttributes
+ * @typedef {Object} WasteDisposalAttribute
  * @property {number} [id]
  * @property {string} disposal_number
  * @property {Date} disposal_date
@@ -10,6 +10,7 @@
  * @property {string} [transport_company]
  * @property {number} [transport_cost]
  * @property {string} [notes]
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & WasteDisposalAttribute} WasteDisposalAttributes
  */
 
 /**

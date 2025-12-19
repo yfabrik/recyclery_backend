@@ -29,14 +29,14 @@
  * @property { import("sequelize").ModelStatic<import("./arrivalModel.js").ArrivalInstance>} Arrival
  * @property { import("sequelize").ModelStatic<import("./cashRegisterModel.js").CashRegisterInstance>} CashRegister
  * @property { import("sequelize").ModelStatic<import("./cashSessionModel.js").CashSessionInstance>} CashSession
- * @property { import("sequelize").ModelStatic<any>} Category
+ * @property { import("sequelize").ModelStatic<import("./categoryModel.js").CategoryInstance>} Category
  * @property { import("sequelize").ModelStatic<import("./collectionPointModel.js").CollectionPointInstance>} CollectionPoint
- * @property { import("sequelize").ModelStatic<any>} CollectionPointPresence
- * @property { import("sequelize").ModelStatic<any>} CollectionReceipt
+ * @property { import("sequelize").ModelStatic<import("./collectionPointPresenceModel.js").CollectionPointPresenceInstance>} CollectionPointPresence
+ * @property { import("sequelize").ModelStatic<import("./collectionReceiptModel.js").CollectionReceiptInstance>} CollectionReceipt
  * @property { import("sequelize").ModelStatic<import("./collectionSchedule.js").CollectionScheduleInstance>} CollectionSchedule
- * @property { import("sequelize").ModelStatic<any>} Donation
- * @property { import("sequelize").ModelStatic<any>} EcoOrganism
- * @property { import("sequelize").ModelStatic<any>} EmployeeWorkdays
+ * @property { import("sequelize").ModelStatic<import("./donationModel.js").DonationInstance>} Donation
+ * @property { import("sequelize").ModelStatic<import("./ecoOrganismModel.js").EcoOrganismInstance>} EcoOrganism
+ * @property { import("sequelize").ModelStatic<import("./employeeWorkday.js").EmployeeWorkdaysInstance>} EmployeeWorkdays
  * @property { import("sequelize").ModelStatic<import("./labeledItemModel.js").LabeledItemInstance>} LabeledItem
  * @property { import("sequelize").ModelStatic<any>} RecurringSchedule
  * @property { import("sequelize").ModelStatic<import("./recycleryModel.js").RecycleryInstance>} Recyclery

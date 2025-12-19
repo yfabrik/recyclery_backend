@@ -1,6 +1,5 @@
 /**
- * @typedef {Object} RecycleryAttributes
- * @property {number} [id]
+ * @typedef {Object} RecycleryAttribute
  * @property {string} name
  * @property {string} address
  * @property {string} phone
@@ -8,6 +7,7 @@
  * @property {string} city
  * @property {string} postal_code
  * @property {boolean} is_active
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & RecycleryAttribute} RecycleryAttributes
  */
 
 /**

@@ -1,6 +1,5 @@
 /**
- * @typedef {Object} SalesTransactionAttributes
- * @property {number} [id]
+ * @typedef {Object} SalesTransactionAttribute
  * @property {string} transaction_number
  * @property {number} total_amount
  * @property {string} payment_method
@@ -11,6 +10,7 @@
  * @property {string} customer_postal_code
  * @property {string} status
  * @property {number} refunded_amount
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & SalesTransactionAttribute} SalesTransactionAttributes
  */
 
 /**

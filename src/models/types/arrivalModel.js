@@ -1,6 +1,5 @@
 /**
- * @typedef {Object} ArrivalAttributes
- * @property {number} [id]
+ * @typedef {Object} ArrivalAttribute
  * @property {string} arrival_number
  * @property {number} weight
  * @property {Date} arrival_date
@@ -11,6 +10,10 @@
  * @property {boolean} house_clearance
  * @property {string} notes
  * @property {string} status
+ */
+
+/**
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & ArrivalAttribute} ArrivalAttributes
  */
 
 /**

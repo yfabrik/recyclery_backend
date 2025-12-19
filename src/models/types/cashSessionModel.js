@@ -1,6 +1,5 @@
 /**
- * @typedef {Object} CashSessionAttributes
- * @property {number} [id]
+ * @typedef {Object} CashSessionAttribute
  * @property {string} session_number
  * @property {number} opening_amount
  * @property {number} closing_amount
@@ -9,6 +8,7 @@
  * @property {"open"|"close"} status
  * @property {string} notes
  * @property {Date} closed_at
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & CashSessionAttribute} CashSessionAttributes
  */
 
 /**

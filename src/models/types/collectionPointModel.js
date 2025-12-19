@@ -1,6 +1,5 @@
 /**
- * @typedef {Object} CollectionPointAttributes
- * @property {number} [id]
+ * @typedef {Object} CollectionPointAttribute
  * @property {string} name
  * @property {string} address
  * @property {string} city
@@ -11,6 +10,8 @@
  * @property {string} type
  * @property {string} notes
  * @property {boolean} is_active
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & CollectionPointAttribute} CollectionPointAttributes
+ * 
  */
 
 /**

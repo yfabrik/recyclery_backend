@@ -1,9 +1,10 @@
 /**
- * @typedef {Object} CategoryAttributes
- * @property {number} [id]
+ * @typedef {Object} CategoryAttribute
  * @property {string} name
  * @property {string} description
  * @property {string} icon
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & CategoryAttribute} CategoryAttributes
+ * 
  */
 
 /**

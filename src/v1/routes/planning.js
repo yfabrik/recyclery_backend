@@ -13,7 +13,9 @@ router.get(
   authenticateToken,
   asyncHandler(async (req, res) => {
     const { start_date, end_date, employee_id, status, store_id } = req.query;
-
+      /**
+   * @type {import("sequelize").WhereOptions}
+   */
     const where = {};
 
     // if (start_date) {
@@ -434,6 +436,9 @@ router.get(
   asyncHandler(async (req, res) => {
     const { employee_id } = req.params;
     const { start_date, end_date } = req.query;
+          /**
+   * @type {import("sequelize").WhereOptions}
+   */
     const where = {};
 
     if (start_date) {
@@ -470,7 +475,9 @@ router.get(
   authenticateToken,
   asyncHandler(async (req, res) => {
     const { start_date, end_date } = req.query;
-
+      /**
+   * @type {import("sequelize").WhereOptions}
+   */
     const where = {};
 
     if (start_date) {
