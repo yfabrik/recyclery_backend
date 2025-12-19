@@ -11,6 +11,9 @@ const { Task, User } = db;
  */
 export const listTasks = async (req, res) => {
     const { category, priority, search } = req.query;
+          /**
+   * @type {import("sequelize").WhereOptions}
+   */
     const where = {}
     if (category && category !== "all") where.category = category;
 

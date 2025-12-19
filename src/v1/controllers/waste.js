@@ -1,5 +1,6 @@
 import { col, fn, literal, Op } from "sequelize";
 import db from "../../models/index.js";
+import createHttpError from "http-errors";
 
 const { WasteDisposal, Category, EcoOrganism, User } = db;
 const generateDisposalNumber = () => {
@@ -26,7 +27,9 @@ export const listWaste = async (req, res) => {
     page = 1,
     limit = 50,
   } = req.query;
-
+      /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
   if (category_id) where.category_id = category_id;
   if (subcategory_id) where.subcategory_id = subcategory_id;
@@ -185,6 +188,8 @@ export const updateWaste = async (req, res) => {
   }
 
   const waste = await WasteDisposal.findByPk(id);
+  if(!waste)
+    throw createHttpError[404]
   waste.disposal_date = disposal_date;
   waste.disposal_type = disposal_type;
   waste.category_id = category_id;
@@ -222,7 +227,9 @@ export const deleteWaste = async (req, res) => {
  */
 export const wasteStats = async (req, res) => {
   const { date_from, date_to } = req.query;
-
+      /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
   // if (date_from) {
   //   where.disposal_date = {
@@ -278,7 +285,9 @@ export const wasteStats = async (req, res) => {
  */
 export const wasteStatsCategory = async (req, res) => {
   const { date_from, date_to } = req.query;
-
+      /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
   if (date_from) {
     where.disposal_date = {

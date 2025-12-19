@@ -24,7 +24,9 @@ const { LabeledItem, Category, User } = db;
  */
 export const listLabeledItem = async (req, res) => {
   const { status, category_id, search, recyclery_id } = req.query;
-
+  /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
 
   if (status) where.status = status;

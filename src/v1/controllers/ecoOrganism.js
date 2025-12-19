@@ -9,6 +9,9 @@ const { EcoOrganism, WasteDisposal } = db;
  */
 export const listEcoOrganism = async (req, res) => {
   const { active } = req.query;
+    /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
   if (active) where.is_active = active;
   const eco_organisms = await EcoOrganism.findAll({ where });

@@ -85,7 +85,11 @@ export const addHoraire = async (req, res) => {
     id: horaire.id,
   });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const updateHoraire = async (req, res) => {
   const { id } = req.params;
   const {

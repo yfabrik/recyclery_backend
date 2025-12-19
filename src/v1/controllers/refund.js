@@ -1,6 +1,6 @@
 import createHttpError from "http-errors";
 import db from "../../models/index.js";
-import { col, fn } from "sequelize";
+import { col, fn, Op } from "sequelize";
 
 const { Refund, Recyclery, User, SalesTransaction } = db;
 /**
@@ -121,7 +121,9 @@ export const detailRefund = async (req, res) => {
  */
 export const refundStats = async (req, res) => {
   const { store_id, date_from, date_to } = req.query;
-
+    /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
   if (store_id) where.store_id = store_id;
   if (date_from) {

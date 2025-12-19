@@ -9,6 +9,9 @@ const { CollectionPoint, Recyclery, CollectionSchedule } = db;
  */
 export const listCollectionPoints = async (req, res) => {
   const { active_only } = req.query;
+    /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
   if (active_only === "true") where.is_active = 1;
 

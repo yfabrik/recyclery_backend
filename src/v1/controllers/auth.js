@@ -1,6 +1,6 @@
 import { Op } from "sequelize";
 import jwt from "jsonwebtoken";
-import db from  "../../models/index.js"
+import db from "../../models/index.js"
 import bcrypt from "bcryptjs";
 import createHttpError from "http-errors";
 const { User } = db;
@@ -124,6 +124,8 @@ export const login = async (req, res, next) => {
 export const userProfile = async (req, res) => {
   const id = req.user.id;
   const user = await User.findByPk(id);
+  if (!user)
+    throw createHttpError[404]
 
   let permissions = [];
   let permissionsByModule = {};

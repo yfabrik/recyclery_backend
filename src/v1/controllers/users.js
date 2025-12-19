@@ -11,7 +11,9 @@ const { User, Recyclery } = db;
  */
 export const listUsers = async (req, res) => {
   const { store_id, role } = req.query;
-
+      /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
   if (store_id) where.recyclery_id = store_id;
   if (role) where.role = role;
@@ -28,7 +30,11 @@ export const listUsers = async (req, res) => {
 
   res.json({ users });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listEmployees = async (req, res) => {
   const users = await User.findAll({
     where: {

@@ -82,7 +82,9 @@ const employeeStores = await EmployeeStore.findAll({
  */
 export const listStoreEmployee = async (req, res) => {
   const { storeId, role } = req.query;
-
+  /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
   if (storeId) where.recyclery_id = storeId;
   if (role) where.role = role;

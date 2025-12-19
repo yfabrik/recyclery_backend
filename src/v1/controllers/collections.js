@@ -11,6 +11,9 @@ const { CollectionSchedule, User } = db;
 //FIXME doublon avec collection schedule
 export const listCollections = async (req, res) => {
     const { recyclery_id, status } = req.query;
+      /**
+   * @type {import("sequelize").WhereOptions}
+   */
     const where = {};
 
     if (recyclery_id) where.recyclery_id = recyclery_id;

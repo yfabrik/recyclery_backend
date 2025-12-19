@@ -116,7 +116,11 @@ export const deleteRecyclerie = async (req, res) => {
 
   res.json({ message: "Recyclerie supprimée avec succès" });
 };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const listCaissesRecyclerie = async (req, res) => {
   const { id } = req.params;
 
@@ -140,7 +144,11 @@ export const listCaissesRecyclerie = async (req, res) => {
 //     cash_register_id: caisse.id,
 //   });
 // };
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const recycleryStats = async (req, res) => {
   const { id } = req.params;
 

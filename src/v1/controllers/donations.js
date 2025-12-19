@@ -12,6 +12,9 @@ const { Donation, User } = db
  */
 export const listDons = async (req, res) => {
   const { recyclery_id, status } = req.query;
+    /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
   if (recyclery_id) where.recyclery_id = recyclery_id;
   if (status) where.status = status;

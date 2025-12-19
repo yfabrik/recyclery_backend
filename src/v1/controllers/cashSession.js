@@ -19,6 +19,9 @@ const {
 // 🧠 GET /cash-sessions
 export const listCashSessions = async (req, res) => {
   const { store_id, status, user_id } = req.query;
+    /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
 
   if (store_id) where.store_id = store_id;

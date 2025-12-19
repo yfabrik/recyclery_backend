@@ -1,6 +1,4 @@
-import { Op } from "sequelize";
 import db from "../../models/index.js";
-import item from "../../models/poubelle/item.js";
 
 const { SalesTransaction, Recyclery, User, Refund, LabeledItem } = db;
 /**
@@ -17,6 +15,9 @@ export const listTransactions = async (req, res) => {
     limit = 50,
     offset = 0,
   } = req.query;
+      /**
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
   if (store_id) where.store_id = store_id;
   // if (date_from) {

@@ -13,6 +13,9 @@ export const listCaisses = async (req, res) => {
   const { is_active } = req.query;
   const store_id = req.query.store_id || req.params.id;
 
+  /**
+   * @type {import("sequelize").WhereOptions} 
+   */
   const where = {};
   if (store_id) {
     where.recyclery_id = store_id;
