@@ -3,9 +3,9 @@ import db from "../../models/index.js";
 import { cast, col, literal } from "sequelize";
 const { User, Recyclery, sequelize, EmployeeStore } = db;
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listEmployeeStore = async (req, res) => {
   const assignments = await User.findAll({
@@ -18,15 +18,16 @@ export const listEmployeeStore = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const getEmployeeStoreById = async (req, res) => {
   const { id, employeeId } = req.params;
 
-  const assignment = await EmployeeStore.findAll({where:{employee_id:employeeId}})
-
+  const assignment = await EmployeeStore.findAll({
+    where: { employee_id: employeeId },
+  });
 
   const user = await User.findByPk(employeeId, {
     include: [
@@ -37,48 +38,49 @@ export const getEmployeeStoreById = async (req, res) => {
       },
     ],
   });
-const employeeStores = await EmployeeStore.findAll({
-  where: {
-    employee_id: employeeId,
-  },
-  attributes: [
-    "employee_id",
-    "store_id",
-    // cast boolean to integer
-    [cast(col("is_primary"), "INTEGER"), "is_primary"],
-    "createdAt",
-    "updatedAt",
-  ],
-  include: [
-    {
-      model: Recyclery,
-      attributes: [
-        ["name", "store_name"],
-        ["address", "store_address"],
-      ],
-      required: false, // LEFT JOIN
+  const employeeStores = await EmployeeStore.findAll({
+    where: {
+      employee_id: employeeId,
     },
-  ],
-  order: [
-    [literal('"is_primary" DESC')],      // order primary first
-    [Recyclery, "name", "ASC"],             // then by store name
-  ],
-  raw: true, // return plain objects
-});
-
+    attributes: [
+      "employee_id",
+      "store_id",
+      // cast boolean to integer
+      [cast(col("is_primary"), "INTEGER"), "is_primary"],
+      "createdAt",
+      "updatedAt",
+      [col("Recyclery.name"), "store_name"],
+      [col("Recyclery.address"), "store_address"],
+    ],
+    include: [
+      {
+        model: Recyclery,
+        attributes: [
+          // ["name", "store_name"],
+          // ["address", "store_address"],
+        ],
+        required: false, // LEFT JOIN
+      },
+    ],
+    order: [
+      [literal('"is_primary" DESC')], // order primary first
+      [Recyclery, "name", "ASC"], // then by store name
+    ],
+    raw: true, // return plain objects
+  });
 
   // if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
 
   res.json({
     success: true,
-    assignments:employeeStores,
-    stores:user
+    assignments: employeeStores,
+    stores: user,
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listStoreEmployee = async (req, res) => {
   const { storeId, role } = req.query;
@@ -102,9 +104,9 @@ export const listStoreEmployee = async (req, res) => {
   res.json({ users });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const assignUserToStore = async (req, res) => {
   const { employee_id, store_id, is_primary = false } = req.body;
@@ -144,20 +146,20 @@ export const assignUserToStore = async (req, res) => {
 
   // // Si c'est une affectation principale, retirer le statut principal des autres affectations de cet employé
   if (is_primary) {
-  //   await database.run(
-  //     "UPDATE employee_stores SET is_primary = 0 WHERE employee_id = ?",
-  //     [employee_id]
-  //   );
-  // }
+    //   await database.run(
+    //     "UPDATE employee_stores SET is_primary = 0 WHERE employee_id = ?",
+    //     [employee_id]
+    //   );
+    // }
     await sequelize.transaction(async (t) => {
-    for (const store of employee.stores) {
-      await employee.addStore(store, {
-        through: { is_primary: store.id === store_id },
-        transaction: t,
-      });
-    }
-  });
-}
+      for (const store of employee.stores) {
+        await employee.addStore(store, {
+          through: { is_primary: store.id === store_id },
+          transaction: t,
+        });
+      }
+    });
+  }
 
   // await employee.addStore(store);
   // const result = await database.run(
@@ -176,9 +178,9 @@ export const assignUserToStore = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const removeEmployeeStore = async (req, res) => {
   const { employeeId } = req.params;
