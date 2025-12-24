@@ -27,9 +27,9 @@ router.get(
 // Obtenir les rôles disponibles
 router.get("/roles", (req, res) => {
   const roles = [
-    { value: "admin", label: "Administrateur" },
-    { value: "manager", label: "Gestionnaire" },
-    { value: "employee", label: "Employé" },
+    { name: "admin", display_name: "Administrateur" },
+    { name: "manager", display_name: "Gestionnaire" },
+    { name: "employee", display_name: "Employé" },
   ];
 
   res.json({

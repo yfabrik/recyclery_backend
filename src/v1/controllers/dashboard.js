@@ -54,7 +54,7 @@ export const dashboardStats = async (req, res) => {
 
   // 6. Collections programmées ce mois
   // console.log(CollectionSchedule.findAll({ where: { scheduled_date: { [Op.gt]: currentMonth } } }))
-  stats.scheduledCollections = await CollectionSchedule.findAll({ where: { scheduled_date: { [Op.gt]: currentMonth } } })
+  stats.scheduledCollections = await CollectionSchedule.count({ where: { scheduled_date: { [Op.gt]: currentMonth } } })
 
   // 7. Nombre de catégories actives
   stats.categoriesCount = await LabeledItem.count({ distinct:true, col: "category_id", where: { status: "available" } })
@@ -73,7 +73,8 @@ export const dashboardStats = async (req, res) => {
 
   stats.lastMonthSales = lastMonthRevenueResult.length
 
-
+  stats.thisMonthRevenue =month_transactions.reduce((prev, current) => prev += current.total_amount, 0);
+  stats.thisMonthSales=month_transactions.length
 
   res.json({
     success: true,
