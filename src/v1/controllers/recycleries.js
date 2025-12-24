@@ -2,35 +2,46 @@ import createHttpError from "http-errors";
 import db from "../../models/index.js";
 
 import { listCaisses } from "../../services/caisse.js";
-import { col, fn, Op, where } from "sequelize";
+import { col, fn, literal, Op, where } from "sequelize";
 const { Recyclery, CashRegister, User, SalesTransaction, LabeledItem } = db;
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listRecycleries = async (req, res) => {
   const recycleries = await Recyclery.findAll({
     attributes: {
-      include: [[fn("COUNT", col("caisses.id")), "cash_registers_count"]],
+      include: [
+        [
+          literal(`(
+        SELECT COUNT(*)
+        FROM "CashRegisters" c
+        WHERE c."recyclery_id" = "Recyclery"."id"
+      )`),
+          "cash_registers_count",
+        ],
+      ],
+      // include: [[fn("COUNT", col("caisses.id")), "cash_registers_count"]], //empeche de lister les caisses
     },
     include: [
       {
         model: CashRegister,
         required: false,
         as: "caisses",
+        // separate:true
       },
       { model: User, as: "manager" },
     ],
-    group: ["Recyclery.id", "manager.id"],
+    // group: ["Recyclery.id", "manager.id"],//group by empeche de lister les caisses , j'ai juste la premiere caisses
     order: [["name", "ASC"]],
   });
   res.json({ success: true, stores: recycleries, recycleries });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const detailRecyclerie = async (req, res) => {
   const { id } = req.params;
@@ -44,9 +55,9 @@ export const detailRecyclerie = async (req, res) => {
   res.json({ success: true, store: recyclerie });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const createRecyclerie = async (req, res) => {
   const { name, address, phone, email, manager_id, city, postal_code } =
@@ -59,7 +70,7 @@ export const createRecyclerie = async (req, res) => {
     address,
     phone,
     email,
-    manager_id:manager_id||null,
+    manager_id: manager_id || null,
     city,
     postal_code,
   });
@@ -104,7 +115,7 @@ export const updateRecyclerie = async (req, res) => {
     success: true,
     message: "Recyclerie mise à jour avec succès",
     recyclery: recyclerie,
-    store:recyclerie
+    store: recyclerie,
   });
 };
 
@@ -117,9 +128,9 @@ export const deleteRecyclerie = async (req, res) => {
   res.json({ message: "Recyclerie supprimée avec succès" });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listCaissesRecyclerie = async (req, res) => {
   const { id } = req.params;
@@ -145,9 +156,9 @@ export const listCaissesRecyclerie = async (req, res) => {
 //   });
 // };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const recycleryStats = async (req, res) => {
   const { id } = req.params;
