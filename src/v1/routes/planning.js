@@ -779,14 +779,14 @@ router.get(
     });
 
     // Pour chaque employé, vérifier s'il est disponible
-    const availableEmployees = [];
+    // const availableEmployees = [];
 
     for (const employee of allEmployees) {
       // Vérifier les conflits d'horaires pour cet employé
 
       const conflicts = await TaskSchedule.findAll({
         where: {
-          employee_id: employee.id,
+          assigned_to: employee.id,
           scheduled_date: currentSchedule.scheduled_date,
           id: { [Op.ne]: scheduleId },
 
@@ -796,23 +796,23 @@ router.get(
       });
 
       // Vérifier si l'employé est déjà assigné à cette tâche
+      //FIXME
+      // const alreadyAssigned = await TaskSchedule.findAll({
+      //   // where: { schedule_id: scheduleId, employee_id: employee.id },
+      // });
 
-      const alreadyAssigned = await TaskSchedule.findAll({
-        // where: { schedule_id: scheduleId, employee_id: employee.id },
-      });
-
-      availableEmployees.push({
-        ...employee,
-        is_available: conflicts.length === 0 && alreadyAssigned.length === 0,
-        has_conflicts: conflicts.length > 0,
-        conflicts: conflicts,
-        already_assigned: alreadyAssigned.length > 0,
-      });
+      // availableEmployees.push({
+      //   ...employee,
+      //   // is_available: conflicts.length === 0 &&  employee.id!== currentSchedule.assigned_to ,
+      //   // has_conflicts: conflicts.length > 0,
+      //   // conflicts: conflicts,
+      //   // already_assigned: employee.id== currentSchedule.assigned_to,
+      // });
     }
 
     res.json({
       success: true,
-      employees: availableEmployees,
+      employees: allEmployees,
       schedule_info: {
         id: currentSchedule.id,
         scheduled_date: currentSchedule.scheduled_date,
