@@ -21,7 +21,7 @@ export const authenticateToken = async (req, res, next) => {
     );
 
     // Récupérer l'utilisateur
-    const user = await User.findByPk(decoded.id);
+    const user = await User.findByPk(decoded.id,{attributes:{exclude:["password"]}});
 
     if (!user || !user.isActive) {
       throw new createHttpError.Unauthorized(

@@ -122,11 +122,11 @@ export const login = async (req, res, next) => {
  * @param {import("express").Response} res 
  */
 export const userProfile = async (req, res) => {
-  const id = req.user.id;
-  const user = await User.findByPk(id);
-  if (!user)
-    throw createHttpError[404]
-
+  // const id = req.user.id;
+  // const user = await User.findByPk(id);
+  // if (!user)
+  //   throw createHttpError[404]
+  const user =  req.user
   let permissions = [];
   let permissionsByModule = {};
 
@@ -160,12 +160,10 @@ export const userProfile = async (req, res) => {
       logistics: ["read"],
     };
   }
+
   res.json({
     success: true,
-    user: {
-      ...user,
-      password: undefined, // Ne jamais renvoyer le mot de passe
-    },
+    user,
     permissions,
     permissionsByModule,
   });
