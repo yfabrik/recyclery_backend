@@ -10,13 +10,14 @@ const { User, Recyclery } = db;
  * @param {import("express").Response} res 
  */
 export const listUsers = async (req, res) => {
-  const { store_id, role } = req.query;
+  const { store_id, role,active } = req.query;
       /**
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
   if (store_id) where.recyclery_id = store_id;
   if (role) where.role = role;
+  if (active) where.isActive = active
 
   const users = await User.findAll({
     where,
