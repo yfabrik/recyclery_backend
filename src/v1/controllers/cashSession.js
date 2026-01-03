@@ -73,7 +73,9 @@ export const listCashSessions = async (req, res) => {
 export const getActiveSession = async (req, res) => {
   const userId = req.user.id;
   const session = await CashSession.findOne({
-    where: { user_id: userId, status: "open" },
+    where: {
+       user_id: userId, 
+       status: "open" },
     include: [
       { model: CashRegister, attributes: ["name"] },
       { model: Recyclery, attributes: ["name"] },
@@ -109,7 +111,7 @@ export const openCashSession = async (req, res) => {
   const session = await CashSession.create({
     session_number: sessionNumber,
     cash_register_id,
-    user_id: 1,
+    user_id: userId,
     store_id,
     opening_amount,
     notes,
