@@ -1,6 +1,6 @@
 
 import { Op } from "sequelize";
-import db from  "../../models/index.js"
+import db from "../../models/index.js"
 
 const { Category } = db
 
@@ -15,7 +15,9 @@ const findExistingCategory = async (name, parent_id = null) => {
  * @param {import("express").Response} res 
  */
 export const listCategories = async (req, res) => {
+    // const categories = await Category.findAll({ where: { parent_id: { [Op.is]: null } }, include: [{ model: Category, as: "subcategories" }] });
     const categories = await Category.findAll();
+
 
     res.json({
         success: true,
