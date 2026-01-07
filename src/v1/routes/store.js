@@ -6,6 +6,7 @@ import {
   createRecyclerie,
   detailRecyclerie,
   listRecycleries,
+  listStoreWIthEmployee,
   updateRecyclerie,
 } from "../controllers/recycleries.js";
 import { createCaisse, listCaisses } from "../controllers/cashRegister.js";
@@ -16,6 +17,7 @@ const { LabeledItem, CashSession, Recyclery,CashRegister } = db;
 
 // GET - Récupérer tous les magasins
 router.get("/", authenticateToken, asyncHandler(listRecycleries));
+router.get("/all",authenticateToken, asyncHandler(listStoreWIthEmployee))
 
 // GET - Récupérer un magasin par ID
 router.get("/:id", authenticateToken, asyncHandler(detailRecyclerie));

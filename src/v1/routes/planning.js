@@ -13,9 +13,9 @@ router.get(
   authenticateToken,
   asyncHandler(async (req, res) => {
     const { start_date, end_date, employee_id, status, store_id } = req.query;
-      /**
-   * @type {import("sequelize").WhereOptions}
-   */
+    /**
+     * @type {import("sequelize").WhereOptions}
+     */
     const where = {};
 
     // if (start_date) {
@@ -48,85 +48,85 @@ router.get(
       where,
 
       // attributes: {
-        // include: [
-        //   // task_name
-        //   [
-        //     literal(`
-        //   CASE
-        //     WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture magasin'
-        //     WHEN "Task"."name" IS NULL THEN 'Tâche sans nom'
-        //     ELSE "Task"."name"
-        //   END
-        // `),
-        //     "task_name",
-        //   ],
+      // include: [
+      //   // task_name
+      //   [
+      //     literal(`
+      //   CASE
+      //     WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture magasin'
+      //     WHEN "Task"."name" IS NULL THEN 'Tâche sans nom'
+      //     ELSE "Task"."name"
+      //   END
+      // `),
+      //     "task_name",
+      //   ],
 
-        //   // task_description
-        //   [
-        //     literal(`
-        //   CASE
-        //     WHEN "TaskSchedule"."task_id" IS NULL THEN "TaskSchedule"."notes"
-        //     WHEN "Task"."description" IS NULL THEN "TaskSchedule"."notes"
-        //     ELSE "Task"."description"
-        //   END
-        // `),
-        //     "task_description",
-        //   ],
+      //   // task_description
+      //   [
+      //     literal(`
+      //   CASE
+      //     WHEN "TaskSchedule"."task_id" IS NULL THEN "TaskSchedule"."notes"
+      //     WHEN "Task"."description" IS NULL THEN "TaskSchedule"."notes"
+      //     ELSE "Task"."description"
+      //   END
+      // `),
+      //     "task_description",
+      //   ],
 
-        //   // task_category
-        //   [
-        //     literal(`
-        //   CASE
-        //     WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture'
-        //     WHEN "Task"."category" IS NULL THEN 'collection_operations'
-        //     ELSE "Task"."category"
-        //   END
-        // `),
-        //     "task_category",
-        //   ],
+      //   // task_category
+      //   [
+      //     literal(`
+      //   CASE
+      //     WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture'
+      //     WHEN "Task"."category" IS NULL THEN 'collection_operations'
+      //     ELSE "Task"."category"
+      //   END
+      // `),
+      //     "task_category",
+      //   ],
 
-        //   // task_priority
-        //   [
-        //     literal(`
-        //   CASE
-        //     WHEN "TaskSchedule"."task_id" IS NULL THEN 'medium'
-        //     WHEN "Task"."priority" IS NULL THEN 'high'
-        //     ELSE "Task"."priority"
-        //   END
-        // `),
-        //     "task_priority",
-        //   ],
+      //   // task_priority
+      //   [
+      //     literal(`
+      //   CASE
+      //     WHEN "TaskSchedule"."task_id" IS NULL THEN 'medium'
+      //     WHEN "Task"."priority" IS NULL THEN 'high'
+      //     ELSE "Task"."priority"
+      //   END
+      // `),
+      //     "task_priority",
+      //   ],
 
-        //   // estimated_duration
-        //   [
-        //     literal(`
-        //   CASE
-        //     WHEN "TaskSchedule"."task_id" IS NULL THEN 480
-        //     WHEN "Task"."estimated_duration" IS NULL THEN 480
-        //     ELSE "Task"."estimated_duration"
-        //   END
-        // `),
-        //     "estimated_duration",
-        //   ],
+      //   // estimated_duration
+      //   [
+      //     literal(`
+      //   CASE
+      //     WHEN "TaskSchedule"."task_id" IS NULL THEN 480
+      //     WHEN "Task"."estimated_duration" IS NULL THEN 480
+      //     ELSE "Task"."estimated_duration"
+      //   END
+      // `),
+      //     "estimated_duration",
+      //   ],
 
-        //   // employee_name
-        //   // [
-        //   //   fn("COALESCE", col("User.username"), "Utilisateur inconnu"),
-        //   //   "employee_name",
-        //   // ],
+      //   // employee_name
+      //   // [
+      //   //   fn("COALESCE", col("User.username"), "Utilisateur inconnu"),
+      //   //   "employee_name",
+      //   // ],
 
-        //   // // employee_email
-        //   // [col("User.email"), "employee_email"],
+      //   // // employee_email
+      //   // [col("User.email"), "employee_email"],
 
-        //   // // employee_phone
-        //   // [col("User.phone"), "employee_phone"],
+      //   // // employee_phone
+      //   // [col("User.phone"), "employee_phone"],
 
-        //   // // store_name
-        //   // [
-        //   //   fn("COALESCE", col("Recyclery.name"), "Magasin inconnu"),
-        //   //   "store_name",
-        //   // ],
-        // ],
+      //   // // store_name
+      //   // [
+      //   //   fn("COALESCE", col("Recyclery.name"), "Magasin inconnu"),
+      //   //   "store_name",
+      //   // ],
+      // ],
       // },
 
       include: [
@@ -135,11 +135,11 @@ router.get(
           attributes: [],
           required: false, // LEFT JOIN
         },
-        {
-          model: User,
-          attributes: [],
-          required: false,
-        },
+        // {
+        //   model: User,
+        //   attributes: [],
+        //   required: false,
+        // },
         {
           model: Recyclery,
           attributes: [],
@@ -187,7 +187,7 @@ router.get(
   authenticateToken,
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const schedules = await TaskSchedule.findByPk(id,{
+    const schedules = await TaskSchedule.findByPk(id, {
       attributes: {
         include: [
           [
@@ -308,9 +308,9 @@ router.post(
 
     // Pour les tâches d'ouverture, on utilise la tâche par défaut (ID 1)
 
-    const  result= await TaskSchedule.create({
+    const result = await TaskSchedule.create({
       task_id: task_id === null || task_id === "null" ? 1 : task_id,
-      assigned_to: assigned_to ?assigned_to :null,
+      assigned_to: assigned_to ? assigned_to : null,
       store_id,
       scheduled_date,
       start_time,
@@ -436,9 +436,9 @@ router.get(
   asyncHandler(async (req, res) => {
     const { employee_id } = req.params;
     const { start_date, end_date } = req.query;
-          /**
-   * @type {import("sequelize").WhereOptions}
-   */
+    /**
+     * @type {import("sequelize").WhereOptions}
+     */
     const where = {};
 
     if (start_date) {
@@ -475,9 +475,9 @@ router.get(
   authenticateToken,
   asyncHandler(async (req, res) => {
     const { start_date, end_date } = req.query;
-      /**
-   * @type {import("sequelize").WhereOptions}
-   */
+    /**
+     * @type {import("sequelize").WhereOptions}
+     */
     const where = {};
 
     if (start_date) {
@@ -617,8 +617,10 @@ router.post(
     }
 
     // Vérifier que la tâche du planning existe et récupérer ses détails
-    const taskQuery = "SELECT * FROM task_schedules WHERE id = ?";
-    const task = await TaskSchedule.findByPk(scheduleId);
+    // const taskQuery = "SELECT * FROM task_schedules WHERE id = ?";
+    const task = await Task.findByPk(scheduleId, {
+      include: [{ model: User }],
+    });
 
     if (!task) {
       return res.status(404).json({
@@ -639,7 +641,11 @@ router.post(
     let employee = await User.findAll({
       where: { id: employee_id, role: "employee" },
       include: [
-        { model: Recyclery, where: { id: currentSchedule.store_id } },
+        {
+          model: Recyclery,
+          as: "stores",
+          where: { id: currentSchedule.store_id || 1 },
+        },
         { model: EmployeeWorkdays, where: { day_of_week: dayOfWeek } },
       ],
     });
@@ -652,11 +658,8 @@ router.post(
     }
 
     // Vérifier si l'assignation existe déjà
-    const existing = await TaskSchedule.findAll({
-      // where: { schedule_id: scheduleId, employee_id },
-    });
 
-    if (existing.length > 0) {
+    if (task.Users.includes(employee[0].id)) {
       return res.status(400).json({
         success: false,
         message: "Cet employé est déjà assigné à cette tâche",
@@ -665,66 +668,66 @@ router.post(
 
     // NOUVELLE LOGIQUE : Vérifier les conflits d'horaires
 
-    const conflicts = await TaskSchedule.findAll({
-      attributes: [
-        "id",
-        "scheduled_date",
-        "start_time",
-        "end_time",
-        [
-          literal(`
-        CASE
-          WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture magasin'
-          WHEN "Task"."name" IS NULL THEN 'Tâche sans nom'
-          ELSE "Task"."name"
-        END
-      `),
-          "task_name",
-        ],
-      ],
+    // const conflicts = await TaskSchedule.findAll({
+    //   attributes: [
+    //     "id",
+    //     "scheduled_date",
+    //     "start_time",
+    //     "end_time",
+    //     [
+    //       literal(`
+    //     CASE
+    //       WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture magasin'
+    //       WHEN "Task"."name" IS NULL THEN 'Tâche sans nom'
+    //       ELSE "Task"."name"
+    //     END
+    //   `),
+    //       "task_name",
+    //     ],
+    //   ],
 
-      include: [
-        {
-          model: Task,
-          attributes: [],
-          required: false,
-        },
-      ],
+    //   include: [
+    //     {
+    //       model: Task,
+    //       attributes: [],
+    //       required: false,
+    //     },
+    //   ],
 
-      where: {
-        employee_id: employee_id,
-        scheduled_date: currentSchedule.scheduled_date,
-        id: { [Op.ne]: scheduleId },
+    //   where: {
+    //     employee_id: employee_id,
+    //     scheduled_date: currentSchedule.scheduled_date,
+    //     id: { [Op.ne]: scheduleId },
 
-        start_time: { [Op.lt]: currentSchedule.end_time },
-        end_time: { [Op.gt]: currentSchedule.start_time },
-      },
-    });
+    //     start_time: { [Op.lt]: currentSchedule.end_time },
+    //     end_time: { [Op.gt]: currentSchedule.start_time },
+    //   },
+    // });
 
-    if (conflicts.length > 0) {
-      const conflictDetails = conflicts
-        .map((c) => `${c.task_name} (${c.start_time}-${c.end_time})`)
-        .join(", ");
+    // if (conflicts.length > 0) {
+    //   const conflictDetails = conflicts
+    //     .map((c) => `${c.task_name} (${c.start_time}-${c.end_time})`)
+    //     .join(", ");
 
-      return res.status(400).json({
-        success: false,
-        message: `L'employé est déjà assigné à d'autres tâches à ce moment : ${conflictDetails}`,
-        conflicts: conflicts,
-      });
-    }
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: `L'employé est déjà assigné à d'autres tâches à ce moment : ${conflictDetails}`,
+    //     conflicts: conflicts,
+    //   });
+    // }
 
     // Créer l'assignation
-
-    const created = await TaskSchedule.create({
-      // schedule_id: scheduleId,
-      employee_id,
-      assigned_at: Date.now(),
-    });
+    await task.addUser(employee);
+    // const created = await TaskSchedule.create({
+    //   // schedule_id: scheduleId,
+    //   employee_id,
+    //   assigned_at: Date.now(),
+    // });
 
     res.json({
       success: true,
       message: "Employé assigné avec succès",
-      task_schedule: created,
+      task_schedule: task,
     });
   })
 );
@@ -738,7 +741,9 @@ router.get(
 
     // Récupérer les détails de la tâche
     const scheduleQuery = "SELECT * FROM task_schedules WHERE id = ?";
-    const schedule = await TaskSchedule.findByPk(scheduleId);
+    const schedule = await Task.findByPk(scheduleId, {
+      include: [{ model: User }],
+    });
 
     if (!schedule) {
       return res.status(404).json({
@@ -779,20 +784,26 @@ router.get(
     });
 
     // Pour chaque employé, vérifier s'il est disponible
-    // const availableEmployees = [];
+    const availableEmployees = [];
 
     for (const employee of allEmployees) {
       // Vérifier les conflits d'horaires pour cet employé
 
-      const conflicts = await TaskSchedule.findAll({
+      const conflicts = await Task.findAll({
         where: {
-          assigned_to: employee.id,
+          // assigned_to: employee.id,
           scheduled_date: currentSchedule.scheduled_date,
           id: { [Op.ne]: scheduleId },
 
           start_time: { [Op.lt]: currentSchedule.end_time },
           end_time: { [Op.gt]: currentSchedule.start_time },
         },
+        include: [
+          {
+            model: User,
+            where: { id: employee.id },
+          },
+        ],
       });
 
       // Vérifier si l'employé est déjà assigné à cette tâche
@@ -801,18 +812,18 @@ router.get(
       //   // where: { schedule_id: scheduleId, employee_id: employee.id },
       // });
 
-      // availableEmployees.push({
-      //   ...employee,
-      //   // is_available: conflicts.length === 0 &&  employee.id!== currentSchedule.assigned_to ,
-      //   // has_conflicts: conflicts.length > 0,
-      //   // conflicts: conflicts,
-      //   // already_assigned: employee.id== currentSchedule.assigned_to,
-      // });
+      availableEmployees.push({
+        ...employee.get({ plain: true }),
+        is_available: conflicts.length === 0,
+        has_conflicts: conflicts.length > 0,
+        conflicts: conflicts,
+        already_assigned: schedule.Users.some((u) => u.id == employee.id),
+      });
     }
 
     res.json({
       success: true,
-      employees: allEmployees,
+      employees: availableEmployees,
       schedule_info: {
         id: currentSchedule.id,
         scheduled_date: currentSchedule.scheduled_date,
@@ -832,9 +843,14 @@ router.delete(
 
     const query =
       "DELETE FROM task_schedule_employees WHERE schedule_id = ? AND employee_id = ?";
-    const result = await TaskSchedule.destroy({
-      // where: { schedule_id: scheduleId, employee_id: employeeId },
+    const result = await Task.findByPk(scheduleId, {
+      include: [{ model: User }],
     });
+
+    await result.removeUser(employeeId)
+    // const result = await TaskSchedule.destroy({
+    //   // where: { schedule_id: scheduleId, employee_id: employeeId },
+    // });
 
     if (result === 0) {
       return res.status(404).json({

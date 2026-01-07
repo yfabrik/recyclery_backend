@@ -10,22 +10,38 @@ export default (sequelize, DataTypes) => {
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
-      this.belongsTo(models.Task, { foreignKey: "task_id" });
+      this.hasMany(models.Task, { foreignKey: "schedule_id" });
+      // this.hasOne(models.TaskTemplate,{foreignKey:"template_id"})
       this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
       // this.belongsToMany(models.User,{through:"taskSchedule_employee",foreignKey:"schedule_id"})
-      this.belongsTo(models.User, { foreignKey: "assigned_to" });
+      // this.belongsTo(models.User, { foreignKey: "assigned_to" });
     }
   }
   TaskSchedule.init(
     {
+      name: DataTypes.STRING,
+      description: DataTypes.TEXT,
+      category: DataTypes.STRING,
+      priority: DataTypes.STRING,
+      estimated_duration: DataTypes.INTEGER,
+      required_skills: DataTypes.TEXT,
+      location: DataTypes.STRING,
+      equipment_needed: DataTypes.TEXT,
+      hourly_rate: DataTypes.DECIMAL,
+
+      is_recurring: DataTypes.BOOLEAN,
+      // assigned_to: DataTypes.INTEGER,//assoc
+      notes: DataTypes.TEXT,
+      status: DataTypes.STRING,
       // task_id: DataTypes.INTEGER,//assoc
       // assigned_to: DataTypes.INTEGER, //assoc //task a deja un assigned
       // store_id: DataTypes.INTEGER,//assoc
       scheduled_date: DataTypes.DATE,
       start_time: DataTypes.TIME,
       end_time: DataTypes.TIME,
-      status: DataTypes.STRING,
-      notes: DataTypes.TEXT,
+      // status: DataTypes.STRING,
+      // notes: DataTypes.TEXT,
+      recurrence_pattern: DataTypes.STRING,
     },
     {
       sequelize,

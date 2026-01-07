@@ -11,7 +11,7 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.belongsToMany(models.User, { through: "task_user" })
-      this.hasMany(models.TaskSchedule,{foreignKey:"task_id"})
+      this.belongsTo(models.TaskSchedule,{foreignKey:"schedule_id"})
     }
   }
   Task.init({
@@ -24,9 +24,13 @@ export default (sequelize, DataTypes) => {
     location: DataTypes.STRING,
     equipment_needed: DataTypes.TEXT,
     hourly_rate: DataTypes.DECIMAL,
-    is_recurring: DataTypes.BOOLEAN,
-    recurrence_pattern: DataTypes.STRING,
-    assigned_to: DataTypes.INTEGER,//assoc
+    // is_recurring: DataTypes.BOOLEAN,
+    // recurrence_pattern: DataTypes.STRING,
+    // assigned_to: DataTypes.INTEGER,//assoc
+    scheduled_date:DataTypes.DATE,
+    start_time:DataTypes.TIME,
+    end_time:DataTypes.TIME,
+
     notes: DataTypes.TEXT,
     status: DataTypes.STRING
   }, {

@@ -3,23 +3,24 @@ import db from "../../models/index.js";
 
 import { findUserByEmail } from "../../services/users.js";
 import { col, fn, Op } from "sequelize";
-const { User, Recyclery } = db;
+const { User, Recyclery, EmployeeWorkdays } = db;
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listUsers = async (req, res) => {
-  const { store_id, role,active } = req.query;
-      /**
+  const { store_id, role, active } = req.query;
+  /**
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
   if (store_id) where.recyclery_id = store_id;
   if (role) where.role = role;
-  if (active) where.isActive = active
+  if (active) where.isActive = active;
 
   const users = await User.findAll({
+    attributes: { exclude: ["password"] },
     where,
     include: [
       {
@@ -31,10 +32,46 @@ export const listUsers = async (req, res) => {
 
   res.json({ users });
 };
+
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const listAllUsersInfo = async (req, res) => {
+  const { store_id, role, active } = req.query;
+  /**
+   * @type {import("sequelize").WhereOptions}
+   */
+  const where = {};
+  if (store_id) where.recyclery_id = store_id;
+  if (role) where.role = role;
+  if (active) where.isActive = active;
+
+  const users = await User.findAll({
+    attributes: { exclude: ["password"] },
+    where,
+    include: [
+      {
+        model: Recyclery,
+        as: "managedStores",
+      },
+      {
+        model: Recyclery,
+        as: "stores",
+      },
+      {
+        model: EmployeeWorkdays,
+      },
+    ],
+  });
+
+  res.json({ users });
+};
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listEmployees = async (req, res) => {
   const users = await User.findAll({
@@ -46,16 +83,16 @@ export const listEmployees = async (req, res) => {
   res.json({ users });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const findUserById = async (req, res) => {
   const { id } = req.params;
   const user = await User.findByPk(id, {
     include: [
-      { model: Recyclery, as: "stores",required:false },
-      { model: Recyclery, as: "managedStores",required:false },
+      { model: Recyclery, as: "stores", required: false },
+      { model: Recyclery, as: "managedStores", required: false },
     ],
   });
   if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
@@ -66,9 +103,9 @@ export const findUserById = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const createUser = async (req, res) => {
   const {
@@ -108,9 +145,9 @@ export const createUser = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const updateUser = async (req, res) => {
   const { id } = req.params;
@@ -133,9 +170,9 @@ export const updateUser = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const deleteUser = async (req, res) => {
   const { id } = req.params;
@@ -146,9 +183,9 @@ export const deleteUser = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const userStats = async (req, res) => {
   const totalUsers = await User.count();

@@ -3,7 +3,7 @@ import db from "../../models/index.js";
 
 import { listCaisses } from "../../services/caisse.js";
 import { col, fn, literal, Op, where } from "sequelize";
-const { Recyclery, CashRegister, User, SalesTransaction, LabeledItem } = db;
+const { Recyclery, CashRegister, User, SalesTransaction, LabeledItem,EmployeeWorkdays } = db;
 /**
  *
  * @param {import("express").Request} req
@@ -37,6 +37,18 @@ export const listRecycleries = async (req, res) => {
     order: [["name", "ASC"]],
   });
   res.json({ success: true, stores: recycleries, recycleries });
+};
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+
+export const listStoreWIthEmployee = async (req, res) => {
+  const stores = await Recyclery.findAll({
+    include: [{ model: User, as: "employees" ,include:[{model:EmployeeWorkdays}]}],
+  });
+  res.json({ success: true, stores });
 };
 /**
  *
