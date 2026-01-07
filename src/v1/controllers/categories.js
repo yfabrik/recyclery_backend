@@ -15,8 +15,8 @@ const findExistingCategory = async (name, parent_id = null) => {
  * @param {import("express").Response} res 
  */
 export const listCategories = async (req, res) => {
-    // const categories = await Category.findAll({ where: { parent_id: { [Op.is]: null } }, include: [{ model: Category, as: "subcategories" }] });
-    const categories = await Category.findAll();
+    const categories = await Category.findAll({ where: { parent_id: { [Op.is]: null } }, include: [{ model: Category, as: "subcategories" }] });
+    // const categories = await Category.findAll();
 
 
     res.json({
@@ -134,7 +134,7 @@ export const updateCategorie = async (req, res) => {
     // Vérifier si le nouveau nom n'est pas déjà utilisé
     const existingCategory = await findExistingCategory(name, category.parent_id)
 
-    if (existingCategory) {
+    if (existingCategory && existingCategory.id!=category.id) {
         return res.status(400).json({
             success: false,
             error: "Une catégorie avec ce nom existe déjà",
