@@ -1,9 +1,10 @@
 import express from "express";
 import db from "./models/index.js";
 import "dotenv/config";
+import helmet from "helmet";
 
 export const app = express();
-
+app.use(helmet())
 app.use(express.json());
 
 import { router } from "./v1/routes/index.js";
