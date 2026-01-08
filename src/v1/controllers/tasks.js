@@ -1,5 +1,6 @@
 import { Op } from "sequelize";
 import db from "../../models/index.js";
+import * as z from "zod";
 
 const { Task, User, TaskSchedule } = db;
 
@@ -9,7 +10,19 @@ const { Task, User, TaskSchedule } = db;
  * @param {import("express").Response} res
  */
 export const listTasks = async (req, res) => {
-  const { category, priority, search } = req.query;
+  const { category, priority, search, include } = req.query;
+  const ALLOWED_INCLUDES = ["user", "comments", "project", "task"];
+  const includeSchema = z.object({
+    include: z
+      .string()
+      .optional()
+      .transform((val) => (val ? val.split(",") : []))
+      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
+    category: z.coerce.number().optional(),
+    priority: z.string().optional(),
+  });
+  const exit = includeSchema.parse(req.query);
+
   /**
    * @type {import("sequelize").WhereOptions}
    */
@@ -23,6 +36,12 @@ export const listTasks = async (req, res) => {
       { name: { [Op.like]: search } },
       { description: { [Op.like]: search } },
     ];
+
+  console.log(include);
+  /**
+   * @type {import("sequelize").IncludeOptions}
+   */
+  const includes = [];
 
   const tasks = await Task.findAll({
     include: [
