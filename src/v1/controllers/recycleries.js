@@ -1,15 +1,40 @@
 import createHttpError from "http-errors";
 import db from "../../models/index.js";
-
+import * as z from "zod"
 import { listCaisses } from "../../services/caisse.js";
 import { col, fn, literal, Op, where } from "sequelize";
-const { Recyclery, CashRegister, User, SalesTransaction, LabeledItem,EmployeeWorkdays } = db;
+const { Recyclery, CashRegister, User, SalesTransaction, LabeledItem, EmployeeWorkdays } = db;
 /**
  *
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
 export const listRecycleries = async (req, res) => {
+  const ALLOWED_INCLUDES = ["employees"]
+  const filterSchema = z.object({
+    include: z
+      .string()
+      .optional()
+      .transform((val) => (val ? val.split(",") : []))
+      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
+  })
+
+  const filter = filterSchema.parse(req.body)
+
+  const include = []
+  if (filter.include.includes("employees"))
+    include.push({ model: User, as: "employees", include: [{ model: EmployeeWorkdays }] })
+
+  include.push(
+    {
+      model: CashRegister,
+      required: false,
+      as: "caisses",
+      // separate:true
+    },
+    { model: User, as: "manager" }
+  )
+
   const recycleries = await Recyclery.findAll({
     attributes: {
       include: [
@@ -24,15 +49,7 @@ export const listRecycleries = async (req, res) => {
       ],
       // include: [[fn("COUNT", col("caisses.id")), "cash_registers_count"]], //empeche de lister les caisses
     },
-    include: [
-      {
-        model: CashRegister,
-        required: false,
-        as: "caisses",
-        // separate:true
-      },
-      { model: User, as: "manager" },
-    ],
+    include,
     // group: ["Recyclery.id", "manager.id"],//group by empeche de lister les caisses , j'ai juste la premiere caisses
     order: [["name", "ASC"]],
   });
@@ -44,12 +61,12 @@ export const listRecycleries = async (req, res) => {
  * @param {import("express").Response} res
  */
 
-export const listStoreWIthEmployee = async (req, res) => {
-  const stores = await Recyclery.findAll({
-    include: [{ model: User, as: "employees" ,include:[{model:EmployeeWorkdays}]}],
-  });
-  res.json({ success: true, stores });
-};
+// export const listStoreWIthEmployee = async (req, res) => {
+//   const stores = await Recyclery.findAll({
+//     include: [{ model: User, as: "employees", include: [{ model: EmployeeWorkdays }] }],
+//   });
+//   res.json({ success: true, stores });
+// };
 /**
  *
  * @param {import("express").Request} req
@@ -72,19 +89,22 @@ export const detailRecyclerie = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createRecyclerie = async (req, res) => {
-  const { name, address, phone, email, manager_id, city, postal_code } =
-    req.body;
 
-  if (!name)
-    throw new createHttpError.BadRequest("Le nom de la recyclerie est requis");
+
+  const dataSchema = z.object({
+    name: z.string("Le nom de la recyclerie est requis"),
+    address: z.string().optional(),
+    phone: z.string().optional(),
+    email: z.email().optional(),
+    manager_id: z.coerce.number().positive().optional(),
+    city: z.string().optional(),
+    postal_code: z.string().optional(),
+    is_active:z.coerce.boolean().default(true)
+  })
+  const data = dataSchema.parse(req.body)
+
   const recyclery = await Recyclery.create({
-    name,
-    address,
-    phone,
-    email,
-    manager_id: manager_id || null,
-    city,
-    postal_code,
+    ...data
   });
 
   res.status(201).json({
@@ -96,31 +116,29 @@ export const createRecyclerie = async (req, res) => {
 
 export const updateRecyclerie = async (req, res) => {
   const { id } = req.params;
-  const {
-    name,
-    address,
-    phone,
-    email,
-    manager_id,
-    city,
-    postal_code,
-    is_active,
-  } = req.body;
-
-  if (!name)
-    throw new createHttpError.BadRequest("Le nom de la recyclerie est requis");
+const dataSchema = z.object({
+    name: z.string("Le nom de la recyclerie est requis"),
+    address: z.string().optional(),
+    phone: z.string().optional(),
+    email: z.email().optional(),
+    manager_id: z.coerce.number().positive().optional(),
+    city: z.string().optional(),
+    postal_code: z.string().optional(),
+    is_active:z.coerce.boolean().default(true)
+  })
+  const data = dataSchema.parse(req.body)
 
   const recyclerie = await Recyclery.findByPk(id);
   if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
 
-  recyclerie.name = name;
-  recyclerie.address = address;
-  recyclerie.phone = phone;
-  recyclerie.email = email;
-  recyclerie.manager_id = manager_id;
-  recyclerie.city = city;
-  recyclerie.postal_code = postal_code;
-  recyclerie.is_active = is_active;
+  recyclerie.name = data.name;
+  recyclerie.address = data.address;
+  recyclerie.phone = data.phone;
+  recyclerie.email = data.email;
+  recyclerie.manager_id = data.manager_id;
+  recyclerie.city = data.city;
+  recyclerie.postal_code = data.postal_code;
+  recyclerie.is_active = data.is_active;
   await recyclerie.save();
 
   res.json({

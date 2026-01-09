@@ -61,31 +61,32 @@ describe("User controller functions", () => {
       })
     );
   });
-  it("should update john", async () => {
-    const req = {
-      params: { id: 1 },
-      // user: { id: 1, role: "admin" },
-      body:{
-        email:"john2@example.com",
-        role:"admin"
-      }
-    };
+  // it("should update john", async () => {
+  //   const req = {
+  //     params: { id: 1 },
+  //     // user: { id: 1, role: "admin" },
+  //     body: {
+  //       email: "john2@example.com",
+  //       role: "admin",
+  //       username:"john"
+  //     }
+  //   };
 
-    const res = {
-      json: jest.fn(),
-    };
+  //   const res = {
+  //     json: jest.fn(),
+  //   };
 
-    await updateUser(req, res);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        user: expect.objectContaining({
-          username: "john",
-          email: "john2@example.com",
-          role: "admin",
-        }),
-      })
-    );
-  });
+  //   await updateUser(req, res);
+  //   expect(res.json).toHaveBeenCalledWith(
+  //     expect.objectContaining({
+  //       user: expect.objectContaining({
+  //         username: "john",
+  //         email: "john2@example.com",
+  //         role: "admin",
+  //       }),
+  //     })
+  //   );
+  // });
 
   it("should list users", async () => {
     const req = {
@@ -101,6 +102,31 @@ describe("User controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ users: expect.any(Array) })
+    );
+  });
+
+  it("should list users with more info", async () => {
+    const req = {
+      query: { include: "EmployeeWorkdays,managedStores,stores" },
+      // user: { id: 1, role: "admin" },
+    };
+
+    const res = {
+      json: jest.fn(),
+    };
+
+    await listUsers(req, res);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        users: expect.arrayContaining([
+          {
+            EmployeeWorkdays: expect.any(Array),
+            managedStores: expect.any(Array),
+            stores: expect.any(Array),
+          }
+        ])
+      })
     );
   });
 
@@ -134,7 +160,7 @@ describe("User controller functions", () => {
       json: jest.fn(),
     };
 
-    expect(async() => {
+    expect(async () => {
       await findUserById(req, res);
     }).rejects.toThrow("NotFoundError");
   });

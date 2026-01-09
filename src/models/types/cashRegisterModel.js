@@ -1,14 +1,15 @@
 /**
- * @typedef {Object} CashRegisterAttribute
+ * @typedef {Object} CashRegisterCreateAttributes
  * @property {string} name
  * @property {boolean} is_active
- * @typedef { import("./baseModelAttributes.js").baseAttributes & CashRegisterAttribute} CashRegisterAttributes
+ * @property {number} recyclery_id
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & CashRegisterCreateAttributes} CashRegisterAttributes
  */
 
 
 
 /**
- * @typedef {import("sequelize").Model<CashRegisterAttributes, CashRegisterAttributes> & CashRegisterAttributes} CashRegisterInstance
+ * @typedef {import("sequelize").Model<CashRegisterAttributes,CashRegisterCreateAttributes> & CashRegisterAttributes} CashRegisterInstance
  * @property {Function} getRecyclery
  * @property {Function} getSessions
  */

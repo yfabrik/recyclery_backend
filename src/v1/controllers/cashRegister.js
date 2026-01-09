@@ -1,8 +1,8 @@
-import db from  "../../models/index.js"
+import db from "../../models/index.js"
 
 import createHttpError from "http-errors";
 import { Op } from "sequelize";
-
+import * as z from "zod"
 const { CashRegister, CashSession, Recyclery, Sequelize } = db;
 /**
  * 
@@ -10,33 +10,39 @@ const { CashRegister, CashSession, Recyclery, Sequelize } = db;
  * @param {import("express").Response} res 
  */
 export const listCaisses = async (req, res) => {
-  const { is_active } = req.query;
-  const store_id = req.query.store_id || req.params.id;
+  const filterSchema = z.object({
+    is_active: z.coerce.boolean().optional(),
+    store_id: z.coerce.number().positive().optional()
+  })
+  // const { is_active } = req.query;
+  // const store_id = req.query.store_id || req.params.id;
 
+  const filter = filterSchema.parse(req.query, req.params)
   /**
    * @type {import("sequelize").WhereOptions} 
    */
   const where = {};
-  if (store_id) {
-    where.recyclery_id = store_id;
+  if (filter.store_id) {
+    where.recyclery_id = filter.store_id;
   }
 
-  if (is_active !== undefined) {
+  if (filter.is_active !== undefined) {
     // Convert 'true'/'false' to boolean or 1/0
-    where.is_active = is_active === "true" ? 1 : 0;
+    where.is_active = filter.is_active;
   }
 
   //TODO filter + COUNT sessions + last_session
   const cashRegister = await CashRegister.findAll({
     attributes: {
-      include:[
-      [Sequelize.col("Recyclery.name"), "store_name"],
-      [Sequelize.fn("COUNT", Sequelize.col("sessions.id")), "total_sessions"],
-      [
-        Sequelize.fn("MAX", Sequelize.col("sessions.createdAt")),
-        "last_session",
-      ],
-    ]},
+      include: [
+        [Sequelize.col("Recyclery.name"), "store_name"],
+        [Sequelize.fn("COUNT", Sequelize.col("sessions.id")), "total_sessions"],
+        [
+          Sequelize.fn("MAX", Sequelize.col("sessions.createdAt")),
+          "last_session",
+        ],
+      ]
+    },
     include: [
       {
         model: Recyclery,
@@ -59,8 +65,8 @@ export const listCaisses = async (req, res) => {
   res.json({
     success: true,
     data: cashRegister,
-    cash_registers:cashRegister,
-    registers:cashRegister
+    cash_registers: cashRegister,
+    registers: cashRegister
   });
 };
 /**
@@ -69,7 +75,7 @@ export const listCaisses = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const detailCaisse = async (req, res) => {
-  const { id } = req.params;
+  const id = z.coerce.number().positive().parse(req.params.id);
 
   const register = await CashRegister.findByPk(id, {
     attributes: [
@@ -96,22 +102,23 @@ export const detailCaisse = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createCaisse = async (req, res) => {
-  const { name, store_id, is_active = true } = req.body;
-  console.log(name, store_id);
 
-  // Validation
-  if (!name || !store_id)
-    throw new createHttpError.BadRequest(
-      "Le nom et le magasin sont obligatoires"
-    );
+
+  const dataSchema = z.object({
+    name: z.string("Nom obligatoire"),
+    store_id: z.coerce.number("magasin obligatoire"),
+    is_active: z.coerce.boolean().optional().default(true)
+  })
+  const data = dataSchema.parse(req.body)
+
 
   // Vérifier que le magasin existe
-  const store = await Recyclery.findByPk(store_id);
+  const store = await Recyclery.findByPk(data.store_id);
   if (!store) throw new createHttpError.NotFound("Magasin non trouvé");
 
   // Vérifier qu'une caisse avec ce nom n'existe pas déjà dans ce magasin
   const existingRegister = await CashRegister.findOne({
-    where: { [Op.and]: [{ name: name }, { recyclery_id: store_id }] },
+    where: { [Op.and]: [{ name: data.name }, { recyclery_id: data.store_id }] },
   });
 
   if (existingRegister)
@@ -119,16 +126,22 @@ export const createCaisse = async (req, res) => {
       "Une caisse avec ce nom existe déjà dans ce magasin"
     );
 
-  // Créer la caisse
+  // await store.createCaisse({
+  //   name:data.name,
+  //   is_active:data.is_active
+  // })
+
+  // // Créer la caisse
   const result = await CashRegister.create({
-    name:name,
-    recyclery_id: store_id,
+    name: data.name,
+    is_active: data.is_active,
+    recyclery_id: data.store_id
   });
 
   res.status(201).json({
     success: true,
     message: "Caisse créée avec succès",
-    cash_register_id:result.id,
+    cash_register_id: result.id,
     data: result,
   });
 };
@@ -139,12 +152,12 @@ export const createCaisse = async (req, res) => {
  */
 export const updateCaisse = async (req, res) => {
   const { id } = req.params;
-  const { name, is_active } = req.body;
+  const dataSchema = z.object({
+    name: z.string("Nom obligatoire"),
+    is_active: z.coerce.boolean().optional().default(true)
+  })
+  const data = dataSchema.parse(req.body)
 
-  // Validation
-  if (!name) {
-    throw new createHttpError.BadRequest("Le nom est obligatoire");
-  }
 
   // Vérifier que la caisse existe
   const existingRegister = await CashRegister.findByPk(id);
@@ -155,7 +168,7 @@ export const updateCaisse = async (req, res) => {
 
   // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
   const duplicateRegister = await CashRegister.findAll({
-    where: { [Op.and]: [{ name: name }, { recyclery_id: existingRegister.recyclery_id }] },
+    where: { [Op.and]: [{ name: data.name }, { recyclery_id: existingRegister.recyclery_id }] },
   });
 
   if (duplicateRegister) {
@@ -165,8 +178,8 @@ export const updateCaisse = async (req, res) => {
   }
 
   // Mettre à jour la caisse
-  existingRegister.name = name;
-  existingRegister.is_active = is_active;
+  existingRegister.name = data.name;
+  existingRegister.is_active = data.is_active;
   await existingRegister.save();
 
   res.json({
@@ -191,9 +204,11 @@ export const deleteCaisse = async (req, res) => {
   }
 
   // Vérifier qu'il n'y a pas de sessions ouvertes pour cette caisse
-  const openSessions = await CashSession.findAll({
-    where: { [Op.and]: [{ cash_register_id: id }, { status: "open" }] },
-  });
+  const openSessions = await existingRegister.getSessions({ where: { status: "open" } })
+  // console.log(open)
+  // const openSessions = await CashSession.findAll({
+  //   where: { [Op.and]: [{ cash_register_id: id }, { status: "open" }] },
+  // });
 
   if (openSessions[0]) {
     throw new createHttpError[400](

@@ -1,6 +1,7 @@
 import { beforeAll, expect, jest } from "@jest/globals";
 import db from "../../src/models";
 import { closeCashSession, getActiveSession, getSessionById, listCashSessions, openCashSession } from "../../src/v1/controllers/cashSession";
+import { deleteCaisse } from "../../src/v1/controllers/cashRegister";
 const { Recyclery, CashRegister, User } = db
 
 beforeAll(async () => {
@@ -153,6 +154,23 @@ describe("caisseSessions controller functions", () => {
                 success: true
             })
         );
+    });
+    it("should deny the delete of the caisse ", async () => {
+        const req = {
+            params: { id: 1 },
+            query: { store_id: 1 },
+            user: { id: 1, role: "admin" },
+
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        expect(async () => {
+            await deleteCaisse(req, res);
+        }).rejects.toThrow("BadRequestError");
     });
 
     it("should close the session ", async () => {
