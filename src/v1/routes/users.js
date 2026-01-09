@@ -3,8 +3,6 @@ import {
   createUser,
   deleteUser,
   findUserById,
-  listAllUsersInfo,
-  listEmployees,
   listUsers,
   updateUser,
   userStats,
@@ -17,9 +15,9 @@ router.use(authenticateToken);
 // Obtenir tous les utilisateurs
 router.get("/", asyncHandler(listUsers));
 
-router.get("/all",asyncHandler(listAllUsersInfo))
+// router.get("/all",asyncHandler(listAllUsersInfolist))
 // Obtenir tous les employés (utilisateurs avec rôles employee, admin, manager)
-router.get("/employees", asyncHandler(listEmployees));
+// router.get("/employees", asyncHandler(listEmployees));
 
 router.get(
   "/stats",
