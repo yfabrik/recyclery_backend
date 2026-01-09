@@ -6,7 +6,9 @@ import {
 } from "sequelize";
 import logger from "../services/logger.js";
 import jwt from "jsonwebtoken";
+import { ZodError } from "zod";
 const { JsonWebTokenError, NotBeforeError, TokenExpiredError } = jwt
+
 
 export const errorHandler = (err, req, res, next) => {
   logger.error(err?.message || "Unhandled error", {
@@ -67,6 +69,15 @@ export const errorHandler = (err, req, res, next) => {
       error: "Database Error",
       message: err.message,
     });
+  }
+
+  if (err instanceof ZodError) {
+    console.log(err.issues)
+    return res.status(400).json({
+      success: false,
+      error: err.issues.map(e => e.message).toString(),
+      message: "validation error"
+    })
   }
 
   if (isHttpError(err))

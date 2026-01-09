@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import db from "../../models/index.js"
 import bcrypt from "bcryptjs";
 import createHttpError from "http-errors";
+import * as z from "zod"
 const { User } = db;
 /**
  * 
@@ -11,24 +12,21 @@ const { User } = db;
  * @param {import("express").NextFunction} next
  */
 export const register = async (req, res, next) => {
-  const {
-    username,
-    email,
-    password,
-    role = "employee",
-    recyclery_id,
-  } = req.body;
 
-  // Validation
-  if (!username || !email || !password) {
-    throw new createHttpError[400](
-      "Nom d'utilisateur, email et mot de passe requis"
-    );
-  }
+  const dataSchema = z.object({
+    username: z.string("Nom d'utilisateur requis"),
+    email: z.email("email requis"),
+    password: z.string("password requis"),
+    role: z.string().default("employee"),
+    recyclery_id: z.coerce.number().positive().optional(),
+  })
+
+  const data = dataSchema.parse(req.body)
+
 
   //FIXME
   const existingUser = await User.findOne({
-    where: { [Op.or]: [{ email: email }, { username: username }] },
+    where: { [Op.or]: [{ email: data.email }, { username: data.username }] },
   });
   if (existingUser) {
     throw new createHttpError.Conflict(
@@ -37,23 +35,22 @@ export const register = async (req, res, next) => {
   }
 
   const saltRounds = 10;
-  const hashedPassword = await bcrypt.hash(password, saltRounds);
+  const hashedPassword = await bcrypt.hash(data.password, saltRounds);
 
   const user = await User.create({
-    username,
-    email,
+    ...data,
     password: hashedPassword,
-    role,
-    recyclery_id,
+
   });
+
 
   const token = jwt.sign(
     {
       id: user.id,
-      username,
-      email,
-      role,
-      recyclery_id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      recyclery_id: user.recyclery_id,
     },
     process.env.JWT_SECRET,
     { expiresIn: "24h" }
@@ -64,10 +61,10 @@ export const register = async (req, res, next) => {
     token,
     user: {
       id: user.id,
-      username,
-      email,
-      role,
-      recyclery_id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      recyclery_id: user.recyclery_id,
     },
   });
 };
@@ -78,16 +75,17 @@ export const register = async (req, res, next) => {
  * @param {import("express").NextFunction} next
  */
 export const login = async (req, res, next) => {
-  const { email, password } = req.body;
-
-  if (!email || !password)
-    throw new createHttpError[400]("Email et mot de passe requis");
-
-  const user = await User.findOne({ where: { email: email } });
+  const dataSchema = z.object({
+    email:z.email("Email et mot de passe requis"),
+    password:z.string("Email et mot de passe requis")
+  })
+  const data = dataSchema.parse(req.body)
+  
+  const user = await User.scope("withPassword").findOne({ where: { email: data.email } });
   if (!user)
     throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
 
-  const isValidPassword = await bcrypt.compare(password, user.password);
+  const isValidPassword = await bcrypt.compare(data.password, user.password);
   if (!isValidPassword) {
     throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
   }
@@ -126,7 +124,7 @@ export const userProfile = async (req, res) => {
   // const user = await User.findByPk(id);
   // if (!user)
   //   throw createHttpError[404]
-  const user =  req.user
+  const user = req.user
   let permissions = [];
   let permissionsByModule = {};
 
