@@ -1,9 +1,21 @@
 
 import { Op } from "sequelize";
 import db from "../../models/index.js"
-
+import * as z from "zod"
 const { Category } = db
 
+const dataSchema = z.object({
+    name: z.string("Le nom est requis"),
+    description: z.string().optional(),
+    icon: z.string().optional(),//TODO should be enum with list of icon
+    parent_id: z.coerce.number().nullable().default(null)
+})
+/**
+ * 
+ * @param {string} name 
+ * @param {number|null} parent_id 
+ * @returns 
+ */
 const findExistingCategory = async (name, parent_id = null) => {
     return await Category.findOne({
         where: { [Op.and]: [{ name: name }, { parent_id: parent_id }] }
@@ -15,8 +27,35 @@ const findExistingCategory = async (name, parent_id = null) => {
  * @param {import("express").Response} res 
  */
 export const listCategories = async (req, res) => {
-    const categories = await Category.findAll({ where: { parent_id: { [Op.is]: null } }, include: [{ model: Category, as: "subcategories" }] });
-    // const categories = await Category.findAll();
+    const filtersSchema = z.object({
+        include: z.string()
+            .optional()
+            .transform((val) => (val ? val.split(",") : [])),
+        only_category: z.coerce.boolean().optional().default(false),
+        only_sub: z.coerce.boolean().optional().default(false)
+
+
+    })
+    const filters = filtersSchema.parse(req.query)
+
+    /**
+     * @type {import("sequelize").Filterable<import("../../models/types/categoryModel.js").CategoryAttributes>['where']}
+     */
+    const where = {}
+    /**
+ * @type {import("sequelize"). FindOptions<import("../../models/types/categoryModel.js").CategoryAttributes>["include"]}
+ */
+    const include = []
+    if (filters.only_category)
+        where.parent_id = { [Op.is]: null }
+    if (filters.only_sub) {
+        where.parent_id = { [Op.not]: null }
+    }
+    if (filters.include.includes("Category"))
+        include.push({ model: Category, as: "subcategories" })
+
+    // const categories = await Category.findAll({ where: { parent_id: { [Op.is]: null } }, include: [{ model: Category, as: "subcategories" }] });
+    const categories = await Category.findAll({ where, include });
 
 
     res.json({
@@ -46,22 +85,27 @@ export const listSubcategories = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createCategorie = async (req, res) => {
-    const { name, description, icon, parent_id } = req.body;
-    const parent = parent_id ?? null
+    // const { name, description, icon, parent_id } = req.body;
+    // const parent = parent_id ?? null
+
+
+
+    const data = dataSchema.parse(req.body)
+
 
     // Validation
-    if (!name) {
-        return res.status(400).json({
-            success: false,
-            error: "Le nom est requis",
-        });
-    }
+    // if (!name) {
+    //     return res.status(400).json({
+    //         success: false,
+    //         error: "Le nom est requis",
+    //     });
+    // }
 
-    // Utiliser une description par défaut si elle n'est pas fournie
-    const finalDescription = description || "Aucune description";
+    // // Utiliser une description par défaut si elle n'est pas fournie
+    // const finalDescription = description || "Aucune description";
 
     // Vérifier si la catégorie existe déjà
-    const existingCategory = await findExistingCategory(name, parent_id)
+    const existingCategory = await findExistingCategory(data.name, data.parent_id)
 
     if (existingCategory) {
         return res.status(400).json({
@@ -70,10 +114,7 @@ export const createCategorie = async (req, res) => {
         });
     }
     const category = await Category.create({
-        name,
-        description,
-        icon,
-        parent_id: parent
+        ...data
     });
 
     res.status(201).json({
@@ -112,15 +153,17 @@ export const deleteCategorie = async (req, res) => {
  */
 export const updateCategorie = async (req, res) => {
     const { id } = req.params;
-    const { name, description, icon } = req.body;
 
-    // Validation
-    if (!name) {
-        return res.status(400).json({
-            success: false,
-            error: "Le nom et la description sont requis",
-        });
-    }
+    // const { name, description, icon } = req.body;
+    const data = dataSchema.parse(req.body)
+
+    // // Validation
+    // if (!name) {
+    //     return res.status(400).json({
+    //         success: false,
+    //         error: "Le nom et la description sont requis",
+    //     });
+    // }
     const category = await Category.findByPk(id);
 
     // Vérifier si la catégorie existe
@@ -132,17 +175,17 @@ export const updateCategorie = async (req, res) => {
     }
 
     // Vérifier si le nouveau nom n'est pas déjà utilisé
-    const existingCategory = await findExistingCategory(name, category.parent_id)
+    const existingCategory = await findExistingCategory(data.name, category.parent_id)
 
-    if (existingCategory && existingCategory.id!=category.id) {
+    if (existingCategory && existingCategory.id != category.id) {
         return res.status(400).json({
             success: false,
             error: "Une catégorie avec ce nom existe déjà",
         });
     }
-    category.name = name;
-    category.icon = icon;
-    category.description = description;
+    category.name = data.name;
+    category.icon = data.icon;
+    category.description = data.description;
     // category.parent_id = parent;
     await category.save();
 

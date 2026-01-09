@@ -48,7 +48,7 @@ describe("categories controller functions", () => {
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 success: false,
-                
+
             })
         );
     });
@@ -102,6 +102,31 @@ describe("categories controller functions", () => {
             })
         );
     });
+    it("should list categories with subcategorie included in it", async () => {
+        const body = {
+
+        };
+        const req = {
+            query: { parent_null: true, include: "Category" },
+            user: { id: 1, role: "admin" },
+            body,
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        await listCategories(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                categories: expect.arrayContaining([expect.objectContaining({ parent_id: null, subcategories: expect.any(Array) })]),
+
+                success: true,
+            })
+        );
+    });
     it("should list subcategories", async () => {
         const body = {
             name: "caisse 1",
@@ -128,7 +153,7 @@ describe("categories controller functions", () => {
             })
         );
     });
-        it("should update categorie 1", async () => {
+    it("should update categorie 1", async () => {
         const body = {
             name: "categorie 1.0",
         };
@@ -148,7 +173,7 @@ describe("categories controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
-                category:expect.objectContaining({name:"categorie 1.0"}),
+                category: expect.objectContaining({ name: "categorie 1.0" }),
                 success: true,
             })
         );
@@ -178,7 +203,7 @@ describe("categories controller functions", () => {
         const req = {
             query: { store_id: 1 },
             user: { id: 1, role: "admin" },
-            params: { id: 2 }
+            params: { id: 1 }
 
         };
 
@@ -192,6 +217,30 @@ describe("categories controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({ message: expect.any(String), success: true })
+        );
+    });
+    it("should find 0 categories", async () => {
+        const body = {
+
+        };
+        const req = {
+            query: {},
+            user: { id: 1, role: "admin" },
+            body,
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        await listCategories(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                categories: [],
+                success: true,
+            })
         );
     });
 
