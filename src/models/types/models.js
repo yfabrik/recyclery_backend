@@ -1,7 +1,7 @@
 /**
  * @typedef {Object} dbObject
- * @property {string} dialect
- * @property {string} storage
+ * @property {string} [dialect]
+ * @property {string} [storage]
  * @property {string} [database] - Optional field
  * @property {string} [username] - Optional field
  * @property {string} [password] - Optional field
@@ -46,7 +46,7 @@
  * @property { import("sequelize").ModelStatic<import("./salesTransactionModel.js").SalesTransactionInstance>} SalesTransaction
  * @property { import("sequelize").ModelStatic<any>} StoreLocation
  * @property { import("sequelize").ModelStatic<any>} StoreHours
- * @property { import("sequelize").ModelStatic<any>} Task
+ * @property { import("sequelize").ModelStatic<import("./taskModel.js").TaskInstance>} Task
  * @property { import("sequelize").ModelStatic<any>} TaskSchedule
  * @property { import("sequelize").ModelStatic<import("./userModel.js").UserInstance>} User
  * @property { import("sequelize").ModelStatic<import("./wasteDisposalModel.js").WasteDisposalInstance>} WasteDisposal

@@ -10,7 +10,6 @@ const { Task, User, TaskSchedule } = db;
  * @param {import("express").Response} res
  */
 export const listTasks = async (req, res) => {
-  const { category, priority, search, include } = req.query;
   const ALLOWED_INCLUDES = ["user", "comments", "project", "task"];
   const includeSchema = z.object({
     include: z
@@ -18,37 +17,37 @@ export const listTasks = async (req, res) => {
       .optional()
       .transform((val) => (val ? val.split(",") : []))
       .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
-    category: z.coerce.number().optional(),
+    category: z.string().optional(),
     priority: z.string().optional(),
+    search: z.string().optional()
   });
-  const exit = includeSchema.parse(req.query);
+  const data = includeSchema.parse(req.query);
 
   /**
-   * @type {import("sequelize").WhereOptions}
+   * @type {import("sequelize").WhereOptions<import("../../models/types/taskModel.js").TaskAttributes>}
    */
   const where = {};
-  if (category && category !== "all") where.category = category;
+  if (data.category && data.category !== "all") where.category = data.category;
 
-  if (priority && priority !== "all") where.priority = priority;
+  if (data.priority && data.priority !== "all") where.priority = data.priority;
 
-  if (search)
+  if (data.search)
     where[Op.or] = [
-      { name: { [Op.like]: search } },
-      { description: { [Op.like]: search } },
+      { name: { [Op.like]: data.search } },
+      { description: { [Op.like]: data.search } },
     ];
 
-  console.log(include);
   /**
-   * @type {import("sequelize").IncludeOptions}
+   * @type {import("sequelize").FindOptions<import("../../models/types/taskModel.js").TaskAttributes>["include"]}
    */
-  const includes = [];
+  const include = [];
+  if (data.include.includes("user"))
+    include.push({
+      model: User,
+    })
 
   const tasks = await Task.findAll({
-    include: [
-      {
-        model: User,
-      },
-    ],
+    include,
     where,
     order: [["createdAt", "DESC"]],
   });
@@ -108,72 +107,36 @@ export const detailTask = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createTask = async (req, res) => {
-  const {
-    name,
-    description,
-    category,
-    priority,
-    estimated_duration,
-    required_skills,
-    location,
-    equipment_needed,
-    hourly_rate,
-    is_recurring,
-    recurrence_pattern,
-    assigned_to,
-    notes,
-    start_time,
-    end_time,
-    scheduled_date,
-  } = req.body;
+  const dataSchema = z.object({
+    name: z.string("Nom requis"),
+    description: z.string().optional(),
+    category: z.string("categorie requis"),
+    priority: z.string("priorité requis"),
+    estimated_duration: z.coerce.number().optional(),
+    required_skills: z.array(z.string()).optional().default([]).transform(val => JSON.stringify(val)),
+    location: z.string().optional(),
+    equipment_needed: z.array(z.string()).optional(),
+    hourly_rate: z.coerce.number().optional(),
+    is_recurring: z.coerce.boolean().optional(),
+    recurrence_pattern: z.string().optional(),
+    assigned_to: z.string().optional(),
+    notes: z.string().optional(),
+    start_time: z.coerce.date().optional(),
+    end_time: z.coerce.date().optional(),
+    scheduled_date: z.coerce.date().optional().default(new Date()),
+  })
 
-  // Validation des champs requis
-  if (!name || !category || !priority) {
-    return res.status(400).json({
-      success: false,
-      message: "Nom, catégorie et priorité sont obligatoires",
-    });
-  }
+  const data = dataSchema.parse(req.body)
   let schedule = null;
-  if (recurrence_pattern && recurrence_pattern != "none") {
+  if (data.recurrence_pattern && data.recurrence_pattern != "none") {
     schedule = await TaskSchedule.create({
-      name,
-      description,
-      category,
-      priority,
+      ...dataSchema
 
-      required_skills: JSON.stringify(required_skills || []),
-      location,
-      equipment_needed: JSON.stringify(equipment_needed || []),
-      hourly_rate,
-      recurrence_pattern,
-      is_recurring,
-      notes,
-      start_time,
-      end_time,
-      scheduled_date: scheduled_date || new Date(),
     });
   }
-
+  const { is_recurring, recurrence_pattern, ...rest } = data
   const task = await Task.create({
-    name,
-    description,
-    category,
-    priority,
-    estimated_duration,
-
-    required_skills: JSON.stringify(required_skills || []),
-    location,
-    equipment_needed: JSON.stringify(equipment_needed || []),
-    hourly_rate,
-
-    is_recurring,
-    recurrence_pattern,
-    assigned_to,
-    notes,
-    start_time,
-    end_time,
-    scheduled_date: scheduled_date || new Date(),
+    ...rest,
     schedule_id: schedule?.id || null,
   });
 
@@ -189,23 +152,28 @@ export const createTask = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const updateTask = async (req, res) => {
-  const { id } = req.params;
-  const {
-    name,
-    description,
-    category,
-    priority,
-    estimated_duration,
-    required_skills,
-    location,
-    equipment_needed,
-    hourly_rate,
-    is_recurring,
-    recurrence_pattern,
-    assigned_to,
-    notes,
-  } = req.body;
+  const id = z.coerce.number().parse(req.params.id);
 
+  const dataSchema = z.object({
+    name: z.string("Nom requis"),
+    description: z.string().optional(),
+    category: z.string("categorie requis"),
+    priority: z.string("priorité requis"),
+    estimated_duration: z.coerce.number().optional(),
+    required_skills: z.array(z.string()).optional().default([]).transform(val => JSON.stringify(val)),
+    location: z.string().optional(),
+    equipment_needed: z.array(z.string()).optional(),
+    hourly_rate: z.coerce.number().optional(),
+    is_recurring: z.coerce.boolean().optional(),
+    recurrence_pattern: z.string().optional(),
+    assigned_to: z.string().optional(),
+    notes: z.string().optional(),
+    start_time: z.coerce.date().optional(),
+    end_time: z.coerce.date().optional(),
+    scheduled_date: z.coerce.date().optional().default(new Date()),
+  })
+
+  const data = dataSchema.parse(req.body)
   // Vérifier que la tâche existe
   const existing = await Task.findByPk(id);
 
@@ -215,19 +183,20 @@ export const updateTask = async (req, res) => {
       message: "Tâche non trouvée",
     });
   }
-  existing.name = name;
-  existing.description = description;
-  existing.category = category;
-  existing.priority = priority;
-  existing.estimated_duration = estimated_duration;
-  existing.required_skills = JSON.stringify(required_skills || []);
+  
+  existing.name = data.name;
+  existing.description = data.description;
+  existing.category = data.category;
+  existing.priority = data.priority;
+  existing.estimated_duration = data.estimated_duration;
+  existing.required_skills = JSON.stringify(data.required_skills || []);
   existing.location = location;
-  existing.equipment_needed = JSON.stringify(equipment_needed || []);
-  existing.hourly_rate = hourly_rate;
-  existing.is_recurring = is_recurring;
-  existing.recurrence_pattern = recurrence_pattern;
-  existing.assigned_to = assigned_to;
-  existing.notes = notes;
+  existing.equipment_needed = JSON.stringify(data.equipment_needed || []);
+  existing.hourly_rate = data.hourly_rate;
+  existing.is_recurring = data.is_recurring;
+  existing.recurrence_pattern = data.recurrence_pattern;
+  existing.assigned_to = data.assigned_to;
+  existing.notes = data.notes;
   await existing.save();
 
   res.json({
@@ -266,6 +235,7 @@ export const deleteTask = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const getUsersFromTask = async (req, res) => {
+  //TODO use the detail task with query param ?
   const { taskId } = req.params;
 
   const tasks = await Task.findByPk(taskId, { include: [{ model: User }] });
@@ -313,11 +283,11 @@ export const addUserToTask = async (req, res) => {
   }
 
   //FIXME
-  // if (task.hasUser(employee))
-  //     return res.status(400).json({
-  //         success: false,
-  //         message: "Cet employé est déjà assigné à cette tâche",
-  //     });
+  if (task.hasUser(employee))
+      return res.status(400).json({
+          success: false,
+          message: "Cet employé est déjà assigné à cette tâche",
+      });
 
   await task.addUser(employee);
 
