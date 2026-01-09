@@ -1,5 +1,6 @@
 import { Op } from "sequelize";
-import db from  "../../models/index.js"
+import db from "../../models/index.js"
+import { listSchedules, createSchedule, updateSchedule, deleteSchedule } from "./taskSchedule.js";
 
 
 const { CollectionSchedule,
@@ -22,6 +23,8 @@ const generateReceiptNumber = () => {
  * @param {import("express").Response} res 
  */
 export const listcollectionSchedule = async (req, res) => {
+    req.query.category = "collection"
+    return listSchedules(req, res)
     const { date_from, date_to, status, employee_id } = req.query;
     const where = {};
     // if (date_from) {
@@ -51,6 +54,8 @@ export const listcollectionSchedule = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createCollectionSchedule = async (req, res) => {
+    req.body.category = "collection"
+    return createSchedule(req,res)
     const {
         collection_point_id,
         scheduled_date,
@@ -97,25 +102,25 @@ export const createCollectionSchedule = async (req, res) => {
         await createSchedule();
     }
 
-    async function createSchedule() {
-        const receiptNumber = generateReceiptNumber();
-        const schedule = await CollectionSchedule.create({
-            collection_point_id,
-            scheduled_date,
-            scheduled_time,
-            employee_id,
-            vehicle,
-            estimated_duration,
-            notes,
-            receipt_number: receiptNumber,
-        });
+    // async function createSchedule() {
+    //     const receiptNumber = generateReceiptNumber();
+    //     const schedule = await CollectionSchedule.create({
+    //         collection_point_id,
+    //         scheduled_date,
+    //         scheduled_time,
+    //         employee_id,
+    //         vehicle,
+    //         estimated_duration,
+    //         notes,
+    //         receipt_number: receiptNumber,
+    //     });
 
-        res.status(201).json({
-            success: true,
-            message: "Planning de collecte créé avec succès",
-            schedule,
-        });
-    }
+    //     res.status(201).json({
+    //         success: true,
+    //         message: "Planning de collecte créé avec succès",
+    //         schedule,
+    //     });
+    // }
 }
 /**
  * 
@@ -123,6 +128,7 @@ export const createCollectionSchedule = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const updateCollectionSchedule = async (req, res) => {
+    return updateSchedule(req,res)
     const { id } = req.params;
     const {
         collection_point_id,
@@ -173,6 +179,7 @@ export const updateCollectionSchedule = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const deleteCollectionSchedule = async (req, res) => {
+    return deleteSchedule(req,res)
     const { id } = req.params;
 
     const schedule = await CollectionSchedule.destroy({ where: { id } });
@@ -266,6 +273,7 @@ export const detailBSD = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const addUserToSchedule = async (req, res) => {
+
     const { scheduleId } = req.params;
     const { employee_id } = req.body;
 

@@ -1,5 +1,6 @@
 import db from  "../../models/index.js"
-
+import * as z from "zod"
+import { createTask, listTasks } from "./tasks.js";
 
 const { CollectionSchedule, User } = db;
 
@@ -11,10 +12,15 @@ const { CollectionSchedule, User } = db;
 //FIXME doublon avec collection schedule
 export const listCollections = async (req, res) => {
     const { recyclery_id, status } = req.query;
+    req.query.category = "collection"
+    req.query.include = "user"
+    return listTasks(req,res)
+
       /**
    * @type {import("sequelize").WhereOptions}
    */
     const where = {};
+    
 
     if (recyclery_id) where.recyclery_id = recyclery_id;
     if (status) where.status = status;
@@ -33,6 +39,8 @@ export const listCollections = async (req, res) => {
  * @param {import("express").Response} res 
  */
   export const createCollection = async (req, res) => {
+    req.body.category= "collection"
+    return createTask(req,res)
     const {
       collection_date,
       address,
