@@ -14,6 +14,7 @@ export default (sequelize, DataTypes) => {
       this.hasMany(models.CashSession, {
         foreignKey: "cash_register_id",
         as: "sessions",
+        onDelete: "CASCADE"
       });
     }
   }
@@ -25,6 +26,11 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "CashRegister",
+      hooks: {
+        beforeDestroy: (caisse) => {
+          console.log(caisse)
+        }
+      }
     }
   );
   return CashRegister;

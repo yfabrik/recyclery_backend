@@ -16,6 +16,7 @@ export default (sequelize, DataTypes) => {
       this.hasMany(models.StoreHours, {
         foreignKey: "store_id",
         as: "horaires",
+        onDelete: "CASCADE" 
       });
 
       this.belongsToMany(models.User, {
@@ -31,6 +32,7 @@ export default (sequelize, DataTypes) => {
       this.hasMany(models.CashRegister, {
         foreignKey: "recyclery_id",
         as: "caisses",
+        onDelete: "CASCADE" //TODO le cash register est censé refuser de se delete si ya une caisse ouverte, estce que le cascade empeche le delete du store aussi ou faut un truc en +
       });
     }
   }
