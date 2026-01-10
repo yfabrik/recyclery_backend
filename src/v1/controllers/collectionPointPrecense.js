@@ -1,7 +1,26 @@
 import { Op } from "sequelize";
 import db from "../../models/index.js";
 import createHttpError from "http-errors";
+import { createTask, detailTask, listTasks } from "./tasks.js";
+import * as z from "zod"
 
+
+const getDateFromDay = (day) => {
+  const today = new Date()
+  let d
+  let i = 0
+  while (i < 7) {
+    const jour = new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(today.setDate(today.getDate() + 1))
+    console.log(jour)
+    if (jour == day.toLowerCase()) {
+      d = today
+      break
+    }
+    i++
+  }
+  if (!d) throw new createHttpError[400]
+  return d
+}
 const { CollectionPointPresence, CollectionPoint, TaskSchedule, Task } = db;
 /**
  * 
@@ -9,6 +28,8 @@ const { CollectionPointPresence, CollectionPoint, TaskSchedule, Task } = db;
  * @param {import("express").Response} res 
  */
 export const listPointPrecense = async (req, res) => {
+
+  return await listTasks(req, res)
   const presence_hours = await CollectionPointPresence.findAll({
     include: [{ model: CollectionPoint }],
   });
@@ -24,6 +45,8 @@ export const listPointPrecense = async (req, res) => {
  */
 export const detailPointPrecense = async (req, res) => {
   const { collectionPointId } = req.params;
+
+  return detailTask(req, res)
   const presence_hours = await CollectionPointPresence.findByPk(
     collectionPointId,
     { include: [{ model: CollectionPoint }], order: [["day_of_week"]] }
@@ -39,26 +62,35 @@ export const detailPointPrecense = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createPointPrecense = async (req, res) => {
-  const {
-    collection_point_id,
-    store_id,
-    day_of_week,
-    time_slot_name,
-    is_present,
-    start_time,
-    end_time,
-    is_24h,
-    notes,
-  } = req.body;
 
-  // Validation des champs requis
-  if (!collection_point_id) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "ID du point de collecte et jour de la semaine sont obligatoires",
-    });
-  }
+
+
+  const dataSchema = z.object({
+    collection_point_id: z.coerce.number("ID du point de collecte et jour de la semaine sont obligatoires"),
+    store_id: z.coerce.number("ID du point de collecte et jour de la semaine sont obligatoires"),
+    day_of_week: z.enum(["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]).transform(val => getDateFromDay(val)),
+    is_open: z.coerce.boolean().default(true),
+    start_time: z.union([z.iso.time().transform(val => {
+      const [hours, min] = val.split(":")
+      return new Date().setHours(hours, min)
+    }), z.coerce.date()]),
+    end_time: z.iso.time(),
+    is_24h: z.coerce.boolean().default(false),
+    notes: z.string().optional(),
+    is_present: z.coerce.boolean().default(true)
+  })
+  const data = dataSchema.parse(req.body)
+
+  const presence = await TaskSchedule.create({
+    name: "point-" + data.day_of_week + data.collection_point_id,
+    category: "point",
+    scheduled_date: data.day_of_week,
+    recurrence_pattern:"weekly"
+    ...data
+  })
+  // return createTask(req, res)
+
+
 
   // const where = {};
   // if (day_of_week) where.day_of_week = day_of_week;
@@ -77,17 +109,17 @@ export const createPointPrecense = async (req, res) => {
   //   });
   // }
 
-  const presence = await CollectionPointPresence.create({
-    collection_point_id,
-    store_id,
-    day_of_week: day_of_week || null,
-    time_slot_name,
-    is_present,
-    start_time,
-    end_time,
-    is_24h,
-    notes,
-  });
+  // const presence = await CollectionPointPresence.create({
+  //   collection_point_id,
+  //   store_id,
+  //   day_of_week: day_of_week || null,
+  //   time_slot_name,
+  //   is_present,
+  //   start_time,
+  //   end_time,
+  //   is_24h,
+  //   notes,
+  // });
 
   res.json({
     success: true,
@@ -267,9 +299,8 @@ const syncCollectionPointPresenceToPlanning = async (
 
       if (isValidPresence) {
         // Créer une tâche pour cette présence
-        const taskName = `${pointName} - Présence (${
-          presence.time_slot_name || "Standard"
-        })`;
+        const taskName = `${pointName} - Présence (${presence.time_slot_name || "Standard"
+          })`;
         const taskDescription = `Présence au point de collecte ${pointName} de ${startTime} à ${endTime}`;
 
         // Vérifier si une tâche similaire existe déjà pour cette date
