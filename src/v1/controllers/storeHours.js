@@ -1,20 +1,63 @@
 import { Op } from "sequelize";
 import db from "../../models/index.js";
 import { createSchedule, deleteSchedule, listSchedules, updateSchedule } from "./taskSchedule.js";
+import createHttpError from "http-errors";
+import * as z from "zod"
 
 const { StoreHours, Recyclery, TaskSchedule, Task } = db;
+
+const getDateFromDay = (day) => {
+  const today = new Date()
+  let d
+  let i = 0
+  while (i < 7) {
+    const jour = new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(today.setDate(today.getDate() + 1))
+    console.log(jour)
+    if (jour == day.toLowerCase()) {
+      d = today
+      break
+    }
+    i++
+  }
+  if (!d) throw new createHttpError[400]
+  return d
+}
+
+
 /**
  * 
  * @param {import("express").Request} req 
  * @param {import("express").Response} res 
  */
 export const listHoraires = async (req, res) => {
-  req.query.category = "vente"
-  return listSchedules(req,res)
+  const where = {
+    category: "vente"
+  }
+  const include = []
+  const schedules = await TaskSchedule.findAll({
+    where, include
+  })
 
-  const horaires = await StoreHours.findAll({
-    include: [{ model: Recyclery }],
-  });
+  const horaires = schedules.map(schedule => {
+    return {
+      "id": schedule.id,
+      "name": schedule.name,
+      "day_of_week": new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(schedule.scheduled_date),
+      "is_open": true,
+      "open_time": schedule.start_time,
+      "close_time": schedule.end_time,
+      "is_24h": false,
+      "notes": "",
+      "createdAt": schedule.createdAt,
+      "updatedAt": schedule.updatedAt,
+      "store_id": schedule.store_id,
+
+    }
+  })
+
+  // const horaires = await StoreHours.findAll({
+  //   include: [{ model: Recyclery }],
+  // });
 
   res.json({
     success: true,
@@ -27,15 +70,45 @@ export const listHoraires = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const horairesMagasin = async (req, res) => {
-  req.query.category= "vente"
-  req.query.store_id = req.params.storeId
-  return listSchedules(req,res)
-  const { storeId } = req.params;
 
-  const storeHours = await Recyclery.findByPk(storeId, {
-    include: [{ model: StoreHours, as: "horaires" }],
-    order: [["day_of_week"]],
-  });
+  const { storeId } = req.params;
+  const where = {
+    category: "vente"
+  }
+  const include = [{
+    model: Recyclery,
+    where: { id: storeId }
+  }]
+  const schedules = await TaskSchedule.findAll({
+    where,
+    include
+  })
+
+  const storeHours = schedules.map(schedule => {
+    return {
+      "id": schedule.id,
+      "day_of_week": new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(schedule.scheduled_date),
+      "is_open": true,
+      "open_time": schedule.start_time,
+      "close_time": schedule.end_time,
+      "is_24h": false,
+      "notes": "",
+      "createdAt": schedule.createdAt,
+      "updatedAt": schedule.updatedAt,
+      "store_id": schedule.store_id,
+
+    }
+  })
+
+
+
+
+
+
+  // const storeHours = await Recyclery.findByPk(storeId, {
+  //   include: [{ model: StoreHours, as: "horaires" }],
+  //   order: [["day_of_week"]],
+  // });
 
   res.json({
     success: true,
@@ -48,50 +121,61 @@ export const horairesMagasin = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const addHoraire = async (req, res) => {
-  req.query.category= "vente"
-  return createSchedule(req,res)
-  const {
-    store_id,
-    day_of_week,
-    time_slot_name,
-    is_open,
-    open_time,
-    close_time,
-    is_24h,
-    notes,
-  } = req.body;
 
-  // Validation des champs requis
-  if (!store_id || !day_of_week) {
-    console.log("Erreur validation: store_id ou day_of_week manquant");
-    return res.status(400).json({
-      success: false,
-      message: "ID du magasin et jour de la semaine sont obligatoires",
-    });
-  }
-  const store = await Recyclery.findByPk(store_id);
+  const dataSchema = z.object({
+    store_id: z.coerce.number("ID du magasin et jour de la semaine sont obligatoires"),
+    day_of_week: z.enum(["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]).transform(val => getDateFromDay(val)),
 
-  if (await store.hasHoraires({ where: day_of_week })) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Des horaires existent déjà pour ce magasin, ce jour et ce créneau",
-    });
-  }
-  const horaire = await store.createHoraire({
-    day_of_week,
-    time_slot_name,
-    is_open,
-    open_time,
-    close_time,
-    is_24h,
-    notes,
-  });
+    is_open: z.coerce.boolean().default(true),
+    open_time: z.union([z.iso.time().transform(val => {
+      const [hours, min] = val.split(":")
+      return new Date().setHours(hours, min)
+    }), z.coerce.date()]),
+    close_time: z.iso.time(),
+    is_24h: z.coerce.boolean().default(false),
+    notes: z.string().optional(),
+  })
+  const data = dataSchema.parse(req.body)
+
+  const horaires = await TaskSchedule.create({
+    name: "vente-" + data.day_of_week + data.store_id,
+
+    category: "vente",
+    priority: "low",
+    recurrence_pattern: "weekly",
+    scheduled_date: data.day_of_week,
+    start_time: data.open_time,
+    end_time: data.close_time,
+    notes: null,
+    status: "a",
+    store_id: data.store_id
+
+  })
+
+
+  // const store = await Recyclery.findByPk(store_id);
+
+  // if (await store.hasHoraires({ where: day_of_week })) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     message:
+  //       "Des horaires existent déjà pour ce magasin, ce jour et ce créneau",
+  //   });
+  // }
+  // const horaire = await store.createHoraire({
+  //   day_of_week,
+  //   time_slot_name,
+  //   is_open,
+  //   open_time,
+  //   close_time,
+  //   is_24h,
+  //   notes,
+  // });
 
   res.json({
     success: true,
     message: "Horaires créés avec succès",
-    id: horaire.id,
+    id: horaires.id,
   });
 };
 /**
@@ -100,7 +184,7 @@ export const addHoraire = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const updateHoraire = async (req, res) => {
-  return updateSchedule(req,res)
+  return updateSchedule(req, res)
   const { id } = req.params;
   const {
     store_id,
@@ -151,7 +235,7 @@ export const updateHoraire = async (req, res) => {
   res.json({
     success: true,
     message: "Horaires mis à jour avec succès",
-    horaire:existing
+    horaire: existing
   });
 };
 /**
@@ -161,7 +245,7 @@ export const updateHoraire = async (req, res) => {
  */
 export const removeHoraires = async (req, res) => {
   const { id } = req.params;
-  return deleteSchedule(req,res)
+  return deleteSchedule(req, res)
   await StoreHours.destroy({ where: { id } });
 
   res.json({

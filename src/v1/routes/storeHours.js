@@ -7,7 +7,7 @@ import {
   horairesMagasin,
   listHoraires,
   removeHoraires,
-  syncHoraires,
+  // syncHoraires,
   updateHoraire,
 } from "../controllers/storeHours.js";
 
@@ -32,5 +32,5 @@ router.delete("/:id", authenticateToken, asyncHandler(removeHoraires));
 // Fonction pour synchroniser les horaires d'ouverture avec le planning
 
 // Route pour synchroniser les horaires d'ouverture avec le planning
-router.post("/sync-to-planning", authenticateToken, asyncHandler(syncHoraires))
+// router.post("/sync-to-planning", authenticateToken, asyncHandler(syncHoraires))
 

@@ -56,8 +56,8 @@ export const listSchedules = async (req, res) => {
 
         {
             model: Task,
-            attributes: [],
-            required: false, // LEFT JOIN
+            // attributes: [],
+            // required: false, // LEFT JOIN
         }
         // {
         //   model: User,
@@ -72,10 +72,16 @@ export const listSchedules = async (req, res) => {
 
     ]
     if (filter.category == "collection") {
-        include.push({ model: CollectionPoint })
+        where.category = filter.category
+        // include.push({ model: CollectionPoint })
     }
     if (filter.category == "vente") {
+        where.category = filter.category
         include.push({ model: Recyclery })
+    }
+        if (filter.category == "point") {
+        where.category = filter.category
+        // include.push({ model: Recyclery })
     }
 
     const schedules = await TaskSchedule.findAll({
@@ -185,9 +191,9 @@ export const listSchedules = async (req, res) => {
     //         ],
     //     });
 
-        // schedule.assigned_employees = assignedEmployees;
+    // schedule.assigned_employees = assignedEmployees;
 
-        // Log pour déboguer
+    // Log pour déboguer
     // }
 
     // Logs de débogage pour diagnostiquer le problème
@@ -250,9 +256,9 @@ export const createSchedule = async (req, res) => {
     } = req.body;
 
     const dataSchema = z.object({
-        scheduled_date:z.coerce.date("date requis"),
-        start_time:z.coerce.date("heure de debut requis"),
-        end_time:z.coerce.date("heure de fin requis"),
+        scheduled_date: z.coerce.date("date requis"),
+        start_time: z.coerce.date("heure de debut requis"),
+        end_time: z.coerce.date("heure de fin requis"),
     })
 
 

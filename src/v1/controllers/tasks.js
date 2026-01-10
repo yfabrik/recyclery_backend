@@ -1,6 +1,7 @@
 import { Op } from "sequelize";
 import db from "../../models/index.js";
 import * as z from "zod";
+import collection from "../../models/poubelle/collection.js";
 
 const { Task, User, TaskSchedule } = db;
 
@@ -17,11 +18,13 @@ export const listTasks = async (req, res) => {
       .optional()
       .transform((val) => (val ? val.split(",") : []))
       .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
-    category: z.string().optional(),
+    category: z.enum(["point", "vente", "collection"]).nullable().optional(),
     priority: z.string().optional(),
     search: z.string().optional()
   });
-  const data = includeSchema.parse(req.query);
+  const category = req.originalUrl == '/api/collection-point-presence' ? "point" : req.originalUrl == '/api/store-hours' ? "vente" : req.originalUrl == '/api/collections' ? "collection" : null
+  const data = includeSchema.parse({ ...req.query, category });
+
 
   /**
    * @type {import("sequelize").WhereOptions<import("../../models/types/taskModel.js").TaskAttributes>}
@@ -130,13 +133,15 @@ export const createTask = async (req, res) => {
   let schedule = null;
   if (data.recurrence_pattern && data.recurrence_pattern != "none") {
     schedule = await TaskSchedule.create({
-      ...dataSchema
+      ...data
 
     });
+    console.log(schedule)
   }
   const { is_recurring, recurrence_pattern, ...rest } = data
   const task = await Task.create({
     ...rest,
+    status: 'a',
     schedule_id: schedule?.id || null,
   });
 
@@ -183,7 +188,7 @@ export const updateTask = async (req, res) => {
       message: "Tâche non trouvée",
     });
   }
-  
+
   existing.name = data.name;
   existing.description = data.description;
   existing.category = data.category;
@@ -283,11 +288,11 @@ export const addUserToTask = async (req, res) => {
   }
 
   //FIXME
-  if (task.hasUser(employee))
-      return res.status(400).json({
-          success: false,
-          message: "Cet employé est déjà assigné à cette tâche",
-      });
+  // if (task.hasUser(employee))
+  //   return res.status(400).json({
+  //     success: false,
+  //     message: "Cet employé est déjà assigné à cette tâche",
+  //   });
 
   await task.addUser(employee);
 
