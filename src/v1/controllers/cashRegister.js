@@ -14,12 +14,11 @@ export const listCaisses = async (req, res) => {
     is_active: z.coerce.boolean().optional(),
     store_id: z.coerce.number().positive().optional()
   })
-  // const { is_active } = req.query;
-  // const store_id = req.query.store_id || req.params.id;
+
 
   const filter = filterSchema.parse(req.query, req.params)
   /**
-   * @type {import("sequelize").WhereOptions} 
+   * @type {import("sequelize").WhereOptions<import("../../models/types/cashRegisterModel.js").CashRegisterAttributes>} 
    */
   const where = {};
   if (filter.store_id) {
@@ -27,7 +26,6 @@ export const listCaisses = async (req, res) => {
   }
 
   if (filter.is_active !== undefined) {
-    // Convert 'true'/'false' to boolean or 1/0
     where.is_active = filter.is_active;
   }
 
@@ -126,12 +124,12 @@ export const createCaisse = async (req, res) => {
       "Une caisse avec ce nom existe déjà dans ce magasin"
     );
 
-  // await store.createCaisse({
+  // const result = await store.createCaisse({
   //   name:data.name,
   //   is_active:data.is_active
   // })
 
-  // // Créer la caisse
+  // Créer la caisse
   const result = await CashRegister.create({
     name: data.name,
     is_active: data.is_active,

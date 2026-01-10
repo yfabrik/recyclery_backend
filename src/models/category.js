@@ -22,7 +22,7 @@ export default (sequelize, DataTypes) => {
   }
   Category.init(
     {
-      name: DataTypes.STRING,
+      name: { type: DataTypes.STRING, allowNull: false },
       description: DataTypes.TEXT,
       icon: DataTypes.STRING,
     },

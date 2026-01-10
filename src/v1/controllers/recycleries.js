@@ -19,7 +19,7 @@ export const listRecycleries = async (req, res) => {
       .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
   })
 
-  const filter = filterSchema.parse(req.body)
+  const filter = filterSchema.parse(req.params)
 
   const include = []
   if (filter.include.includes("employees"))
