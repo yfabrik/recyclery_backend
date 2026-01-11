@@ -6,12 +6,12 @@ import { Model } from 'sequelize';
  */
 export default (sequelize, DataTypes) => {
   class Task extends Model {
-/**
-     *@param {import ('./types/models.js').models} models
-     */
+    /**
+         *@param {import ('./types/models.js').models} models
+         */
     static associate(models) {
       this.belongsToMany(models.User, { through: "task_user" })
-      this.belongsTo(models.TaskSchedule,{foreignKey:"schedule_id"})
+      this.belongsTo(models.TaskSchedule, { foreignKey: "schedule_id" })
     }
   }
   Task.init({
@@ -27,9 +27,15 @@ export default (sequelize, DataTypes) => {
     // is_recurring: DataTypes.BOOLEAN,
     // recurrence_pattern: DataTypes.STRING,
     // assigned_to: DataTypes.INTEGER,//assoc
-    scheduled_date:DataTypes.DATE,
-    start_time:DataTypes.TIME,
-    end_time:DataTypes.TIME,
+    scheduled_date: DataTypes.DATE,
+    day_of_week: {
+      type: DataTypes.VIRTUAL, 
+      get() {
+        new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(this.scheduled_date)
+      }
+    },
+    start_time: DataTypes.TIME,
+    end_time: DataTypes.TIME,
 
     notes: DataTypes.TEXT,
     status: DataTypes.STRING
