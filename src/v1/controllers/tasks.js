@@ -70,6 +70,7 @@ export const listTasks = async (req, res) => {
     success: true,
     // tasksx: parsedTasks,
     tasks: tasks,
+    presence_hours:tasks
   });
 };
 /**

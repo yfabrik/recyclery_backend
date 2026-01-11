@@ -20,7 +20,9 @@ export const listSchedules = async (req, res) => {
         store_id: z.coerce.number().positive().optional(),
         category: z.string().optional()
     })
-    const filter = filterSchema.parse(req.query)
+    const category = req.originalUrl == '/api/collection-point-presence' ? "point" : req.originalUrl == '/api/store-hours' ? "vente" : req.originalUrl == '/api/collections' ? "collection" : undefined
+
+    const filter = filterSchema.parse({ ...req.query, category })
     /**
      * @type {import("sequelize").WhereOptions}
      */
@@ -58,17 +60,17 @@ export const listSchedules = async (req, res) => {
             model: Task,
             // attributes: [],
             // required: false, // LEFT JOIN
-        }
+        },
         // {
         //   model: User,
         //   attributes: [],
         //   required: false,
         // },
-        // {
-        //     model: Recyclery,
-        //     attributes: [],
-        //     required: false,
-        // },
+        {
+            model: Recyclery,
+            attributes: [],
+            required: false,
+        },
 
     ]
     if (filter.category == "collection") {
@@ -77,9 +79,9 @@ export const listSchedules = async (req, res) => {
     }
     if (filter.category == "vente") {
         where.category = filter.category
-        include.push({ model: Recyclery })
+
     }
-        if (filter.category == "point") {
+    if (filter.category == "point") {
         where.category = filter.category
         // include.push({ model: Recyclery })
     }
@@ -197,10 +199,11 @@ export const listSchedules = async (req, res) => {
     // }
 
     // Logs de débogage pour diagnostiquer le problème
-
+    const result = schedules.map(s => { return { ...s.get({ plain: true }), start_time: new Date(s.start_time), end_time: new Date(s.end_time) } })
     res.json({
         success: true,
-        schedules: schedules,
+        schedules: result,
+        presence_hours: result //TODO is reccuring => status ? y'a besoin d'un truc pour présent ce jour
     });
 }
 /**
