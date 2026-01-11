@@ -47,7 +47,7 @@
  * @property { import("sequelize").ModelStatic<any>} StoreLocation
  * @property { import("sequelize").ModelStatic<any>} StoreHours
  * @property { import("sequelize").ModelStatic<import("./taskModel.js").TaskInstance>} Task
- * @property { import("sequelize").ModelStatic<any>} TaskSchedule
+ * @property { import("sequelize").ModelStatic<import("./taskSchedule.js").TaskScheduleInstance>} TaskSchedule
  * @property { import("sequelize").ModelStatic<import("./userModel.js").UserInstance>} User
  * @property { import("sequelize").ModelStatic<import("./wasteDisposalModel.js").WasteDisposalInstance>} WasteDisposal
  * @property { import("sequelize").ModelStatic<any>} EmployeeWorkdays
