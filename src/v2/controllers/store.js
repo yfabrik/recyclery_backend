@@ -1,0 +1,160 @@
+import createHttpError from "http-errors";
+import db from "../../models/index.js";
+import * as z from "zod"
+import { listCaisses } from "../../services/caisse.js";
+import { col, fn, literal, Op, where } from "sequelize";
+const { Recyclery, CashRegister, User, SalesTransaction, LabeledItem, EmployeeWorkdays } = db;
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const listRecycleries = async (req, res) => {
+  const ALLOWED_INCLUDES = ["employees"]
+  const filterSchema = z.object({
+    include: z
+      .string()
+      .optional()
+      .transform((val) => (val ? val.split(",") : []))
+      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
+  })
+
+  const filter = filterSchema.parse(req.params)
+
+  const include = []
+  if (filter.include.includes("employees"))
+    include.push({ model: User, as: "employees", include: [{ model: EmployeeWorkdays }] })
+
+  include.push(
+    {
+      model: CashRegister,
+      required: false,
+      as: "caisses",
+      // separate:true
+    },
+    { model: User, as: "manager" }
+  )
+
+  const recycleries = await Recyclery.findAll({
+    attributes: {
+      include: [
+        [
+          literal(`(
+        SELECT COUNT(*)
+        FROM "CashRegisters" c
+        WHERE c."recyclery_id" = "Recyclery"."id"
+      )`),
+          "cash_registers_count",
+        ],
+      ],
+      // include: [[fn("COUNT", col("caisses.id")), "cash_registers_count"]], //empeche de lister les caisses
+    },
+    include,
+    // group: ["Recyclery.id", "manager.id"],//group by empeche de lister les caisses , j'ai juste la premiere caisses
+    order: [["name", "ASC"]],
+  });
+  res.json({ success: true, stores: recycleries, recycleries });
+};
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+
+// export const listStoreWIthEmployee = async (req, res) => {
+//   const stores = await Recyclery.findAll({
+//     include: [{ model: User, as: "employees", include: [{ model: EmployeeWorkdays }] }],
+//   });
+//   res.json({ success: true, stores });
+// };
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const detailRecyclerie = async (req, res) => {
+  const { id } = req.params;
+  const recyclerie = await Recyclery.findByPk(id, {
+    include: [
+      { model: CashRegister, as: "caisses" },
+      { model: User, as: "manager" },
+    ],
+  });
+
+  res.json({ success: true, store: recyclerie });
+};
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const createRecyclerie = async (req, res) => {
+
+
+  const dataSchema = z.object({
+    name: z.string("Le nom de la recyclerie est requis"),
+    address: z.string().optional(),
+    phone: z.string().optional(),
+    email: z.email().optional(),
+    manager_id: z.coerce.number().positive().optional(),
+    city: z.string().optional(),
+    postal_code: z.string().optional(),
+    is_active:z.coerce.boolean().default(true)
+  })
+  const data = dataSchema.parse(req.body)
+
+  const recyclery = await Recyclery.create({
+    ...data
+  });
+
+  res.status(201).json({
+    message: "Recyclerie créée avec succès",
+    recyclery,
+    store: recyclery,
+  });
+};
+
+export const updateRecyclerie = async (req, res) => {
+  const { id } = req.params;
+const dataSchema = z.object({
+    name: z.string("Le nom de la recyclerie est requis"),
+    address: z.string().optional(),
+    phone: z.string().optional(),
+    email: z.email().optional(),
+    manager_id: z.coerce.number().positive().optional(),
+    city: z.string().optional(),
+    postal_code: z.string().optional(),
+    is_active:z.coerce.boolean().default(true)
+  })
+  const data = dataSchema.parse(req.body)
+
+  const recyclerie = await Recyclery.findByPk(id);
+  if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
+
+  recyclerie.name = data.name;
+  recyclerie.address = data.address;
+  recyclerie.phone = data.phone;
+  recyclerie.email = data.email;
+  recyclerie.manager_id = data.manager_id;
+  recyclerie.city = data.city;
+  recyclerie.postal_code = data.postal_code;
+  recyclerie.is_active = data.is_active;
+  await recyclerie.save();
+
+  res.json({
+    success: true,
+    message: "Recyclerie mise à jour avec succès",
+    recyclery: recyclerie,
+    store: recyclerie,
+  });
+};
+
+export const deleteRecyclerie = async (req, res) => {
+  const { id } = req.params;
+
+  const recyclerie = await Recyclery.destroy({ where: { id } });
+  if (!recyclerie) throw new createHttpError.NotFound("Recyclerie non trouvée");
+
+  res.json({ message: "Recyclerie supprimée avec succès" });
+};
+
