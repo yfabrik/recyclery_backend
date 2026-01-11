@@ -6,16 +6,6 @@ import { col, fn, Op } from "sequelize";
 import * as z from "zod"
 const { User, Recyclery, EmployeeWorkdays } = db;
 
-const dataSchema = z.object({
-  username: z.string("Nom d'utilisateur obligatoire"),
-  email: z.email(" email obligatoire"),
-  password: z.string(" mot de passe  obligatoire"),
-  role: z.string().optional().default("employee"),
-  recyclery_id: z.coerce.number().optional(),
-  phone: z.string().optional(),//TODO get the phoneSchema
-  contract_hours: z.coerce.number().optional().default(35)//TODO le temps ça devrait pas dependre des heure de travail set ?
-})
-
 /**
  *
  * @param {import("express").Request} req

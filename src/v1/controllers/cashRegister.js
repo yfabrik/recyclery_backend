@@ -3,6 +3,7 @@ import db from "../../models/index.js"
 import createHttpError from "http-errors";
 import { Op } from "sequelize";
 import * as z from "zod"
+import logger from "../../services/logger.js";
 const { CashRegister, CashSession, Recyclery, Sequelize } = db;
 /**
  * 
@@ -229,6 +230,7 @@ export const deleteCaisse = async (req, res) => {
 export const listCaissesMagasin = async (req, res) => {
   const { store_id } = req.params;
   req.query.store_id = store_id;
+  logger.info("called list caisse magasin, REMAKE THIS ONE")
   listCaisses(req, res);
 
   // const registers = await CashRegister.findAll({

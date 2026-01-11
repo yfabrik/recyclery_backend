@@ -2,6 +2,7 @@
 import { Op } from "sequelize";
 import db from "../../models/index.js"
 import * as z from "zod"
+import logger from "../../services/logger.js";
 const { Category } = db
 
 const dataSchema = z.object({
@@ -69,6 +70,7 @@ export const listCategories = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const listSubcategories = async (req, res) => {
+    logger.info("called list subcategorie REMAKE")
     const subcategories = await Category.findAll({
         where: { parent_id: { [Op.gt]: 0 } },
     });

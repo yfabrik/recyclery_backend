@@ -2,6 +2,7 @@ import { fn, col } from "sequelize";
 import db from "../../models/index.js";
 
 import { listCaisses } from "./cashRegister.js";
+import logger from "../../services/logger.js";
 const {
   CashSession,
   CashRegister,
@@ -222,6 +223,7 @@ export const getRegistersByStore = async (req, res) => {
       .json({ success: false, message: "Missing store_id" });
 
   req.query.store_id = store_id;
+  logger.info("called get register by store REMAKE THIS ONE")
   return await listCaisses(req, res);
 
   const registers = await CashRegister.findAll({
