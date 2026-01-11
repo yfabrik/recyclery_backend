@@ -3,6 +3,7 @@ import db from "../../models/index.js";
 import createHttpError from "http-errors";
 import { createTask, detailTask, listTasks } from "./tasks.js";
 import * as z from "zod"
+import { listSchedules } from "./taskSchedule.js";
 
 
 const getDateFromDay = (day) => {
@@ -25,14 +26,17 @@ const getDateFromDay = (day) => {
 
 const dataSchema = z.object({
   collection_point_id: z.coerce.number("ID du point de collecte et jour de la semaine sont obligatoires"),
-  store_id: z.coerce.number("ID du point de collecte et jour de la semaine sont obligatoires"),
-  day_of_week: z.enum(["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]).transform(val => getDateFromDay(val)),
+  store_id: z.coerce.number().nullable().optional(),
+  day_of_week: z.enum(["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]).transform(val => getDateFromDay(val)),
   is_open: z.coerce.boolean().default(true),
   start_time: z.union([z.iso.time().transform(val => {
     const [hours, min] = val.split(":")
     return new Date().setHours(hours, min)
   }), z.coerce.date()]),
-  end_time: z.iso.time(),
+  end_time:z.union([z.iso.time().transform(val => {
+    const [hours, min] = val.split(":")
+    return new Date().setHours(hours, min)
+  }), z.coerce.date()]),
   is_24h: z.coerce.boolean().default(false),
   notes: z.string().optional(),
   is_present: z.coerce.boolean().default(true)
@@ -46,7 +50,7 @@ const { CollectionPointPresence, CollectionPoint, TaskSchedule, Task } = db;
  */
 export const listPointPrecense = async (req, res) => {
 
-  return await listTasks(req, res)
+  return await listSchedules(req, res)
   const presence_hours = await CollectionPointPresence.findAll({
     include: [{ model: CollectionPoint }],
   });

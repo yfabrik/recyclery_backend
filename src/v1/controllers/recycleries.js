@@ -94,14 +94,15 @@ export const createRecyclerie = async (req, res) => {
   const dataSchema = z.object({
     name: z.string("Le nom de la recyclerie est requis"),
     address: z.string().optional(),
-    phone: z.string().optional(),
-    email: z.email().optional(),
-    manager_id: z.coerce.number().positive().optional(),
+    phone: z.string().nullable().optional(),
+    email: z.email().nullable().optional(),
+    manager_id: z.coerce.number().nullable().optional(),
     city: z.string().optional(),
     postal_code: z.string().optional(),
     is_active:z.coerce.boolean().default(true)
   })
   const data = dataSchema.parse(req.body)
+  console.log(data)
 
   const recyclery = await Recyclery.create({
     ...data

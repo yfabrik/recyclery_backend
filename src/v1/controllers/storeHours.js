@@ -124,19 +124,21 @@ export const addHoraire = async (req, res) => {
 
   const dataSchema = z.object({
     store_id: z.coerce.number("ID du magasin et jour de la semaine sont obligatoires"),
-    day_of_week: z.enum(["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]).transform(val => getDateFromDay(val)),
+    day_of_week: z.enum(["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]).transform(val => getDateFromDay(val)),
 
     is_open: z.coerce.boolean().default(true),
     open_time: z.union([z.iso.time().transform(val => {
       const [hours, min] = val.split(":")
       return new Date().setHours(hours, min)
     }), z.coerce.date()]),
-    close_time: z.iso.time(),
+    close_time: z.union([z.iso.time().transform(val => {
+      const [hours, min] = val.split(":")
+      return new Date().setHours(hours, min)
+    }), z.coerce.date()]),
     is_24h: z.coerce.boolean().default(false),
     notes: z.string().optional(),
   })
   const data = dataSchema.parse(req.body)
-
   const horaires = await TaskSchedule.create({
     name: "vente-" + data.day_of_week + data.store_id,
 
