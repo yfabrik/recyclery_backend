@@ -1,12 +1,14 @@
 import { Op } from "sequelize";
 import db from "../../models/index.js"
-import { listSchedules, createSchedule, updateSchedule, deleteSchedule } from "./taskSchedule.js";
+import { listSchedules, createSchedule, updateSchedule, deleteSchedule, removeEmployeeFromSchedule } from "./taskSchedule.js";
+import logger from "../../services/logger.js";
+import * as z from "zod"
 
 
 const { CollectionSchedule,
     CollectionPoint,
     User,
-    CollectionReceipt } = db
+    CollectionReceipt, TaskSchedule } = db
 
 const generateReceiptNumber = () => {
     const date = new Date();
@@ -23,25 +25,33 @@ const generateReceiptNumber = () => {
  * @param {import("express").Response} res 
  */
 export const listcollectionSchedule = async (req, res) => {
-    req.query.category = "collection"
-    return listSchedules(req, res)
-    const { date_from, date_to, status, employee_id } = req.query;
-    const where = {};
-    // if (date_from) {
-    //     where.scheduled_date = {
-    //         ...(where.scheduled_date || {}),
-    //         [Op.gte]: date_from,
-    //     };
-    // }
-    // if (date_to) {
-    //     where.scheduled_date = { ...(where.scheduled_date || {}), [Op.lte]: date_to };
-    // }
-    if (status) where.status = status;
-    if (employee_id) where.employee_id = employee_id;
+    logger.info("called collection schedule controller FIXME")
 
-    const schedules = await CollectionSchedule.findAll({
-        include: [{ model: CollectionPoint }, { model: User }],
-    });
+    const where = { category: "collection" }
+    const include = [{ model: User }]
+    const schedules = await TaskSchedule.findAll(
+        {
+            where, include
+        }
+    )
+
+    // const { date_from, date_to, status, employee_id } = req.query;
+    // const where = {};
+    // // if (date_from) {
+    // //     where.scheduled_date = {
+    // //         ...(where.scheduled_date || {}),
+    // //         [Op.gte]: date_from,
+    // //     };
+    // // }
+    // // if (date_to) {
+    // //     where.scheduled_date = { ...(where.scheduled_date || {}), [Op.lte]: date_to };
+    // // }
+    // if (status) where.status = status;
+    // if (employee_id) where.employee_id = employee_id;
+
+    // const schedules = await CollectionSchedule.findAll({
+    //     include: [{ model: CollectionPoint }, { model: User }],
+    // });
 
     res.json({
         success: true,
@@ -54,27 +64,19 @@ export const listcollectionSchedule = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createCollectionSchedule = async (req, res) => {
-    req.body.category = "collection"
-    return createSchedule(req,res)
-    const {
-        collection_point_id,
-        scheduled_date,
-        scheduled_time,
-        employee_id,
-        vehicle,
-        estimated_duration,
-        notes,
-    } = req.body;
+    logger.info("called collection schedule controller FIXME")
+    const dataSchema = z.object({
+        scheduled_date: z.coerce.date("Le point de collecte, la date et l'heure sont requis",),
+        scheduled_time: z.iso.time("Le point de collecte, la date et l'heure sont requis",),
+        employee_id: z.string().optional(),
+        collection_point_id: z.coerce.number().positive(),
+    })
 
-    // Validation
-    if (!collection_point_id || !scheduled_date || !scheduled_time) {
-        return res.status(400).json({
-            success: false,
-            error: "Le point de collecte, la date et l'heure sont requis",
-        });
-    }
+    const data = dataSchema.parse(req.body)
 
-    const point = await CollectionPoint.findByPk(collection_point_id);
+
+
+    const point = await CollectionPoint.findByPk(data.collection_point_id);
     // Vérifier si le point de collecte existe
 
     if (!point) {
@@ -84,23 +86,36 @@ export const createCollectionSchedule = async (req, res) => {
         });
     }
 
-    // Vérifier la disponibilité de l'employé
-    if (employee_id) {
-        const conflict = await CollectionSchedule.findOne({
-            where: { employee_id, scheduled_date, scheduled_time },
-        });
 
-        if (conflict) {
-            return res.status(400).json({
-                success: false,
-                error: "L'employé n'est pas disponible à cette heure",
-            });
-        }
+    const a = await TaskSchedule.create({
+        name: "collection" + data.scheduled_date + data.collection_point_id,
+        category: "collection",
+        scheduled_date: data.scheduled_date,
+        start_time: data.scheduled_time,
+        end_time: data.scheduled_time,
+        recurrence_pattern: "weekly",
+        is_recurring: true
 
-        await createSchedule();
-    } else {
-        await createSchedule();
-    }
+    })
+
+
+    // // Vérifier la disponibilité de l'employé
+    // if (employee_id) {
+    //     const conflict = await CollectionSchedule.findOne({
+    //         where: { employee_id, scheduled_date, scheduled_time },
+    //     });
+
+    //     if (conflict) {
+    //         return res.status(400).json({
+    //             success: false,
+    //             error: "L'employé n'est pas disponible à cette heure",
+    //         });
+    //     }
+
+    //     await createSchedule();
+    // } else {
+    //     await createSchedule();
+    // }
 
     // async function createSchedule() {
     //     const receiptNumber = generateReceiptNumber();
@@ -128,7 +143,9 @@ export const createCollectionSchedule = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const updateCollectionSchedule = async (req, res) => {
-    return updateSchedule(req,res)
+    logger.info("called collection schedule controller FIXME")
+
+    return updateSchedule(req, res)
     const { id } = req.params;
     const {
         collection_point_id,
@@ -179,7 +196,9 @@ export const updateCollectionSchedule = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const deleteCollectionSchedule = async (req, res) => {
-    return deleteSchedule(req,res)
+    logger.info("called collection schedule controller FIXME")
+
+    return deleteSchedule(req, res)
     const { id } = req.params;
 
     const schedule = await CollectionSchedule.destroy({ where: { id } });
@@ -273,6 +292,7 @@ export const detailBSD = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const addUserToSchedule = async (req, res) => {
+    logger.warning("called collection controller  add user FIXME")
 
     const { scheduleId } = req.params;
     const { employee_id } = req.body;
@@ -283,6 +303,8 @@ export const addUserToSchedule = async (req, res) => {
             message: "ID employé requis",
         });
     }
+
+    return addUserToSchedule(req,res)
 
     const schedule = await CollectionSchedule.findByPk(scheduleId, {
         include: [{ model: CollectionPoint }],
@@ -414,8 +436,11 @@ export const addUserToSchedule = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const removeUserFromSchedule = async (req, res) => {
+    logger.warning("called collection controller  remove user FIXME")
+
     const { scheduleId, employeeId } = req.params;
 
+    return removeEmployeeFromSchedule(req,res)
     // Vérifier que la collecte existe et que l'employé est bien assigné
     const schedule = await CollectionSchedule.findByPk(scheduleId);
 

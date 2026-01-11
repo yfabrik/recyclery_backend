@@ -21,6 +21,23 @@ const getDateFromDay = (day) => {
   if (!d) throw new createHttpError[400]
   return d
 }
+
+
+const dataSchema = z.object({
+  collection_point_id: z.coerce.number("ID du point de collecte et jour de la semaine sont obligatoires"),
+  store_id: z.coerce.number("ID du point de collecte et jour de la semaine sont obligatoires"),
+  day_of_week: z.enum(["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]).transform(val => getDateFromDay(val)),
+  is_open: z.coerce.boolean().default(true),
+  start_time: z.union([z.iso.time().transform(val => {
+    const [hours, min] = val.split(":")
+    return new Date().setHours(hours, min)
+  }), z.coerce.date()]),
+  end_time: z.iso.time(),
+  is_24h: z.coerce.boolean().default(false),
+  notes: z.string().optional(),
+  is_present: z.coerce.boolean().default(true)
+})
+
 const { CollectionPointPresence, CollectionPoint, TaskSchedule, Task } = db;
 /**
  * 
@@ -63,34 +80,16 @@ export const detailPointPrecense = async (req, res) => {
  */
 export const createPointPrecense = async (req, res) => {
 
-
-
-  const dataSchema = z.object({
-    collection_point_id: z.coerce.number("ID du point de collecte et jour de la semaine sont obligatoires"),
-    store_id: z.coerce.number("ID du point de collecte et jour de la semaine sont obligatoires"),
-    day_of_week: z.enum(["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]).transform(val => getDateFromDay(val)),
-    is_open: z.coerce.boolean().default(true),
-    start_time: z.union([z.iso.time().transform(val => {
-      const [hours, min] = val.split(":")
-      return new Date().setHours(hours, min)
-    }), z.coerce.date()]),
-    end_time: z.iso.time(),
-    is_24h: z.coerce.boolean().default(false),
-    notes: z.string().optional(),
-    is_present: z.coerce.boolean().default(true)
-  })
   const data = dataSchema.parse(req.body)
 
+  //TODO check if date is already taken
   const presence = await TaskSchedule.create({
     name: "point-" + data.day_of_week + data.collection_point_id,
     category: "point",
     scheduled_date: data.day_of_week,
-    recurrence_pattern:"weekly"
+    recurrence_pattern: "weekly",
     ...data
   })
-  // return createTask(req, res)
-
-
 
   // const where = {};
   // if (day_of_week) where.day_of_week = day_of_week;
@@ -134,20 +133,13 @@ export const createPointPrecense = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const updatePointPrecense = async (req, res) => {
-  const { id } = req.params;
-  const {
-    collection_point_id,
-    store_id,
-    day_of_week,
-    time_slot_name,
-    is_present,
-    start_time,
-    end_time,
-    is_24h,
-    notes,
-  } = req.body;
 
-  const existing = await CollectionPointPresence.findByPk(id);
+
+  const data = dataSchema.parse(req.body)
+  const id = z.coerce.number().positive().parse(req.params.id);
+  const existing = await TaskSchedule.findByPk(id)
+
+  // const existing = await CollectionPointPresence.findByPk(id);
   // Vérifier que les jours de présence existent
 
   if (!existing) {
@@ -157,15 +149,25 @@ export const updatePointPrecense = async (req, res) => {
     });
   }
 
-  const conflict = await CollectionPointPresence.findOne({
+  const conflict = await TaskSchedule.findOne({
     where: {
-      collection_point_id,
-      day_of_week,
-      time_slot_name,
-      store_id,
-      id: { [Op.ne]: id },
-    },
-  });
+      //TODO faudra comparer les heures aussi
+      collection_point_id: data.collection_point_id,
+      scheduled_date: data.day_of_week,//TODO faut que je reprenne le jour de la semaine depuis la date pour les comparer
+      store_id: data.store_id,
+      id: { [Op.ne]: id }
+    }
+  })
+
+  // const conflict = await CollectionPointPresence.findOne({
+  //   where: {
+  //     collection_point_id,
+  //     day_of_week,
+  //     time_slot_name,
+  //     store_id,
+  //     id: { [Op.ne]: id },
+  //   },
+  // });
   // Vérifier s'il n'y a pas de conflit avec d'autres jours de présence du même point, jour et créneau
 
   if (conflict) {
@@ -176,15 +178,14 @@ export const updatePointPrecense = async (req, res) => {
     });
   }
 
-  existing.collection_point_id = collection_point_id;
-  existing.store_id = store_id;
-  existing.day_of_week = day_of_week;
-  existing.time_slot_name = time_slot_name;
-  existing.is_present = is_present;
-  existing.start_time = start_time;
-  existing.end_time = end_time;
-  existing.is_24h = is_24h;
-  existing.notes = notes;
+  existing.collection_point_id = data.collection_point_id;
+  existing.store_id = data.store_id;
+  existing.scheduled_date = data.day_of_week;
+  existing.is_present = data.is_present;
+  existing.start_time = data.start_time;
+  existing.end_time = data.end_time;
+  existing.is_24h = data.is_24h;
+  existing.notes = data.notes;
   await existing.save();
 
   res.json({
@@ -198,19 +199,14 @@ export const updatePointPrecense = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const deletePointPrecense = async (req, res) => {
-  const { id } = req.params;
+  const id = z.coerce.number().positive().parse(req.params.id);
 
-  const existing = await CollectionPointPresence.findByPk(id);
-  // Vérifier que les jours de présence existent
-
-  if (!existing) {
+  const deleted = await TaskSchedule.destroy({ where: { id } });
+  if (deleted == 0)
     return res.status(404).json({
       success: false,
       message: "Jours de présence non trouvés",
     });
-  }
-  const deleted = await CollectionPointPresence.destroy({ where: { id } });
-
   res.json({
     success: true,
     message: "Jours de présence supprimés avec succès",
