@@ -46,6 +46,33 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "TaskSchedule",
+      hooks: {
+        afterCreate: async (schedule) => {
+          const data = { ...schedule.get({ plain: true }) }
+          console.log(data)
+          await schedule.createTask({
+            ...data
+          })
+          // for await (const index of [1, 2, 3, 4]) {
+          //   if (schedule.recurrence_pattern == "weekly")
+          //     await schedule.createTask({
+          //       ...data,
+          //       scheduled_date: new Date().setDate(schedule.scheduled_date.getDate() + 7 * index)
+          //     })
+          //   if (schedule.recurrence_pattern == "daily")
+          //     await schedule.createTask({
+          //       ...data,
+          //       scheduled_date: new Date().setDate(schedule.scheduled_date.getDate() + 1 * index)
+          //     })
+          //   if (schedule.recurrence_pattern == "monthly")
+          //     await schedule.createTask({
+          //       ...data,
+          //       scheduled_date: new Date().setMonth(schedule.scheduled_date.getMonth() + 1 * index)
+          //     })
+          // }
+
+        }
+      }
     }
   );
   return TaskSchedule;
