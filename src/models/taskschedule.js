@@ -1,5 +1,6 @@
 "use strict";
 import { Model } from "sequelize";
+import logger from "../services/logger.js";
 /**
  * @param {import("sequelize").Sequelize} sequelize
  * @param {import("sequelize").DataTypes} DataTypes
@@ -48,31 +49,46 @@ export default (sequelize, DataTypes) => {
       modelName: "TaskSchedule",
       hooks: {
         afterCreate: async (schedule) => {
-          const data = { ...schedule.get({ plain: true }) }
-          console.log(data)
+          const data = schedule.dataValues
           await schedule.createTask({
-            ...data
-          })
-          // for await (const index of [1, 2, 3, 4]) {
-          //   if (schedule.recurrence_pattern == "weekly")
-          //     await schedule.createTask({
-          //       ...data,
-          //       scheduled_date: new Date().setDate(schedule.scheduled_date.getDate() + 7 * index)
-          //     })
-          //   if (schedule.recurrence_pattern == "daily")
-          //     await schedule.createTask({
-          //       ...data,
-          //       scheduled_date: new Date().setDate(schedule.scheduled_date.getDate() + 1 * index)
-          //     })
-          //   if (schedule.recurrence_pattern == "monthly")
-          //     await schedule.createTask({
-          //       ...data,
-          //       scheduled_date: new Date().setMonth(schedule.scheduled_date.getMonth() + 1 * index)
-          //     })
-          // }
-
-        }
-      }
+            name: data.name,
+            category: data.category,
+            scheduled_date: data.scheduled_date,
+            start_time: data.start_time,
+            end_time: data.end_time,
+          });
+          for await (const index of [1, 2, 3, 4]) {
+            const date = new Date(schedule.scheduled_date);
+            if (schedule.recurrence_pattern == "weekly")
+              await schedule.createTask({
+                name: data.name,
+                category: data.category,
+                // scheduled_date:data.scheduled_date,
+                start_time: data.start_time,
+                end_time: data.end_time,
+                scheduled_date: date.setDate(date.getDate() + 7 * index),
+              });
+            if (schedule.recurrence_pattern == "daily")
+              await schedule.createTask({
+                name: data.name,
+                category: data.category,
+                // scheduled_date:data.scheduled_date,
+                start_time: data.start_time,
+                end_time: data.end_time,
+                scheduled_date: date.setDate(date.getDate() + 1 * index),
+              });
+            if (schedule.recurrence_pattern == "monthly")
+              await schedule.createTask({
+                name: data.name,
+                category: data.category,
+                // scheduled_date:data.scheduled_date,
+                start_time: data.start_time,
+                end_time: data.end_time,
+                scheduled_date: date.setMonth(date.getMonth() + 1 * index),
+              });
+          }
+        },
+      },
     }
   );
   return TaskSchedule;

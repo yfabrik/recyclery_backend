@@ -28,7 +28,7 @@ export const listcollectionSchedule = async (req, res) => {
     logger.info("called collection schedule controller FIXME")
 
     const where = { category: "collection" }
-    const include = [{ model: User }]
+    const include = []//[{ model: User }]
     const schedules = await TaskSchedule.findAll(
         {
             where, include
