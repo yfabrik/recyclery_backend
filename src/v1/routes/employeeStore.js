@@ -7,7 +7,7 @@ import { assignUserToStore, getEmployeeStoreById, listEmployeeStore, listStoreEm
 const { User,  Recyclery } = db;
 
 export const router = Router();
-router.use(authenticateToken);
+// router.use(authenticateToken);
 // Obtenir toutes les affectations employés-magasins
 router.get(
   "/",
