@@ -1,5 +1,5 @@
 "use strict";
-import { Model } from "sequelize";
+import { Model, Op } from "sequelize";
 import logger from "../services/logger.js";
 /**
  * @param {import("sequelize").Sequelize} sequelize
@@ -11,7 +11,7 @@ export default (sequelize, DataTypes) => {
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
-      this.hasMany(models.Task, { foreignKey: "schedule_id" });
+      this.hasMany(models.Task, { foreignKey: "schedule_id" ,onDelete:"CASCADE"});
       // this.hasOne(models.TaskTemplate,{foreignKey:"template_id"})
       this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
       // this.belongsToMany(models.User,{through:"taskSchedule_employee",foreignKey:"schedule_id"})
@@ -49,43 +49,108 @@ export default (sequelize, DataTypes) => {
       modelName: "TaskSchedule",
       hooks: {
         afterCreate: async (schedule) => {
-          const data = schedule.dataValues
-          await schedule.createTask({
-            name: data.name,
-            category: data.category,
-            scheduled_date: data.scheduled_date,
-            start_time: data.start_time,
-            end_time: data.end_time,
-          });
-          for await (const index of [1, 2, 3, 4]) {
-            const date = new Date(schedule.scheduled_date);
-            if (schedule.recurrence_pattern == "weekly")
-              await schedule.createTask({
+          const data = schedule.dataValues;
+          const baseDate = new Date(schedule.scheduled_date);
+          const tasksToCreate = [];
+
+          // Calculate end date (one month from the base date)
+          const endDate = new Date(baseDate);
+          endDate.setMonth(endDate.getMonth() + 1);
+
+          // Generate tasks based on recurrence pattern
+          if (schedule.recurrence_pattern === "daily") {
+            // Create tasks for each day until one month from base date
+            let currentDate = new Date(baseDate);
+            while (currentDate < endDate) {
+              tasksToCreate.push({
                 name: data.name,
                 category: data.category,
-                // scheduled_date:data.scheduled_date,
+                scheduled_date: new Date(currentDate),
                 start_time: data.start_time,
                 end_time: data.end_time,
-                scheduled_date: date.setDate(date.getDate() + 7 * index),
+                schedule_id: schedule.id,
               });
-            if (schedule.recurrence_pattern == "daily")
-              await schedule.createTask({
+              // Create new date object for next iteration to avoid mutation
+              currentDate = new Date(currentDate);
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+          } else if (schedule.recurrence_pattern === "weekly") {
+            // Create tasks for each week until one month from base date
+            let currentDate = new Date(baseDate);
+            while (currentDate < endDate) {
+              tasksToCreate.push({
                 name: data.name,
                 category: data.category,
-                // scheduled_date:data.scheduled_date,
+                scheduled_date: new Date(currentDate),
                 start_time: data.start_time,
                 end_time: data.end_time,
-                scheduled_date: date.setDate(date.getDate() + 1 * index),
+                schedule_id: schedule.id,
               });
-            if (schedule.recurrence_pattern == "monthly")
-              await schedule.createTask({
-                name: data.name,
-                category: data.category,
-                // scheduled_date:data.scheduled_date,
-                start_time: data.start_time,
-                end_time: data.end_time,
-                scheduled_date: date.setMonth(date.getMonth() + 1 * index),
-              });
+              // Create new date object for next iteration to avoid mutation
+              currentDate = new Date(currentDate);
+              currentDate.setDate(currentDate.getDate() + 7);
+            }
+          } else if (schedule.recurrence_pattern === "monthly") {
+            // For monthly, create one task one month from base date
+            const nextMonthDate = new Date(baseDate);
+            nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+            tasksToCreate.push({
+              name: data.name,
+              category: data.category,
+              scheduled_date: nextMonthDate,
+              start_time: data.start_time,
+              end_time: data.end_time,
+              schedule_id: schedule.id,
+            });
+          } else {
+            // If no recurrence pattern or unknown pattern, create just the initial task
+            tasksToCreate.push({
+              name: data.name,
+              category: data.category,
+              scheduled_date: new Date(baseDate),
+              start_time: data.start_time,
+              end_time: data.end_time,
+              schedule_id: schedule.id,
+            });
+          }
+
+          // Use bulkCreate to create all tasks at once
+          if (tasksToCreate.length > 0) {
+            const Task = schedule.sequelize.models.Task;
+            if (Task) {
+              await Task.bulkCreate(tasksToCreate);
+              logger.info(
+                `Created ${tasksToCreate.length} task(s) for schedule ${schedule.id} with pattern ${schedule.recurrence_pattern || "none"}`
+              );
+            } else {
+              logger.error(`Task model not found for schedule ${schedule.id}`);
+            }
+          }
+        },
+        beforeDestroy: async (schedule) => {
+          const Task = schedule.sequelize.models.Task;
+          if (Task) {
+            const now = new Date();
+            // Update tasks in the past to set schedule_id to null
+            const result = await Task.update(
+              { schedule_id: null },
+              {
+                where: {
+                  schedule_id: schedule.id,
+                  scheduled_date: {
+                    [Op.lt]: now, // Less than current date/time (tasks in the past)
+                  },
+                },
+              }
+            );
+            const updatedCount = result[0]; // Sequelize update returns [affectedCount, affectedRows]
+            if (updatedCount > 0) {
+              logger.info(
+                `Set schedule_id to null for ${updatedCount} past task(s) when destroying schedule ${schedule.id}`
+              );
+            }
+          } else {
+            logger.error(`Task model not found when destroying schedule ${schedule.id}`);
           }
         },
       },
