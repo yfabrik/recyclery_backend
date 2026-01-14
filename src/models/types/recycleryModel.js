@@ -1,23 +1,39 @@
 /**
- * @typedef {Object} RecycleryCreateAttribute
- * @property {string} name
- * @property {string} [address]
- * @property {string} [phone]
- * @property {string} [email]
- * @property {string} [city]
- * @property {string} [postal_code]
- * @property {boolean} is_active
- * @property {number} [manager_id]
- * @typedef { import("./baseModelAttributes.js").baseAttributes & RecycleryCreateAttribute} RecycleryAttributes
+ * @typedef {Object} RecycleryCreateAttributes
+ * @property {string} name - Name of the recyclery/store (required)
+ * @property {string} [address] - Physical address of the recyclery
+ * @property {string} [phone] - Phone number of the recyclery
+ * @property {string} [email] - Email address of the recyclery
+ * @property {string} [city] - City where the recyclery is located
+ * @property {string} [postal_code] - Postal code of the recyclery location
+ * @property {boolean} [is_active] - Whether the recyclery is currently active (default: true)
+ * @property {number|null} [manager_id] - Foreign key reference to the User who manages this recyclery
+ * 
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & RecycleryCreateAttributes} RecycleryAttributes
  */
 
 /**
- * @typedef {import("sequelize").Model <RecycleryAttributes, RecycleryCreateAttribute> & RecycleryAttributes} RecycleryInstance
- * @property {Function} getLabeledItems
- * @property {Function} getDonations
- * @property {Function} getCollectionSchedules
- * @property {Function} getHoraires
- * @property {Function} getEmployees
- * @property {Function} getManager
- * @property {Function} getCaisses
+ * @typedef {import("sequelize").Model<RecycleryAttributes, RecycleryCreateAttributes> & RecycleryAttributes} RecycleryInstance
+ * 
+ * @property {() => Promise<Array<import("./labeledItemModel.js").LabeledItemInstance>>} getLabeledItems - Get all labeled items associated with this recyclery (has-many relationship).
+ * 
+ * @property {() => Promise<Array<import("./donationModel.js").DonationInstance>>} getDonations - Get all donations associated with this recyclery (has-many relationship).
+ * 
+ * @property {() => Promise<Array<import("./collectionSchedule.js").CollectionScheduleInstance>>} getCollectionSchedules - Get all collection schedules for this recyclery (has-many relationship).
+ * 
+ * @property {() => Promise<Array<import("./storeHours.js").StoreHoursInstance>>} getHoraires - Get all store hours for this recyclery (has-many relationship). Uses "horaires" alias. CASCADE delete enabled.
+ * 
+ * @property {() => Promise<Array<import("./userModel.js").UserInstance>>} getEmployees - Get all employees associated with this recyclery (many-to-many relationship through "EmployeeStore" table). Uses "employees" alias.
+ * 
+ * @property {(employees: Array<import("./userModel.js").UserInstance|number>) => Promise<void>} setEmployees - Replace all employees associated with this recyclery. Takes an array of User instances or user IDs.
+ * 
+ * @property {(employees: Array<import("./userModel.js").UserInstance|number>) => Promise<void>} addEmployees - Add one or more employees to this recyclery. Takes an array of User instances or user IDs.
+ * 
+ * @property {(employees: Array<import("./userModel.js").UserInstance|number>) => Promise<void>} removeEmployees - Remove one or more employees from this recyclery. Takes an array of User instances or user IDs.
+ * 
+ * @property {() => Promise<import("./userModel.js").UserInstance|null>} getManager - Get the manager of this recyclery (belongs-to relationship). Returns null if no manager is assigned. Uses "manager" alias.
+ * 
+ * @property {(manager: import("./userModel.js").UserInstance|number|null) => Promise<void>} setManager - Set or unset the manager for this recyclery. Takes a User instance, user ID, or null to remove the manager.
+ * 
+ * @property {() => Promise<Array<import("./cashRegisterModel.js").CashRegisterInstance>>} getCaisses - Get all cash registers for this recyclery (has-many relationship). Uses "caisses" alias. CASCADE delete enabled.
  */

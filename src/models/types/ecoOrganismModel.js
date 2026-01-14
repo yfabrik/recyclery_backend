@@ -1,17 +1,16 @@
 /**
- * @typedef {Object} EcoOrganismAttribute
-
- * @property {string} name
- * @property {string} description
- * @property {string} contact_email
- * @property {string} contact_phone
- * @property {number} address
- * @property {string} website
- * @property {boolean} is_active
- * @typedef { import("./baseModelAttributes.js").baseAttributes & EcoOrganismAttribute} EcoOrganismAttributes
-
+ * @typedef {Object} EcoOrganismCreateAttributes
+ * @property {string} name - Name of the eco-organism
+ * @property {string} [description] - Description of the eco-organism
+ * @property {string} [contact_email] - Contact email address
+ * @property {string} [contact_phone] - Contact phone number
+ * @property {string} [address] - Physical address of the eco-organism
+ * @property {string} [website] - Website URL of the eco-organism
+ * @property {boolean} [is_active] - Whether the eco-organism is currently active
+ * 
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & EcoOrganismCreateAttributes} EcoOrganismAttributes
  */
 
 /**
- * @typedef { import("sequelize").Model<EcoOrganismAttributes, EcoOrganismAttributes> & EcoOrganismAttributes} EcoOrganismInstance
+ * @typedef {import("sequelize").Model<EcoOrganismAttributes, EcoOrganismCreateAttributes> & EcoOrganismAttributes} EcoOrganismInstance
  */
