@@ -1,4 +1,5 @@
 "use strict";
+import createHttpError from "http-errors";
 import { Model } from "sequelize";
 /**
  * @param {import("sequelize").Sequelize} sequelize
@@ -14,7 +15,7 @@ export default (sequelize, DataTypes) => {
       this.hasMany(models.CashSession, {
         foreignKey: "cash_register_id",
         as: "sessions",
-        onDelete: "CASCADE"
+        onDelete: "CASCADE",
       });
     }
   }
@@ -27,10 +28,14 @@ export default (sequelize, DataTypes) => {
       sequelize,
       modelName: "CashRegister",
       hooks: {
-        beforeDestroy: (caisse) => {
-          console.log(caisse)
-        }
-      }
+        beforeDestroy: async (caisse) => {
+          const sessions = await caisse.countSessions({ where: { status: "open" } });
+          if (sessions)
+            throw new createHttpError[424](
+              "Impossible de supprimer une caisse avec des sessions ouvertes"
+            );
+        },
+      },
     }
   );
   return CashRegister;

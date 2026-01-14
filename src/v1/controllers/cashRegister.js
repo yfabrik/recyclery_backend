@@ -202,20 +202,21 @@ export const deleteCaisse = async (req, res) => {
     throw new createHttpError.NotFound("Caisse non trouvée");
   }
 
-  // Vérifier qu'il n'y a pas de sessions ouvertes pour cette caisse
-  const openSessions = await existingRegister.getSessions({ where: { status: "open" } })
-  // console.log(open)
-  // const openSessions = await CashSession.findAll({
-  //   where: { [Op.and]: [{ cash_register_id: id }, { status: "open" }] },
-  // });
+  // // Vérifier qu'il n'y a pas de sessions ouvertes pour cette caisse
+  // const openSessions = await existingRegister.getSessions({ where: { status: "open" } })
+  // // console.log(open)
+  // // const openSessions = await CashSession.findAll({
+  // //   where: { [Op.and]: [{ cash_register_id: id }, { status: "open" }] },
+  // // });
 
-  if (openSessions[0]) {
-    throw new createHttpError[400](
-      "Impossible de supprimer une caisse avec des sessions ouvertes"
-    );
-  }
+  // if (openSessions[0]) {
+  //   throw new createHttpError[400](
+  //     "Impossible de supprimer une caisse avec des sessions ouvertes"
+  //   );
+  // }
 
-  await CashRegister.destroy({ where: { id } });
+  await existingRegister.destroy()
+  // await CashRegister.destroy({ where: { id } });
 
   res.json({
     success: true,
