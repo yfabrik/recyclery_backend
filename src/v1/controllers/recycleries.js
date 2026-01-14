@@ -1,29 +1,42 @@
 import createHttpError from "http-errors";
 import db from "../../models/index.js";
-import * as z from "zod"
+import * as z from "zod";
 import { listCaisses } from "../../services/caisse.js";
 import { col, fn, literal, Op, where } from "sequelize";
-const { Recyclery, CashRegister, User, SalesTransaction, LabeledItem, EmployeeWorkdays } = db;
+const {
+  Recyclery,
+  CashRegister,
+  User,
+  SalesTransaction,
+  LabeledItem,
+  EmployeeWorkdays,
+} = db;
 /**
  *
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
 export const listRecycleries = async (req, res) => {
-  const ALLOWED_INCLUDES = ["employees"]
+  const ALLOWED_INCLUDES = ["employees"];
   const filterSchema = z.object({
     include: z
       .string()
       .optional()
       .transform((val) => (val ? val.split(",") : []))
       .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
-  })
+    active: z.coerce.boolean().optional(),
+  });
 
-  const filter = filterSchema.parse(req.params)
-
-  const include = []
+  const filter = filterSchema.parse(req.query);
+  const where = {};
+  if (filter.active) where.is_active = filter.active;
+  const include = [];
   if (filter.include.includes("employees"))
-    include.push({ model: User, as: "employees", include: [{ model: EmployeeWorkdays }] })
+    include.push({
+      model: User,
+      as: "employees",
+      include: [{ model: EmployeeWorkdays }],
+    });
 
   include.push(
     {
@@ -33,7 +46,7 @@ export const listRecycleries = async (req, res) => {
       // separate:true
     },
     { model: User, as: "manager" }
-  )
+  );
 
   const recycleries = await Recyclery.findAll({
     attributes: {
@@ -49,6 +62,7 @@ export const listRecycleries = async (req, res) => {
       ],
       // include: [[fn("COUNT", col("caisses.id")), "cash_registers_count"]], //empeche de lister les caisses
     },
+    where,
     include,
     // group: ["Recyclery.id", "manager.id"],//group by empeche de lister les caisses , j'ai juste la premiere caisses
     order: [["name", "ASC"]],
@@ -89,8 +103,6 @@ export const detailRecyclerie = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createRecyclerie = async (req, res) => {
-
-
   const dataSchema = z.object({
     name: z.string("Le nom de la recyclerie est requis"),
     address: z.string().optional(),
@@ -99,13 +111,13 @@ export const createRecyclerie = async (req, res) => {
     manager_id: z.coerce.number().nullable().optional(),
     city: z.string().optional(),
     postal_code: z.string().optional(),
-    is_active:z.coerce.boolean().default(true)
-  })
-  const data = dataSchema.parse(req.body)
-  console.log(data)
+    is_active: z.coerce.boolean().default(true),
+  });
+  const data = dataSchema.parse(req.body);
+
 
   const recyclery = await Recyclery.create({
-    ...data
+    ...data,
   });
 
   res.status(201).json({
@@ -117,7 +129,7 @@ export const createRecyclerie = async (req, res) => {
 
 export const updateRecyclerie = async (req, res) => {
   const { id } = req.params;
-const dataSchema = z.object({
+  const dataSchema = z.object({
     name: z.string("Le nom de la recyclerie est requis"),
     address: z.string().optional(),
     phone: z.string().optional(),
@@ -125,9 +137,9 @@ const dataSchema = z.object({
     manager_id: z.coerce.number().positive().optional(),
     city: z.string().optional(),
     postal_code: z.string().optional(),
-    is_active:z.coerce.boolean().default(true)
-  })
-  const data = dataSchema.parse(req.body)
+    is_active: z.coerce.boolean().default(true),
+  });
+  const data = dataSchema.parse(req.body);
 
   const recyclerie = await Recyclery.findByPk(id);
   if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");

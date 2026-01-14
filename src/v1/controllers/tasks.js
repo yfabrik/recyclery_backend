@@ -18,13 +18,24 @@ export const listTasks = async (req, res) => {
       .optional()
       .transform((val) => (val ? val.split(",") : []))
       .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
-    category: z.enum(["point", "vente", "collection"]).nullable().optional(),
+    category: z
+      .enum(["point", "vente", "collection"])
+      .nullable()
+      .optional()
+      .default(
+        req.originalUrl == "/api/collection-point-presence"
+          ? "point"
+          : req.originalUrl == "/api/store-hours"
+          ? "vente"
+          : req.originalUrl == "/api/collections"
+          ? "collection"
+          : null
+      ),
     priority: z.string().optional(),
-    search: z.string().optional()
+    search: z.string().optional(),
   });
-  const category = req.originalUrl == '/api/collection-point-presence' ? "point" : req.originalUrl == '/api/store-hours' ? "vente" : req.originalUrl == '/api/collections' ? "collection" : null
-  const data = includeSchema.parse({ ...req.query, category });
-
+  // const category = req.originalUrl == '/api/collection-point-presence' ? "point" : req.originalUrl == '/api/store-hours' ? "vente" : req.originalUrl == '/api/collections' ? "collection" : null
+  const data = includeSchema.parse({ ...req.query });
 
   /**
    * @type {import("sequelize").WhereOptions<import("../../models/types/taskModel.js").TaskAttributes>}
@@ -47,12 +58,20 @@ export const listTasks = async (req, res) => {
   if (data.include.includes("user"))
     include.push({
       model: User,
-    })
+    });
 
   const tasks = await Task.findAll({
     include,
     where,
     order: [["createdAt", "DESC"]],
+  });
+
+  const t = tasks.map((t) => {
+    return {
+      ...t.get({ plain: true }),
+      start_time: new Date(t.start_time),
+      end_time: new Date(t.end_time),
+    };
   });
 
   // Parser les champs JSON
@@ -69,8 +88,8 @@ export const listTasks = async (req, res) => {
   res.json({
     success: true,
     // tasksx: parsedTasks,
-    tasks: tasks,
-    presence_hours:tasks
+    tasks: t,
+    presence_hours: t,
   });
 };
 /**
@@ -117,7 +136,11 @@ export const createTask = async (req, res) => {
     category: z.string("categorie requis"),
     priority: z.string("priorité requis"),
     estimated_duration: z.coerce.number().optional(),
-    required_skills: z.array(z.string()).optional().default([]).transform(val => JSON.stringify(val)),
+    required_skills: z
+      .array(z.string())
+      .optional()
+      .default([])
+      .transform((val) => JSON.stringify(val)),
     location: z.string().optional(),
     equipment_needed: z.array(z.string()).optional(),
     hourly_rate: z.coerce.number().optional(),
@@ -128,21 +151,20 @@ export const createTask = async (req, res) => {
     start_time: z.coerce.date().optional(),
     end_time: z.coerce.date().optional(),
     scheduled_date: z.coerce.date().optional().default(new Date()),
-  })
+  });
 
-  const data = dataSchema.parse(req.body)
+  const data = dataSchema.parse(req.body);
   let schedule = null;
   if (data.recurrence_pattern && data.recurrence_pattern != "none") {
     schedule = await TaskSchedule.create({
-      ...data
-
+      ...data,
     });
-    console.log(schedule)
+    console.log(schedule);
   }
-  const { is_recurring, recurrence_pattern, ...rest } = data
+  const { is_recurring, recurrence_pattern, ...rest } = data;
   const task = await Task.create({
     ...rest,
-    status: 'a',
+    status: "a",
     schedule_id: schedule?.id || null,
   });
 
@@ -166,7 +188,11 @@ export const updateTask = async (req, res) => {
     category: z.string("categorie requis"),
     priority: z.string("priorité requis"),
     estimated_duration: z.coerce.number().optional(),
-    required_skills: z.array(z.string()).optional().default([]).transform(val => JSON.stringify(val)),
+    required_skills: z
+      .array(z.string())
+      .optional()
+      .default([])
+      .transform((val) => JSON.stringify(val)),
     location: z.string().optional(),
     equipment_needed: z.array(z.string()).optional(),
     hourly_rate: z.coerce.number().optional(),
@@ -177,9 +203,9 @@ export const updateTask = async (req, res) => {
     start_time: z.coerce.date().optional(),
     end_time: z.coerce.date().optional(),
     scheduled_date: z.coerce.date().optional().default(new Date()),
-  })
+  });
 
-  const data = dataSchema.parse(req.body)
+  const data = dataSchema.parse(req.body);
   // Vérifier que la tâche existe
   const existing = await Task.findByPk(id);
 
