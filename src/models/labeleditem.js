@@ -13,12 +13,13 @@ export default (sequelize, DataTypes) => {
       this.belongsTo(models.Category, {
         as: "category",
         foreignKey: "category_id",
+
       });
 
-      this.belongsTo(models.Category, {
-        as: "subcategory",
-        foreignKey: "subcategory_id",
-      });
+      // this.belongsTo(models.Category, {
+      //   as: "subcategory",
+      //   foreignKey: "subcategory_id",
+      // });
 
       this.belongsTo(models.Recyclery, {
         as: "recyclery",
@@ -33,7 +34,7 @@ export default (sequelize, DataTypes) => {
       this.belongsTo(models.User, {
         as: "soldBy",
         foreignKey: "sold_by",
-      });
+      });//TODO needed ? peut retrouvé depuis transaction
 
       this.belongsTo(models.User, {
         as: "createdBy",
@@ -45,15 +46,15 @@ export default (sequelize, DataTypes) => {
   LabeledItem.init(
     {
       barcode: DataTypes.STRING,
-      name: DataTypes.STRING,
+      // name: DataTypes.STRING,
       description: DataTypes.TEXT,
-      weight: DataTypes.DECIMAL,
-      price: DataTypes.DECIMAL,
-      cost: DataTypes.DECIMAL,
-      condition_state: { type: DataTypes.STRING, defaultValue: "good" },
-      location: DataTypes.STRING,
-      status: { type: DataTypes.STRING, defaultValue: "available" },
-      sold_at: DataTypes.DATE, //assoc ???
+      weight: DataTypes.DECIMAL(10, 2),
+      price: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+      cost: { type: DataTypes.DECIMAL(10, 2) },
+      condition_state: { type: DataTypes.ENUM("excellent", "good", "fair", "poor"), defaultValue: "good" },
+      // location: DataTypes.STRING,
+      status: { type: DataTypes.ENUM("available", "sold"), defaultValue: "available" },
+      // sold_at: DataTypes.DATE, //assoc ???
     },
     {
       sequelize,

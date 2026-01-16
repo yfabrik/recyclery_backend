@@ -30,11 +30,11 @@ export default (sequelize, DataTypes) => {
 
   WasteDisposal.init(
     {
-      disposal_number: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-      },
+      // disposal_number: {
+      //   type: DataTypes.STRING,
+      //   allowNull: false,
+      //   unique: true,
+      // },
       disposal_date: {
         type: DataTypes.DATE,
         allowNull: false,

@@ -36,14 +36,14 @@ export default (sequelize, DataTypes) => {
   }
   User.init(
     {
-      username: DataTypes.STRING,
+      username: {type:DataTypes.STRING,unique:true},
       email: { type: DataTypes.STRING, unique: true, validate: { isEmail: true } },
       password: DataTypes.STRING,
       role: {
         type: DataTypes.STRING, //TODO foreignkey role
         defaultValue: "employee",
       },
-      phone: DataTypes.STRING,
+      phone:{ type: DataTypes.STRING, validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ } },
       contract_hours: { type: DataTypes.INTEGER, defaultValue: 35 },
       isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
       last_login: DataTypes.DATE
@@ -67,3 +67,4 @@ export default (sequelize, DataTypes) => {
   );
   return User;
 };
+

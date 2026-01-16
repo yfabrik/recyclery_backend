@@ -14,13 +14,16 @@ export default (sequelize, DataTypes) => {
         foreignKey: "category_id",
         as: "categorie",
       });
-      this.belongsTo(models.Category, {
-        foreignKey: "subcategory_id",
-        as: "subcategorie",
-      });
+
+      //pas needed just get 1 and find the parent
+      // this.belongsTo(models.Category, {
+      //   foreignKey: "subcategory_id",
+      //   as: "subcategorie",
+      // });
       this.belongsTo(models.CollectionPoint, {
         foreignKey: "collection_point_id",
       });
+
       this.belongsTo(models.User, { foreignKey: "processed_by" });
     }
   }
@@ -29,23 +32,23 @@ export default (sequelize, DataTypes) => {
   // leurs status evolue
   Arrival.init(
     {
-      arrival_number: DataTypes.STRING,
+      arrival_number: DataTypes.STRING,// id ?
       // category_id: DataTypes.INTEGER,//assoc
       // subcategory_id: DataTypes.INTEGER,//assoc
       /** les infos sont dans collection receipt */
-      weight: DataTypes.DECIMAL,
-      arrival_date: DataTypes.DATE, //datetime exists ?
+      weight: {type:DataTypes.DECIMAL(10,2),allowNull:false},
+      arrival_date: {type:DataTypes.DATE, defaultValue:DataTypes.NOW }, //TODO dateonly or merge with arrival time ?
       arrival_time: DataTypes.TIME,
-      source_type: DataTypes.STRING, //source table ?
+      source_type: {type:DataTypes.ENUM("point","apport","house_clearance")}, //source table ?
       source_details: DataTypes.TEXT,
       // collection_point_id: DataTypes.INTEGER,//assoc ?
       // collection_point_name: DataTypes.STRING,//dans la table collection point ?
       // collection_point_address: DataTypes.TEXT,//pareil ?
-      volunteer_donation: DataTypes.BOOLEAN,
-      house_clearance: DataTypes.BOOLEAN,
+      // volunteer_donation: DataTypes.BOOLEAN,
+      // house_clearance: DataTypes.BOOLEAN,
       notes: DataTypes.TEXT,
       // processed_by: DataTypes.INTEGER, //assoc
-      status: { type: DataTypes.STRING, defaultValue: "received" },
+      status: { type: DataTypes.ENUM("received"), defaultValue: "received" },//TODO ??? what are the types
     },
     {
       sequelize,

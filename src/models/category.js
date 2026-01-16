@@ -25,6 +25,8 @@ export default (sequelize, DataTypes) => {
       name: { type: DataTypes.STRING, allowNull: false },
       description: DataTypes.TEXT,
       icon: DataTypes.STRING,
+      defaultWeight: { type: DataTypes.FLOAT(), validate: { min: 0 }, defaultValue: 0 },
+      defaultPrice: { type: DataTypes.DECIMAL(10, 2), validate: { min: 0 }, defaultValue: 0 }
     },
     {
       sequelize,

@@ -6,9 +6,9 @@ import { Model } from "sequelize";
  */
 export default (sequelize, DataTypes) => {
   class Donation extends Model {
-/**
-     *@param {import ('./types/models.js').models} models
-     */
+    /**
+         *@param {import ('./types/models.js').models} models
+         */
     static associate(models) {
       this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
       this.belongsTo(models.User, { foreignKey: "received_by" });
@@ -16,12 +16,12 @@ export default (sequelize, DataTypes) => {
   }
   Donation.init(
     {
-      donor_name: DataTypes.STRING,
-      donor_phone: DataTypes.STRING,
-      donor_email: DataTypes.STRING,
+      donor_name: {type:DataTypes.STRING,validate:{isAlphanumeric:true}},
+      donor_phone: { type: DataTypes.STRING, validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ } },
+      donor_email: { type: DataTypes.STRING, validate: { isEmail: true } },
       item_description: DataTypes.TEXT,
-      estimated_value: DataTypes.FLOAT,
-      status: { type: DataTypes.STRING, defaultValue: "pending" },
+      estimated_value: DataTypes.DECIMAL(10, 2),
+      status: { type: DataTypes.ENUM("pending", "accepted", "rejected"), defaultValue: "pending" },
       // recyclery_id: DataTypes.INTEGER,//assoc
       // received_by: DataTypes.INTEGER,//assoc
       received_at: DataTypes.DATE,

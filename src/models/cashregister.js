@@ -21,7 +21,7 @@ export default (sequelize, DataTypes) => {
   }
   CashRegister.init(
     {
-      name: { type: DataTypes.STRING },
+      name: { type: DataTypes.STRING, allowNull: false },
       is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
     },
     {

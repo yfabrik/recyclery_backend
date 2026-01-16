@@ -17,9 +17,9 @@ export default (sequelize, DataTypes) => {
   Task.init({
     name: DataTypes.STRING,
     description: DataTypes.TEXT,
-    category: DataTypes.STRING,
+    category: {type:DataTypes.ENUM("vente","point","collection","custom"),allowNull:false},
     priority: DataTypes.STRING,
-    estimated_duration: DataTypes.INTEGER,
+    // estimated_duration: DataTypes.INTEGER,
     required_skills: DataTypes.TEXT,
     location: DataTypes.STRING,
     equipment_needed: DataTypes.TEXT,

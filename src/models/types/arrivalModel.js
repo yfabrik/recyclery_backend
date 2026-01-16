@@ -1,23 +1,22 @@
 /**
- * @typedef {Object} ArrivalAttribute
- * @property {string} arrival_number
+ * @typedef {Object} ArrivalCreateAttributes
  * @property {number} weight
  * @property {Date} arrival_date
- * @property {string} arrival_time
- * @property {string} source_type
- * @property {string} source_details
- * @property {boolean} volunteer_donation
- * @property {boolean} house_clearance
- * @property {string} notes
- * @property {string} status
+ * @property {Date} arrival_time
+ * @property {"point"|"apport"|"house_clearance"} source_type
+ * @property {string} [source_details]
+ * @property {string} [notes]
+ * @property {string} [status]
+ * @property {number} processed_by
+ * @property {number} [collection_point_id]
+ * @property {number} category_id
+
+/**
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & ArrivalCreateAttributes} ArrivalAttributes
  */
 
 /**
- * @typedef { import("./baseModelAttributes.js").baseAttributes & ArrivalAttribute} ArrivalAttributes
- */
-
-/**
- * @typedef {import("sequelize").Model<ArrivalAttributes, ArrivalAttributes> & ArrivalAttributes} ArrivalInstance
+ * @typedef {import("sequelize").Model<ArrivalAttributes, ArrivalCreateAttributes> & ArrivalAttributes} ArrivalInstance
  * @property {Function} getCategorie
  * @property {Function} getSubcategorie
  * @property {Function} getCollectionPoint

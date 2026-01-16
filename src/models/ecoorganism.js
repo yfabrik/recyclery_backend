@@ -6,21 +6,21 @@ import { Model } from "sequelize";
  */
 export default (sequelize, DataTypes) => {
   class EcoOrganism extends Model {
-/**
-     *@param {import ('./types/models.js').models} models
-     */
+    /**
+         *@param {import ('./types/models.js').models} models
+         */
     static associate(models) {
       // define association here
     }
   }
   EcoOrganism.init({
-    name: DataTypes.STRING,
+    name: { type: DataTypes.STRING, unique: true },
     description: DataTypes.STRING,
-    contact_email: DataTypes.STRING,
-    contact_phone: DataTypes.STRING,
+    contact_email: { type: DataTypes.STRING, validate: { isEmail: true } },
+    contact_phone: { type: DataTypes.STRING, validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ } },
     address: DataTypes.STRING,
-    website: DataTypes.STRING,
-    is_active: DataTypes.BOOLEAN
+    website: { type: DataTypes.STRING, validate: { isUrl: true } },
+    is_active: { type: DataTypes.BOOLEAN, defaultValue: true }
   }, {
     sequelize,
     modelName: 'EcoOrganism',

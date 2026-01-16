@@ -37,14 +37,15 @@ export default (sequelize, DataTypes) => {
       });
     }
   }
+
   Recyclery.init(
     {
       name: { type: DataTypes.STRING, allowNull: false },
       address: DataTypes.TEXT,
-      phone: DataTypes.STRING,
-      email: DataTypes.STRING,
+      phone: { type: DataTypes.STRING, validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ } },
+      email: { type: DataTypes.STRING, validate: { isEmail: true } },
       city: DataTypes.STRING,
-      postal_code: DataTypes.STRING,
+      postal_code: {type:DataTypes.STRING,validate:{is:/^(?:0[1-9]|[1-8]\d|9[0-8])\d{3}$/}},
       is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
     },
     {

@@ -18,19 +18,21 @@ export default (sequelize, DataTypes) => {
       // this.belongsTo(models.User, { foreignKey: "assigned_to" });
     }
   }
+      
+      // receipt_number: DataTypes.STRING, //assoc ?
   TaskSchedule.init(
     {
       name: DataTypes.STRING,
       description: DataTypes.TEXT,
-      category: DataTypes.STRING,
+      category: {type:DataTypes.ENUM("vente","point","collection","custom"),allowNull:false},
       priority: DataTypes.STRING,
-      estimated_duration: DataTypes.INTEGER,
+      // estimated_duration: DataTypes.INTEGER,
       required_skills: DataTypes.TEXT,
       location: DataTypes.STRING,
       equipment_needed: DataTypes.TEXT,
       hourly_rate: DataTypes.DECIMAL,
 
-      is_recurring: DataTypes.BOOLEAN,
+      is_recurring: {type:DataTypes.BOOLEAN,defaultValue:true},
       // assigned_to: DataTypes.INTEGER,//assoc
       notes: DataTypes.TEXT,
       status: DataTypes.STRING,
@@ -42,7 +44,7 @@ export default (sequelize, DataTypes) => {
       end_time: DataTypes.TIME,
       // status: DataTypes.STRING,
       // notes: DataTypes.TEXT,
-      recurrence_pattern: DataTypes.STRING,
+      recurrence_pattern: DataTypes.ENUM("daily","weekly","monthly"),
     },
     {
       sequelize,

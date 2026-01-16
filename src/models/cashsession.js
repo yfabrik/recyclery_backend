@@ -18,11 +18,11 @@ export default (sequelize, DataTypes) => {
   }
   CashSession.init(
     {
-      session_number: DataTypes.STRING, //could be id
-      opening_amount: DataTypes.DECIMAL,
-      closing_amount: DataTypes.DECIMAL,
-      expected_amount: DataTypes.DECIMAL, //computed field ?
-      difference_amount: DataTypes.DECIMAL, //computed field ?
+      // session_number: DataTypes.STRING, //could be id
+      opening_amount: {type:DataTypes.DECIMAL(10,2),allowNull:false},
+      closing_amount: DataTypes.DECIMAL(10,2),
+      expected_amount: DataTypes.DECIMAL(10,2), //computed field ?
+      difference_amount: DataTypes.DECIMAL(10,2), //computed field ?
       status: { type: DataTypes.ENUM("open", "close"), defaultValue: "open" }, //tant que closed at existe pas status == open else open==false so => isOpen ? compouted ?
       notes: DataTypes.TEXT,
       // opened_at DATETIME DEFAULT CURRENT_TIMESTAMP, //createdAt
