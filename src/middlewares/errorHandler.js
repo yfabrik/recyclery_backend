@@ -9,7 +9,13 @@ import jwt from "jsonwebtoken";
 import { ZodError } from "zod";
 const { JsonWebTokenError, NotBeforeError, TokenExpiredError } = jwt
 
-
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ * @param {import("express").NextFunction} next 
+ * @param {import("express").ErrorRequestHandler} err  
+ */
 export const errorHandler = (err, req, res, next) => {
   logger.error(err?.message || "Unhandled error", {
     method: req?.method,

@@ -5,6 +5,12 @@ import db from  "../models/index.js"
 
 const { User } = db
 
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ * @param {import("express").NextFunction} next 
+ */
 export const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers["authorization"];
