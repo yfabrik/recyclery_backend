@@ -1,6 +1,7 @@
 import { col, fn, literal, Op } from "sequelize";
 import db from "../../models/index.js";
-
+import createHttpError from "http-errors";
+import * as z from "zod"
 const { Arrival, Category, User, CollectionPoint } = db;
 /**
  * 
@@ -8,7 +9,15 @@ const { Arrival, Category, User, CollectionPoint } = db;
  * @param {import("express").Response} res 
  */
 export const listArrivals = async (req, res) => {
-  const { date_from, date_to, category_id, source_type, status } = req.query;
+  const filterSchema = z.object({
+    category_id: z.coerce.number().positive().optional(),
+    source_type: z.enum(["point", "apport", "house_clearance"]).optional(),
+    status: z.enum(["received"]).optional(),
+    date_from: z.coerce.date(),
+    date_to: z.coerce.date(),
+
+  })
+  const filter = filterSchema.parse(req.query)
   /**
  * @type {import("sequelize").WhereOptions}
  */
@@ -23,9 +32,9 @@ export const listArrivals = async (req, res) => {
   // if (date_to) {
   //   where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
   // }
-  if (category_id) where.category_id = category_id;
-  if (source_type) where.source_type = source_type;
-  if (status) where.status = status;
+  if (filter.category_id) where.category_id = filter.category_id;
+  if (filter.source_type) where.source_type = filter.source_type;
+  if (filter.status) where.status = filter.status;
   const arrivals = await Arrival.findAll({
     where,
     include: [
@@ -57,12 +66,7 @@ export const detailArrival = async (req, res) => {
       { model: CollectionPoint },
     ],
   });
-  if (!arrival) {
-    return res.status(404).json({
-      success: false,
-      error: "Arrivage non trouvé",
-    });
-  }
+  if (!arrival) throw new createHttpError[404]("Arrivage non trouvé")
   res.json({
     success: true,
     arrival: arrival,
@@ -74,57 +78,40 @@ export const detailArrival = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createArrival = async (req, res) => {
-  const {
-    category_id,
-    subcategory_id,
-    weight,
-    arrival_date,
-    arrival_time,
-    source_type,
-    source_details,
-    collection_point_id,
-    collection_point_name,
-    collection_point_address,
-    volunteer_donation,
-    house_clearance,
-    notes,
-  } = req.body;
-
-  // Validation
-  if (!category_id || !weight || !arrival_date || !source_type) {
-    return res.status(400).json({
-      success: false,
-      error:
-        "La catégorie, le poids, la date d'arrivage et le type de source sont requis",
-    });
-  }
-
-  const category = await Category.findByPk(category_id);
+  const dataSchema = z.object({
+    category_id: z.coerce.number().positive("catégorie requis"),
+    weight: z.coerce.number().positive("poids requis"),
+    arrival_date: z.date("date d'arrivage requis"),
+    arrival_time: z.date(" date d'arrivage requis"),
+    source_type: z.enum(["point", "apport", "house_clearance"]),
+    source_details: z.string().optional(),
+    collection_point_id: z.coerce.number().positive(),
+    collection_point_name: z.string().optional(),
+    collection_point_address: z.string().optional(),
+    notes: z.string().optional(),
+  })
+  const data = dataSchema.parse(req.body)
+  const category = await Category.findByPk(data.category_id);
   // Vérifier si la catégorie existe
-
-  if (!category) {
-    return res.status(400).json({
-      success: false,
-      error: "Catégorie non trouvée",
-    });
-  }
+  if (!category) throw new createHttpError[404]("Catégorie non trouvée")
 
 
   const arrival = await Arrival.create({
-    arrival_number: generateArrivalNumber(),
-    category_id,
-    subcategory_id,
-    weight,
-    arrival_date,
-    arrival_time,
-    source_type,
-    source_details,
-    collection_point_id:collection_point_id ? collection_point_id:null,
-    collection_point_name:collection_point_id ? collection_point_name:null,
-    collection_point_address:collection_point_id ? collection_point_address:null,
-    volunteer_donation,
-    house_clearance,
-    notes,
+    ...data,
+    // arrival_number: generateArrivalNumber(),
+    // category_id,
+    // subcategory_id,
+    // weight,
+    // arrival_date,
+    // arrival_time,
+    // source_type,
+    // source_details,
+    // collection_point_id: collection_point_id ? collection_point_id : null,
+    // collection_point_name: collection_point_id ? collection_point_name : null,
+    // collection_point_address: collection_point_id ? collection_point_address : null,
+    // volunteer_donation,
+    // house_clearance,
+    // notes,
     processed_by: req.user.id,
   });
 
@@ -140,55 +127,38 @@ export const createArrival = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const updateArrival = async (req, res) => {
+  //TODO ZOD
+  const dataSchema = z.object({
+    category_id: z.coerce.number().positive("catégorie requis"),
+    weight: z.coerce.number().positive("poids requis"),
+    arrival_date: z.date("date d'arrivage requis"),
+    arrival_time: z.date(" date d'arrivage requis"),
+    source_type: z.enum(["point", "apport", "house_clearance"]),
+    source_details: z.string().optional(),
+    collection_point_id: z.coerce.number().positive(),
+    collection_point_name: z.string().optional(),
+    collection_point_address: z.string().optional(),
+    notes: z.string().optional(),
+  })
   const { id } = req.params;
-  const {
-    category_id,
-    subcategory_id,
-    weight,
-    arrival_date,
-    arrival_time,
-    source_type,
-    source_details,
-    collection_point_id,
-    collection_point_name,
-    collection_point_address,
-    volunteer_donation,
-    house_clearance,
-    notes,
-    status,
-  } = req.body;
+  const data = dataSchema.parse(req.body)
 
-  // Validation
-  if (!category_id || !weight || !arrival_date || !source_type) {
-    return res.status(400).json({
-      success: false,
-      error:
-        "La catégorie, le poids, la date d'arrivage et le type de source sont requis",
-    });
-  }
   const arrival = await Arrival.findByPk(id);
   // Vérifier si l'arrivage existe
 
-  if (!arrival) {
-    return res.status(404).json({
-      success: false,
-      error: "Arrivage non trouvé",
-    });
-  }
-  arrival.category_id = category_id;
-  arrival.subcategory_id = subcategory_id;
-  arrival.weight = weight;
-  arrival.arrival_date = arrival_date;
-  arrival.arrival_time = arrival_time;
-  arrival.source_type = source_type;
-  arrival.source_details = source_details;
-  arrival.collection_point_id = collection_point_id;
-  arrival.collection_point_name = collection_point_name;
-  arrival.collection_point_address = collection_point_address;
-  arrival.volunteer_donation = volunteer_donation;
-  arrival.house_clearance = house_clearance;
-  arrival.notes = notes;
-  arrival.status = status;
+  if (!arrival) throw new createHttpError[404]("Arrivage non trouvé")
+
+
+  arrival.category_id = data.category_id;
+  arrival.weight = data.weight;
+  arrival.arrival_date = data.arrival_date;
+  arrival.arrival_time = data.arrival_time;
+  arrival.source_type = data.source_type;
+  arrival.source_details = data.source_details;
+  arrival.collection_point_id = data.collection_point_id;
+
+  arrival.notes = data.notes;
+  // arrival.status = data.status;
 
   await arrival.save();
 
@@ -206,12 +176,7 @@ export const deleteArrival = async (req, res) => {
   const { id } = req.params;
   const arrival = await Arrival.destroy({ where: { id } });
   // Vérifier si l'arrivage existe
-  if (!arrival) {
-    return res.status(404).json({
-      success: false,
-      error: "Arrivage non trouvé",
-    });
-  }
+  if (!arrival) throw new createHttpError[404]("Arrivage non trouvé")
   res.json({
     success: true,
     message: "Arrivage supprimé avec succès",
