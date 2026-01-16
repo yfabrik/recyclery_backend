@@ -123,20 +123,10 @@ export const assignUserToStore = async (req, res) => {
     include: [{ model: Recyclery, as: "stores" }],
   });
 
-  if (!employee) {
-    return res.status(404).json({
-      success: false,
-      error: "Employé non trouvé",
-    });
-  }
+  if (!employee)  throw new createHttpError[404]("Employé non trouvé")
   const store = await Recyclery.findByPk(store_id);
 
-  if (!store) {
-    return res.status(404).json({
-      success: false,
-      error: "Magasin non trouvé",
-    });
-  }
+  if (!store) throw new createHttpError[404]("Magasin non trouvé")
 
   const niquetoi = await EmployeeStore.create({
     employee_id: employee.id,

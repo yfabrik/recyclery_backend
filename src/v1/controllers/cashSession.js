@@ -3,6 +3,7 @@ import db from "../../models/index.js";
 
 import { listCaisses } from "./cashRegister.js";
 import logger from "../../services/logger.js";
+import createHttpError from "http-errors";
 const {
   CashSession,
   CashRegister,
@@ -96,7 +97,7 @@ export const openCashSession = async (req, res) => {
   const { cash_register_id, store_id, opening_amount, notes } = req.body;
   const userId = req.user.id;
 
-  if (!cash_register_id || !store_id || opening_amount === undefined)
+  if (!cash_register_id || !store_id || opening_amount === undefined) 
     return res.status(400).json({ success: false, message: "Missing fields" });
 
   const existing = await CashSession.findOne({
@@ -144,11 +145,8 @@ export const closeCashSession = async (req, res) => {
   const session = await CashSession.findOne({
     where: { id, user_id: userId, status: "open" },
   });
-  if (!session)
-    return res.status(404).json({
-      success: false,
-      message: "Session not found or already closed",
-    });
+  if (!session)  throw new createHttpError[404]("Session not found or already closed")
+   
 
   const sales = await SalesTransaction.findAll({
     where: { cash_session_id: id },

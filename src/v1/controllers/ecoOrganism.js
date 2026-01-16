@@ -1,5 +1,6 @@
 import { col, fn, literal, Op } from "sequelize";
 import db from "../../models/index.js";
+import createHttpError from "http-errors";
 
 const { EcoOrganism, WasteDisposal } = db;
 /**
@@ -39,9 +40,8 @@ export const detailEcoOrganism = async (req, res) => {
   const { id } = req.params;
   const eco_organism = await EcoOrganism.findByPk(id);
 
-  if (!eco_organism) {
-    return res.status(404).json({ error: "Éco-organisme non trouvé" });
-  }
+  if (!eco_organism) throw new createHttpError[404]("Éco-organisme non trouvé") 
+
   res.json({ eco_organism });
 };
 /**
@@ -64,14 +64,14 @@ export const createEcoOrganism = async (req, res) => {
     return res.status(400).json({ error: "Le nom est requis" });
   }
 
-  // Check if name already exists
-  const existing = await EcoOrganism.findOne({ where: { name } });
+  // // Check if name already exists
+  // const existing = await EcoOrganism.findOne({ where: { name } });
 
-  if (existing) {
-    return res
-      .status(400)
-      .json({ error: "Un éco-organisme avec ce nom existe déjà" });
-  }
+  // if (existing) {
+  //   return res
+  //     .status(400)
+  //     .json({ error: "Un éco-organisme avec ce nom existe déjà" });
+  // }
 
   const activeStatus = is_active === undefined ? 1 : is_active ? 1 : 0;
 
@@ -111,16 +111,16 @@ export const updateEcoOrganism = async (req, res) => {
     return res.status(400).json({ error: "Le nom est requis" });
   }
 
-  // Check if name already exists for different eco-organism
-  const existing = await EcoOrganism.findOne({
-    where: { name, id: { [Op.ne]: id } },
-  });
+  // // Check if name already exists for different eco-organism
+  // const existing = await EcoOrganism.findOne({
+  //   where: { name, id: { [Op.ne]: id } },
+  // });
 
-  if (existing) {
-    return res
-      .status(400)
-      .json({ error: "Un éco-organisme avec ce nom existe déjà" });
-  }
+  // if (existing) {
+  //   return res
+  //     .status(400)
+  //     .json({ error: "Un éco-organisme avec ce nom existe déjà" });
+  // }
 
   const activeStatus = is_active === undefined ? 1 : is_active ? 1 : 0;
   const eco_organism = await EcoOrganism.findByPk(id);

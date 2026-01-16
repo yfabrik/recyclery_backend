@@ -3,6 +3,7 @@ import { col, fn, literal, Op } from "sequelize";
 import * as z from "zod"
 import db from "../../models/index.js";
 import category from "../../models/category.js";
+import createHttpError from "http-errors";
 
 const { TaskSchedule, Task, User, Recyclery, EmployeeWorkdays, CollectionPoint } = db;
 
@@ -278,6 +279,7 @@ export const createSchedule = async (req, res) => {
         },
     };
     // Vérifier que la tâche existe (seulement si task_id est fourni)
+    //FIXME the fuck ?
     if (task_id) {
         const tasks = await Task.findByPk(task_id);
 
@@ -367,12 +369,8 @@ export const updateSchedule = async (req, res) => {
     // Vérifier que le planning existe
     const existingSchedules = await TaskSchedule.findByPk(id);
 
-    if (!existingSchedules) {
-        return res.status(404).json({
-            success: false,
-            message: "Planning non trouvé",
-        });
-    }
+    if (!existingSchedules)throw new createHttpError[404]("Planning non trouvé") 
+    
 
     // Vérifier les conflits d'horaires (sauf pour le planning en cours de modification)
     if (assigned_to && scheduled_date && start_time && end_time) {
@@ -434,12 +432,7 @@ export const deleteSchedule = async (req, res) => {
 
     const result = await TaskSchedule.destroy({ where: { id } });
 
-    if (result === 0) {
-        return res.status(404).json({
-            success: false,
-            message: "Planning non trouvé",
-        });
-    }
+    if (result === 0)throw new createHttpError[404]("Planning non trouvé") 
 
     res.json({
         success: true,
@@ -508,12 +501,7 @@ export const addEmployeeToSchedule = async (req, res) => {
         include: [{ model: User }],
     });
 
-    if (!task) {
-        return res.status(404).json({
-            success: false,
-            message: "Tâche du planning non trouvée",
-        });
-    }
+    if (!task)throw new createHttpError[404]("Tâche du planning non trouvée") 
 
     const currentSchedule = task;
 
@@ -536,21 +524,11 @@ export const addEmployeeToSchedule = async (req, res) => {
         ],
     });
 
-    if (employee.length === 0) {
-        return res.status(404).json({
-            success: false,
-            message: `Employé non trouvé, n'appartient pas à ce magasin ou ne travaille pas le ${dayOfWeek}`,
-        });
-    }
+    if (employee.length === 0)throw new createHttpError[404](`Employé non trouvé, n'appartient pas à ce magasin ou ne travaille pas le ${dayOfWeek}`)
 
     // Vérifier si l'assignation existe déjà
 
-    if (task.Users.includes(employee[0].id)) {
-        return res.status(400).json({
-            success: false,
-            message: "Cet employé est déjà assigné à cette tâche",
-        });
-    }
+    if (task.Users.includes(employee[0].id))throw new createHttpError.Conflict("Cet employé est déjà assigné à cette tâche") 
 
     // NOUVELLE LOGIQUE : Vérifier les conflits d'horaires
 
@@ -635,13 +613,7 @@ export const removeEmployeeFromSchedule = async (req, res) => {
     //   // where: { schedule_id: scheduleId, employee_id: employeeId },
     // });
 
-    if (result === 0) {
-        return res.status(404).json({
-            success: false,
-            message: "Assignation non trouvée",
-        });
-    }
-
+    if (result === 0)throw new createHttpError[404]("Assignation non trouvée")
     res.json({
         success: true,
         message: "Employé retiré avec succès",
@@ -662,12 +634,7 @@ export const findAvailableEMployee = async (req, res) => {
         include: [{ model: User }],
     });
 
-    if (!schedule) {
-        return res.status(404).json({
-            success: false,
-            message: "Tâche non trouvée",
-        });
-    }
+    if (!schedule)throw new createHttpError[404]( "Tâche non trouvée") 
 
     const currentSchedule = schedule;
 

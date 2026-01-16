@@ -93,9 +93,7 @@ export const detailWaste = async (req, res) => {
     ],
   });
 
-  if (!waste) {
-    return res.status(404).json({ error: "Sortie de déchets non trouvée" });
-  }
+  if (!waste)throw new createHttpError[404]("Sortie de déchets non trouvée") 
   res.json({ disposal: waste });
 };
 /**
@@ -215,9 +213,7 @@ export const deleteWaste = async (req, res) => {
 
   const deleted = await WasteDisposal.destroy({ where: { id } });
 
-  if (deleted === 0) {
-    return res.status(404).json({ error: "Sortie de déchets non trouvée" });
-  }
+  if (deleted === 0)throw new createHttpError[404]("Sortie de déchets non trouvée") 
   res.json({ message: "Sortie de déchets supprimée avec succès" });
 };
 /**

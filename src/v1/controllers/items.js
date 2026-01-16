@@ -1,3 +1,4 @@
+import createHttpError from "http-errors";
 import db from "../../models/index.js";
 
 import { Op } from "sequelize";
@@ -74,11 +75,7 @@ export const getItemFromBarcode = async (req, res) => {
   const { barcode } = req.params;
   const item = await LabeledItem.findOne({ where: { barcode: barcode } });
 
-  if (!item) {
-    return res
-      .status(404)
-      .json({ success: false, error: "Article non trouvé" });
-  }
+  if (!item)throw new createHttpError[404]("Article non trouvé") //TODO barcode as query param
 
   res.json({ success: true, item });
 };
@@ -241,11 +238,7 @@ export const deleteLabeledItem = async (req, res) => {
   const { id } = req.params;
   const deleted = await LabeledItem.destroy({ where: { id } });
 
-  if (deleted === 0) {
-    return res
-      .status(404)
-      .json({ success: false, error: "Article non trouvé" });
-  }
+  if (deleted === 0)throw new createHttpError[404]("Article non trouvé") 
 
   res.json({ success: true, message: "Article supprimé avec succès" });
 };

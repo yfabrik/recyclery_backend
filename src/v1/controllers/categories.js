@@ -3,6 +3,7 @@ import { Op } from "sequelize";
 import db from "../../models/index.js"
 import * as z from "zod"
 import logger from "../../services/logger.js";
+import createHttpError from "http-errors";
 const { Category } = db
 
 const dataSchema = z.object({
@@ -55,7 +56,6 @@ export const listCategories = async (req, res) => {
     if (filters.include.includes("Category"))
         include.push({ model: Category, as: "subcategories" })
 
-    // const categories = await Category.findAll({ where: { parent_id: { [Op.is]: null } }, include: [{ model: Category, as: "subcategories" }] });
     const categories = await Category.findAll({ where, include });
 
 
@@ -109,12 +109,8 @@ export const createCategorie = async (req, res) => {
     // Vérifier si la catégorie existe déjà
     const existingCategory = await findExistingCategory(data.name, data.parent_id)
 
-    if (existingCategory) {
-        return res.status(400).json({
-            success: false,
-            error: "Une catégorie avec ce nom existe déjà",
-        });
-    }
+    if (existingCategory)  throw new createHttpError[404]("Une catégorie avec ce nom existe déjà")//TODO hook
+
     const category = await Category.create({
         ...data
     });
@@ -132,17 +128,8 @@ export const createCategorie = async (req, res) => {
  */
 export const deleteCategorie = async (req, res) => {
     const { id } = req.params;
-    //TODO cascade delete les subcategories
-    // const subcategories = await Category.findOne({ where: {parent_id: id} })
-    // if(subcategories) return res.status(403).json({succes:false,message:"cant delete, still subcategories"})
     const deleted = await Category.destroy({ where: { id } });
-    if (deleted == 0)
-        return res.status(404).json({
-            success: false,
-            error: "Catégorie non trouvée",
-        });
-    // Vérifier si la catégorie existe
-
+    if (deleted == 0)  throw new createHttpError[404]("Catégorie non trouvée")
     res.json({
         success: true,
         message: "Catégorie supprimée avec succès",
@@ -169,22 +156,13 @@ export const updateCategorie = async (req, res) => {
     const category = await Category.findByPk(id);
 
     // Vérifier si la catégorie existe
-    if (!category) {
-        return res.status(404).json({
-            success: false,
-            error: "Catégorie non trouvée",
-        });
-    }
+    if (!category) throw new createHttpError[404]("Catégorie non trouvée")
 
     // Vérifier si le nouveau nom n'est pas déjà utilisé
     const existingCategory = await findExistingCategory(data.name, category.parent_id)
 
-    if (existingCategory && existingCategory.id != category.id) {
-        return res.status(400).json({
-            success: false,
-            error: "Une catégorie avec ce nom existe déjà",
-        });
-    }
+    if (existingCategory && existingCategory.id != category.id)  throw new createHttpError[404]("Une catégorie avec ce nom existe déjà")//TODO make hook
+
     category.name = data.name;
     category.icon = data.icon;
     category.description = data.description;

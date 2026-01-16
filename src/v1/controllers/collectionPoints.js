@@ -1,5 +1,6 @@
 import { col, fn, Op, where } from "sequelize";
 import db from "../../models/index.js";
+import createHttpError from "http-errors";
 
 const { CollectionPoint, Recyclery, CollectionSchedule } = db;
 /**
@@ -38,12 +39,7 @@ export const detailCollectionPoint = async (req, res) => {
     include: [{ model: Recyclery }],
   });
 
-  if (!point) {
-    return res.status(404).json({
-      success: false,
-      error: "Point de collecte non trouvé",
-    });
-  }
+  if (!point)  throw new createHttpError[404]("Point de collecte non trouvé")
 
   res.json({
     success: true,
@@ -77,15 +73,6 @@ export const createCollectionPoint = async (req, res) => {
     });
   }
 
-  // Vérifier si un point avec le même nom existe déjà
-  const existing = await CollectionPoint.findOne({ where: { name } });
-
-  if (existing) {
-    return res.status(400).json({
-      success: false,
-      error: "Un point de collecte avec ce nom existe déjà",
-    });
-  }
   const point = await CollectionPoint.create({
     name,
     address,
@@ -137,24 +124,19 @@ export const updateCollectionPoint = async (req, res) => {
   const point = await CollectionPoint.findByPk(id);
   // Vérifier si le point existe
 
-  if (!point) {
-    return res.status(404).json({
-      success: false,
-      error: "Point de collecte non trouvé",
-    });
-  }
-  const existing = await CollectionPoint.findOne({
-    where: { name, id: { [Op.ne]: id } },
-  });
+  if (!point) throw new createHttpError[404]("Point de collecte non trouvé") 
+  // const existing = await CollectionPoint.findOne({
+  //   where: { name, id: { [Op.ne]: id } },
+  // });
 
-  // Vérifier si le nouveau nom n'est pas déjà utilisé
+  // // Vérifier si le nouveau nom n'est pas déjà utilisé
 
-  if (existing) {
-    return res.status(400).json({
-      success: false,
-      error: "Un point de collecte avec ce nom existe déjà",
-    });
-  }
+  // if (existing) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     error: "Un point de collecte avec ce nom existe déjà",
+  //   });
+  // }
   point.name = name;
   point.address = address;
   point.city = city;
@@ -183,23 +165,19 @@ export const deleteCollectionPoint = async (req, res) => {
 
   const point = await CollectionPoint.findByPk(id);
   // Vérifier si le point existe
-  if (!point) {
-    return res.status(404).json({
-      success: false,
-      error: "Point de collecte non trouvé",
-    });
-  }
+  if (!point) throw new createHttpError[404]("Point de collecte non trouvé")
+  await point.destroy()
 
-  const scheduled = await point.getCollectionSchedules();
-  // Vérifier s'il y a des collectes programmées
-  if (scheduled.count > 0) {
-    return res.status(400).json({
-      success: false,
-      error:
-        "Impossible de supprimer un point de collecte qui a des collectes programmées",
-    });
-  }
-  await CollectionPoint.destroy({ where: { id } });
+  // const scheduled = await point.getCollectionSchedules();
+  // // Vérifier s'il y a des collectes programmées
+  // if (scheduled.count > 0) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     error:
+  //       "Impossible de supprimer un point de collecte qui a des collectes programmées",
+  //   });
+  // }
+  // await CollectionPoint.destroy({ where: { id } });
   // Supprimer le point de collecte
 
   res.json({

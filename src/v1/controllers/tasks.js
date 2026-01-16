@@ -2,6 +2,7 @@ import { Op } from "sequelize";
 import db from "../../models/index.js";
 import * as z from "zod";
 import collection from "../../models/poubelle/collection.js";
+import createHttpError from "http-errors";
 
 const { Task, User, TaskSchedule } = db;
 
@@ -101,12 +102,7 @@ export const detailTask = async (req, res) => {
   const { id } = req.params;
   const tasks = await Task.findByPk(id);
 
-  if (!tasks) {
-    return res.status(404).json({
-      success: false,
-      message: "Tâche non trouvée",
-    });
-  }
+  if (!tasks)throw new createHttpError[404]("Tâche non trouvée")
 
   // Parser les champs JSON
   const task = {
@@ -209,12 +205,7 @@ export const updateTask = async (req, res) => {
   // Vérifier que la tâche existe
   const existing = await Task.findByPk(id);
 
-  if (!existing) {
-    return res.status(404).json({
-      success: false,
-      message: "Tâche non trouvée",
-    });
-  }
+  if (!existing) throw new createHttpError[404]("Tâche non trouvée")
 
   existing.name = data.name;
   existing.description = data.description;
@@ -245,16 +236,8 @@ export const updateTask = async (req, res) => {
 export const deleteTask = async (req, res) => {
   const { id } = req.params;
   const existing = await Task.findByPk(id);
-
-  // Vérifier que la tâche existe
-
-  if (!existing) {
-    return res.status(404).json({
-      success: false,
-      message: "Tâche non trouvée",
-    });
-  }
-  await Task.destroy({ where: { id } });
+  if (!existing) throw new createHttpError[404]("Tâche non trouvée") 
+  await existing.destroy();
 
   res.json({
     success: true,
@@ -297,22 +280,12 @@ export const addUserToTask = async (req, res) => {
 
   // Vérifier que la tâche existe
 
-  if (!task) {
-    return res.status(404).json({
-      success: false,
-      message: "Tâche non trouvée",
-    });
-  }
+  if (!task)throw new createHttpError[404]("Tâche non trouvée")
 
   // Vérifier que l'employé existe
   const employee = await User.findByPk(employee_id);
 
-  if (!employee) {
-    return res.status(404).json({
-      success: false,
-      message: "Employé non trouvé",
-    });
-  }
+  if (!employee)throw new createHttpError[404]("Employé non trouvé") 
 
   //FIXME
   // if (task.hasUser(employee))
