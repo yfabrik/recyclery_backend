@@ -5,7 +5,7 @@
  * @property {string} [donor_email] - Email address of the donor
  * @property {string} item_description - Description of the donated items
  * @property {number} [estimated_value] - Estimated monetary value of the donation
- * @property {string} [status] - Status of the donation (default: "pending")
+ * @property {"pending"| "accepted"| "rejected"} [status] - Status of the donation (default: "pending")
  * @property {Date|string} [received_at] - Date and time when the donation was received
  * @property {number|null} [recyclery_id] - Foreign key reference to the associated Recyclery
  * @property {number|null} [received_by] - Foreign key reference to the User who received the donation

@@ -13,12 +13,14 @@ export default (sequelize, DataTypes) => {
     static associate(models) {
       this.hasMany(models.LabeledItem, { foreignKey: "recyclery_id" });
       this.hasMany(models.Donation, { foreignKey: "recyclery_id" });
-      this.hasMany(models.CollectionSchedule, { foreignKey: "recyclery_id" });
-      this.hasMany(models.StoreHours, {
-        foreignKey: "store_id",
-        as: "horaires",
-        onDelete: "CASCADE" 
-      });
+      // this.hasMany(models.CollectionSchedule, { foreignKey: "recyclery_id" });
+      // this.hasMany(models.StoreHours, {
+      //   foreignKey: "store_id",
+      //   as: "horaires",
+      //   onDelete: "CASCADE" 
+      // });
+      this.hasMany(models.Task, { onDelete: "CASCADE" })//ouverture boutique + ?
+      this.hasMany(models.TaskSchedule, { onDelete: "CASCADE" })
 
       this.belongsToMany(models.User, {
         through: "EmployeeStore",
@@ -45,7 +47,7 @@ export default (sequelize, DataTypes) => {
       phone: { type: DataTypes.STRING, validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ } },
       email: { type: DataTypes.STRING, validate: { isEmail: true } },
       city: DataTypes.STRING,
-      postal_code: {type:DataTypes.STRING,validate:{is:/^(?:0[1-9]|[1-8]\d|9[0-8])\d{3}$/}},
+      postal_code: { type: DataTypes.STRING, validate: { is: /^(?:0[1-9]|[1-8]\d|9[0-8])\d{3}$/ } },
       is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
     },
     {
@@ -57,13 +59,13 @@ export default (sequelize, DataTypes) => {
           const CashRegister = recyclery.sequelize.models.CashRegister;
           if (CashRegister) {
             const caisses = await recyclery.getCaisses();
-            
+
             // Check each cash register for open sessions
             for (const caisse of caisses) {
-              const openSessions = await caisse.countSessions({ 
-                where: { status: "open" } 
+              const openSessions = await caisse.countSessions({
+                where: { status: "open" }
               });
-              
+
               if (openSessions > 0) {
                 throw new createHttpError[424](
                   `Impossible de supprimer la recyclerie car la caisse "${caisse.name}" a des sessions ouvertes`

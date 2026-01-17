@@ -13,7 +13,7 @@ export default (sequelize, DataTypes) => {
       this.hasMany(models.Donation, { foreignKey: "received_by" });
       // this.hasMany(models.Collection, { foreignKey: "assigned_to" });
       this.hasMany(models.SalesTransaction, { foreignKey: "sold_by" });
-      this.belongsToMany(models.CollectionSchedule, { foreignKey: "employee_id", through: "user_schedule" });
+      // this.belongsToMany(models.CollectionSchedule, { foreignKey: "employee_id", through: "user_schedule" });
       this.hasMany(models.CollectionReceipt, { foreignKey: "processed_by" });
       this.hasMany(models.LabeledItem, { foreignKey: "created_by" });
       this.belongsToMany(models.Task, { through: "task_user" });
@@ -44,7 +44,7 @@ export default (sequelize, DataTypes) => {
         defaultValue: "employee",
       },
       phone:{ type: DataTypes.STRING, validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ } },
-      contract_hours: { type: DataTypes.INTEGER, defaultValue: 35 },
+      contract_hours: { type: DataTypes.INTEGER, defaultValue: 35 },//peut etre obtenu from employee workday ?
       isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
       last_login: DataTypes.DATE
     },

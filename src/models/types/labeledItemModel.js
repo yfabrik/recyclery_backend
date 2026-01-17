@@ -8,7 +8,7 @@
  * @property {number|string} [cost] - Cost/purchase price of the item (DECIMAL type)
  * @property {string} [condition_state] - Condition of the item (default: "good")
  * @property {string} [location] - Physical location where the item is stored
- * @property {string} [status] - Current status of the item (default: "available", e.g., "available", "sold", "reserved")
+ * @property {"available"| "sold"} [status] - Current status of the item (default: "available", e.g., "available", "sold", "reserved")
  * @property {Date|string} [sold_at] - Date and time when the item was sold
  * @property {number|null} [category_id] - Foreign key reference to the primary Category
  * @property {number|null} [subcategory_id] - Foreign key reference to the subcategory Category

@@ -22,8 +22,6 @@ export default (sequelize, DataTypes) => {
       item_description: DataTypes.TEXT,
       estimated_value: DataTypes.DECIMAL(10, 2),
       status: { type: DataTypes.ENUM("pending", "accepted", "rejected"), defaultValue: "pending" },
-      // recyclery_id: DataTypes.INTEGER,//assoc
-      // received_by: DataTypes.INTEGER,//assoc
       received_at: DataTypes.DATE,
     },
     {

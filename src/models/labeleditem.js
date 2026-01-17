@@ -31,30 +31,28 @@ export default (sequelize, DataTypes) => {
       //   foreignKey: "arrival_id",
       // });
 
-      this.belongsTo(models.User, {
-        as: "soldBy",
-        foreignKey: "sold_by",
-      });//TODO needed ? peut retrouvé depuis transaction
+      // this.belongsTo(models.User, {
+      //   as: "soldBy",
+      //   foreignKey: "sold_by",
+      // });//TODO needed ? peut retrouvé depuis transaction
 
       this.belongsTo(models.User, {
         as: "createdBy",
         foreignKey: "created_by",
       });
-      this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" });
+      this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" });//belong to many for historic and refund ?
     }
   }
   LabeledItem.init(
     {
       barcode: DataTypes.STRING,
-      // name: DataTypes.STRING,
+
       description: DataTypes.TEXT,
-      weight: DataTypes.DECIMAL(10, 2),
-      price: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+      weight: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0, validate: { min: 0 } },
+      price: { type: DataTypes.DECIMAL(10, 2), allowNull: false, validate: { min: 0 } },
       cost: { type: DataTypes.DECIMAL(10, 2) },
       condition_state: { type: DataTypes.ENUM("excellent", "good", "fair", "poor"), defaultValue: "good" },
-      // location: DataTypes.STRING,
       status: { type: DataTypes.ENUM("available", "sold"), defaultValue: "available" },
-      // sold_at: DataTypes.DATE, //assoc ???
     },
     {
       sequelize,

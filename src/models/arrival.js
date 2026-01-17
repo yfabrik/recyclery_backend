@@ -32,12 +32,12 @@ export default (sequelize, DataTypes) => {
   // leurs status evolue
   Arrival.init(
     {
-      arrival_number: DataTypes.STRING,// id ?
+      // arrival_number: DataTypes.STRING,// id ?
       // category_id: DataTypes.INTEGER,//assoc
       // subcategory_id: DataTypes.INTEGER,//assoc
       /** les infos sont dans collection receipt */
       weight: {type:DataTypes.DECIMAL(10,2),allowNull:false},
-      arrival_date: {type:DataTypes.DATE, defaultValue:DataTypes.NOW }, //TODO dateonly or merge with arrival time ?
+      arrival_date: {type:DataTypes.DATE, defaultValue:DataTypes.NOW }, //TODO dateonly or merge with arrival time ?// createdAt
       arrival_time: DataTypes.TIME,
       source_type: {type:DataTypes.ENUM("point","apport","house_clearance")}, //source table ?
       source_details: DataTypes.TEXT,

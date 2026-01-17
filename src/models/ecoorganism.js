@@ -10,11 +10,11 @@ export default (sequelize, DataTypes) => {
          *@param {import ('./types/models.js').models} models
          */
     static associate(models) {
-      // define association here
+      this.hasMany(models.WasteDisposal)
     }
   }
   EcoOrganism.init({
-    name: { type: DataTypes.STRING, unique: true },
+    name: { type: DataTypes.STRING, unique: true, allowNull: false },
     description: DataTypes.STRING,
     contact_email: { type: DataTypes.STRING, validate: { isEmail: true } },
     contact_phone: { type: DataTypes.STRING, validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ } },
