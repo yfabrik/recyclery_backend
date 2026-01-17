@@ -1,6 +1,8 @@
 import { col, fn, Op, where } from "sequelize";
 import db from "../../models/index.js";
 import createHttpError from "http-errors";
+import z from "zod";
+import { idSchema, nullishToNull, phoneSchema, postalSchema } from "../../services/zod.js";
 
 const { CollectionPoint, Recyclery, CollectionSchedule } = db;
 /**
@@ -9,12 +11,15 @@ const { CollectionPoint, Recyclery, CollectionSchedule } = db;
  * @param {import("express").Response} res 
  */
 export const listCollectionPoints = async (req, res) => {
-  const { active_only } = req.query;
-    /**
-   * @type {import("sequelize").WhereOptions}
-   */
-  const where = {};
-  if (active_only === "true") where.is_active = 1;
+  const filterSchema = z.object({
+    active_only: z.coerce.boolean().optional()
+  })
+  const filter = filterSchema.parse(req.query)
+  /**
+ * @type {import("sequelize").WhereOptions}
+ */
+  const where = { ...filter };
+  // if (typeof filter.active_only == "boolean") where.is_active = filter.active_only;
 
   const collection_points = await CollectionPoint.findAll({
     where,
@@ -33,13 +38,14 @@ export const listCollectionPoints = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const detailCollectionPoint = async (req, res) => {
-  const { id } = req.params;
+  const id = idSchema().parse(req.params.id);
+
 
   const point = await CollectionPoint.findByPk(id, {
     include: [{ model: Recyclery }],
   });
 
-  if (!point)  throw new createHttpError[404]("Point de collecte non trouvé")
+  if (!point) throw new createHttpError[404]("Point de collecte non trouvé")
 
   res.json({
     success: true,
@@ -52,38 +58,23 @@ export const detailCollectionPoint = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createCollectionPoint = async (req, res) => {
-  const {
-    name,
-    address,
-    city,
-    postal_code,
-    contact_person,
-    contact_phone,
-    contact_email,
-    type,
-    notes,
-    recyclery_id,
-  } = req.body;
+  const dataSchema = z.object({
+    name: z.string().trim().nonempty("nom requis"),
+    address: z.string().trim().nonempty("addresse requis"),
+    city: z.string().trim().nonempty("ville requis"),
+    postal_code: postalSchema("code postal requis"),
+    contact_person: z.string().optional(),
+    contact_phone: phoneSchema().optional(),
+    contact_email: z.union([z.email(), z.literal("")]).optional(),
+    type: z.enum(["standard", "entreprise", "association", "school", "hospital", "other"]).optional(),
+    notes: z.string().optional(),
+    recyclery_id: idSchema().optional(),
+  })
+  const data = dataSchema.parse(req.body)
 
-  // Validation
-  if (!name || !address || !city || !postal_code) {
-    return res.status(400).json({
-      success: false,
-      error: "Le nom, l'adresse, la ville et le code postal sont requis",
-    });
-  }
 
   const point = await CollectionPoint.create({
-    name,
-    address,
-    city,
-    postal_code,
-    contact_person,
-    contact_phone,
-    contact_email,
-    type,
-    notes,
-    recyclery_id,
+    ...data
   });
 
   res.status(201).json({
@@ -98,33 +89,25 @@ export const createCollectionPoint = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const updateCollectionPoint = async (req, res) => {
-  const { id } = req.params;
-  const {
-    name,
-    address,
-    city,
-    postal_code,
-    contact_person,
-    contact_phone,
-    contact_email,
-    type,
-    notes,
-    is_active,
-    recyclery_id,
-  } = req.body;
-
-  // Validation
-  if (!name || !address || !city || !postal_code) {
-    return res.status(400).json({
-      success: false,
-      error: "Le nom, l'adresse, la ville et le code postal sont requis",
-    });
-  }
+  const dataSchema = z.object({
+    name: z.string().trim().nonempty("nom requis"),
+    address: z.string().trim().nonempty("addresse requis"),
+    city: z.string().trim().nonempty("ville requis"),
+    postal_code: postalSchema("code postal requis"),
+    contact_person: nullishToNull(z.string().optional()),
+    contact_phone: nullishToNull(phoneSchema().optional()),
+    contact_email: nullishToNull(z.union([z.email(), z.literal("")]).optional()),
+    type: nullishToNull(z.enum(["standard", "entreprise", "association", "school", "hospital", "other"]).optional()),
+    notes: nullishToNull(z.string().optional()),
+    recyclery_id: nullishToNull(idSchema().optional()),
+    is_active: z.coerce.boolean().optional().default(true),
+  })
+  const data = dataSchema.parse(req.body)
+  const id = idSchema().parse(req.params.id)
 
   const point = await CollectionPoint.findByPk(id);
   // Vérifier si le point existe
-
-  if (!point) throw new createHttpError[404]("Point de collecte non trouvé") 
+  if (!point) throw new createHttpError[404]("Point de collecte non trouvé")
   // const existing = await CollectionPoint.findOne({
   //   where: { name, id: { [Op.ne]: id } },
   // });
@@ -137,17 +120,10 @@ export const updateCollectionPoint = async (req, res) => {
   //     error: "Un point de collecte avec ce nom existe déjà",
   //   });
   // }
-  point.name = name;
-  point.address = address;
-  point.city = city;
-  point.postal_code = postal_code;
-  point.contact_person = contact_person;
-  point.contact_phone = contact_phone;
-  point.contact_email = contact_email;
-  point.type = type;
-  point.is_active = is_active;
-  point.recyclery_id = recyclery_id;
-  await point.save();
+  await point.update({
+    ...data
+  })
+
 
   res.json({
     success: true,
@@ -161,8 +137,7 @@ export const updateCollectionPoint = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const deleteCollectionPoint = async (req, res) => {
-  const { id } = req.params;
-
+  const id = idSchema().parse(req.params.id)
   const point = await CollectionPoint.findByPk(id);
   // Vérifier si le point existe
   if (!point) throw new createHttpError[404]("Point de collecte non trouvé")

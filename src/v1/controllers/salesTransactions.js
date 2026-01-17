@@ -1,13 +1,24 @@
 import { col, fn, literal, Op } from "sequelize";
 import db from "../../models/index.js";
+import z from "zod";
+import createHttpError from "http-errors";
 
-const { SalesTransaction, Recyclery, User, Refund, LabeledItem } = db;
+const { SalesTransaction, Recyclery, User, Refund, LabeledItem, CashSession } = db;
 /**
  *
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
 export const listTransactions = async (req, res) => {
+  const filterSchema = z.object({
+    store_id: z.coerce.number().positive().optional(),
+    // period,
+    // date_from,
+    // date_to,
+    limit: z.coerce.number().positive().default(50),
+    offset: z.coerce.number().nonnegative().default(0),
+  })
+  const filter = filterSchema.parse(req.query)
   const {
     store_id,
     period,
@@ -20,7 +31,7 @@ export const listTransactions = async (req, res) => {
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
-  if (store_id) where.store_id = store_id;
+  if (filter.store_id) where.store_id = filter.store_id;
   // if (date_from) {
   //     where.createdAt = {
   //         ...(where.createdAt || {}),
@@ -35,14 +46,16 @@ export const listTransactions = async (req, res) => {
     where,
     include: [{ model: Recyclery }, { model: User }],
     order: [["createdAt", "DESC"]],
+    limit: filter.limit,
+    offset: filter.offset
   });
 
   res.json({
     success: true,
     transactions: transactions,
     pagination: {
-      limit: parseInt(limit),
-      offset: parseInt(offset),
+      limit: filter.limit,
+      offset: filter.offset,
       total: transactions.length,
     },
   });
@@ -53,68 +66,117 @@ export const listTransactions = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createTransaction = async (req, res) => {
-  const {
-    cash_session_id,
-    store_id,
-    total_amount,
-    payment_method = "cash",
-    payment_amount,
-    change_amount = 0,
-    customer_name,
-    customer_email,
-    customer_postal_code,
-    items = [],
-  } = req.body;
+  const dataSchema = z.object({
+    cash_session_id: z.coerce.number().positive("sesions requis"),
+    store_id: z.coerce.number().positive("magasin requis"),
+    total_amount: z.coerce.number("argent requis"),
+    payment_method: z.enum(["cash", "card", "check"]).default("cash"),
+    payment_amount: z.coerce.number("argent requis"),
+    // change_amount = 0,
+    customer_name: z.string().optional(),
+    customer_email: z.string().optional(),
+    customer_postal_code: z.string().optional(),
+    items: z.array(z.union([z.number(), z.object({})])),
+  })
+  const data = dataSchema.parse(req.body)
+  const t = await db.sequelize.transaction()
+  const session = await CashSession.findByPk(data.cash_session_id)
+  if (!session) throw new createHttpError[404]("session non trouvé")
+  try {
+    const sale = await session.createTransaction({
+      total_amount: data.total_amount,
+      payment_method: data.payment_method,
+      payment_amount: data.payment_amount,
+      customer_email: data?.customer_email || null,
+      customer_name: data?.customer_name || null,
+      customer_postal_code: data?.customer_postal_code || null
+    }, { transaction: t })
+    for await (const item of data.items) {
+      if (typeof (item) == "number") {
+        const i = await LabeledItem.findByPk(item)
+        if (!i) throw new createHttpError.NotFound("item not found")
+        i.transaction_id = sale.id
+        i.status = "sold"
+        i.sold_by = req.user.id
+        i.sold_at = new Date()
+        await i.save({ transaction: t })
+      }
+      else {
+        const newItem = await LabeledItem.create({
+          category_id: item.category_id,
+          price: item.price,
+          weight: item.weight,
+          transaction_id: sale.id,
+          status: "sold",
+          sold_at: new Date(),
+          sold_by: req.user.id
+        }, { transaction: t })
+      }
+    }
 
-  // Validation
-  if (!cash_session_id || !store_id || !total_amount || !payment_amount) {
-    return res.status(400).json({
-      success: false,
-      error: "Données de transaction incomplètes",
+    await t.commit()
+
+    res.json({
+      success: true,
+      data: {
+        id: sale.id,
+
+        message: "Transaction créée avec succès",
+        sale,
+      },
     });
+  } catch (err) {
+    await t.rollback()
+    throw err
   }
 
-  // Générer un numéro de transaction unique
-  const timestamp = Date.now().toString();
-  const transactionNumber = `TXN${timestamp.slice(-8)}`;
 
-  // Insérer la transaction
-  const result = await SalesTransaction.create({
-    transaction_number: transactionNumber,
-    cash_session_id,
-    store_id,
-    total_amount,
-    payment_method,
-    payment_amount,
-    change_amount,
-    customer_name,
-    customer_email,
-    customer_postal_code,
-    createdBy: req.user.id,
-  });
+  // const {
+  //   cash_session_id,
+  //   store_id,
+  //   total_amount,
+  //   payment_method = "cash",
+  //   payment_amount,
+  //   change_amount = 0,
+  //   customer_name,
+  //   customer_email,
+  //   customer_postal_code,
+  //   items = [],
+  // } = req.body;
 
-  for await (const item of items) {
-    console.log(item);
-    if (!item.labeled_item_id) continue;
-    const found = await LabeledItem.findOne({
-      where: { barcode: item.barcode },
-    });
-    if (!found) continue;
-    found.status = "sold";
-    found.sold_at = new Date();
-    found.transaction_id = result.id;
-    await found.save();
-  }
 
-  res.json({
-    success: true,
-    data: {
-      id: result.id,
-      transactionNumber,
-      message: "Transaction créée avec succès",
-      result,
-    },
-  });
+  // // Générer un numéro de transaction unique
+  // const timestamp = Date.now().toString();
+  // const transactionNumber = `TXN${timestamp.slice(-8)}`;
+
+  // // Insérer la transaction
+  // const result = await SalesTransaction.create({
+  //   transaction_number: transactionNumber,
+  //   cash_session_id,
+  //   store_id,
+  //   total_amount,
+  //   payment_method,
+  //   payment_amount,
+  //   change_amount,
+  //   customer_name,
+  //   customer_email,
+  //   customer_postal_code,
+  //   createdBy: req.user.id,
+  // });
+
+  // for await (const item of items) {
+  //   if (!item.labeled_item_id) continue;
+  //   const found = await LabeledItem.findOne({
+  //     where: { barcode: item.barcode },
+  //   });
+  //   if (!found) continue;
+  //   found.status = "sold";
+  //   found.sold_at = new Date();
+  //   found.transaction_id = result.id;
+  //   await found.save();
+  // }
+
+
 };
 /**
  *
@@ -256,8 +318,8 @@ export const transactionsStats = async (req, res) => {
       [
         literal(
           "COALESCE(SUM(total_amount) - COALESCE(SUM((" +
-            refundSubquery.val +
-            ")), 0), 0)"
+          refundSubquery.val +
+          ")), 0), 0)"
         ),
         "total_sales",
       ],

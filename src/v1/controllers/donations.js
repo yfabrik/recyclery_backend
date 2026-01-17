@@ -1,6 +1,8 @@
 import createHttpError from "http-errors";
 import { col, fn, literal } from "sequelize";
-import db from  "../../models/index.js"
+import db from "../../models/index.js"
+import z from "zod";
+import { idSchema, nullishToNull } from "../../services/zod.js";
 
 
 
@@ -11,18 +13,20 @@ const { Donation, User } = db
  * @param {import("express").Response} res 
  */
 export const listDons = async (req, res) => {
-  const { recyclery_id, status } = req.query;
-    /**
-   * @type {import("sequelize").WhereOptions}
-   */
-  const where = {};
-  if (recyclery_id) where.recyclery_id = recyclery_id;
-  if (status) where.status = status;
+  const filterSchema = z.object({
+    recyclery_id:idSchema().optional(),
+    status: z.enum(["pending", "accepted", "rejected"]).optional()
+  })
+  const filter = filterSchema.parse(req.query)
+  /**
+ * @type {import("sequelize").WhereOptions}
+ */
+  const where = {...filter};
 
   const donations = await Donation.findAll({
     where,
     attributes: {
-      include:[
+      include: [
         [fn("COALESCE", col("donor_email"), col("donor_phone")), "donor_contact"],
       ]
     },
@@ -38,39 +42,28 @@ export const listDons = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createDon = async (req, res) => {
-  const { donor_name, donor_contact, item_description, estimated_value } =
-    req.body;
+  const donorContact = z.union([z.email(), z.string().regex(/^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/)]).optional().parse(req.body?.donor_contact)
+  const dataSchema = z.object({
+    donor_name: z.string("nom requis"),
+    donor_contact: z.string().optional(),
+    item_description: z.string("description requis"),
+    estimated_value: z.coerce.number().positive("valeur doit etre un nombre valide")
+  })
+  const data = dataSchema.parse(req.body)
 
-  if (!donor_name || !item_description) {
-    return res
-      .status(400)
-      .json({ error: "Nom du donateur et description requis" });
-  }
-
-  // Validation du estimated_value (optionnel mais doit être numérique si fourni)
-  if (
-    estimated_value == undefined ||
-    estimated_value == null ||
-    estimated_value == "" 
-    // isNaN(parseFloat(estimated_value))
-  ) {
-    return res
-      .status(400)
-      .json({ error: "La valeur estimée doit être un nombre valide" });
-  }
-
+  //TODO make it better
   // Séparer email et téléphone du contact
-  const isEmail = donor_contact && donor_contact.includes("@");
-  const donor_email = isEmail ? donor_contact : null;
-  const donor_phone = !isEmail ? donor_contact : null;
+  const isEmail = data.donor_contact && data.donor_contact.includes("@");
+  const donor_email = isEmail ? data.donor_contact : null;
+  const donor_phone = !isEmail ? data.donor_contact : null;
 
   const donation = await Donation.create({
-    donor_name,
+    donor_name: data.donor_name,
     donor_phone,
     donor_email,
-    item_description,
-    estimated_value,
-    recyclery_id: 1, //FIXME
+    item_description: data.item_description,
+    estimated_value: data.estimated_value,
+    // recyclery_id: 1, //FIXME
     received_by: req.user.id,
   });
 
@@ -86,33 +79,29 @@ export const createDon = async (req, res) => {
  */
 export const updateDon = async (req, res) => {
   const { id } = req.params;
-  const {
-    donor_name,
-    donor_contact,
-    item_description,
-    estimated_value,
-    status,
-  } = req.body;
+  const dataSchema = z.object({
+    donor_name: z.string("nom requis"),
+    donor_contact: nullishToNull( z.string().optional()),
+    item_description: z.string("description requis"),
+    estimated_value: z.coerce.number().positive("valeur doit etre un nombre valide"),
+    status: z.enum(["pending", "accepted", "rejected"]).optional()
+  })
+  const data = dataSchema.parse(req.body)
 
-  if (!donor_name || !item_description) {
-    return res
-      .status(400)
-      .json({ error: "Nom du donateur et description requis" });
-  }
 
   // Séparer email et téléphone du contact
-  const isEmail = donor_contact && donor_contact.includes("@");
-  const donor_email = isEmail ? donor_contact : null;
-  const donor_phone = !isEmail ? donor_contact : null;
+  const isEmail = data.donor_contact && data.donor_contact.includes("@");
+  const donor_email = isEmail ? data.donor_contact : null;
+  const donor_phone = !isEmail ? data.donor_contact : null;
 
   const donation = await Donation.findByPk(id);
   if (!donation) throw new createHttpError.NotFound();
-  donation.donor_name = donor_name;
+  donation.donor_name = data.donor_name;
   donation.donor_phone = donor_phone;
   donation.donor_email = donor_email;
-  donation.item_description = item_description;
-  donation.estimated_value = estimated_value;
-  donation.status = status;
+  donation.item_description = data.item_description;
+  donation.estimated_value = data.estimated_value;
+  donation.status = data.status;
 
   await donation.save();
 
@@ -124,40 +113,40 @@ export const updateDon = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const donStats = async (req, res) => {
-    const stats = await Donation.findOne({
-      attributes: [
-        [fn("COUNT", col("*")), "total_donations"],
-        [
-          fn(
-            "SUM",
-            literal(
-              `CASE WHEN "status" = 'pending' THEN 1 ELSE 0 END`
-            )
-          ),
-          "pending_donations",
-        ],
-        [
-          fn(
-            "SUM",
-            literal(
-              `CASE WHEN "status" = 'accepted' THEN 1 ELSE 0 END`
-            )
-          ),
-          "accepted_donations",
-        ],
-        [
-          fn(
-            "SUM",
-            literal(
-              `CASE WHEN "status" = 'rejected' THEN 1 ELSE 0 END`
-            )
-          ),
-          "rejected_donations",
-        ],
-        [fn("SUM", col("estimated_value")), "total_estimated_value"],
+  const stats = await Donation.findOne({
+    attributes: [
+      [fn("COUNT", col("*")), "total_donations"],
+      [
+        fn(
+          "SUM",
+          literal(
+            `CASE WHEN "status" = 'pending' THEN 1 ELSE 0 END`
+          )
+        ),
+        "pending_donations",
       ],
-      raw: true,
-    });
+      [
+        fn(
+          "SUM",
+          literal(
+            `CASE WHEN "status" = 'accepted' THEN 1 ELSE 0 END`
+          )
+        ),
+        "accepted_donations",
+      ],
+      [
+        fn(
+          "SUM",
+          literal(
+            `CASE WHEN "status" = 'rejected' THEN 1 ELSE 0 END`
+          )
+        ),
+        "rejected_donations",
+      ],
+      [fn("SUM", col("estimated_value")), "total_estimated_value"],
+    ],
+    raw: true,
+  });
 
-    res.json({ stats });
-  }
+  res.json({ stats });
+}

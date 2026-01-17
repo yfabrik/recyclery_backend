@@ -4,13 +4,14 @@ import db from "../../models/index.js"
 import * as z from "zod"
 import logger from "../../services/logger.js";
 import createHttpError from "http-errors";
+import { idSchema } from "../../services/zod.js";
 const { Category } = db
 
 const dataSchema = z.object({
     name: z.string("Le nom est requis"),
     description: z.string().optional(),
     icon: z.string().optional(),//TODO should be enum with list of icon
-    parent_id: z.coerce.number().nullable().default(null)
+    parent_id: idSchema().nullable().default(null)
 })
 /**
  * 
@@ -87,29 +88,11 @@ export const listSubcategories = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createCategorie = async (req, res) => {
-    // const { name, description, icon, parent_id } = req.body;
-    // const parent = parent_id ?? null
-
-
-
     const data = dataSchema.parse(req.body)
-
-
-    // Validation
-    // if (!name) {
-    //     return res.status(400).json({
-    //         success: false,
-    //         error: "Le nom est requis",
-    //     });
-    // }
-
-    // // Utiliser une description par défaut si elle n'est pas fournie
-    // const finalDescription = description || "Aucune description";
-
     // Vérifier si la catégorie existe déjà
     const existingCategory = await findExistingCategory(data.name, data.parent_id)
 
-    if (existingCategory)  throw new createHttpError[404]("Une catégorie avec ce nom existe déjà")//TODO hook
+    if (existingCategory) throw new createHttpError[404]("Une catégorie avec ce nom existe déjà")//TODO hook
 
     const category = await Category.create({
         ...data
@@ -127,9 +110,9 @@ export const createCategorie = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const deleteCategorie = async (req, res) => {
-    const { id } = req.params;
+    const id = idSchema().parse(req.params.id);
     const deleted = await Category.destroy({ where: { id } });
-    if (deleted == 0)  throw new createHttpError[404]("Catégorie non trouvée")
+    if (deleted == 0) throw new createHttpError[404]("Catégorie non trouvée")
     res.json({
         success: true,
         message: "Catégorie supprimée avec succès",
@@ -141,18 +124,9 @@ export const deleteCategorie = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const updateCategorie = async (req, res) => {
-    const { id } = req.params;
-
-    // const { name, description, icon } = req.body;
+    const id = idSchema().parse(req.params.id);
     const data = dataSchema.parse(req.body)
 
-    // // Validation
-    // if (!name) {
-    //     return res.status(400).json({
-    //         success: false,
-    //         error: "Le nom et la description sont requis",
-    //     });
-    // }
     const category = await Category.findByPk(id);
 
     // Vérifier si la catégorie existe
@@ -161,14 +135,12 @@ export const updateCategorie = async (req, res) => {
     // Vérifier si le nouveau nom n'est pas déjà utilisé
     const existingCategory = await findExistingCategory(data.name, category.parent_id)
 
-    if (existingCategory && existingCategory.id != category.id)  throw new createHttpError[404]("Une catégorie avec ce nom existe déjà")//TODO make hook
+    if (existingCategory && existingCategory.id != category.id) throw new createHttpError[404]("Une catégorie avec ce nom existe déjà")//TODO make hook
 
-    category.name = data.name;
-    category.icon = data.icon;
-    category.description = data.description;
-    // category.parent_id = parent;
-    await category.save();
-
+    await category.update({
+        ...data
+    })
+    
     res.json({
         success: true,
         message: "Catégorie mise à jour avec succès",

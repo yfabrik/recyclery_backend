@@ -4,6 +4,7 @@ import createHttpError from "http-errors";
 import { Op } from "sequelize";
 import * as z from "zod"
 import logger from "../../services/logger.js";
+import { idSchema } from "../../services/zod.js";
 const { CashRegister, CashSession, Recyclery, Sequelize } = db;
 /**
  * 
@@ -13,7 +14,7 @@ const { CashRegister, CashSession, Recyclery, Sequelize } = db;
 export const listCaisses = async (req, res) => {
   const filterSchema = z.object({
     is_active: z.coerce.boolean().optional(),
-    store_id: z.coerce.number().positive().optional()
+    store_id: idSchema().optional()//TODO fix NAME ?
   })
 
 
@@ -74,7 +75,7 @@ export const listCaisses = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const detailCaisse = async (req, res) => {
-  const id = z.coerce.number().positive().parse(req.params.id);
+  const id = idSchema().parse(req.params.id);
 
   const register = await CashRegister.findByPk(id, {
     attributes: [
@@ -101,8 +102,6 @@ export const detailCaisse = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createCaisse = async (req, res) => {
-
-
   const dataSchema = z.object({
     name: z.string("Nom obligatoire"),
     store_id: z.coerce.number("magasin obligatoire"),
@@ -150,7 +149,8 @@ export const createCaisse = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const updateCaisse = async (req, res) => {
-  const { id } = req.params;
+  const id = idSchema().parse(req.params.id);
+
   const dataSchema = z.object({
     name: z.string("Nom obligatoire"),
     is_active: z.coerce.boolean().optional().default(true)
@@ -175,11 +175,7 @@ export const updateCaisse = async (req, res) => {
       "Une autre caisse avec ce nom existe déjà dans ce magasin"
     );
   }
-
-  // Mettre à jour la caisse
-  existingRegister.name = data.name;
-  existingRegister.is_active = data.is_active;
-  await existingRegister.save();
+  await existingRegister.update({...data})
 
   res.json({
     success: true,
@@ -193,8 +189,7 @@ export const updateCaisse = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const deleteCaisse = async (req, res) => {
-  const { id } = req.params;
-
+  const id = idSchema().parse(req.params.id);
   // Vérifier que la caisse existe
   const existingRegister = await CashRegister.findByPk(id);
 

@@ -3,6 +3,7 @@ import db from "../../models/index.js";
 import * as z from "zod";
 import { listCaisses } from "../../services/caisse.js";
 import { col, fn, literal, Op, where } from "sequelize";
+import { idSchema, nullishToNull, phoneSchema, postalSchema } from "../../services/zod.js";
 const {
   Recyclery,
   CashRegister,
@@ -106,11 +107,11 @@ export const createRecyclerie = async (req, res) => {
   const dataSchema = z.object({
     name: z.string("Le nom de la recyclerie est requis"),
     address: z.string().optional(),
-    phone: z.string().nullable().optional(),
-    email: z.email().nullable().optional(),
-    manager_id: z.coerce.number().nullable().optional(),
+    phone: phoneSchema().optional(),
+    email: z.email().optional(),
+    manager_id: idSchema().optional(),
     city: z.string().optional(),
-    postal_code: z.string().optional(),
+    postal_code: postalSchema().optional(),
     is_active: z.coerce.boolean().default(true),
   });
   const data = dataSchema.parse(req.body);
@@ -127,16 +128,21 @@ export const createRecyclerie = async (req, res) => {
   });
 };
 
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
 export const updateRecyclerie = async (req, res) => {
   const { id } = req.params;
   const dataSchema = z.object({
     name: z.string("Le nom de la recyclerie est requis"),
-    address: z.string().optional(),
-    phone: z.string().optional(),
-    email: z.email().optional(),
-    manager_id: z.coerce.number().positive().optional(),
-    city: z.string().optional(),
-    postal_code: z.string().optional(),
+    address: nullishToNull(z.string().optional()),
+    phone: nullishToNull(phoneSchema().optional()),
+    email: nullishToNull(z.email().optional()),
+    manager_id: nullishToNull(idSchema().optional()),
+    city: nullishToNull(z.string().optional()),
+    postal_code: nullishToNull(postalSchema().optional()),
     is_active: z.coerce.boolean().default(true),
   });
   const data = dataSchema.parse(req.body);
@@ -144,15 +150,7 @@ export const updateRecyclerie = async (req, res) => {
   const recyclerie = await Recyclery.findByPk(id);
   if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
 
-  recyclerie.name = data.name;
-  recyclerie.address = data.address;
-  recyclerie.phone = data.phone;
-  recyclerie.email = data.email;
-  recyclerie.manager_id = data.manager_id;
-  recyclerie.city = data.city;
-  recyclerie.postal_code = data.postal_code;
-  recyclerie.is_active = data.is_active;
-  await recyclerie.save();
+  await recyclerie.update({...data})
 
   res.json({
     success: true,
@@ -162,6 +160,11 @@ export const updateRecyclerie = async (req, res) => {
   });
 };
 
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
 export const deleteRecyclerie = async (req, res) => {
   const { id } = req.params;
 

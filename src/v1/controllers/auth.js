@@ -4,6 +4,7 @@ import db from "../../models/index.js"
 import bcrypt from "bcryptjs";
 import createHttpError from "http-errors";
 import * as z from "zod"
+import { idSchema } from "../../services/zod.js";
 const { User } = db;
 /**
  * 
@@ -18,7 +19,7 @@ export const register = async (req, res, next) => {
     email: z.email("email requis"),
     password: z.string("password requis"),
     role: z.string().default("employee"),
-    recyclery_id: z.coerce.number().positive().optional(),
+    recyclery_id: idSchema().optional(),
   })
 
   const data = dataSchema.parse(req.body)

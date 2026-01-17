@@ -4,6 +4,7 @@ import db from "../../models/index.js";
 import { listCaisses } from "./cashRegister.js";
 import logger from "../../services/logger.js";
 import createHttpError from "http-errors";
+import * as z from "zod"
 const {
   CashSession,
   CashRegister,
@@ -20,15 +21,21 @@ const {
  */
 // 🧠 GET /cash-sessions
 export const listCashSessions = async (req, res) => {
-  const { store_id, status, user_id } = req.query;
-    /**
-   * @type {import("sequelize").WhereOptions}
-   */
+
+  const filterSchema = z.object({
+    store_id: z.coerce.number().positive().optional(),
+    user_id: z.coerce.number().positive().optional(),
+    status: z.enum(["open", "close"]).optional(),
+  })
+  const data = filterSchema.parse(req.query)
+  /**
+ * @type {import("sequelize").WhereOptions}
+ */
   const where = {};
 
-  if (store_id) where.store_id = store_id;
-  if (status) where.status = status;
-  if (user_id) where.user_id = user_id;
+  if (data.store_id) where.store_id = data.store_id;
+  if (data.status) where.status = data.status;
+  if (data.user_id) where.user_id = data.user_id;
 
   const sessions = await CashSession.findAll({
     attributes: {
@@ -76,8 +83,9 @@ export const getActiveSession = async (req, res) => {
   const userId = req.user.id;
   const session = await CashSession.findOne({
     where: {
-       user_id: userId, 
-       status: "open" },
+      user_id: userId,
+      status: "open"
+    },
     include: [
       { model: CashRegister, attributes: ["name"] },
       { model: Recyclery, attributes: ["name"] },
@@ -94,29 +102,27 @@ export const getActiveSession = async (req, res) => {
  */
 // 🧠 POST /cash-sessions/open
 export const openCashSession = async (req, res) => {
-  const { cash_register_id, store_id, opening_amount, notes } = req.body;
+  const dataSchema = z.object({
+    cash_register_id: z.coerce.number().positive("caisse requise"),
+    store_id: z.coerce.number().positive("magasin requis"),
+    opening_amount: z.coerce.number().positive("argent requis"),
+    notes: z.string().optional()
+  })
+  const data = dataSchema.parse(req.body)
+
   const userId = req.user.id;
-
-  if (!cash_register_id || !store_id || opening_amount === undefined) 
-    return res.status(400).json({ success: false, message: "Missing fields" });
-
   const existing = await CashSession.findOne({
     where: { user_id: userId, status: "open" },
   });
-  if (existing)
-    return res
-      .status(400)
-      .json({ success: false, message: "Already open session" });
+  if (existing) throw new createHttpError.Conflict("Already open session")
+
 
   const sessionNumber = `SES${Date.now().toString().slice(-8)}`;
 
   const session = await CashSession.create({
-    session_number: sessionNumber,
-    cash_register_id,
+    // session_number: sessionNumber,
     user_id: userId,
-    store_id,
-    opening_amount,
-    notes,
+    ...data,
   });
 
   res.status(201).json({
@@ -134,19 +140,20 @@ export const openCashSession = async (req, res) => {
 // 🧠 PUT /cash-sessions/:id/close
 export const closeCashSession = async (req, res) => {
   const { id } = req.params;
-  const { closing_amount, notes } = req.body;
+  const dataSchema = z.object({
+    closing_amount: z.coerce.number().positive("argent requis"),
+    notes: z.string().optional()
+  })
+  const data = dataSchema.parse(req.body)
   const userId = req.user.id;
 
-  if (closing_amount === undefined)
-    return res
-      .status(400)
-      .json({ success: false, message: "Missing closing amount" });
+
 
   const session = await CashSession.findOne({
     where: { id, user_id: userId, status: "open" },
   });
-  if (!session)  throw new createHttpError[404]("Session not found or already closed")
-   
+  if (!session) throw new createHttpError[404]("Session not found or already closed")
+
 
   const sales = await SalesTransaction.findAll({
     where: { cash_session_id: id },
@@ -157,16 +164,16 @@ export const closeCashSession = async (req, res) => {
   });
 
   const totalSales = parseFloat(sales[0].total_sales);
-  const expected = parseFloat(session.opening_amount) + totalSales;
-  const difference = parseFloat(closing_amount) - expected;
+  const expected = (session.opening_amount) + totalSales;
+  const difference = (data.closing_amount) - expected;
 
   await session.update({
-    closing_amount,
+    closing_amount:data.closing_amount,
     expected_amount: expected,
     difference_amount: difference,
     closed_at: new Date(),
-    status: "closed",
-    notes: notes || session.notes,
+    status: "close",
+    notes: data.notes || session.notes,
   });
 
   res.json({

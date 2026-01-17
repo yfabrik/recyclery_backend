@@ -2,6 +2,7 @@ import { col, fn, literal, Op } from "sequelize";
 import db from "../../models/index.js";
 import createHttpError from "http-errors";
 import * as z from "zod"
+import { idSchema, nullishToNull } from "../../services/zod.js";
 const { Arrival, Category, User, CollectionPoint } = db;
 /**
  * 
@@ -10,31 +11,28 @@ const { Arrival, Category, User, CollectionPoint } = db;
  */
 export const listArrivals = async (req, res) => {
   const filterSchema = z.object({
-    category_id: z.coerce.number().positive().optional(),
+    category_id: idSchema().optional(),
     source_type: z.enum(["point", "apport", "house_clearance"]).optional(),
     status: z.enum(["received"]).optional(),
     date_from: z.coerce.date(),
     date_to: z.coerce.date(),
 
   })
-  const filter = filterSchema.parse(req.query)
+  const { date_from, date_to, ...rest } = filterSchema.parse(req.query)
   /**
  * @type {import("sequelize").WhereOptions}
  */
-  const where = {};
+  const where = { ...rest };
+  if (date_from) {
+    where.arrival_date = {
+      ...(where.arrival_date || {}),
+      [Op.gte]: date_from,
+    };
+  }
+  if (date_to) {
+    where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
+  }
 
-  // if (date_from) {
-  //   where.arrival_date = {
-  //     ...(where.arrival_date || {}),
-  //     [Op.gte]: date_from,
-  //   };
-  // }
-  // if (date_to) {
-  //   where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
-  // }
-  if (filter.category_id) where.category_id = filter.category_id;
-  if (filter.source_type) where.source_type = filter.source_type;
-  if (filter.status) where.status = filter.status;
   const arrivals = await Arrival.findAll({
     where,
     include: [
@@ -79,13 +77,13 @@ export const detailArrival = async (req, res) => {
  */
 export const createArrival = async (req, res) => {
   const dataSchema = z.object({
-    category_id: z.coerce.number().positive("catégorie requis"),
+    category_id: idSchema("catégorie requis"),
     weight: z.coerce.number().positive("poids requis"),
     arrival_date: z.date("date d'arrivage requis"),
     arrival_time: z.date(" date d'arrivage requis"),
     source_type: z.enum(["point", "apport", "house_clearance"]),
     source_details: z.string().optional(),
-    collection_point_id: z.coerce.number().positive(),
+    collection_point_id: idSchema().optional(),
     collection_point_name: z.string().optional(),
     collection_point_address: z.string().optional(),
     notes: z.string().optional(),
@@ -98,20 +96,6 @@ export const createArrival = async (req, res) => {
 
   const arrival = await Arrival.create({
     ...data,
-    // arrival_number: generateArrivalNumber(),
-    // category_id,
-    // subcategory_id,
-    // weight,
-    // arrival_date,
-    // arrival_time,
-    // source_type,
-    // source_details,
-    // collection_point_id: collection_point_id ? collection_point_id : null,
-    // collection_point_name: collection_point_id ? collection_point_name : null,
-    // collection_point_address: collection_point_id ? collection_point_address : null,
-    // volunteer_donation,
-    // house_clearance,
-    // notes,
     processed_by: req.user.id,
   });
 
@@ -127,40 +111,26 @@ export const createArrival = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const updateArrival = async (req, res) => {
-  //TODO ZOD
   const dataSchema = z.object({
-    category_id: z.coerce.number().positive("catégorie requis"),
+    category_id: idSchema("catégorie requis"),
     weight: z.coerce.number().positive("poids requis"),
     arrival_date: z.date("date d'arrivage requis"),
     arrival_time: z.date(" date d'arrivage requis"),
     source_type: z.enum(["point", "apport", "house_clearance"]),
-    source_details: z.string().optional(),
-    collection_point_id: z.coerce.number().positive(),
-    collection_point_name: z.string().optional(),
-    collection_point_address: z.string().optional(),
-    notes: z.string().optional(),
+    source_details: nullishToNull(z.string().optional()),
+    collection_point_id: nullishToNull(idSchema().optional()),
+    // collection_point_name: z.string().optional(),
+    // collection_point_address: z.string().optional(),
+    notes: nullishToNull(z.string().optional()),
   })
-  const { id } = req.params;
+  const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body)
 
   const arrival = await Arrival.findByPk(id);
   // Vérifier si l'arrivage existe
 
   if (!arrival) throw new createHttpError[404]("Arrivage non trouvé")
-
-
-  arrival.category_id = data.category_id;
-  arrival.weight = data.weight;
-  arrival.arrival_date = data.arrival_date;
-  arrival.arrival_time = data.arrival_time;
-  arrival.source_type = data.source_type;
-  arrival.source_details = data.source_details;
-  arrival.collection_point_id = data.collection_point_id;
-
-  arrival.notes = data.notes;
-  // arrival.status = data.status;
-
-  await arrival.save();
+  await arrival.update({ ...data })
 
   res.json({
     success: true,
@@ -173,7 +143,7 @@ export const updateArrival = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const deleteArrival = async (req, res) => {
-  const { id } = req.params;
+  const id = idSchema().parse(req.params.id);
   const arrival = await Arrival.destroy({ where: { id } });
   // Vérifier si l'arrivage existe
   if (!arrival) throw new createHttpError[404]("Arrivage non trouvé")
