@@ -3,18 +3,18 @@
  * @property {string} name - The name of the task schedule
  * @property {string} [description] - Detailed description of the task schedule
  * @property {string} category - Category classification of the task schedule
- * @property {string} priority - Priority level of the task schedule (e.g., "low", "medium", "high", "urgent")
+ * @property {string} [priority] - Priority level of the task schedule (e.g., "low", "medium", "high", "urgent")
  * @property {number} [estimated_duration] - Estimated duration in minutes
  * @property {string|string[]} [required_skills] - Required skills for the task (stored as TEXT, can be JSON string or array)
  * @property {string} [location] - Location where the task should be performed
  * @property {string|string[]} [equipment_needed] - Equipment needed for the task (stored as TEXT, can be JSON string or array)
- * @property {number|string} hourly_rate - Hourly rate for the task (DECIMAL type)
+ * @property {number|string} [hourly_rate] - Hourly rate for the task (DECIMAL type)
  * @property {boolean} [is_recurring] - Whether the task schedule is recurring
  * @property {string} [notes] - Additional notes about the task schedule
  * @property {string} [status] - Current status of the task schedule
  * @property {Date|string} scheduled_date - Base date when the task schedule starts
- * @property {string} start_time - Start time of the task in "HH:mm:ss" format (TIME type)
- * @property {string} end_time - End time of the task in "HH:mm:ss" format (TIME type)
+ * @property {Date} start_time - Start time of the task in "HH:mm:ss" format (TIME type)
+ * @property {Date} end_time - End time of the task in "HH:mm:ss" format (TIME type)
  * @property {string} [recurrence_pattern] - Recurrence pattern: "daily", "weekly", or "monthly"
  * @property {number|null} [store_id] - Foreign key reference to the associated Recyclery
  * 

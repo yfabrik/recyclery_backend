@@ -32,6 +32,7 @@ const findExistingCategory = async (name, parent_id = null) => {
 export const listCategories = async (req, res) => {
     const filtersSchema = z.object({
         include: z.string()
+            .toLowerCase()
             .optional()
             .transform((val) => (val ? val.split(",") : [])),
         only_category: z.coerce.boolean().optional().default(false),
@@ -54,7 +55,7 @@ export const listCategories = async (req, res) => {
     if (filters.only_sub) {
         where.parent_id = { [Op.not]: null }
     }
-    if (filters.include.includes("Category"))
+    if (filters.include.includes("category"))
         include.push({ model: Category, as: "subcategories" })
 
     const categories = await Category.findAll({ where, include });
@@ -140,7 +141,7 @@ export const updateCategorie = async (req, res) => {
     await category.update({
         ...data
     })
-    
+
     res.json({
         success: true,
         message: "Catégorie mise à jour avec succès",

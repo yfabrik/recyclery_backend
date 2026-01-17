@@ -4,6 +4,7 @@ import * as z from "zod"
 import db from "../../models/index.js";
 import category from "../../models/category.js";
 import createHttpError from "http-errors";
+import { idSchema } from "../../services/zod.js";
 
 const { TaskSchedule, Task, User, Recyclery, EmployeeWorkdays, CollectionPoint } = db;
 
@@ -16,9 +17,9 @@ export const listSchedules = async (req, res) => {
     const filterSchema = z.object({
         start_date: z.coerce.date().optional(),
         end_date: z.coerce.date().optional(),
-        employee_id: z.coerce.number().positive().optional(),
+        employee_id: idSchema().optional(),
         status: z.string().optional(),
-        store_id: z.coerce.number().positive().optional(),
+        store_id: idSchema().optional(),
         category: z.string().optional()
     })
     const category = req.originalUrl == '/api/collection-point-presence' ? "point" : req.originalUrl == '/api/store-hours' ? "vente" : req.originalUrl == '/api/collections' ? "collection" : undefined
@@ -263,89 +264,103 @@ export const createSchedule = async (req, res) => {
         scheduled_date: z.coerce.date("date requis"),
         start_time: z.coerce.date("heure de debut requis"),
         end_time: z.coerce.date("heure de fin requis"),
+        category: z.enum(["vente", "point", "collection", "custom"]),
+        notes: z.string().optional(),
+        store_id: idSchema().optional(),
+        recurrence_pattern: z.enum(["daily", "weekly", "monthly"]).optional(),
+        is_recurring: z.coerce.boolean().default(true)
+    })
+
+    const data = dataSchema.parse(req.body)
+
+    const schedule = await TaskSchedule.create({
+        name: data.category + data.scheduled_date.toString(),
+        ...data,
+
     })
 
 
-    const where = {
-        scheduled_date,
-        status: {
-            [Op.in]: ["scheduled", "in_progress"],
-        },
-        [Op.not]: {
-            [Op.or]: [
-                { end_time: { [Op.lte]: start_time } },
-                { start_time: { [Op.gte]: end_time } },
-            ],
-        },
-    };
-    // Vérifier que la tâche existe (seulement si task_id est fourni)
-    //FIXME the fuck ?
-    if (task_id) {
-        const tasks = await Task.findByPk(task_id);
+    // const where = {
+    //     scheduled_date,
+    //     status: {
+    //         [Op.in]: ["scheduled", "in_progress"],
+    //     },
+    //     [Op.not]: {
+    //         [Op.or]: [
+    //             { end_time: { [Op.lte]: start_time } },
+    //             { start_time: { [Op.gte]: end_time } },
+    //         ],
+    //     },
+    // };
+    // // Vérifier que la tâche existe (seulement si task_id est fourni)
+    // //FIXME the fuck ?
+    // if (task_id) {
+    //     const tasks = await Task.findByPk(task_id);
 
-        if (!tasks) {
-            return res.status(404).json({
-                success: false,
-                message: "Tâche non trouvée",
-            });
-        }
-    }
+    //     if (!tasks) {
+    //         return res.status(404).json({
+    //             success: false,
+    //             message: "Tâche non trouvée",
+    //         });
+    //     }
+    // }
 
-    // Vérifier que l'employé existe (seulement si assigned_to est fourni)
-    if (assigned_to) {
-        const users = await User.findByPk(assigned_to);
+    // // Vérifier que l'employé existe (seulement si assigned_to est fourni)
+    // if (assigned_to) {
+    //     const users = await User.findByPk(assigned_to);
 
-        if (!users) {
-            return res.status(404).json({
-                success: false,
-                message: "Employé non trouvé",
-            });
-        }
-        where.assigned_to = assigned_to;
-    }
+    //     if (!users) {
+    //         return res.status(404).json({
+    //             success: false,
+    //             message: "Employé non trouvé",
+    //         });
+    //     }
+    //     where.assigned_to = assigned_to;
+    // }
 
     // Vérifier les conflits d'horaires (désactivé temporairement pour debug)
 
-    const conflicts = await TaskSchedule.findAll({
-        where,
-    });
+    // const conflicts = await TaskSchedule.findAll({
+    //     where,
+    // });
 
     // Gérer les tâches avec task_id null (tâches d'ouverture)
 
-    if (task_id === null || task_id === "null") {
-        // Vérifier que la tâche avec ID 1 existe, sinon en créer une
-        const task1 = await Task.findOrCreate({
-            where: { id: 1 },
-            defaults: {
-                name: "Tâche par défaut",
-                description: "Tâche par défaut pour les tâches d ouverture",
-                category: "store_operations",
-                priority: "medium",
-                estimated_duration: 480,
+    // if (task_id === null || task_id === "null") {
+    //     // Vérifier que la tâche avec ID 1 existe, sinon en créer une
+    //     const task1 = await Task.findOrCreate({
+    //         where: { id: 1 },
+    //         defaults: {
+    //             name: "Tâche par défaut",
+    //             description: "Tâche par défaut pour les tâches d ouverture",
+    //             category: "store_operations",
+    //             priority: "medium",
+    //             estimated_duration: 480,
 
-                location: "Magasin",
-                is_recurring: false,
-                recurrence_pattern: "none",
-                status: "active",
-            },
-        });
-    }
+    //             location: "Magasin",
+    //             is_recurring: false,
+    //             recurrence_pattern: "none",
+    //             status: "active",
+    //         },
+    //     });
+    // }
 
     // Pour les tâches d'ouverture, on utilise la tâche par défaut (ID 1)
 
-    const result = await TaskSchedule.create({
-        task_id: task_id === null || task_id === "null" ? 1 : task_id,
-        assigned_to: assigned_to ? assigned_to : null,
-        store_id,
-        scheduled_date,
-        start_time,
-        end_time,
-        notes,
-    });
+    // const result = await TaskSchedule.create({
+    //     task_id: task_id === null || task_id === "null" ? 1 : task_id,
+    //     assigned_to: assigned_to ? assigned_to : null,
+    //     store_id,
+    //     scheduled_date,
+    //     start_time,
+    //     end_time,
+    //     notes,
+    // });
 
     res.status(201).json({
         success: true,
         message: "Planning créé avec succès",
+        schedule
         // schedule_id: result.id,
     });
 }
@@ -369,8 +384,8 @@ export const updateSchedule = async (req, res) => {
     // Vérifier que le planning existe
     const existingSchedules = await TaskSchedule.findByPk(id);
 
-    if (!existingSchedules)throw new createHttpError[404]("Planning non trouvé") 
-    
+    if (!existingSchedules) throw new createHttpError[404]("Planning non trouvé")
+
 
     // Vérifier les conflits d'horaires (sauf pour le planning en cours de modification)
     if (assigned_to && scheduled_date && start_time && end_time) {
@@ -432,7 +447,7 @@ export const deleteSchedule = async (req, res) => {
 
     const result = await TaskSchedule.destroy({ where: { id } });
 
-    if (result === 0)throw new createHttpError[404]("Planning non trouvé") 
+    if (result === 0) throw new createHttpError[404]("Planning non trouvé")
 
     res.json({
         success: true,
@@ -501,7 +516,7 @@ export const addEmployeeToSchedule = async (req, res) => {
         include: [{ model: User }],
     });
 
-    if (!task)throw new createHttpError[404]("Tâche du planning non trouvée") 
+    if (!task) throw new createHttpError[404]("Tâche du planning non trouvée")
 
     const currentSchedule = task;
 
@@ -524,11 +539,11 @@ export const addEmployeeToSchedule = async (req, res) => {
         ],
     });
 
-    if (employee.length === 0)throw new createHttpError[404](`Employé non trouvé, n'appartient pas à ce magasin ou ne travaille pas le ${dayOfWeek}`)
+    if (employee.length === 0) throw new createHttpError[404](`Employé non trouvé, n'appartient pas à ce magasin ou ne travaille pas le ${dayOfWeek}`)
 
     // Vérifier si l'assignation existe déjà
 
-    if (task.Users.includes(employee[0].id))throw new createHttpError.Conflict("Cet employé est déjà assigné à cette tâche") 
+    if (task.Users.includes(employee[0].id)) throw new createHttpError.Conflict("Cet employé est déjà assigné à cette tâche")
 
     // NOUVELLE LOGIQUE : Vérifier les conflits d'horaires
 
@@ -613,7 +628,7 @@ export const removeEmployeeFromSchedule = async (req, res) => {
     //   // where: { schedule_id: scheduleId, employee_id: employeeId },
     // });
 
-    if (result === 0)throw new createHttpError[404]("Assignation non trouvée")
+    if (result === 0) throw new createHttpError[404]("Assignation non trouvée")
     res.json({
         success: true,
         message: "Employé retiré avec succès",
@@ -634,7 +649,7 @@ export const findAvailableEMployee = async (req, res) => {
         include: [{ model: User }],
     });
 
-    if (!schedule)throw new createHttpError[404]( "Tâche non trouvée") 
+    if (!schedule) throw new createHttpError[404]("Tâche non trouvée")
 
     const currentSchedule = schedule;
 

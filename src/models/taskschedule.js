@@ -11,23 +11,23 @@ export default (sequelize, DataTypes) => {
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
-      this.hasMany(models.Task, { foreignKey: "schedule_id" ,onDelete:"CASCADE"});
+      this.hasMany(models.Task, { foreignKey: "schedule_id", onDelete: "CASCADE" });
       // this.hasOne(models.TaskTemplate,{foreignKey:"template_id"})
       this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
       // this.belongsToMany(models.User,{through:"taskSchedule_employee",foreignKey:"schedule_id"})
       // this.belongsTo(models.User, { foreignKey: "assigned_to" });
     }
   }
-      
-      // receipt_number: DataTypes.STRING, //assoc ?
+
+  // receipt_number: DataTypes.STRING, //assoc ?
   TaskSchedule.init(
     {
-      is_recurring: {type:DataTypes.BOOLEAN,defaultValue:true},
-      recurrence_pattern: DataTypes.ENUM("daily","weekly","monthly"),
-      
+      is_recurring: { type: DataTypes.BOOLEAN, defaultValue: true },
+      recurrence_pattern: DataTypes.ENUM("daily", "weekly", "monthly"),
+
       name: DataTypes.STRING,
       description: DataTypes.TEXT,
-      category: {type:DataTypes.ENUM("vente","point","collection","custom"),allowNull:false},
+      category: { type: DataTypes.ENUM("vente", "point", "collection", "custom"), allowNull: false },
       priority: DataTypes.STRING,
       // estimated_duration: DataTypes.INTEGER,
       required_skills: DataTypes.TEXT,
@@ -42,8 +42,14 @@ export default (sequelize, DataTypes) => {
       // assigned_to: DataTypes.INTEGER, //assoc //task a deja un assigned
       // store_id: DataTypes.INTEGER,//assoc
       scheduled_date: DataTypes.DATE,
-      start_time: DataTypes.TIME,
-      end_time: DataTypes.TIME,
+      start_time: DataTypes.DATE,
+      end_time: DataTypes.DATE,
+      day_of_week: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(this.scheduled_date)
+        }
+      },
       // status: DataTypes.STRING,
       // notes: DataTypes.TEXT,
     },

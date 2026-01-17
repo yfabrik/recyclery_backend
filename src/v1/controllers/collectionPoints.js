@@ -4,7 +4,7 @@ import createHttpError from "http-errors";
 import z from "zod";
 import { idSchema, nullishToNull, phoneSchema, postalSchema } from "../../services/zod.js";
 
-const { CollectionPoint, Recyclery, CollectionSchedule } = db;
+const { CollectionPoint, Recyclery, CollectionSchedule, TaskSchedule } = db;
 /**
  * 
  * @param {import("express").Request} req 
@@ -23,7 +23,7 @@ export const listCollectionPoints = async (req, res) => {
 
   const collection_points = await CollectionPoint.findAll({
     where,
-    include: [{ model: Recyclery }],
+    include: [{ model: Recyclery }, { model: TaskSchedule }],
     order: [["name"]],
   });
 
@@ -42,7 +42,7 @@ export const detailCollectionPoint = async (req, res) => {
 
 
   const point = await CollectionPoint.findByPk(id, {
-    include: [{ model: Recyclery }],
+    include: [{ model: Recyclery }, { model: TaskSchedule }],
   });
 
   if (!point) throw new createHttpError[404]("Point de collecte non trouvé")
@@ -59,9 +59,9 @@ export const detailCollectionPoint = async (req, res) => {
  */
 export const createCollectionPoint = async (req, res) => {
   const dataSchema = z.object({
-    name: z.string().trim().nonempty("nom requis"),
-    address: z.string().trim().nonempty("addresse requis"),
-    city: z.string().trim().nonempty("ville requis"),
+    name: z.string("nom requis").trim().nonempty("nom requis"),
+    address: z.string("addresse requis").trim().nonempty("addresse requis"),
+    city: z.string("ville requis").trim().nonempty("ville requis"),
     postal_code: postalSchema("code postal requis"),
     contact_person: z.string().optional(),
     contact_phone: phoneSchema().optional(),
