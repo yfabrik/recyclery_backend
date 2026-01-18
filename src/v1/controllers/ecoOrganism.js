@@ -3,7 +3,7 @@ import db from "../../models/index.js";
 import createHttpError from "http-errors";
 import z, { optional } from "zod";
 import logger from "../../services/logger.js";
-import { idSchema, nullishToNull, phoneSchema } from "../../services/zod.js";
+import { asOptionalStringWithoutEmpty, idSchema, nullishToNull, phoneSchema } from "../../services/zod.js";
 
 const { EcoOrganism, WasteDisposal } = db;
 /**
@@ -59,11 +59,11 @@ export const detailEcoOrganism = async (req, res) => {
 export const createEcoOrganism = async (req, res) => {
   const dataSchema = z.object({
     name: z.string().trim().nonempty("Le nom est requis"),
-    description: z.string().optional(),
-    contact_email: z.email().optional(),
-    contact_phone: phoneSchema().optional(),
-    address: z.string().optional(),
-    website: z.url().optional(),
+    description: z.string().nullish(),
+    contact_email: z.email().nullish(),
+    contact_phone: phoneSchema().nullish(),
+    address: z.string().nullish(),
+    website: z.url().nullish(),
     is_active: z.boolean().optional().default(true),
   })
   const data = dataSchema.parse(req.body)
@@ -87,11 +87,11 @@ export const updateEcoOrganism = async (req, res) => {
   const id = idSchema().parse(req.params.id);
   const dataSchema = z.object({
     name: z.string().trim().nonempty("Le nom est requis"),
-    description: nullishToNull(z.string().optional()),
-    contact_email: nullishToNull(z.email().optional()),
-    contact_phone: nullishToNull(phoneSchema().optional()),
-    address: nullishToNull(z.string().optional()),
-    website: nullishToNull(z.url().optional()),
+    description: z.string().nullish(),
+    contact_email: z.email().nullish(),
+    contact_phone: phoneSchema().nullish(),
+    address: z.string().nullish(),
+    website: z.url().nullish(),
     is_active: z.boolean().optional().default(true),
   })
   const data = dataSchema.parse(req.body)
