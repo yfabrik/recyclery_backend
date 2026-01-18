@@ -30,7 +30,7 @@ export const listLabeledItem = async (req, res) => {
   const filterSchema = z.object({
     status: z.string().optional(),
     category_id: idSchema().optional(),
-    search: z.string(),
+    search: z.string().optional(),
     recyclery_id: idSchema().optional(),
     barcode: z.string().optional()
   })
@@ -57,11 +57,11 @@ export const listLabeledItem = async (req, res) => {
         as: "category",
         attributes: ["id", "name"],
       },
-      {
-        model: Category,
-        as: "subcategory",
-        attributes: ["id", "name"],
-      },
+      // {
+      //   model: Category,
+      //   as: "subcategory",
+      //   attributes: ["id", "name"],
+      // },
       {
         model: User,
         as: "createdBy",

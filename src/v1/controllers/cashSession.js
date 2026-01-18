@@ -5,6 +5,7 @@ import { listCaisses } from "./cashRegister.js";
 import logger from "../../services/logger.js";
 import createHttpError from "http-errors";
 import * as z from "zod"
+import { idSchema } from "../../services/zod.js";
 const {
   CashSession,
   CashRegister,
@@ -59,8 +60,8 @@ export const listCashSessions = async (req, res) => {
     },
     where,
     include: [
-      { model: CashRegister, attributes: ["name"] },
-      { model: Recyclery, attributes: ["name"] },
+      { model: CashRegister, attributes: ["name"], include: [{ model: Recyclery, attributes: ["name"] }] },
+
       { model: User, attributes: ["username"] },
       {
         model: SalesTransaction,
@@ -87,13 +88,16 @@ export const getActiveSession = async (req, res) => {
       status: "open"
     },
     include: [
-      { model: CashRegister, attributes: ["name"] },
-      { model: Recyclery, attributes: ["name"] },
+      { model: CashRegister, attributes: ["name"], include: [{ model: Recyclery, attributes: ["name"] }] },
+
     ],
     order: [["createdAt", "DESC"]],
   });
 
-  res.json({ success: true, session });
+  const tmp = session.get({ plain: true })
+  const t = { ...tmp, CashRegister: tmp?.CashRegister, Recyclery: tmp?.CashRegister?.Recyclery }
+
+  res.json({ success: true, session: t });
 };
 /**
  * 
@@ -103,10 +107,10 @@ export const getActiveSession = async (req, res) => {
 // 🧠 POST /cash-sessions/open
 export const openCashSession = async (req, res) => {
   const dataSchema = z.object({
-    cash_register_id: z.coerce.number().positive("caisse requise"),
-    store_id: z.coerce.number().positive("magasin requis"),
+    cash_register_id: idSchema("caisse requise"),
+    store_id: idSchema("magasin requis"),
     opening_amount: z.coerce.number().positive("argent requis"),
-    notes: z.string().optional()
+    notes: z.string().nullish()
   })
   const data = dataSchema.parse(req.body)
 
@@ -142,7 +146,7 @@ export const closeCashSession = async (req, res) => {
   const { id } = req.params;
   const dataSchema = z.object({
     closing_amount: z.coerce.number().positive("argent requis"),
-    notes: z.string().optional()
+    notes: z.string().nullish()
   })
   const data = dataSchema.parse(req.body)
   const userId = req.user.id;
@@ -168,7 +172,7 @@ export const closeCashSession = async (req, res) => {
   const difference = (data.closing_amount) - expected;
 
   await session.update({
-    closing_amount:data.closing_amount,
+    closing_amount: data.closing_amount,
     expected_amount: expected,
     difference_amount: difference,
     closed_at: new Date(),

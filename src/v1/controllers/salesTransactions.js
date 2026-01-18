@@ -2,8 +2,9 @@ import { col, fn, literal, Op } from "sequelize";
 import db from "../../models/index.js";
 import z from "zod";
 import createHttpError from "http-errors";
+import { asOptionalStringWithoutEmpty, idSchema, postalSchema } from "../../services/zod.js";
 
-const { SalesTransaction, Recyclery, User, Refund, LabeledItem, CashSession } = db;
+const { SalesTransaction, Recyclery, User, Refund, LabeledItem, CashSession, CashRegister } = db;
 /**
  *
  * @param {import("express").Request} req
@@ -11,7 +12,7 @@ const { SalesTransaction, Recyclery, User, Refund, LabeledItem, CashSession } = 
  */
 export const listTransactions = async (req, res) => {
   const filterSchema = z.object({
-    store_id: z.coerce.number().positive().optional(),
+    store_id: asOptionalStringWithoutEmpty(idSchema().nullish()).optional(),
     // period,
     // date_from,
     // date_to,
@@ -41,10 +42,29 @@ export const listTransactions = async (req, res) => {
   // if (date_to) {
   //     where.createdAt = { ...(where.createdAt || {}), [Op.lte]: date_to };
   // }
+  const include = [
+    {
+      model: CashSession,
+      include: [{
+        model: CashRegister,
+        where,
+        include: [
+          {
+            model: Recyclery,
+
+          }
+        ]
+      },
+      {
+        model: User
+      }]
+    }
+  ]
 
   const transactions = await SalesTransaction.findAll({
-    where,
-    include: [{ model: Recyclery }, { model: User }],
+    // where,
+    // include: [{ model: Recyclery ,}, { model: User }],
+    include,
     order: [["createdAt", "DESC"]],
     limit: filter.limit,
     offset: filter.offset
@@ -67,15 +87,15 @@ export const listTransactions = async (req, res) => {
  */
 export const createTransaction = async (req, res) => {
   const dataSchema = z.object({
-    cash_session_id: z.coerce.number().positive("sesions requis"),
-    store_id: z.coerce.number().positive("magasin requis"),
+    cash_session_id: idSchema("sesions requis"),
+    // store_id: idSchema("magasin requis"),
     total_amount: z.coerce.number("argent requis"),
     payment_method: z.enum(["cash", "card", "check"]).default("cash"),
     payment_amount: z.coerce.number("argent requis"),
     // change_amount = 0,
-    customer_name: z.string().optional(),
-    customer_email: z.string().optional(),
-    customer_postal_code: z.string().optional(),
+    customer_name: z.string().nullish(),
+    customer_email: z.string().nullish(),
+    customer_postal_code: postalSchema().nullish(),
     items: z.array(z.union([z.number(), z.object({})])),
   })
   const data = dataSchema.parse(req.body)
@@ -83,7 +103,7 @@ export const createTransaction = async (req, res) => {
   const session = await CashSession.findByPk(data.cash_session_id)
   if (!session) throw new createHttpError[404]("session non trouvé")
   try {
-    const sale = await session.createTransaction({
+    const sale = await session.createSalesTransaction({
       total_amount: data.total_amount,
       payment_method: data.payment_method,
       payment_amount: data.payment_amount,
@@ -92,7 +112,7 @@ export const createTransaction = async (req, res) => {
       customer_postal_code: data?.customer_postal_code || null
     }, { transaction: t })
     for await (const item of data.items) {
-      if (typeof (item) == "number") {
+      if (item?.labeled_item_id) {
         const i = await LabeledItem.findByPk(item)
         if (!i) throw new createHttpError.NotFound("item not found")
         i.transaction_id = sale.id
@@ -104,7 +124,7 @@ export const createTransaction = async (req, res) => {
       else {
         const newItem = await LabeledItem.create({
           category_id: item.category_id,
-          price: item.price,
+          price: item.price||0,
           weight: item.weight,
           transaction_id: sale.id,
           status: "sold",
