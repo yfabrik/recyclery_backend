@@ -9,9 +9,9 @@ const { Category } = db
 
 const dataSchema = z.object({
     name: z.string("Le nom est requis"),
-    description: z.string().optional(),
-    icon: z.string().optional(),//TODO should be enum with list of icon
-    parent_id: idSchema().nullable().default(null)
+    description: z.string().nullish(),
+    icon: z.string().nullish(),//TODO should be enum with list of icon
+    parent_id: idSchema().nullish().default(null)
 })
 /**
  * 
