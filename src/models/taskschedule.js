@@ -14,6 +14,7 @@ export default (sequelize, DataTypes) => {
       this.hasMany(models.Task, { foreignKey: "schedule_id", onDelete: "CASCADE" });
       // this.hasOne(models.TaskTemplate,{foreignKey:"template_id"})
       this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
+      this.belongsTo(models.CollectionPoint,{foreignKey:"collection_point_id"})
       // this.belongsToMany(models.User,{through:"taskSchedule_employee",foreignKey:"schedule_id"})
       // this.belongsTo(models.User, { foreignKey: "assigned_to" });
     }

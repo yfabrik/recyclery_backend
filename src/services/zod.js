@@ -10,6 +10,15 @@ export const nullishToNull = (schema) =>
 
 /**
  * 
+ * @param {z.ZodTypeAny} schema 
+ * @returns 
+ */
+export const asOptionalStringWithoutEmpty = (schema) => {
+    return schema.optional().or(z.literal('').transform(() => null))
+}
+
+/**
+ * 
  * @param {string} [message] 
  * @returns 
  */
