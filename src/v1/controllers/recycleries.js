@@ -3,7 +3,7 @@ import db from "../../models/index.js";
 import * as z from "zod";
 import { listCaisses } from "../../services/caisse.js";
 import { col, fn, literal, Op, where } from "sequelize";
-import { idSchema, nullishToNull, phoneSchema, postalSchema } from "../../services/zod.js";
+import { asOptionalStringWithoutEmpty, idSchema, nullishToNull, phoneSchema, postalSchema } from "../../services/zod.js";
 const {
   Recyclery,
   CashRegister,
@@ -106,12 +106,12 @@ export const detailRecyclerie = async (req, res) => {
 export const createRecyclerie = async (req, res) => {
   const dataSchema = z.object({
     name: z.string("Le nom de la recyclerie est requis"),
-    address: z.string().optional(),
-    phone: phoneSchema().optional(),
-    email: z.email().optional(),
-    manager_id: idSchema().optional(),
-    city: z.string().optional(),
-    postal_code: postalSchema().optional(),
+    address: z.string().nullish(),
+    phone: phoneSchema().nullish(),
+    email: z.email().nullish(),
+    manager_id: idSchema().nullish(),
+    city: z.string().nullish(),
+    postal_code: postalSchema().nullish(),
     is_active: z.coerce.boolean().default(true),
   });
   const data = dataSchema.parse(req.body);
@@ -137,12 +137,12 @@ export const updateRecyclerie = async (req, res) => {
   const { id } = req.params;
   const dataSchema = z.object({
     name: z.string("Le nom de la recyclerie est requis"),
-    address: nullishToNull(z.string().optional()),
-    phone: nullishToNull(phoneSchema().optional()),
-    email: nullishToNull(z.email().optional()),
-    manager_id: nullishToNull(idSchema().optional()),
-    city: nullishToNull(z.string().optional()),
-    postal_code: nullishToNull(postalSchema().optional()),
+    address: z.string().nullish(),
+    phone: phoneSchema().nullish(),
+    email: z.email().nullish(),
+    manager_id: idSchema().nullish(),
+    city: z.string().nullish(),
+    postal_code: postalSchema().nullish(),
     is_active: z.coerce.boolean().default(true),
   });
   const data = dataSchema.parse(req.body);
@@ -150,7 +150,7 @@ export const updateRecyclerie = async (req, res) => {
   const recyclerie = await Recyclery.findByPk(id);
   if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
 
-  await recyclerie.update({...data})
+  await recyclerie.update({ ...data })
 
   res.json({
     success: true,
