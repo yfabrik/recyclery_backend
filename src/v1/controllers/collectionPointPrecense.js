@@ -4,6 +4,7 @@ import createHttpError from "http-errors";
 import { createTask, detailTask, listTasks } from "./tasks.js";
 import * as z from "zod"
 import { listSchedules } from "./taskSchedule.js";
+import { idSchema } from "../../services/zod.js";
 
 
 const getDateFromDay = (day) => {
@@ -25,8 +26,8 @@ const getDateFromDay = (day) => {
 
 
 const dataSchema = z.object({
-  collection_point_id: z.coerce.number("ID du point de collecte et jour de la semaine sont obligatoires"),
-  store_id: z.coerce.number().nullable().optional(),
+  collection_point_id: idSchema("ID du point de collecte et jour de la semaine sont obligatoires"),
+  store_id: idSchema().nullish(),
   day_of_week: z.enum(["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]).transform(val => getDateFromDay(val)),
   is_open: z.coerce.boolean().default(true),
   start_time: z.union([z.iso.time().transform(val => {
@@ -38,7 +39,7 @@ const dataSchema = z.object({
     return new Date().setHours(hours, min)
   }), z.coerce.date()]),
   is_24h: z.coerce.boolean().default(false),
-  notes: z.string().optional(),
+  notes: z.string().nullish(),
   is_present: z.coerce.boolean().default(true)
 })
 
@@ -92,6 +93,7 @@ export const createPointPrecense = async (req, res) => {
     category: "point",
     scheduled_date: data.day_of_week,
     recurrence_pattern: "weekly",
+    collection_point_id:data.collection_point_id,
     ...data
   })
 
@@ -140,7 +142,7 @@ export const updatePointPrecense = async (req, res) => {
 
 
   const data = dataSchema.parse(req.body)
-  const id = z.coerce.number().positive().parse(req.params.id);
+  const id = idSchema().parse(req.params.id);
   const existing = await TaskSchedule.findByPk(id)
 
   // const existing = await CollectionPointPresence.findByPk(id);
