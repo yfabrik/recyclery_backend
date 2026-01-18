@@ -78,24 +78,27 @@ export const detailArrival = async (req, res) => {
 export const createArrival = async (req, res) => {
   const dataSchema = z.object({
     category_id: idSchema("catégorie requis"),
+    subcategory_id: idSchema().nullish(),
     weight: z.coerce.number().positive("poids requis"),
-    arrival_date: z.date("date d'arrivage requis"),
-    arrival_time: z.date(" date d'arrivage requis"),
+    arrival_date: z.coerce.date("date d'arrivage requis"),
+    arrival_time: z.coerce.date(" date d'arrivage requis"),
     source_type: z.enum(["point", "apport", "house_clearance"]),
-    source_details: z.string().optional(),
-    collection_point_id: idSchema().optional(),
-    collection_point_name: z.string().optional(),
-    collection_point_address: z.string().optional(),
-    notes: z.string().optional(),
+    source_details: z.string().nullish(),
+    collection_point_id: idSchema().nullish(),
+    collection_point_name: z.string().nullish(),
+    collection_point_address: z.string().nullish(),
+    notes: z.string().nullish(),
   })
   const data = dataSchema.parse(req.body)
-  const category = await Category.findByPk(data.category_id);
+
+  const category = await Category.findByPk(data.subcategory_id ?? data.category_id);
   // Vérifier si la catégorie existe
   if (!category) throw new createHttpError[404]("Catégorie non trouvée")
 
 
   const arrival = await Arrival.create({
     ...data,
+    category_id: category.id,
     processed_by: req.user.id,
   });
 
@@ -113,15 +116,16 @@ export const createArrival = async (req, res) => {
 export const updateArrival = async (req, res) => {
   const dataSchema = z.object({
     category_id: idSchema("catégorie requis"),
+    subcategory_id: idSchema().nullish(),
     weight: z.coerce.number().positive("poids requis"),
-    arrival_date: z.date("date d'arrivage requis"),
-    arrival_time: z.date(" date d'arrivage requis"),
+    arrival_date: z.coerce.date("date d'arrivage requis"),
+    arrival_time: z.coerce.date(" date d'arrivage requis"),
     source_type: z.enum(["point", "apport", "house_clearance"]),
-    source_details: nullishToNull(z.string().optional()),
-    collection_point_id: nullishToNull(idSchema().optional()),
-    // collection_point_name: z.string().optional(),
-    // collection_point_address: z.string().optional(),
-    notes: nullishToNull(z.string().optional()),
+    source_details: z.string().nullish(),
+    collection_point_id: idSchema().nullish(),
+    collection_point_name: z.string().nullish(),
+    collection_point_address: z.string().nullish(),
+    notes: z.string().nullish(),
   })
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body)
@@ -130,7 +134,7 @@ export const updateArrival = async (req, res) => {
   // Vérifier si l'arrivage existe
 
   if (!arrival) throw new createHttpError[404]("Arrivage non trouvé")
-  await arrival.update({ ...data })
+  await arrival.update({ ...data, category_id: data.subcategory_id ?? data.category_id })
 
   res.json({
     success: true,
