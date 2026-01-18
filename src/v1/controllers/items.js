@@ -125,18 +125,18 @@ export const getItemFromBarcode = async (req, res) => {
  */
 export const createLabeledItem = async (req, res) => {
   const dataSchema = z.object({
-    name: z.string().optional(),
-    description: z.string().optional(),
+    name: z.string().nullish(),
+    description: z.string().nullish(),
     category_id: idSchema("categorie requis"),
-    weight: z.coerce.number().nonnegative().optional(),
+    weight: z.coerce.number().nonnegative().nullish(),
     price: z.coerce.number().nonnegative("prix requis"),
-    cost: z.coerce.number().nonnegative().optional(),
-    condition_state: z.enum(["excellent", "good", "fair", "poor"]).optional(),
-    location: z.string().optional(),
-    arrival_id: idSchema(),
-    purchase_price: z.coerce.number().nonnegative(),
-    selling_price: z.coerce.number().nonnegative(),
-    recyclery_id: idSchema()
+    cost: z.coerce.number().nonnegative().nullish(),
+    condition_state: z.enum(["excellent", "good", "fair", "poor"]).nullish(),
+    location: z.string().nullish(),
+    arrival_id: idSchema().nullish(),
+    purchase_price: z.coerce.number().nonnegative().nullish(),
+    selling_price: z.coerce.number().nonnegative().nullish(),
+    recyclery_id: idSchema().nullish()
   })
   // let {
   //   name,
@@ -197,22 +197,25 @@ export const createLabeledItem = async (req, res) => {
 export const updateItem = async (req, res) => {
   const { id } = req.params;
   const dataSchema = z.object({
-    name: z.string("nom requis"),
-    description:nullishToNull( z.string().optional()),
+    name: z.string().nullish(),
+    description: z.string().nullish(),
     category_id: idSchema("categorie requis"),
-    weight: z.coerce.number().nonnegative().optional(),
+    weight: z.coerce.number().nonnegative().nullish(),
     price: z.coerce.number().nonnegative("prix requis"),
-    cost: z.coerce.number().nonnegative().optional(),
-    condition_state: z.enum(["excellent", "good", "fair", "poor"]).optional(),
-    location: z.string().optional(),
-    status: z.enum(["available", "sold"]).optional()
+    cost: z.coerce.number().nonnegative().nullish(),
+    condition_state: z.enum(["excellent", "good", "fair", "poor"]).nullish(),
+    location: z.string().nullish(),
+    arrival_id: idSchema().nullish(),
+    purchase_price: z.coerce.number().nonnegative().nullish(),
+    selling_price: z.coerce.number().nonnegative().nullish(),
+    recyclery_id: idSchema().nullish()
   })
   const data = dataSchema.parse(req.body)
 
   const item = await LabeledItem.findByPk(id);
   if (!item) throw new createHttpError[404]("item non trouvé")
   await item.update(
-    ...data
+    { ...data }
   )
   // const params = [
   //   name,
