@@ -2,7 +2,7 @@ import { col, fn, Op, where } from "sequelize";
 import db from "../../models/index.js";
 import createHttpError from "http-errors";
 import z from "zod";
-import { idSchema, nullishToNull, phoneSchema, postalSchema } from "../../services/zod.js";
+import { asOptionalStringWithoutEmpty, idSchema, nullishToNull, phoneSchema, postalSchema } from "../../services/zod.js";
 
 const { CollectionPoint, Recyclery, CollectionSchedule, TaskSchedule } = db;
 /**
@@ -18,8 +18,8 @@ export const listCollectionPoints = async (req, res) => {
   /**
  * @type {import("sequelize").WhereOptions}
  */
-  const where = { ...filter };
-  // if (typeof filter.active_only == "boolean") where.is_active = filter.active_only;
+  const where = {};
+  if (typeof filter.active_only == "boolean") where.is_active = filter.active_only;
 
   const collection_points = await CollectionPoint.findAll({
     where,
@@ -63,15 +63,14 @@ export const createCollectionPoint = async (req, res) => {
     address: z.string("addresse requis").trim().nonempty("addresse requis"),
     city: z.string("ville requis").trim().nonempty("ville requis"),
     postal_code: postalSchema("code postal requis"),
-    contact_person: z.string().optional(),
-    contact_phone: phoneSchema().optional(),
-    contact_email: z.union([z.email(), z.literal("")]).optional(),
-    type: z.enum(["standard", "entreprise", "association", "school", "hospital", "other"]).optional(),
-    notes: z.string().optional(),
-    recyclery_id: idSchema().optional(),
+    contact_person: z.string().nullish(),
+    contact_phone: phoneSchema().nullish(),//z.union([phoneSchema(),z.literal('')]).optional(),
+    contact_email: z.email().nullish(),// z.union([z.email(), z.literal("")]).optional(),
+    type: z.enum(["standard", "entreprise", "association", "school", "hospital", "other"]).nullish(),
+    notes: z.string().nullish(),
+    recyclery_id: idSchema().nullish()//.optional().nullable(),
   })
   const data = dataSchema.parse(req.body)
-
 
   const point = await CollectionPoint.create({
     ...data
@@ -94,12 +93,12 @@ export const updateCollectionPoint = async (req, res) => {
     address: z.string().trim().nonempty("addresse requis"),
     city: z.string().trim().nonempty("ville requis"),
     postal_code: postalSchema("code postal requis"),
-    contact_person: nullishToNull(z.string().optional()),
-    contact_phone: nullishToNull(phoneSchema().optional()),
-    contact_email: nullishToNull(z.union([z.email(), z.literal("")]).optional()),
-    type: nullishToNull(z.enum(["standard", "entreprise", "association", "school", "hospital", "other"]).optional()),
-    notes: nullishToNull(z.string().optional()),
-    recyclery_id: nullishToNull(idSchema().optional()),
+    contact_person: z.string().nullish(),
+    contact_phone: phoneSchema().nullish(),
+    contact_email: z.email().nullish(),
+    type: z.enum(["standard", "entreprise", "association", "school", "hospital", "other"]).nullish(),
+    notes: z.string().nullish(),
+    recyclery_id: idSchema().nullish(),
     is_active: z.coerce.boolean().optional().default(true),
   })
   const data = dataSchema.parse(req.body)
