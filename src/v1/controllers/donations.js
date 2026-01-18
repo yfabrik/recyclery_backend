@@ -14,14 +14,14 @@ const { Donation, User } = db
  */
 export const listDons = async (req, res) => {
   const filterSchema = z.object({
-    recyclery_id:idSchema().optional(),
+    recyclery_id: idSchema().optional(),
     status: z.enum(["pending", "accepted", "rejected"]).optional()
   })
   const filter = filterSchema.parse(req.query)
   /**
  * @type {import("sequelize").WhereOptions}
  */
-  const where = {...filter};
+  const where = { ...filter };
 
   const donations = await Donation.findAll({
     where,
@@ -42,12 +42,13 @@ export const listDons = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createDon = async (req, res) => {
-  const donorContact = z.union([z.email(), z.string().regex(/^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/)]).optional().parse(req.body?.donor_contact)
+  //TODO c'est au form de faire le tri et d'envoyer donor contact correctement
+  // const donorContact = z.union([z.email(), z.string().regex(/^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/)]).optional().parse(req.body?.donor_contact)
   const dataSchema = z.object({
     donor_name: z.string("nom requis"),
-    donor_contact: z.string().optional(),
+    donor_contact: z.string().nullish(),
     item_description: z.string("description requis"),
-    estimated_value: z.coerce.number().positive("valeur doit etre un nombre valide")
+    estimated_value: z.coerce.number().nonnegative("valeur doit etre un nombre valide"),
   })
   const data = dataSchema.parse(req.body)
 
@@ -81,10 +82,10 @@ export const updateDon = async (req, res) => {
   const { id } = req.params;
   const dataSchema = z.object({
     donor_name: z.string("nom requis"),
-    donor_contact: nullishToNull( z.string().optional()),
+    donor_contact: z.string().nullish(),
     item_description: z.string("description requis"),
-    estimated_value: z.coerce.number().positive("valeur doit etre un nombre valide"),
-    status: z.enum(["pending", "accepted", "rejected"]).optional()
+    estimated_value: z.coerce.number().nonnegative("valeur doit etre un nombre valide"),
+    status: z.enum(["pending", "accepted", "rejected"]).nullish()
   })
   const data = dataSchema.parse(req.body)
 
