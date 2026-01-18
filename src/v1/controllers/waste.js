@@ -1,6 +1,8 @@
 import { col, fn, literal, Op } from "sequelize";
 import db from "../../models/index.js";
 import createHttpError from "http-errors";
+import z from "zod";
+import { idSchema } from "../../services/zod.js";
 
 const { WasteDisposal, Category, EcoOrganism, User } = db;
 const generateDisposalNumber = () => {
@@ -27,9 +29,9 @@ export const listWaste = async (req, res) => {
     page = 1,
     limit = 50,
   } = req.query;
-      /**
-   * @type {import("sequelize").WhereOptions}
-   */
+  /**
+* @type {import("sequelize").WhereOptions}
+*/
   const where = {};
   if (category_id) where.category_id = category_id;
   if (subcategory_id) where.subcategory_id = subcategory_id;
@@ -61,7 +63,7 @@ export const listWaste = async (req, res) => {
     ],
     order: [["disposal_date", "DESC"]],
     offset,
-    limit:5,
+    limit: 5,
   });
 
   // Get total count for pagination
@@ -93,7 +95,7 @@ export const detailWaste = async (req, res) => {
     ],
   });
 
-  if (!waste)throw new createHttpError[404]("Sortie de déchets non trouvée") 
+  if (!waste) throw new createHttpError[404]("Sortie de déchets non trouvée")
   res.json({ disposal: waste });
 };
 /**
@@ -102,54 +104,49 @@ export const detailWaste = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createWaste = async (req, res) => {
-  const {
-    disposal_date,
-    category_id,
-    subcategory_id,
-    eco_organism_id,
-    disposal_type,
-    weight_kg,
-    volume_m3,
-    transport_method,
-    transport_company,
-    transport_cost,
-    notes,
-  } = req.body;
 
-  if (!disposal_date || !disposal_type || !weight_kg) {
-    return res.status(400).json({
-      error: "Date de sortie, type de sortie et poids sont requis",
-    });
-  }
+  const dataSchema = z.object({
+    disposal_date: z.coerce.date("date de sortie requis"),
+    category_id: idSchema("categorie requis"),
+    subcategory_id: idSchema().nullish(),
+    eco_organism_id: idSchema().nullish(),
+    disposal_type: z.enum(["eco_organism", "landfill", "recycling", "other"], { message: "type de sortie requis" }),
+    weight_kg: z.coerce.number().positive("poid requis"),
+    volume_m3: z.coerce.number().nonnegative().nullish(),
+    transport_method: z.string().nullish(),
+    transport_company: z.string().nullish(),
+    transport_cost: z.coerce.number().nonnegative().nullish(),
+    notes: z.string().nullish(),
+  })
+  const data = dataSchema.parse(req.body)
 
-  if (disposal_type === "eco_organism" && !eco_organism_id) {
-    return res.status(400).json({
-      error: "Éco-organisme requis pour ce type de sortie",
-    });
-  }
+  if (data.disposal_type === "eco_organism" && !data.eco_organism_id)
+    throw new createHttpError[400]("Éco-organisme requis pour ce type de sortie")
 
-  const disposal_number = generateDisposalNumber();
+
+  // const disposal_number = generateDisposalNumber();
 
   const waste = await WasteDisposal.create({
-    disposal_number,
-    disposal_date,
-    disposal_type,
-    category_id: category_id || null,
-    subcategory_id: subcategory_id || null,
-    eco_organism_id: eco_organism_id || null,
-    weight_kg,
-    volume_m3,
-    transport_method,
-    transport_company,
-    transport_cost,
-    notes,
+    // disposal_number,
+    // disposal_date,
+    // disposal_type,
+    // category_id: category_id || null,
+    // subcategory_id: subcategory_id || null,
+    // eco_organism_id: eco_organism_id || null,
+    // weight_kg,
+    // volume_m3,
+    // transport_method,
+    // transport_company,
+    // transport_cost,
+    // notes,
+    ...data,
     created_by: req.user.id,
   });
 
   res.status(201).json({
     message: "Sortie de déchets créée avec succès",
     disposal_id: waste.id,
-    disposal_number: disposal_number,
+    // disposal_number: disposal_number,
   });
 };
 /**
@@ -158,48 +155,42 @@ export const createWaste = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const updateWaste = async (req, res) => {
-  const { id } = req.params;
-  const {
-    disposal_date,
-    category_id,
-    subcategory_id,
-    eco_organism_id,
-    disposal_type,
-    weight_kg,
-    volume_m3,
-    transport_method,
-    transport_company,
-    transport_cost,
-    notes,
-  } = req.body;
+  const dataSchema = z.object({
+    disposal_date: z.coerce.date("date de sortie requis"),
+    category_id: idSchema("categorie requis"),
+    subcategory_id: idSchema().nullish(),
+    eco_organism_id: idSchema().nullish(),
+    disposal_type: z.enum(["eco_organism", "landfill", "recycling", "other"], { message: "type de sortie requis" }),
+    weight_kg: z.coerce.number().positive("poid requis"),
+    volume_m3: z.coerce.number().nonnegative().nullish(),
+    transport_method: z.string().nullish(),
+    transport_company: z.string().nullish(),
+    transport_cost: z.coerce.number().nonnegative().nullish(),
+    notes: z.string().nullish(),
+  })
+  const id = idSchema().parse(req.params.id)
+  const data = dataSchema.parse(req.body)
 
-  if (!disposal_date || !disposal_type || !weight_kg) {
-    return res.status(400).json({
-      error: "Date de sortie, type de sortie et poids sont requis",
-    });
-  }
 
-  if (disposal_type === "eco_organism" && !eco_organism_id) {
-    return res.status(400).json({
-      error: "Éco-organisme requis pour ce type de sortie",
-    });
-  }
+  if (data.disposal_type === "eco_organism" && !data.eco_organism_id)
+    throw new createHttpError[400]("Éco-organisme requis pour ce type de sortie")
 
   const waste = await WasteDisposal.findByPk(id);
-  if(!waste)
+  if (!waste)
     throw createHttpError[404]
-  waste.disposal_date = disposal_date;
-  waste.disposal_type = disposal_type;
-  waste.category_id = category_id;
-  waste.subcategory_id = subcategory_id;
-  waste.eco_organism_id = eco_organism_id;
-  waste.weight_kg = weight_kg;
-  waste.volume_m3 = volume_m3;
-  waste.transport_method = transport_method;
-  waste.transport_company = transport_company;
-  waste.transport_cost = transport_cost;
-  waste.notes = notes;
-  await waste.save();
+  await waste.update({ ...data })
+  // waste.disposal_date = disposal_date;
+  // waste.disposal_type = disposal_type;
+  // waste.category_id = category_id;
+  // waste.subcategory_id = subcategory_id;
+  // waste.eco_organism_id = eco_organism_id;
+  // waste.weight_kg = weight_kg;
+  // waste.volume_m3 = volume_m3;
+  // waste.transport_method = transport_method;
+  // waste.transport_company = transport_company;
+  // waste.transport_cost = transport_cost;
+  // waste.notes = notes;
+  // await waste.save();
 
   res.json({ message: "Sortie de déchets mise à jour avec succès" });
 };
@@ -213,7 +204,7 @@ export const deleteWaste = async (req, res) => {
 
   const deleted = await WasteDisposal.destroy({ where: { id } });
 
-  if (deleted === 0)throw new createHttpError[404]("Sortie de déchets non trouvée") 
+  if (deleted === 0) throw new createHttpError[404]("Sortie de déchets non trouvée")
   res.json({ message: "Sortie de déchets supprimée avec succès" });
 };
 /**
@@ -223,9 +214,9 @@ export const deleteWaste = async (req, res) => {
  */
 export const wasteStats = async (req, res) => {
   const { date_from, date_to } = req.query;
-      /**
-   * @type {import("sequelize").WhereOptions}
-   */
+  /**
+* @type {import("sequelize").WhereOptions}
+*/
   const where = {};
   // if (date_from) {
   //   where.disposal_date = {
@@ -281,9 +272,9 @@ export const wasteStats = async (req, res) => {
  */
 export const wasteStatsCategory = async (req, res) => {
   const { date_from, date_to } = req.query;
-      /**
-   * @type {import("sequelize").WhereOptions}
-   */
+  /**
+* @type {import("sequelize").WhereOptions}
+*/
   const where = {};
   if (date_from) {
     where.disposal_date = {
