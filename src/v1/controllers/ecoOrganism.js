@@ -19,7 +19,8 @@ export const listEcoOrganism = async (req, res) => {
   /**
  * @type {import("sequelize").WhereOptions}
  */
-  const where = { ...filter };
+  const where = { };
+  if (filter.active) where.is_active = filter.active;
 
   const eco_organisms = await EcoOrganism.findAll({ where });
 

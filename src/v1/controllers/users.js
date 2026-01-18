@@ -23,14 +23,14 @@ export const listUsers = async (req, res) => {
       .transform((val) => (val ? val.split(",") : [])),
   })
   const filter = filterSchema.parse(req.query)
+
   /**
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
   if (filter.store_id) where.recyclery_id = filter.store_id;
-  if (filter.role) where.role = { [Op.in]: filter.role }
+  if (filter.role.length>0) where.role = { [Op.in]: filter.role }
   if (filter.active) where.isActive = filter.active;
-
 
   const include = []
   if (filter.include.includes("EmployeeWorkdays"))
@@ -48,6 +48,7 @@ export const listUsers = async (req, res) => {
       as: "stores",
     })
 
+  console.log(where, include)
 
   const users = await User.findAll({
     where,
