@@ -47,7 +47,8 @@ export default (sequelize, DataTypes) => {
       day_of_week: {
         type: DataTypes.VIRTUAL,
         get() {
-          new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(this.scheduled_date)
+          const d = new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(this.scheduled_date)
+          return d.charAt(0).toUpperCase() + d.slice(1)
         }
       },
       // status: DataTypes.STRING,

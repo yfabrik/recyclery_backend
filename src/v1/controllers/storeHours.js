@@ -3,6 +3,7 @@ import db from "../../models/index.js";
 import { createSchedule, deleteSchedule, listSchedules, updateSchedule } from "./taskSchedule.js";
 import createHttpError from "http-errors";
 import * as z from "zod"
+import { idSchema } from "../../services/zod.js";
 
 const { StoreHours, Recyclery, TaskSchedule, Task } = db;
 
@@ -42,7 +43,7 @@ export const listHoraires = async (req, res) => {
     return {
       "id": schedule.id,
       "name": schedule.name,
-      "day_of_week": new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(schedule.scheduled_date),
+      "day_of_week": schedule.day_of_week,
       "is_open": true,
       "open_time": schedule.start_time,
       "close_time": schedule.end_time,
@@ -87,7 +88,6 @@ export const horairesMagasin = async (req, res) => {
   const storeHours = schedules.map(schedule => {
     return {
       "id": schedule.id,
-      "day_of_week": new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(schedule.scheduled_date),
       "is_open": true,
       "open_time": schedule.start_time,
       "close_time": schedule.end_time,
@@ -121,9 +121,8 @@ export const horairesMagasin = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const addHoraire = async (req, res) => {
-
   const dataSchema = z.object({
-    store_id: z.coerce.number("ID du magasin et jour de la semaine sont obligatoires"),
+    store_id: idSchema("ID du magasin et jour de la semaine sont obligatoires"),
     day_of_week: z.enum(["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]).transform(val => getDateFromDay(val)),
 
     is_open: z.coerce.boolean().default(true),
@@ -136,11 +135,11 @@ export const addHoraire = async (req, res) => {
       return new Date().setHours(hours, min)
     }), z.coerce.date()]),
     is_24h: z.coerce.boolean().default(false),
-    notes: z.string().optional(),
+    notes: z.string().nullish(),
   })
   const data = dataSchema.parse(req.body)
   const horaires = await TaskSchedule.create({
-    name: "vente-" + data.day_of_week + data.store_id,
+    name: "vente-" + data.day_of_week + ' ' + data.store_id,
 
     category: "vente",
     priority: "low",
@@ -186,58 +185,90 @@ export const addHoraire = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const updateHoraire = async (req, res) => {
-  return updateSchedule(req, res)
-  const { id } = req.params;
-  const {
-    store_id,
-    day_of_week,
-    time_slot_name,
-    is_open,
-    open_time,
-    close_time,
-    is_24h,
-    notes,
-  } = req.body;
 
-  const existing = await StoreHours.findByPk(id);
-  // Vérifier que les horaires existent
-  if (!existing) {
-    return res.status(404).json({
-      success: false,
-      message: "Horaires non trouvés",
-    });
-  }
+  const dataSchema = z.object({
+    store_id: idSchema("ID du magasin et jour de la semaine sont obligatoires"),
+    day_of_week: z.enum(["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]).transform(val => getDateFromDay(val)),
 
-  const store = await Recyclery.findByPk(store_id, {
-    include: [{ model: StoreHours, as: "horaires" }],
-  });
+    is_open: z.coerce.boolean().default(true),
+    open_time: z.union([z.iso.time().transform(val => {
+      const [hours, min] = val.split(":")
+      return new Date().setHours(hours, min)
+    }), z.coerce.date()]),
+    close_time: z.union([z.iso.time().transform(val => {
+      const [hours, min] = val.split(":")
+      return new Date().setHours(hours, min)
+    }), z.coerce.date()]),
+    is_24h: z.coerce.boolean().default(false),
+    notes: z.string().nullish(),
+  })
+  const data = dataSchema.parse(req.body)
+  const id = idSchema().parse(req.params.id)
+  const schedule = await TaskSchedule.findByPk(id)
+  if (!schedule) throw new createHttpError.NotFound("horaires pas trouvé")
+  await schedule.update({
+    name: "vente-" + data.day_of_week + ' ' + data.store_id,
+    recurrence_pattern: "weekly",
+    scheduled_date: data.day_of_week,
+    start_time: data.open_time,
+    end_time: data.close_time,
+    notes: null,
+    status: "a",
+    store_id: data.store_id
+  })
+
+  // return updateSchedule(req, res)
+  // const { id } = req.params;
+  // const {
+  //   store_id,
+  //   day_of_week,
+  //   time_slot_name,
+  //   is_open,
+  //   open_time,
+  //   close_time,
+  //   is_24h,
+  //   notes,
+  // } = req.body;
+
+  // const existing = await StoreHours.findByPk(id);
+  // // Vérifier que les horaires existent
+  // if (!existing) {
+  //   return res.status(404).json({
+  //     success: false,
+  //     message: "Horaires non trouvés",
+  //   });
+  // }
+
+  // const store = await Recyclery.findByPk(store_id, {
+  //   include: [{ model: StoreHours, as: "horaires" }],
+  // });
 
 
-  // Vérifier s'il n'y a pas de conflit avec d'autres horaires du même magasin, jour et créneau
-  const duplicate = await store.countHoraires({
-    where: { day_of_week, time_slot_name, id: { [Op.ne]: id } },
-  });
-  if (duplicate) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Des horaires existent déjà pour ce magasin, ce jour et ce créneau",
-    });
-  }
-  existing.day_of_week = day_of_week;
-  existing.time_slot_name = time_slot_name;
-  existing.open_time = open_time;
-  existing.close_time = close_time;
-  existing.is_24h = is_24h;
-  existing.notes = notes;
-  existing.is_open = is_open;
+  // // Vérifier s'il n'y a pas de conflit avec d'autres horaires du même magasin, jour et créneau
+  // const duplicate = await store.countHoraires({
+  //   where: { day_of_week, time_slot_name, id: { [Op.ne]: id } },
+  // });
+  // if (duplicate) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     message:
+  //       "Des horaires existent déjà pour ce magasin, ce jour et ce créneau",
+  //   });
+  // }
+  // existing.day_of_week = day_of_week;
+  // existing.time_slot_name = time_slot_name;
+  // existing.open_time = open_time;
+  // existing.close_time = close_time;
+  // existing.is_24h = is_24h;
+  // existing.notes = notes;
+  // existing.is_open = is_open;
 
-  await existing.save();
+  // await existing.save();
 
   res.json({
     success: true,
     message: "Horaires mis à jour avec succès",
-    horaire: existing
+    horaire: schedule
   });
 };
 /**
