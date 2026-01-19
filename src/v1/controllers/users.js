@@ -4,6 +4,7 @@ import db from "../../models/index.js";
 import { findUserByEmail } from "../../services/users.js";
 import { col, fn, Op } from "sequelize";
 import * as z from "zod"
+import { idSchema, phoneSchema } from "../../services/zod.js";
 const { User, Recyclery, EmployeeWorkdays } = db;
 
 /**
@@ -138,8 +139,8 @@ export const createUser = async (req, res) => {
     email: z.email(" email obligatoire"),
     password: z.string(" mot de passe  obligatoire"),
     role: z.string().optional().default("employee"),
-    recyclery_id: z.coerce.number().optional(),
-    phone: z.string().optional(),//TODO get the phoneSchema
+    recyclery_id: idSchema().nullish(),
+    phone: phoneSchema().nullish(),
     contract_hours: z.coerce.number().optional().default(35)//TODO le temps ça devrait pas dependre des heure de travail set ?
   })
 
