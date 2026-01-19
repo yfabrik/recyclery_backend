@@ -174,7 +174,7 @@ export const closeCashSession = async (req, res) => {
   await session.update({
     closing_amount: data.closing_amount,
     expected_amount: expected,
-    difference_amount: difference,
+    // difference_amount: difference,
     closed_at: new Date(),
     status: "close",
     notes: data.notes || session.notes,

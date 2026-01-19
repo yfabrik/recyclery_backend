@@ -15,7 +15,6 @@ export default (sequelize, DataTypes) => {
       // this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
       this.belongsTo(models.CashSession, { foreignKey: "cash_session_id" });
       this.hasMany(models.LabeledItem, { foreignKey: "transaction_id" });
-
     }
   }
   SalesTransaction.init(
@@ -23,22 +22,34 @@ export default (sequelize, DataTypes) => {
       // transaction_number: DataTypes.STRING, //id ??? //assoc ???
       // cash_session_id: DataTypes.INTEGER, //assoc
       // store_id: DataTypes.INTEGER, //assoc
-      total_amount: DataTypes.DECIMAL(10,2),//virtual ?
+      total_amount: DataTypes.DECIMAL(10, 2), //virtual ?
       payment_method: DataTypes.ENUM("cash", "card", "check"),
-      transactionType: { type: DataTypes.ENUM("sell", "refund"), defaultValue: "sell" },
-      payment_amount: DataTypes.DECIMAL(10,2),
-      // change_amount: DataTypes.DECIMAL,
+      transactionType: {
+        type: DataTypes.ENUM("sell", "refund"),
+        defaultValue: "sell",
+      },
+      payment_amount: DataTypes.DECIMAL(10, 2),
+
+      change_amount: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          return this.payment_amount - this.total_amount;
+        },
+      },
       customer_name: DataTypes.STRING,
       customer_email: DataTypes.STRING,
       customer_postal_code: DataTypes.STRING,
-      status: DataTypes.ENUM("pending", "completed", "cancelled"),
+      status: {
+        type: DataTypes.ENUM("pending", "completed", "cancelled"),
+        defaultValue: "completed",
+      },
       // refunded_amount: DataTypes.DECIMAL, //??????
       // created_by: DataTypes.INTEGER, //assoc
     },
     {
       sequelize,
       modelName: "SalesTransaction",
-    }
+    },
   );
   return SalesTransaction;
 };

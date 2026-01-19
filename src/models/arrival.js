@@ -16,10 +16,10 @@ export default (sequelize, DataTypes) => {
       });
 
       //pas needed just get 1 and find the parent
-      // this.belongsTo(models.Category, {
-      //   foreignKey: "subcategory_id",
-      //   as: "subcategorie",
-      // });
+      this.belongsTo(models.Category, {
+        foreignKey: "subcategory_id",
+        as: "subcategorie",
+      });
       this.belongsTo(models.CollectionPoint, {
         foreignKey: "collection_point_id",
       });

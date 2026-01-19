@@ -2,9 +2,21 @@ import { col, fn, literal, Op } from "sequelize";
 import db from "../../models/index.js";
 import z from "zod";
 import createHttpError from "http-errors";
-import { asOptionalStringWithoutEmpty, idSchema, postalSchema } from "../../services/zod.js";
+import {
+  asOptionalStringWithoutEmpty,
+  idSchema,
+  postalSchema,
+} from "../../services/zod.js";
 
-const { SalesTransaction, Recyclery, User, Refund, LabeledItem, CashSession, CashRegister } = db;
+const {
+  SalesTransaction,
+  Recyclery,
+  User,
+  Refund,
+  LabeledItem,
+  CashSession,
+  CashRegister,
+} = db;
 /**
  *
  * @param {import("express").Request} req
@@ -18,8 +30,8 @@ export const listTransactions = async (req, res) => {
     // date_to,
     limit: z.coerce.number().positive().default(50),
     offset: z.coerce.number().nonnegative().default(0),
-  })
-  const filter = filterSchema.parse(req.query)
+  });
+  const filter = filterSchema.parse(req.query);
   const {
     store_id,
     period,
@@ -45,21 +57,22 @@ export const listTransactions = async (req, res) => {
   const include = [
     {
       model: CashSession,
-      include: [{
-        model: CashRegister,
-        where,
-        include: [
-          {
-            model: Recyclery,
-
-          }
-        ]
-      },
-      {
-        model: User
-      }]
-    }
-  ]
+      include: [
+        {
+          model: CashRegister,
+          where,
+          include: [
+            {
+              model: Recyclery,
+            },
+          ],
+        },
+        {
+          model: User,
+        },
+      ],
+    },
+  ];
 
   const transactions = await SalesTransaction.findAll({
     // where,
@@ -67,7 +80,7 @@ export const listTransactions = async (req, res) => {
     include,
     order: [["createdAt", "DESC"]],
     limit: filter.limit,
-    offset: filter.offset
+    offset: filter.offset,
   });
 
   res.json({
@@ -86,6 +99,13 @@ export const listTransactions = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createTransaction = async (req, res) => {
+  const itemSchema = z.object({
+    price: z.coerce.number().positive(),
+    quantity: z.coerce.number().positive().default(1),
+    labeled_item_id: idSchema().nullish(),
+    category_id: idSchema(),
+    subcategory_id: idSchema().nullish(),
+  });
   const dataSchema = z.object({
     cash_session_id: idSchema("sesions requis"),
     // store_id: idSchema("magasin requis"),
@@ -96,45 +116,54 @@ export const createTransaction = async (req, res) => {
     customer_name: z.string().nullish(),
     customer_email: z.string().nullish(),
     customer_postal_code: postalSchema().nullish(),
-    items: z.array(z.union([z.number(), z.object({})])),
-  })
-  const data = dataSchema.parse(req.body)
-  const t = await db.sequelize.transaction()
-  const session = await CashSession.findByPk(data.cash_session_id)
-  if (!session) throw new createHttpError[404]("session non trouvé")
+    items: z.array(itemSchema),
+  });
+  const data = dataSchema.parse(req.body);
+  const t = await db.sequelize.transaction();
+  const session = await CashSession.findByPk(data.cash_session_id);
+  if (!session) throw new createHttpError[404]("session non trouvé");
   try {
-    const sale = await session.createSalesTransaction({
-      total_amount: data.total_amount,
-      payment_method: data.payment_method,
-      payment_amount: data.payment_amount,
-      customer_email: data?.customer_email || null,
-      customer_name: data?.customer_name || null,
-      customer_postal_code: data?.customer_postal_code || null
-    }, { transaction: t })
+    const sale = await session.createSalesTransaction(
+      {
+        total_amount: data.total_amount,
+        payment_method: data.payment_method,
+        payment_amount: data.payment_amount,
+        customer_email: data?.customer_email || null,
+        customer_name: data?.customer_name || null,
+        customer_postal_code: data?.customer_postal_code || null,
+      },
+      { transaction: t },
+    );
     for await (const item of data.items) {
       if (item?.labeled_item_id) {
-        const i = await LabeledItem.findByPk(item)
-        if (!i) throw new createHttpError.NotFound("item not found")
-        i.transaction_id = sale.id
-        i.status = "sold"
-        i.sold_by = req.user.id
-        i.sold_at = new Date()
-        await i.save({ transaction: t })
-      }
-      else {
-        const newItem = await LabeledItem.create({
-          category_id: item.category_id,
-          price: item.price||0,
-          weight: item.weight,
-          transaction_id: sale.id,
-          status: "sold",
-          sold_at: new Date(),
-          sold_by: req.user.id
-        }, { transaction: t })
+        const i = await LabeledItem.findByPk(item.labeled_item_id);
+        if (!i) throw new createHttpError.NotFound("item not found");
+        i.transaction_id = sale.id;
+        i.status = "sold";
+        i.sold_by = req.user.id;
+        i.sold_at = new Date();
+        await i.save({ transaction: t });
+      } else {
+        for (let index = 0; index < item.quantity; index++) {
+          const newItem = await LabeledItem.create(
+            {
+              category_id: item.category_id,
+              subcategory_id: item.subcategory_id,
+
+              price: item.price || 0,
+              weight: item.weight,
+              transaction_id: sale.id,
+              status: "sold",
+              sold_at: new Date(),
+              sold_by: req.user.id,
+            },
+            { transaction: t },
+          );
+        }
       }
     }
 
-    await t.commit()
+    await t.commit();
 
     res.json({
       success: true,
@@ -146,10 +175,9 @@ export const createTransaction = async (req, res) => {
       },
     });
   } catch (err) {
-    await t.rollback()
-    throw err
+    await t.rollback();
+    throw err;
   }
-
 
   // const {
   //   cash_session_id,
@@ -163,7 +191,6 @@ export const createTransaction = async (req, res) => {
   //   customer_postal_code,
   //   items = [],
   // } = req.body;
-
 
   // // Générer un numéro de transaction unique
   // const timestamp = Date.now().toString();
@@ -195,8 +222,6 @@ export const createTransaction = async (req, res) => {
   //   found.transaction_id = result.id;
   //   await found.save();
   // }
-
-
 };
 /**
  *
@@ -260,7 +285,7 @@ export const createRefund = async (req, res) => {
     // On peut ajouter une colonne refunded_at pour marquer les transactions remboursées
     await SalesTransaction.update(
       { refundedAt: new Date() },
-      { where: { id: transaction_id } }
+      { where: { id: transaction_id } },
     );
   }
 
@@ -309,14 +334,19 @@ export const listRefunds = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const transactionsStats = async (req, res) => {
-  const { store_id, date_from, date_to } = req.query;
+  const filterSchema = z.object({
+    store_id: z.union([idSchema(), z.literal("")]).nullish(),
+    date_from: z.coerce.date().nullish(),
+    date_to: z.coerce.date().nullish(),
+  });
+  const filter = filterSchema.parse(req.query);
   /**
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
-  if (store_id) where.store_id = store_id;
-  if (date_from && date_to)
-    where.createdAt = { [Op.between]: [date_from, date_to] };
+  if (filter.store_id) where.store_id = filter.store_id;
+  if (filter.date_from && filter.date_to)
+    where.createdAt = { [Op.between]: [filter.date_from, filter.date_to] };
 
   // Subquery for total refunded amounts per transaction
   const refundSubquery = literal(`(
@@ -328,50 +358,94 @@ export const transactionsStats = async (req, res) => {
     )`);
 
   // Fetch global stats
-  const stats = await SalesTransaction.findAll({
+  const { count, rows } = await SalesTransaction.findAndCountAll({
     attributes: [
-      [fn("COUNT", col("id")), "total_transactions"],
       [
         fn("COALESCE", fn("SUM", col("total_amount")), 0),
         "total_sales_before_refunds",
-      ],
-      [
-        literal(
-          "COALESCE(SUM(total_amount) - COALESCE(SUM((" +
-          refundSubquery.val +
-          ")), 0), 0)"
-        ),
-        "total_sales",
       ],
       [
         fn("COALESCE", fn("AVG", col("total_amount")), 0),
         "average_transaction",
       ],
       [fn("COUNT", fn("DISTINCT", col("cash_session_id"))), "sessions_count"],
-      [
-        fn("COALESCE", fn("SUM", literal(refundSubquery.val)), 0),
-        "total_refunded",
-      ],
+      // [
+      //   fn(
+      //     "SUM",
+      //     literal(`CASE WHEN payment_method = 'cash' THEN 1 ELSE 0 END`),
+      //   ),
+      //   "cash",
+      // ],
+      // [
+      //   fn(
+      //     "SUM",
+      //     literal(`CASE WHEN payment_method = 'card' THEN 1 ELSE 0 END`),
+      //   ),
+      //   "card",
+      // ],
     ],
-    where,
+    raw:true
+  });
+  // const stats = rows[0].get({ plain: true });
+  const methods = await SalesTransaction.findAll({
+    attributes: [
+      "payment_method",
+      [fn("SUM", col("total_amount")), "total"],
+      [fn("COUNT", col("payment_method")), "count"],
+    ],
+    group: [["payment_method"]],
     raw: true,
   });
+  console.log(methods,rows);
+
+  // const stats = await SalesTransaction.findAll({
+  //   attributes: [
+  //     [fn("COUNT", col("id")), "total_transactions"],
+  //     [
+  //       fn("COALESCE", fn("SUM", col("total_amount")), 0),
+  //       "total_sales_before_refunds",
+  //     ],
+  //     [
+  //       literal(
+  //         "COALESCE(SUM(total_amount) - COALESCE(SUM((" +
+  //           refundSubquery.val +
+  //           ")), 0), 0)",
+  //       ),
+  //       "total_sales",
+  //     ],
+  //     [
+  //       fn("COALESCE", fn("AVG", col("total_amount")), 0),
+  //       "average_transaction",
+  //     ],
+  //     [fn("COUNT", fn("DISTINCT", col("cash_session_id"))), "sessions_count"],
+  //     [
+  //       fn("COALESCE", fn("SUM", literal(refundSubquery.val)), 0),
+  //       "total_refunded",
+  //     ],
+  //   ],
+  //   where,
+  //   raw: true,
+  // });
   res.json({
     success: true,
     stats: {
-      total_transactions: stats[0].total_transactions || 0,
-      total_sales_before_refunds: parseFloat(
-        stats[0].total_sales_before_refunds || 0
-      ),
-      total_sales: parseFloat(stats[0].total_sales || 0),
-      total_refunded: parseFloat(stats[0].total_refunded || 0),
-      average_transaction: parseFloat(stats[0].average_transaction || 0),
-      sessions_count: stats[0].sessions_count || 0,
-      payment_methods: stats.map((method) => ({
-        payment_method: method.payment_method,
-        count: method.count,
-        total: parseFloat(method.total || 0),
-      })),
+      total_transactions: count,
+      total_sales: rows[0].total_sales_before_refunds,
+      ...rows[0],
+      total_refunded: 0,
+      payment_methods:methods
+      // total_sales_before_refunds: parseFloat(
+      //   stats[0].total_sales_before_refunds || 0,
+      // ),
+      // total_sales: parseFloat(stats[0].total_sales || 0),
+      // total_refunded: parseFloat(stats[0].total_refunded || 0),
+      // average_transaction: parseFloat(stats[0].average_transaction || 0),
+      // sessions_count: stats[0].sessions_count || 0,
+      // payment_methods: stats.map((method) => ({
+      //   payment_method: method.payment_method,
+      //   count: method.count,
+      //   total: parseFloat(method.total || 0),
+      // })),
     },
   });
 };

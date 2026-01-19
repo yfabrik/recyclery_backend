@@ -22,9 +22,9 @@ const { LabeledItem, Category, User } = db;
 //     res.json({ items });
 // }
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listLabeledItem = async (req, res) => {
   const filterSchema = z.object({
@@ -32,9 +32,9 @@ export const listLabeledItem = async (req, res) => {
     category_id: idSchema().optional(),
     search: z.string().optional(),
     recyclery_id: idSchema().optional(),
-    barcode: z.string().optional()
-  })
-  const { search, ...filter } = filterSchema.parse(req.query)
+    barcode: z.string().optional(),
+  });
+  const { search, ...filter } = filterSchema.parse(req.query);
   /**
    * @type {import("sequelize").WhereOptions}
    */
@@ -57,11 +57,11 @@ export const listLabeledItem = async (req, res) => {
         as: "category",
         attributes: ["id", "name"],
       },
-      // {
-      //   model: Category,
-      //   as: "subcategory",
-      //   attributes: ["id", "name"],
-      // },
+      {
+        model: Category,
+        as: "subcategory",
+        attributes: ["id", "name"],
+      },
       {
         model: User,
         as: "createdBy",
@@ -74,16 +74,16 @@ export const listLabeledItem = async (req, res) => {
   res.json({ success: true, items: labeledItems });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const getItemFromBarcode = async (req, res) => {
-  logger.warn("used getItemFromBarcode TO REMOVE")
+  logger.warn("used getItemFromBarcode TO REMOVE");
   const { barcode } = req.params;
   const item = await LabeledItem.findOne({ where: { barcode: barcode } });
 
-  if (!item) throw new createHttpError[404]("Article non trouvé") //TODO barcode as query param
+  if (!item) throw new createHttpError[404]("Article non trouvé"); //TODO barcode as query param
 
   res.json({ success: true, item });
 };
@@ -119,15 +119,16 @@ export const getItemFromBarcode = async (req, res) => {
 //     });
 // }
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const createLabeledItem = async (req, res) => {
   const dataSchema = z.object({
     name: z.string().nullish(),
     description: z.string().nullish(),
     category_id: idSchema("categorie requis"),
+    subcategory_id: idSchema().nullish(),
     weight: z.coerce.number().nonnegative().nullish(),
     price: z.coerce.number().nonnegative("prix requis"),
     cost: z.coerce.number().nonnegative().nullish(),
@@ -136,8 +137,8 @@ export const createLabeledItem = async (req, res) => {
     arrival_id: idSchema().nullish(),
     purchase_price: z.coerce.number().nonnegative().nullish(),
     selling_price: z.coerce.number().nonnegative().nullish(),
-    recyclery_id: idSchema().nullish()
-  })
+    recyclery_id: idSchema().nullish(),
+  });
   // let {
   //   name,
   //   description,
@@ -156,7 +157,7 @@ export const createLabeledItem = async (req, res) => {
 
   // if (!price) price = selling_price;
   // if (!cost) cost = purchase_price;
-  const data = dataSchema.parse(req.body)
+  const data = dataSchema.parse(req.body);
 
   // Validation des champs requis
   // if (!category_id || !price) {
@@ -180,7 +181,6 @@ export const createLabeledItem = async (req, res) => {
   const item = await LabeledItem.create({
     ...data,
     created_by: req.user.id,
-
   });
 
   res.status(201).json({
@@ -190,9 +190,9 @@ export const createLabeledItem = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const updateItem = async (req, res) => {
   const { id } = req.params;
@@ -200,6 +200,7 @@ export const updateItem = async (req, res) => {
     name: z.string().nullish(),
     description: z.string().nullish(),
     category_id: idSchema("categorie requis"),
+    subcategory_id: idSchema().nullish(),
     weight: z.coerce.number().nonnegative().nullish(),
     price: z.coerce.number().nonnegative("prix requis"),
     cost: z.coerce.number().nonnegative().nullish(),
@@ -208,15 +209,13 @@ export const updateItem = async (req, res) => {
     arrival_id: idSchema().nullish(),
     purchase_price: z.coerce.number().nonnegative().nullish(),
     selling_price: z.coerce.number().nonnegative().nullish(),
-    recyclery_id: idSchema().nullish()
-  })
-  const data = dataSchema.parse(req.body)
+    recyclery_id: idSchema().nullish(),
+  });
+  const data = dataSchema.parse(req.body);
 
   const item = await LabeledItem.findByPk(id);
-  if (!item) throw new createHttpError[404]("item non trouvé")
-  await item.update(
-    { ...data }
-  )
+  if (!item) throw new createHttpError[404]("item non trouvé");
+  await item.update({ ...data });
   // const params = [
   //   name,
   //   description || null,
@@ -241,22 +240,22 @@ export const updateItem = async (req, res) => {
   res.json({ success: true, message: "Article mis à jour avec succès" });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const deleteLabeledItem = async (req, res) => {
   const { id } = req.params;
   const deleted = await LabeledItem.destroy({ where: { id } });
 
-  if (deleted === 0) throw new createHttpError[404]("Article non trouvé")
+  if (deleted === 0) throw new createHttpError[404]("Article non trouvé");
 
   res.json({ success: true, message: "Article supprimé avec succès" });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const tagItemAsSell = async (req, res) => {
   const { id } = req.params;
@@ -271,7 +270,7 @@ export const tagItemAsSell = async (req, res) => {
         id,
         status: "available",
       },
-    }
+    },
   );
 
   res.json({ success: true, message: "Article marqué comme vendu" });

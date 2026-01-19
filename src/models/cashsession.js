@@ -11,7 +11,7 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.belongsTo(models.CashRegister, { foreignKey: "cash_register_id" });
-      this.hasMany(models.SalesTransaction, { foreignKey: "sale_id" });
+      this.hasMany(models.SalesTransaction, { foreignKey: "cash_session_id" });
       this.belongsTo(models.User, { foreignKey: "user_id" });
       // this.belongsTo(models.Recyclery, { foreignKey: "store_id" });//peut trouver en remontant from caisse
     }

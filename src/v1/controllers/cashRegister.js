@@ -12,13 +12,14 @@ const { CashRegister, CashSession, Recyclery, Sequelize } = db;
  * @param {import("express").Response} res 
  */
 export const listCaisses = async (req, res) => {
+  const {id : store_id} = req.params
   const filterSchema = z.object({
     is_active: z.coerce.boolean().optional(),
     store_id: idSchema().optional()//TODO fix NAME ?
   })
 
 
-  const filter = filterSchema.parse(req.query, req.params)
+  const filter = filterSchema.parse({store_id,...req.query})
   /**
    * @type {import("sequelize").WhereOptions<import("../../models/types/cashRegisterModel.js").CashRegisterAttributes>} 
    */

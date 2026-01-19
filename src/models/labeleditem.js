@@ -16,10 +16,10 @@ export default (sequelize, DataTypes) => {
 
       });
 
-      // this.belongsTo(models.Category, {
-      //   as: "subcategory",
-      //   foreignKey: "subcategory_id",
-      // });
+      this.belongsTo(models.Category, {
+        as: "subcategory",
+        foreignKey: "subcategory_id",
+      });
 
       this.belongsTo(models.Recyclery, {
         as: "recyclery",
