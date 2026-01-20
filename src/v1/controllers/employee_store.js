@@ -80,9 +80,13 @@ export const getEmployeeStoreById = async (req, res) => {
 
   if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
 
+  const stores = user.get({ plain: true }).stores;
+  const assignments = stores.map((s) => {
+    return { ...s, is_primary: s.EmployeeStore.is_primary };
+  });
   res.json({
     success: true,
-    assignments: [],
+    assignments,
     stores: user.stores,
   });
 };
@@ -93,7 +97,7 @@ export const getEmployeeStoreById = async (req, res) => {
  */
 export const listStoreEmployee = async (req, res) => {
   const { storeId } = req.query;
-  
+
   const include = [
     {
       model: Recyclery,
