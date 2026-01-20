@@ -75,9 +75,13 @@ export const getEmployeeStoreById = async (req, res) => {
 
   if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
 
+  const stores = user.get({ plain: true }).stores;
+  const assignments = stores.map((s) => {
+    return { ...s, is_primary: s.EmployeeStore.is_primary };
+  });
   res.json({
     success: true,
-    assignments: [],
+    assignments,
     stores: user.stores,
   });
 };
@@ -88,7 +92,7 @@ export const getEmployeeStoreById = async (req, res) => {
  */
 export const listStoreEmployee = async (req, res) => {
   const { storeId } = req.query;
-  
+
   const include = [
     {
       model: Recyclery,
@@ -146,7 +150,7 @@ export const assignUserToStore = async (req, res) => {
         {
           where: { employee_id: employee_id },
           transaction: t,
-        }
+        },
       );
     }
 
@@ -183,7 +187,7 @@ export const assignUserToStore = async (req, res) => {
  */
 export const removeEmployeeStore = async (req, res) => {
   const { employeeId, storeId } = req.params;
-  
+
   if (!employeeId) {
     return res.status(400).json({
       success: false,
