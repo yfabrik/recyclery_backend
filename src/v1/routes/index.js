@@ -39,3 +39,5 @@ router.use('/store-locations', (await import("./storeLocation.js")).router);//
 router.use('/collection-point-presence', (await import("./collectionPoint_presences.js")).router);// todo change to task schedule
 router.use("/employee-stores", (await import("./employeeStore.js")).router);
 router.use('/employee-workdays', (await import("./employeeWorkdays.js")).router);
+
+router.use("/employees",(await import("./employees.js")).router)
