@@ -4,7 +4,7 @@ import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 import { cast, col, literal } from "sequelize";
 
-const { EmployeeWorkdays, User } = db;
+const { EmployeeWorkdays, Employee } = db;
 export const router = Router();
 // Obtenir tous les jours de travail
 router.get(
@@ -12,8 +12,8 @@ router.get(
   authenticateToken,
   asyncHandler(async (req, res) => {
     const workdays = await EmployeeWorkdays.findAll({
-      include: [{ model: User }],
-      order: [[User, "username"], ["day_of_week"], ["time_slot"]],
+      include: [{ model: Employee }],
+      order: [[Employee, "nom"], ["day_of_week"], ["time_slot"]],
     });
     res.json({
       success: true,
@@ -103,7 +103,7 @@ router.post(
     }
 
     // Vérifier que l'employé existe
-    const employee = await User.findByPk(employeeId);
+    const employee = await Employee.findByPk(employeeId);
 
     if (!employee) {
       return res.status(404).json({
@@ -184,7 +184,7 @@ router.post(
     }
 
     // Vérifier que l'employé existe
-    const employee = await User.findByPk(employee_id);
+    const employee = await Employee.findByPk(employee_id);
 
     if (!employee) {
       return res.status(404).json({
