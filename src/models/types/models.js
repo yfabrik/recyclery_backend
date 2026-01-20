@@ -36,6 +36,8 @@
  * @property { import("sequelize").ModelStatic<import("./collectionSchedule.js").CollectionScheduleInstance>} CollectionSchedule
  * @property { import("sequelize").ModelStatic<import("./donationModel.js").DonationInstance>} Donation
  * @property { import("sequelize").ModelStatic<import("./ecoOrganismModel.js").EcoOrganismInstance>} EcoOrganism
+ * @property { import("sequelize").ModelStatic<import("./employeeModel.js").EmployeeInstance>} Employee
+ * @property { import("sequelize").ModelStatic<import("./employeestoreModel.js").EmployeeStoreInstance>} EmployeeStore
  * @property { import("sequelize").ModelStatic<import("./employeeWorkday.js").EmployeeWorkdaysInstance>} EmployeeWorkdays
  * @property { import("sequelize").ModelStatic<import("./labeledItemModel.js").LabeledItemInstance>} LabeledItem
  * @property { import("sequelize").ModelStatic<any>} RecurringSchedule
@@ -50,8 +52,5 @@
  * @property { import("sequelize").ModelStatic<import("./taskSchedule.js").TaskScheduleInstance>} TaskSchedule
  * @property { import("sequelize").ModelStatic<import("./userModel.js").UserInstance>} User
  * @property { import("sequelize").ModelStatic<import("./wasteDisposalModel.js").WasteDisposalInstance>} WasteDisposal
- * @property { import("sequelize").ModelStatic<any>} EmployeeWorkdays
- * @property { import("sequelize").ModelStatic<any>} EmployeeStore
- * @property { import("sequelize").ModelStatic<import("./employeeModel.js").EmployeeInstance>} Employee
  * 
  */

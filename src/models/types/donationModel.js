@@ -1,8 +1,8 @@
 /**
  * @typedef {Object} DonationCreateAttributes
  * @property {string} donor_name - Name of the donor
- * @property {string} [donor_phone] - Phone number of the donor
- * @property {string} [donor_email] - Email address of the donor
+ * @property {string|null} [donor_phone] - Phone number of the donor
+ * @property {string|null} [donor_email] - Email address of the donor
  * @property {string} item_description - Description of the donated items
  * @property {number} [estimated_value] - Estimated monetary value of the donation
  * @property {"pending"| "accepted"| "rejected"} [status] - Status of the donation (default: "pending")

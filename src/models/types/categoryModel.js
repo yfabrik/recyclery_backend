@@ -1,9 +1,11 @@
 /**
  * @typedef {Object} CategoryCreateAttributes
  * @property {string} name - The name of the category (required)
- * @property {string} [description] - Detailed description of the category
- * @property {string} [icon] - Icon identifier or path for the category
+ * @property {string|null} [description] - Detailed description of the category
+ * @property {string|null} [icon] - Icon identifier or path for the category
  * @property {number|null} [parent_id] - Foreign key reference to the parent category (for hierarchical categories). Null for top-level categories.
+ * @property {number} [defaultWeight] - Default weight for items in this category (default: 0, min: 0)
+ * @property {number} [defaultPrice] - Default price for items in this category (default: 0, min: 0)
  * 
  * @typedef { import("./baseModelAttributes.js").baseAttributes & CategoryCreateAttributes} CategoryAttributes
  */
