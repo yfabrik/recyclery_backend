@@ -1,7 +1,7 @@
 import createHttpError from "http-errors";
 import db from "../../models/index.js";
-import { cast, col, literal } from "sequelize";
-const { User, Recyclery, sequelize, EmployeeStore, Employee } = db;
+import { cast, col, literal, Op } from "sequelize";
+const { Recyclery, sequelize, EmployeeStore, Employee } = db;
 /**
  *
  * @param {import("express").Request} req
@@ -87,22 +87,21 @@ export const getEmployeeStoreById = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const listStoreEmployee = async (req, res) => {
-  const { storeId, role } = req.query;
-  /**
-   * @type {import("sequelize").WhereOptions}
-   */
-  const where = {};
-  if (storeId) where.recyclery_id = storeId;
-  if (role) where.role = role;
+  const { storeId } = req.query;
+  
+  const include = [
+    {
+      model: Recyclery,
+      as: "stores",
+      ...(storeId && {
+        where: { id: storeId },
+        required: true, // INNER JOIN to filter only employees assigned to this store
+      }),
+    },
+  ];
 
   const users = await Employee.findAll({
-    where,
-    include: [
-      {
-        model: Recyclery,
-        // as: "stores",
-      },
-    ],
+    include,
   });
 
   res.json({ users });
@@ -138,46 +137,42 @@ export const assignUserToStore = async (req, res) => {
 
   if (!store) throw new createHttpError[404]("Magasin non trouvé");
 
-  await employee.addStore(store, {
-    through: { isPrimary: true },
+  await sequelize.transaction(async (t) => {
+    // Si c'est une affectation principale, retirer le statut principal des autres affectations de cet employé
+    if (is_primary) {
+      // Update all existing assignments to set is_primary to false
+      await EmployeeStore.update(
+        { is_primary: false },
+        {
+          where: { employee_id: employee_id },
+          transaction: t,
+        }
+      );
+    }
+
+    // Add or update the store assignment
+    await employee.addStore(store, {
+      through: { is_primary: is_primary },
+      transaction: t,
+    });
   });
 
-  // const niquetoi = await EmployeeStore.create({
-  //   employee_id: employee.id,
-  //   store_id: store.id,
-  //   is_primary,
-  // });
-
-  // // Si c'est une affectation principale, retirer le statut principal des autres affectations de cet employé
-  if (is_primary) {
-    //   await database.run(
-    //     "UPDATE employee_stores SET is_primary = 0 WHERE employee_id = ?",
-    //     [employee_id]
-    //   );
-    // }
-    await sequelize.transaction(async (t) => {
-      for (const store of employee.stores) {
-        await employee.addStore(store, {
-          through: { is_primary: store.id === store_id },
-          transaction: t,
-        });
-      }
-    });
-  }
-
-  // await employee.addStore(store);
-  // const result = await database.run(
-  //   `
-  //   INSERT INTO employee_stores (employee_id, store_id, is_primary, created_at, updated_at)
-  //   VALUES (?, ?, ?, datetime('now'), datetime('now'))
-  // `,
-  //   [employee_id, store_id, is_primary ? 1 : 0]
-  // );
+  // Reload employee with updated store associations
+  await employee.reload({
+    include: [
+      {
+        model: Recyclery,
+        as: "stores",
+        through: {
+          attributes: ["is_primary"],
+        },
+      },
+    ],
+  });
 
   res.status(201).json({
     success: true,
     message: "Affectation créée avec succès",
-    // assignment_id: niquetoi.id,
     employee,
   });
 };
@@ -187,15 +182,34 @@ export const assignUserToStore = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const removeEmployeeStore = async (req, res) => {
-  const { employeeId } = req.params;
-  const employee = await Employee.findByPk(employeeId, {
-    include: [{ model: Recyclery, as: "stores" }],
-  });
-  await employee.setStores([]);
-  // const result = await EmployeeStore.destroy(employeeId);
+  const { employeeId, storeId } = req.params;
+  
+  if (!employeeId) {
+    return res.status(400).json({
+      success: false,
+      error: "employeeId est requis",
+    });
+  }
+
+  const employee = await Employee.findByPk(employeeId);
+  if (!employee) {
+    throw new createHttpError[404]("Employé non trouvé");
+  }
+
+  if (storeId) {
+    // Remove specific store assignment
+    const store = await Recyclery.findByPk(storeId);
+    if (!store) {
+      throw new createHttpError[404]("Magasin non trouvé");
+    }
+    await employee.removeStore(store);
+  } else {
+    // Remove all store assignments
+    await employee.setStores([]);
+  }
 
   res.json({
     success: true,
-    message: ` affectation(s) supprimée(s) avec succès`,
+    message: `Affectation(s) supprimée(s) avec succès`,
   });
 };
