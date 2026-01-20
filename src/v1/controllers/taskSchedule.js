@@ -6,7 +6,7 @@ import category from "../../models/category.js";
 import createHttpError from "http-errors";
 import { idSchema } from "../../services/zod.js";
 
-const { TaskSchedule, Task, User, Recyclery, EmployeeWorkdays, CollectionPoint } = db;
+const { TaskSchedule, Task, User, Recyclery, EmployeeWorkdays, CollectionPoint,Employee } = db;
 
 /**
  *
@@ -219,13 +219,13 @@ export const findSchedule = async (req, res) => {
         attributes: {
             include: [
                 [
-                    fn("COALESCE", col("User.username"), "Utilisateur inconnu"),
+                    fn("COALESCE", col("Employee.nom"), "Utilisateur inconnu"),
                     "employee_name",
                 ],
             ],
         },
         include: [
-            { model: User },
+            { model: Employee },
             {
                 model: Task,
             },
@@ -513,7 +513,7 @@ export const addEmployeeToSchedule = async (req, res) => {
     // Vérifier que la tâche du planning existe et récupérer ses détails
     // const taskQuery = "SELECT * FROM task_schedules WHERE id = ?";
     const task = await Task.findByPk(scheduleId, {
-        include: [{ model: User }],
+        include: [{ model: Employee }],
     });
 
     if (!task) throw new createHttpError[404]("Tâche du planning non trouvée")
@@ -527,12 +527,12 @@ export const addEmployeeToSchedule = async (req, res) => {
         .toLowerCase();
 
     // Vérifier que l'employé existe, appartient au bon magasin ET est présent ce jour-là
-    let employee = await User.findAll({
-        where: { id: employee_id, role: "employee" },
+    let employee = await Employee.findAll({
+        where: { id: employee_id },
         include: [
             {
                 model: Recyclery,
-                as: "stores",
+                // as: "stores",
                 where: { id: currentSchedule.store_id || 1 },
             },
             { model: EmployeeWorkdays, where: { day_of_week: dayOfWeek } },
@@ -543,7 +543,7 @@ export const addEmployeeToSchedule = async (req, res) => {
 
     // Vérifier si l'assignation existe déjà
 
-    if (task.Users.includes(employee[0].id)) throw new createHttpError.Conflict("Cet employé est déjà assigné à cette tâche")
+    if (task.Employees.includes(employee[0].id)) throw new createHttpError.Conflict("Cet employé est déjà assigné à cette tâche")
 
     // NOUVELLE LOGIQUE : Vérifier les conflits d'horaires
 
@@ -596,7 +596,7 @@ export const addEmployeeToSchedule = async (req, res) => {
     // }
 
     // Créer l'assignation
-    await task.addUser(employee);
+    await task.addEmployee(employee);
     // const created = await TaskSchedule.create({
     //   // schedule_id: scheduleId,
     //   employee_id,
@@ -620,10 +620,10 @@ export const removeEmployeeFromSchedule = async (req, res) => {
     const query =
         "DELETE FROM task_schedule_employees WHERE schedule_id = ? AND employee_id = ?";
     const result = await Task.findByPk(scheduleId, {
-        include: [{ model: User }],
+        include: [{ model: Employee }],
     });
 
-    await result.removeUser(employeeId)
+    await result.removeEmployee(employeeId)
     // const result = await TaskSchedule.destroy({
     //   // where: { schedule_id: scheduleId, employee_id: employeeId },
     // });
@@ -646,7 +646,7 @@ export const findAvailableEMployee = async (req, res) => {
     // Récupérer les détails de la tâche
     const scheduleQuery = "SELECT * FROM task_schedules WHERE id = ?";
     const schedule = await Task.findByPk(scheduleId, {
-        include: [{ model: User }],
+        include: [{ model: Employee }],
     });
 
     if (!schedule) throw new createHttpError[404]("Tâche non trouvée")
@@ -663,11 +663,9 @@ export const findAvailableEMployee = async (req, res) => {
         .toLocaleDateString("en-US", { weekday: "long" })
         .toLowerCase();
 
-    allEmployees = await User.findAll({
-        attributes: ["id", "username", "email", "role"],
-        where: {
-            role: "employee",
-        },
+    allEmployees = await Employee.findAll({
+        
+       
         include: [
             {
                 model: EmployeeWorkdays,
@@ -699,7 +697,7 @@ export const findAvailableEMployee = async (req, res) => {
             },
             include: [
                 {
-                    model: User,
+                    model: Employee,
                     where: { id: employee.id },
                 },
             ],
@@ -716,7 +714,7 @@ export const findAvailableEMployee = async (req, res) => {
             is_available: conflicts.length === 0,
             has_conflicts: conflicts.length > 0,
             conflicts: conflicts,
-            already_assigned: schedule.Users.some((u) => u.id == employee.id),
+            already_assigned: schedule.Employees.some((u) => u.id == employee.id),
         });
     }
 
@@ -819,15 +817,15 @@ export const planningStats = async (req, res) => {
     const topEmployees = await TaskSchedule.findAll({
         attributes: [
             [
-                fn("COALESCE", col("User.name"), "Utilisateur inconnu"),
+                fn("COALESCE", col("Employee.nom"), "Utilisateur inconnu"),
                 "employee_name",
             ],
             [fn("COUNT", col("*")), "schedule_count"],
         ],
-        include: [{ model: User }],
+        include: [{ model: Employee }],
         group: [
-            [User, "id"],
-            [User, "username"],
+            [Employee, "id"],
+            // [Employee, "nom"],
         ],
         order: ["schedule_count", "DESC"],
         limit: 5,

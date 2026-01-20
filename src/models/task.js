@@ -10,9 +10,11 @@ export default (sequelize, DataTypes) => {
          *@param {import ('./types/models.js').models} models
          */
     static associate(models) {
-      this.belongsToMany(models.User, { through: "task_user" })
+      // this.belongsToMany(models.User, { through: "task_user" })
       this.belongsTo(models.TaskSchedule, { foreignKey: "schedule_id" })
-
+      this.belongsTo(models.Recyclery)
+      this.belongsTo(models.CollectionPoint)
+      this.belongsToMany(models.Employee, { through: "employee_task" });
     }
   }
   Task.init({

@@ -11,7 +11,7 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.belongsTo(models.Recyclery,{foreignKey:"store_id"})
-      this.belongsTo(models.User,{foreignKey:"employee_id"})
+      this.belongsTo(models.Employee,{foreignKey:"employee_id"})
       
     }
   }
@@ -24,6 +24,7 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "EmployeeStore",
+      tableName:"employee_store"
     }
   );
   return EmployeeStore;

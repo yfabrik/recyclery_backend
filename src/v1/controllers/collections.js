@@ -3,7 +3,7 @@ import * as z from "zod"
 import { createTask, listTasks } from "./tasks.js";
 import logger from "../../services/logger.js";
 
-const { CollectionSchedule, User, Task } = db;
+const { CollectionSchedule, Employee, Task } = db;
 
 /**
  * 
@@ -21,7 +21,7 @@ export const listCollections = async (req, res) => {
   const where = { category: "collection" };
   if (recyclery_id) where.recyclery_id = recyclery_id
   if (status) where.status = status;
-  const include = [{ model: User }]
+  const include = [{ model: Employee }]
 
 
   const collections = await Task.findAll({

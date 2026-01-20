@@ -21,6 +21,8 @@ app.use("*splat", (req, res, next) => {
 app.use(errorHandler);
 
 app.listen(5000, () => {
+  db.sequelize.sync();
+
   // db.sequelize.sync({ force: true });
 
   console.log(`server started on http://0.0.0.0:5000`);

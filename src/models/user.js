@@ -16,22 +16,22 @@ export default (sequelize, DataTypes) => {
       // this.belongsToMany(models.CollectionSchedule, { foreignKey: "employee_id", through: "user_schedule" });
       this.hasMany(models.CollectionReceipt, { foreignKey: "processed_by" });
       this.hasMany(models.LabeledItem, { foreignKey: "created_by" });
-      this.belongsToMany(models.Task, { through: "task_user" });
+      // this.belongsToMany(models.Task, { through: "task_user" });
       this.hasMany(models.Arrival, { foreignKey: "processed_by" })
       // this.belongsToMany(models.TaskSchedule,{through:"taskSchedule_employee",foreignKey:"employee_id"})
-      this.hasMany(models.TaskSchedule, { foreignKey: "assigned_to" })
+      // this.hasMany(models.TaskSchedule, { foreignKey: "assigned_to" })
 
 
-      this.belongsToMany(models.Recyclery, {
-        through: "EmployeeStore",
-        foreignKey: "employee_id",
-        as: "stores",
-      });
+      // this.belongsToMany(models.Recyclery, {
+      //   through: "EmployeeStore",
+      //   foreignKey: "employee_id",
+      //   as: "stores",
+      // });
       this.hasMany(models.Recyclery, {
         foreignKey: "manager_id",
         as: "managedStores",
       });
-      this.hasMany(models.EmployeeWorkdays, { foreignKey: "employee_id" })
+      // this.hasMany(models.EmployeeWorkdays, { foreignKey: "employee_id" })
     }
   }
   User.init(

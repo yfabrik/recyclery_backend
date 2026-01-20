@@ -37,7 +37,7 @@ export const listArrivals = async (req, res) => {
     where,
     include: [
       { model: Category, as: "categorie" },
-      // { model: Category, as: "subcategorie" },
+      { model: Category, as: "subcategorie" },
       { model: User },
       { model: CollectionPoint },
     ],

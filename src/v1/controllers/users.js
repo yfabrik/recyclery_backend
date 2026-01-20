@@ -3,7 +3,7 @@ import db from "../../models/index.js";
 
 import { findUserByEmail } from "../../services/users.js";
 import { col, fn, Op } from "sequelize";
-import * as z from "zod"
+import * as z from "zod";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 const { User, Recyclery, EmployeeWorkdays } = db;
 
@@ -15,41 +15,43 @@ const { User, Recyclery, EmployeeWorkdays } = db;
 export const listUsers = async (req, res) => {
   const filterSchema = z.object({
     store_id: z.coerce.number().optional(),
-    role: z.string()
+    role: z
+      .string()
       .optional()
       .transform((val) => (val ? val.split(",") : [])),
     active: z.coerce.boolean().optional(),
-    include: z.string()
+    include: z
+      .string()
       .optional()
       .transform((val) => (val ? val.split(",") : [])),
-  })
-  const filter = filterSchema.parse(req.query)
+  });
+  const filter = filterSchema.parse(req.query);
 
   /**
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
   if (filter.store_id) where.recyclery_id = filter.store_id;
-  if (filter.role.length>0) where.role = { [Op.in]: filter.role }
+  if (filter.role.length > 0) where.role = { [Op.in]: filter.role };
   if (filter.active) where.isActive = filter.active;
 
-  const include = []
+  const include = [];
   if (filter.include.includes("EmployeeWorkdays"))
     include.push({
       model: EmployeeWorkdays,
-    })
+    });
   if (filter.include.includes("managedStores"))
     include.push({
       model: Recyclery,
       as: "managedStores",
-    })
+    });
   if (filter.include.includes("stores"))
     include.push({
       model: Recyclery,
       as: "stores",
-    })
+    });
 
-  console.log(where, include)
+  console.log(where, include);
 
   const users = await User.findAll({
     where,
@@ -117,7 +119,7 @@ export const findUserById = async (req, res) => {
   const { id } = req.params;
   const user = await User.findByPk(id, {
     include: [
-      { model: Recyclery, as: "stores", required: false },
+      // { model: Recyclery, as: "stores", required: false },
       { model: Recyclery, as: "managedStores", required: false },
     ],
   });
@@ -141,14 +143,15 @@ export const createUser = async (req, res) => {
     role: z.string().optional().default("employee"),
     recyclery_id: idSchema().nullish(),
     phone: phoneSchema().nullish(),
-    contract_hours: z.coerce.number().optional().default(35)//TODO le temps ça devrait pas dependre des heure de travail set ?
-  })
+    contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
+    isActive: z.coerce.boolean().nullish().default(true),
+  });
 
-  const data = dataSchema.parse(req.body)
+  const data = dataSchema.parse(req.body);
   const existingUser = await findUserByEmail(data.email);
   if (existingUser)
     throw new createHttpError.Conflict(
-      "Un utilisateur avec cet email existe déjà"
+      "Un utilisateur avec cet email existe déjà",
     );
 
   const user = await User.create({
@@ -172,25 +175,28 @@ export const updateUser = async (req, res) => {
   const dataSchema = z.object({
     username: z.string("Nom d'utilisateur obligatoire"),
     email: z.email(" email obligatoire"),
+    role: z.string().nullish().default("employee"),
+    recyclery_id: idSchema().nullish(),
+    phone: phoneSchema().nullish(),
+    contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
+    isActive: z.coerce.boolean().nullish().default(true),
+  });
 
-    role: z.string().optional().default("employee"),
-    recyclery_id: z.coerce.number().optional(),
-    phone: z.string().optional(),//TODO get the phoneSchema
-    contract_hours: z.coerce.number().optional().default(35)//TODO le temps ça devrait pas dependre des heure de travail set ?
-  })
-
-  const data = dataSchema.parse(req.body)
+  const data = dataSchema.parse(req.body);
 
   const user = await User.findByPk(id);
   if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
+  await user.update({
+    ...data,
+  });
 
-  user.username = data.username || user.username;
-  user.email = data.email || user.email;
-  user.role = data.role || user.role;
-  user.recyclery_id = recyclery_id || user.recyclery_id;
-  user.phone = data.phone || user.phone;
-  user.contract_hours = data.contract_hours || user.contract_hours;
-  await user.save();
+  // user.username = data.username || user.username;
+  // user.email = data.email || user.email;
+  // user.role = data.role || user.role;
+  // user.recyclery_id = recyclery_id || user.recyclery_id;
+  // user.phone = data.phone || user.phone;
+  // user.contract_hours = data.contract_hours || user.contract_hours;
+  // await user.save();
   res.json({
     success: true,
     user,

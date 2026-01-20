@@ -4,7 +4,7 @@ import * as z from "zod";
 import collection from "../../models/poubelle/collection.js";
 import createHttpError from "http-errors";
 
-const { Task, User, TaskSchedule } = db;
+const { Task, User, TaskSchedule,Employee } = db;
 
 /**
  *
@@ -58,7 +58,7 @@ export const listTasks = async (req, res) => {
   const include = [];
   if (data.include.includes("user"))
     include.push({
-      model: User,
+      model: Employee,
     });
 
   const tasks = await Task.findAll({
@@ -253,11 +253,11 @@ export const getUsersFromTask = async (req, res) => {
   //TODO use the detail task with query param ?
   const { taskId } = req.params;
 
-  const tasks = await Task.findByPk(taskId, { include: [{ model: User }] });
+  const tasks = await Task.findByPk(taskId, { include: [{ model: Employee }] });
 
   res.json({
     success: true,
-    employees: tasks.Users,
+    employees: tasks.Employees,
   });
 };
 /**
@@ -283,7 +283,7 @@ export const addUserToTask = async (req, res) => {
   if (!task)throw new createHttpError[404]("Tâche non trouvée")
 
   // Vérifier que l'employé existe
-  const employee = await User.findByPk(employee_id);
+  const employee = await Employee.findByPk(employee_id);
 
   if (!employee)throw new createHttpError[404]("Employé non trouvé") 
 
@@ -294,7 +294,7 @@ export const addUserToTask = async (req, res) => {
   //     message: "Cet employé est déjà assigné à cette tâche",
   //   });
 
-  await task.addUser(employee);
+  await task.addEmployee(employee);
 
   res.json({
     success: true,
@@ -310,7 +310,7 @@ export const removeUserFromTask = async (req, res) => {
   const { taskId, employeeId } = req.params;
 
   const task = await Task.findByPk(taskId);
-  await task.removeUser(employeeId);
+  await task.removeEmployee(employeeId);
 
   res.json({
     success: true,

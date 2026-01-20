@@ -52,4 +52,6 @@
  * @property { import("sequelize").ModelStatic<import("./wasteDisposalModel.js").WasteDisposalInstance>} WasteDisposal
  * @property { import("sequelize").ModelStatic<any>} EmployeeWorkdays
  * @property { import("sequelize").ModelStatic<any>} EmployeeStore
+ * @property { import("sequelize").ModelStatic<import("./employeeModel.js").EmployeeInstance>} Employee
+ * 
  */

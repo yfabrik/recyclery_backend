@@ -17,6 +17,8 @@ export default (sequelize, DataTypes) => {
       this.belongsTo(models.CollectionPoint,{foreignKey:"collection_point_id"})
       // this.belongsToMany(models.User,{through:"taskSchedule_employee",foreignKey:"schedule_id"})
       // this.belongsTo(models.User, { foreignKey: "assigned_to" });
+      this.belongsToMany(models.Employee, { through: "employee_schedule" });
+
     }
   }
 

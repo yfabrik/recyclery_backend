@@ -1,15 +1,20 @@
 import createHttpError from "http-errors";
 import db from "../../models/index.js";
 import { cast, col, literal } from "sequelize";
-const { User, Recyclery, sequelize, EmployeeStore } = db;
+const { User, Recyclery, sequelize, EmployeeStore, Employee } = db;
 /**
  *
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
 export const listEmployeeStore = async (req, res) => {
-  const assignments = await User.findAll({
-    include: [{ model: Recyclery, as: "stores" }],
+  const assignments = await Employee.findAll({
+    include: [
+      {
+        model: Recyclery,
+        as: "stores",
+      },
+    ],
   });
 
   res.json({
@@ -25,56 +30,55 @@ export const listEmployeeStore = async (req, res) => {
 export const getEmployeeStoreById = async (req, res) => {
   const { id, employeeId } = req.params;
 
-  const assignment = await EmployeeStore.findAll({
-    where: { employee_id: employeeId },
-  });
-
-  const user = await User.findByPk(employeeId, {
+  const user = await Employee.findByPk(employeeId, {
     include: [
       {
         model: Recyclery,
         as: "stores",
-        through: { attributes: ["is_primary"] },
+        through: {
+          attributes: ["is_primary"],
+        },
+        // through: { attributes: ["is_primary"] },
       },
     ],
   });
-  const employeeStores = await EmployeeStore.findAll({
-    where: {
-      employee_id: employeeId,
-    },
-    attributes: [
-      "employee_id",
-      "store_id",
-      // cast boolean to integer
-      [cast(col("is_primary"), "INTEGER"), "is_primary"],
-      "createdAt",
-      "updatedAt",
-      [col("Recyclery.name"), "store_name"],
-      [col("Recyclery.address"), "store_address"],
-    ],
-    include: [
-      {
-        model: Recyclery,
-        attributes: [
-          // ["name", "store_name"],
-          // ["address", "store_address"],
-        ],
-        required: false, // LEFT JOIN
-      },
-    ],
-    order: [
-      [literal('"is_primary" DESC')], // order primary first
-      [Recyclery, "name", "ASC"], // then by store name
-    ],
-    raw: true, // return plain objects
-  });
+  // const employeeStores = await EmployeeStore.findAll({
+  //   where: {
+  //     employeeId: employeeId,
+  //   },
+  //   // attributes: [
+  //   //   "employeeId",
+  //   //   "RecycleryId",
+  //   //   // cast boolean to integer
+  //   //   [cast(col("is_primary"), "INTEGER"), "is_primary"],
+  //   //   "createdAt",
+  //   //   "updatedAt",
+  //   //   [col("Recyclery.name"), "store_name"],
+  //   //   [col("Recyclery.address"), "store_address"],
+  //   // ],
+  //   include: [
+  //     {
+  //       model: Recyclery,
+  //       attributes: [
+  //         // ["name", "store_name"],
+  //         // ["address", "store_address"],
+  //       ],
+  //       required: false, // LEFT JOIN
+  //     },
+  //   ],
+  //   order: [
+  //     // [literal('"is_primary" DESC')], // order primary first
+  //     // [Recyclery, "name", "ASC"], // then by store name
+  //   ],
+  //   raw: true, // return plain objects
+  // });
 
-  // if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
+  if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
 
   res.json({
     success: true,
-    assignments: employeeStores,
-    stores: user,
+    assignments: [],
+    stores: user.stores,
   });
 };
 /**
@@ -91,12 +95,12 @@ export const listStoreEmployee = async (req, res) => {
   if (storeId) where.recyclery_id = storeId;
   if (role) where.role = role;
 
-  const users = await User.findAll({
+  const users = await Employee.findAll({
     where,
     include: [
       {
         model: Recyclery,
-        as: "stores",
+        // as: "stores",
       },
     ],
   });
@@ -119,20 +123,30 @@ export const assignUserToStore = async (req, res) => {
   }
 
   // Vérifier que l'employé et le magasin existent
-  const employee = await User.findByPk(employee_id, {
-    include: [{ model: Recyclery, as: "stores" }],
+  const employee = await Employee.findByPk(employee_id, {
+    include: [
+      {
+        model: Recyclery,
+        as: "stores",
+      },
+    ],
   });
+  console.log(employee);
 
-  if (!employee)  throw new createHttpError[404]("Employé non trouvé")
+  if (!employee) throw new createHttpError[404]("Employé non trouvé");
   const store = await Recyclery.findByPk(store_id);
 
-  if (!store) throw new createHttpError[404]("Magasin non trouvé")
+  if (!store) throw new createHttpError[404]("Magasin non trouvé");
 
-  const niquetoi = await EmployeeStore.create({
-    employee_id: employee.id,
-    store_id: store.id,
-    is_primary,
+  await employee.addStore(store, {
+    through: { isPrimary: true },
   });
+
+  // const niquetoi = await EmployeeStore.create({
+  //   employee_id: employee.id,
+  //   store_id: store.id,
+  //   is_primary,
+  // });
 
   // // Si c'est une affectation principale, retirer le statut principal des autres affectations de cet employé
   if (is_primary) {
@@ -163,7 +177,7 @@ export const assignUserToStore = async (req, res) => {
   res.status(201).json({
     success: true,
     message: "Affectation créée avec succès",
-    assignment_id: niquetoi.id,
+    // assignment_id: niquetoi.id,
     employee,
   });
 };
@@ -174,7 +188,7 @@ export const assignUserToStore = async (req, res) => {
  */
 export const removeEmployeeStore = async (req, res) => {
   const { employeeId } = req.params;
-  const employee = await User.findByPk(employeeId, {
+  const employee = await Employee.findByPk(employeeId, {
     include: [{ model: Recyclery, as: "stores" }],
   });
   await employee.setStores([]);

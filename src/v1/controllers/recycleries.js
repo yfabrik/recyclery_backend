@@ -11,6 +11,7 @@ const {
   SalesTransaction,
   LabeledItem,
   EmployeeWorkdays,
+  Employee
 } = db;
 /**
  *
@@ -34,7 +35,7 @@ export const listRecycleries = async (req, res) => {
   const include = [];
   if (filter.include.includes("employees"))
     include.push({
-      model: User,
+      model: Employee,
       as: "employees",
       include: [{ model: EmployeeWorkdays }],
     });
