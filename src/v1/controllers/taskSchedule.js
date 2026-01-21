@@ -532,7 +532,7 @@ export const addEmployeeToSchedule = async (req, res) => {
         include: [
             {
                 model: Recyclery,
-                // as: "stores",
+                as: "stores",
                 where: { id: currentSchedule.store_id || 1 },
             },
             { model: EmployeeWorkdays, where: { day_of_week: dayOfWeek } },

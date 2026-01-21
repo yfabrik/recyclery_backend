@@ -4,7 +4,7 @@ import * as z from "zod";
 import collection from "../../models/poubelle/collection.js";
 import createHttpError from "http-errors";
 
-const { Task, User, TaskSchedule,Employee } = db;
+const { Task, User, TaskSchedule, Employee } = db;
 
 /**
  *
@@ -27,10 +27,10 @@ export const listTasks = async (req, res) => {
         req.originalUrl == "/api/collection-point-presence"
           ? "point"
           : req.originalUrl == "/api/store-hours"
-          ? "vente"
-          : req.originalUrl == "/api/collections"
-          ? "collection"
-          : null
+            ? "vente"
+            : req.originalUrl == "/api/collections"
+              ? "collection"
+              : null,
       ),
     priority: z.string().optional(),
     search: z.string().optional(),
@@ -102,7 +102,7 @@ export const detailTask = async (req, res) => {
   const { id } = req.params;
   const tasks = await Task.findByPk(id);
 
-  if (!tasks)throw new createHttpError[404]("Tâche non trouvée")
+  if (!tasks) throw new createHttpError[404]("Tâche non trouvée");
 
   // Parser les champs JSON
   const task = {
@@ -127,41 +127,44 @@ export const detailTask = async (req, res) => {
  */
 export const createTask = async (req, res) => {
   const dataSchema = z.object({
-    name: z.string("Nom requis"),
-    description: z.string().optional(),
+    name: z.string("Nom requis").nullish(),
+    description: z.string().nullish(),
     category: z.string("categorie requis"),
     priority: z.string("priorité requis"),
-    estimated_duration: z.coerce.number().optional(),
+    // estimated_duration: z.coerce.number().nullish(),
     required_skills: z
       .array(z.string())
-      .optional()
+      .nullish()
       .default([])
       .transform((val) => JSON.stringify(val)),
-    location: z.string().optional(),
-    equipment_needed: z.array(z.string()).optional(),
-    hourly_rate: z.coerce.number().optional(),
-    is_recurring: z.coerce.boolean().optional(),
-    recurrence_pattern: z.string().optional(),
-    assigned_to: z.string().optional(),
-    notes: z.string().optional(),
-    start_time: z.coerce.date().optional(),
-    end_time: z.coerce.date().optional(),
+    // location: z.string().optional(),
+    equipment_needed: z.array(z.string()).nullish(),
+    // hourly_rate: z.coerce.number().nullish(),
+    is_recurring: z.coerce.boolean().nullish(),
+    recurrence_pattern: z.string().nullish(),
+    assigned_to: z.string().nullish(),
+    notes: z.string().nullish(),
+    start_time: z.coerce.date().nullish(),
+    end_time: z.coerce.date().nullish(),
     scheduled_date: z.coerce.date().optional().default(new Date()),
   });
-
   const data = dataSchema.parse(req.body);
+  const name =
+    data.name ??
+    data.category + "_" + data.scheduled_date.toLocaleDateString("fr-FR");
   let schedule = null;
   if (data.recurrence_pattern && data.recurrence_pattern != "none") {
     schedule = await TaskSchedule.create({
       ...data,
+      name,
     });
-    console.log(schedule);
   }
   const { is_recurring, recurrence_pattern, ...rest } = data;
   const task = await Task.create({
     ...rest,
     status: "a",
     schedule_id: schedule?.id || null,
+    name,
   });
 
   res.json({
@@ -179,25 +182,25 @@ export const updateTask = async (req, res) => {
   const id = z.coerce.number().parse(req.params.id);
 
   const dataSchema = z.object({
-    name: z.string("Nom requis"),
-    description: z.string().optional(),
+    name: z.string("Nom requis").nullish(),
+    description: z.string().nullish(),
     category: z.string("categorie requis"),
     priority: z.string("priorité requis"),
-    estimated_duration: z.coerce.number().optional(),
+    // estimated_duration: z.coerce.number().nullish(),
     required_skills: z
       .array(z.string())
-      .optional()
+      .nullish()
       .default([])
       .transform((val) => JSON.stringify(val)),
-    location: z.string().optional(),
-    equipment_needed: z.array(z.string()).optional(),
-    hourly_rate: z.coerce.number().optional(),
-    is_recurring: z.coerce.boolean().optional(),
-    recurrence_pattern: z.string().optional(),
-    assigned_to: z.string().optional(),
-    notes: z.string().optional(),
-    start_time: z.coerce.date().optional(),
-    end_time: z.coerce.date().optional(),
+    // location: z.string().optional(),
+    equipment_needed: z.array(z.string()).nullish(),
+    // hourly_rate: z.coerce.number().nullish(),
+    is_recurring: z.coerce.boolean().nullish(),
+    recurrence_pattern: z.string().nullish(),
+    assigned_to: z.string().nullish(),
+    notes: z.string().nullish(),
+    start_time: z.coerce.date().nullish(),
+    end_time: z.coerce.date().nullish(),
     scheduled_date: z.coerce.date().optional().default(new Date()),
   });
 
@@ -205,22 +208,26 @@ export const updateTask = async (req, res) => {
   // Vérifier que la tâche existe
   const existing = await Task.findByPk(id);
 
-  if (!existing) throw new createHttpError[404]("Tâche non trouvée")
+  if (!existing) throw new createHttpError[404]("Tâche non trouvée");
 
-  existing.name = data.name;
-  existing.description = data.description;
-  existing.category = data.category;
-  existing.priority = data.priority;
-  existing.estimated_duration = data.estimated_duration;
-  existing.required_skills = JSON.stringify(data.required_skills || []);
-  existing.location = location;
-  existing.equipment_needed = JSON.stringify(data.equipment_needed || []);
-  existing.hourly_rate = data.hourly_rate;
-  existing.is_recurring = data.is_recurring;
-  existing.recurrence_pattern = data.recurrence_pattern;
-  existing.assigned_to = data.assigned_to;
-  existing.notes = data.notes;
-  await existing.save();
+
+  await existing.update({
+    ...data
+  })
+  // existing.name = data.name;
+  // existing.description = data.description;
+  // existing.category = data.category;
+  // existing.priority = data.priority;
+  // existing.estimated_duration = data.estimated_duration;
+  // existing.required_skills = JSON.stringify(data.required_skills || []);
+  // existing.location = location;
+  // existing.equipment_needed = JSON.stringify(data.equipment_needed || []);
+  // existing.hourly_rate = data.hourly_rate;
+  // existing.is_recurring = data.is_recurring;
+  // existing.recurrence_pattern = data.recurrence_pattern;
+  // existing.assigned_to = data.assigned_to;
+  // existing.notes = data.notes;
+  // await existing.save();
 
   res.json({
     success: true,
@@ -236,7 +243,7 @@ export const updateTask = async (req, res) => {
 export const deleteTask = async (req, res) => {
   const { id } = req.params;
   const existing = await Task.findByPk(id);
-  if (!existing) throw new createHttpError[404]("Tâche non trouvée") 
+  if (!existing) throw new createHttpError[404]("Tâche non trouvée");
   await existing.destroy();
 
   res.json({
@@ -280,12 +287,12 @@ export const addUserToTask = async (req, res) => {
 
   // Vérifier que la tâche existe
 
-  if (!task)throw new createHttpError[404]("Tâche non trouvée")
+  if (!task) throw new createHttpError[404]("Tâche non trouvée");
 
   // Vérifier que l'employé existe
   const employee = await Employee.findByPk(employee_id);
 
-  if (!employee)throw new createHttpError[404]("Employé non trouvé") 
+  if (!employee) throw new createHttpError[404]("Employé non trouvé");
 
   //FIXME
   // if (task.hasUser(employee))

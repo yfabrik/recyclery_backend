@@ -45,13 +45,12 @@ export const listUsers = async (req, res) => {
       model: Recyclery,
       as: "managedStores",
     });
-  if (filter.include.includes("stores"))
-    include.push({
-      model: Recyclery,
-      as: "stores",
-    });
+  // if (filter.include.includes("stores"))
+  //   include.push({
+  //     model: Recyclery,
+  //     as: "stores",
+  //   });
 
-  console.log(where, include);
 
   const users = await User.findAll({
     where,
