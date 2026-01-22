@@ -5,7 +5,8 @@ import { authenticateToken } from "../../middlewares/auth.js";
 
 export const router = Router();
 
-router.post("/register", asyncHandler(register));
+if (process.env.NODE_ENV != "production")
+  router.post("/register", asyncHandler(register));
 
 router.post("/login", asyncHandler(login));
 

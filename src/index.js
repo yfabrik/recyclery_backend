@@ -2,15 +2,17 @@ import express from "express";
 import db from "./models/index.js";
 import "dotenv/config";
 import helmet from "helmet";
+import bcrypt from "bcryptjs";
 
 export const app = express();
-app.use(helmet())
+app.use(helmet());
 app.use(express.json());
 
 import { router } from "./v1/routes/index.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import createHttpError from "http-errors";
 import cors from "cors";
+import logger from "./services/logger.js";
 app.use(cors());
 app.use("/api", router);
 
@@ -21,7 +23,31 @@ app.use("*splat", (req, res, next) => {
 app.use(errorHandler);
 
 app.listen(5000, () => {
-  db.sequelize.sync();
+  db.sequelize
+    .sync()
+    .then(async () => {
+      const count = await db.User.count();
+      if (
+        count == 0 &&
+        process.env.DEFAULT_USERNAME &&
+        process.env.DEFAULT_MAIL &&
+        process.env.DEFAULT_PASS
+      ) {
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(
+          process.env.DEFAULT_PASS,
+          saltRounds,
+        );
+        await db.User.create({
+          email: process.env.DEFAULT_MAIL,
+          username: process.env.DEFAULT_USERNAME,
+          password: hashedPassword,
+          role:"admin"
+        });
+        return;
+      }
+    })
+    .catch((err) => logger.error("sync error", err));
 
   // db.sequelize.sync({ force: true });
 
