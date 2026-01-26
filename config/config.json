@@ -10,9 +10,7 @@
     "logging": false
   },
   "production": {
-    "dialect": "sqlite",
-    "storage": "./database/database.sqlite",
-    "logging": false
+   "use_env_variable":"DB_URL"
     
   }
 }
