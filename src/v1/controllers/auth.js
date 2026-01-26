@@ -1,29 +1,27 @@
 import { Op } from "sequelize";
 import jwt from "jsonwebtoken";
-import db from "../../models/index.js"
+import db from "../../models/index.js";
 import bcrypt from "bcryptjs";
 import createHttpError from "http-errors";
-import * as z from "zod"
+import * as z from "zod";
 import { idSchema } from "../../services/zod.js";
 const { User } = db;
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  * @param {import("express").NextFunction} next
  */
 export const register = async (req, res, next) => {
-
   const dataSchema = z.object({
     username: z.string("Nom d'utilisateur requis"),
     email: z.email("email requis"),
     password: z.string("password requis"),
     role: z.string().default("employee"),
     recyclery_id: idSchema().optional(),
-  })
+  });
 
-  const data = dataSchema.parse(req.body)
-
+  const data = dataSchema.parse(req.body);
 
   //FIXME
   const existingUser = await User.findOne({
@@ -31,19 +29,14 @@ export const register = async (req, res, next) => {
   });
   if (existingUser) {
     throw new createHttpError.Conflict(
-      "Un utilisateur avec cet email ou nom d'utilisateur existe déjà"
+      "Un utilisateur avec cet email ou nom d'utilisateur existe déjà",
     );
   }
 
-  const saltRounds = 10;
-  const hashedPassword = await bcrypt.hash(data.password, saltRounds);
-
   const user = await User.create({
     ...data,
-    password: hashedPassword,
-
+    password: data.password,
   });
-
 
   const token = jwt.sign(
     {
@@ -54,7 +47,7 @@ export const register = async (req, res, next) => {
       recyclery_id: user.recyclery_id,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "24h" }
+    { expiresIn: "24h" },
   );
 
   res.status(201).json({
@@ -70,23 +63,25 @@ export const register = async (req, res, next) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  * @param {import("express").NextFunction} next
  */
 export const login = async (req, res, next) => {
   const dataSchema = z.object({
-    email:z.email("Email et mot de passe requis"),
-    password:z.string("Email et mot de passe requis")
-  })
-  const data = dataSchema.parse(req.body)
-  
-  const user = await User.scope("withPassword").findOne({ where: { email: data.email } });
+    email: z.email("Email et mot de passe requis"),
+    password: z.string("Email et mot de passe requis"),
+  });
+  const data = dataSchema.parse(req.body);
+
+  const user = await User.scope("withPassword").findOne({
+    where: { email: data.email },
+  });
   if (!user)
     throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
 
-  const isValidPassword = await bcrypt.compare(data.password, user.password);
+  const isValidPassword = await bcrypt.compare(data.password, user.password_hash);
   if (!isValidPassword) {
     throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
   }
@@ -116,16 +111,16 @@ export const login = async (req, res, next) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const userProfile = async (req, res) => {
   // const id = req.user.id;
   // const user = await User.findByPk(id);
   // if (!user)
   //   throw createHttpError[404]
-  const user = req.user
+  const user = req.user;
   let permissions = [];
   let permissionsByModule = {};
 

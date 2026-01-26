@@ -33,16 +33,11 @@ app.listen(5000, () => {
         process.env.DEFAULT_MAIL &&
         process.env.DEFAULT_PASS
       ) {
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(
-          process.env.DEFAULT_PASS,
-          saltRounds,
-        );
         await db.User.create({
           email: process.env.DEFAULT_MAIL,
           username: process.env.DEFAULT_USERNAME,
-          password: hashedPassword,
-          role:"admin"
+          password: process.env.DEFAULT_PASS,
+          role: "admin",
         });
         return;
       }
