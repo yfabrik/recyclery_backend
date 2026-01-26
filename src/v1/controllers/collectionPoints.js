@@ -24,7 +24,7 @@ export const listCollectionPoints = async (req, res) => {
   const collection_points = await CollectionPoint.findAll({
     where,
     include: [{ model: Recyclery }, { model: TaskSchedule }],
-    order: [["name"]],
+    order: [["name", "ASC"]],
   });
 
   res.json({
