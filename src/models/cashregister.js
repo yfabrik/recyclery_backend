@@ -27,6 +27,10 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "CashRegister",
+      indexes: [
+        { fields: ["recyclery_id"] },
+        { fields: ["recyclery_id", "name"], unique: true },
+      ],
       hooks: {
         beforeDestroy: async (caisse) => {
           const sessions = await caisse.countSessions({ where: { status: "open" } });

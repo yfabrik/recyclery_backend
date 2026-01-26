@@ -26,6 +26,10 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "EmployeeWorkdays",
+      indexes: [
+        { fields: ["employee_id"] },
+        { fields: ["employee_id", "day_of_week"] },
+      ],
     },
   );
   return EmployeeWorkdays;

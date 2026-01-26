@@ -71,6 +71,11 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "WasteDisposal",
+      indexes: [
+        { fields: ["disposal_date"] },
+        { fields: ["category_id"] },
+        { fields: ["eco_organism_id"] },
+      ],
     }
   );
 

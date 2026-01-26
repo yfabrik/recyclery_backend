@@ -24,43 +24,45 @@ const {
  */
 export const listTransactions = async (req, res) => {
   const filterSchema = z.object({
-    store_id: asOptionalStringWithoutEmpty(idSchema().nullish()).optional(),
-    // period,
-    // date_from,
-    // date_to,
+    store_id: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      idSchema().optional().nullable()
+    ),
+    period: z.string().optional(),
+    date_from: z.coerce.date().nullish(),
+    date_to: z.coerce.date().nullish(),
     limit: z.coerce.number().positive().default(50),
     offset: z.coerce.number().nonnegative().default(0),
   });
   const filter = filterSchema.parse(req.query);
-  const {
-    store_id,
-    period,
-    date_from,
-    date_to,
-    limit = 50,
-    offset = 0,
-  } = req.query;
+
   /**
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
-  if (filter.store_id) where.store_id = filter.store_id;
-  // if (date_from) {
-  //     where.createdAt = {
-  //         ...(where.createdAt || {}),
-  //         [Op.gte]: date_from,
-  //     };
-  // }
-  // if (date_to) {
-  //     where.createdAt = { ...(where.createdAt || {}), [Op.lte]: date_to };
-  // }
+  // if (filter.store_id) where.recyclery_id = filter.store_id;
+  if (filter.date_from || filter.date_to) {
+    where.createdAt = {};
+    if (filter.date_from) {
+      // Set to start of day (00:00:00)
+      const dateFrom = new Date(filter.date_from);
+      dateFrom.setHours(0, 0, 0, 0);
+      where.createdAt[Op.gte] = dateFrom;
+    }
+    if (filter.date_to) {
+      // Set to end of day (23:59:59.999) to include all transactions from that day
+      const dateTo = new Date(filter.date_to);
+      dateTo.setHours(23, 59, 59, 999);
+      where.createdAt[Op.lte] = dateTo;
+    }
+  }
   const include = [
     {
       model: CashSession,
       include: [
         {
           model: CashRegister,
-          where,
+          // ...(filter.store_id ? { where: { recyclery_id: filter.store_id } } : {}),
           include: [
             {
               model: Recyclery,
@@ -75,7 +77,7 @@ export const listTransactions = async (req, res) => {
   ];
 
   const transactions = await SalesTransaction.findAll({
-    // where,
+    where,
     // include: [{ model: Recyclery ,}, { model: User }],
     include,
     order: [["createdAt", "DESC"]],
@@ -100,7 +102,7 @@ export const listTransactions = async (req, res) => {
  */
 export const createTransaction = async (req, res) => {
   const itemSchema = z.object({
-    price: z.coerce.number().positive(),
+    price: z.coerce.number("prix requis").positive(),
     quantity: z.coerce.number().positive().default(1),
     labeled_item_id: idSchema().nullish(),
     category_id: idSchema(),
@@ -384,7 +386,7 @@ export const transactionsStats = async (req, res) => {
       //   "card",
       // ],
     ],
-    raw:true
+    raw: true
   });
   // const stats = rows[0].get({ plain: true });
   const methods = await SalesTransaction.findAll({
@@ -396,7 +398,6 @@ export const transactionsStats = async (req, res) => {
     group: [["payment_method"]],
     raw: true,
   });
-  console.log(methods,rows);
 
   // const stats = await SalesTransaction.findAll({
   //   attributes: [
@@ -433,7 +434,7 @@ export const transactionsStats = async (req, res) => {
       total_sales: rows[0].total_sales_before_refunds,
       ...rows[0],
       total_refunded: 0,
-      payment_methods:methods
+      payment_methods: methods
       // total_sales_before_refunds: parseFloat(
       //   stats[0].total_sales_before_refunds || 0,
       // ),
@@ -461,16 +462,20 @@ export const transactionStatsPostalCode = async (req, res) => {
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
-
+const include = [];
   where.customer_postal_code = { [Op.ne]: null };
-  if (store_id) where.store_id = store_id;
+  if (store_id) //where.store_id = store_id;
+ {
+    include.push({ model: CashSession, include: [{ model: CashRegister,where: { recyclery_id: store_id } }] });
+  }
   if (date_from && date_to)
     where.createdAt = { [Op.between]: [date_from, date_to] };
 
   const postalStats = await SalesTransaction.findAll({
     where,
+    include,
     attributes: [
-      [fn("COUNT", col("id")), "total_transactions"],
+      [fn("COUNT", col("SalesTransaction.id")), "total_transactions"],
       [
         fn("COALESCE", fn("AVG", col("total_amount")), 0),
         "average_transaction",

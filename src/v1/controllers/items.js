@@ -167,14 +167,6 @@ export const createLabeledItem = async (req, res) => {
   //   });
   // }
 
-  // Générer un code-barres unique (format: REC + timestamp + random)
-  const timestamp = Date.now().toString().slice(-8);
-  const random = Math.floor(Math.random() * 1000)
-    .toString()
-    .padStart(3, "0");
-  const barcode = `REC${timestamp}${random}`;
-
-  // Récupérer le nom de la catégorie pour l'utiliser comme nom de l'article
   const category = await Category.findByPk(data.category_id);
   if (!data.name) data.name = category ? category.name : "Article";
 

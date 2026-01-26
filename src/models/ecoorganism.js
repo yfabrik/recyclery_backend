@@ -23,7 +23,8 @@ export default (sequelize, DataTypes) => {
     is_active: { type: DataTypes.BOOLEAN, defaultValue: true }
   }, {
     sequelize,
-    modelName: 'EcoOrganism',
+    modelName: "EcoOrganism",
+    indexes: [{ fields: ["is_active"] }],
   });
   return EcoOrganism;
 };

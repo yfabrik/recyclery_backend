@@ -87,7 +87,36 @@ export const createPointPrecense = async (req, res) => {
 
   const data = dataSchema.parse(req.body)
 
-  //TODO check if date is already taken
+  const existing = await TaskSchedule.findAll({
+    where: {
+      category: "point",
+      collection_point_id: data.collection_point_id,
+    },
+  });
+
+  const toMinutes = (/** @type {Date | number} */ v) => {
+    const d = v instanceof Date ? v : new Date(v);
+    return d.getHours() * 60 + d.getMinutes();
+  };
+  const newStart = toMinutes(data.start_time);
+  const newEnd = toMinutes(data.end_time);
+  const dayRef = data.day_of_week instanceof Date ? data.day_of_week : new Date(data.day_of_week);
+  const newDay = dayRef.getDay();
+
+  const hasOverlap = existing.some((e) => {
+    if (!e.scheduled_date || !e.start_time || !e.end_time) return false;
+    if (e.scheduled_date.getDay() !== newDay) return false;
+    const start = toMinutes(e.start_time);
+    const end = toMinutes(e.end_time);
+    return start < newEnd && end > newStart;
+  });
+
+  if (hasOverlap) {
+    throw createHttpError.Conflict(
+      "Un créneau chevauche déjà ce horaire pour ce point de collecte et ce jour"
+    );
+  }
+  
   const presence = await TaskSchedule.create({
     name: "point-" + data.day_of_week + data.collection_point_id,
     category: "point",
@@ -155,7 +184,7 @@ export const updatePointPrecense = async (req, res) => {
     });
   }
 
-  const conflict = await TaskSchedule.findOne({
+  const conflict = await TaskSchedule.findAll({
     where: {
       //TODO faudra comparer les heures aussi
       collection_point_id: data.collection_point_id,
@@ -164,6 +193,31 @@ export const updatePointPrecense = async (req, res) => {
       id: { [Op.ne]: id }
     }
   })
+
+
+
+  const toMinutes = (/** @type {Date | number} */ v) => {
+    const d = v instanceof Date ? v : new Date(v);
+    return d.getHours() * 60 + d.getMinutes();
+  };
+  const newStart = toMinutes(data.start_time);
+  const newEnd = toMinutes(data.end_time);
+  const dayRef = data.day_of_week instanceof Date ? data.day_of_week : new Date(data.day_of_week);
+  const newDay = dayRef.getDay();
+
+  const hasOverlap = conflict.some((e) => {
+    if (!e.scheduled_date || !e.start_time || !e.end_time) return false;
+    if (e.scheduled_date.getDay() !== newDay) return false;
+    const start = toMinutes(e.start_time);
+    const end = toMinutes(e.end_time);
+    return start < newEnd && end > newStart;
+  });
+
+  if (hasOverlap) {
+    throw createHttpError.Conflict(
+      "Un créneau chevauche déjà ce horaire pour ce point de collecte et ce jour"
+    );
+  }
 
   // const conflict = await CollectionPointPresence.findOne({
   //   where: {

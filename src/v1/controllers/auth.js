@@ -81,6 +81,7 @@ export const login = async (req, res, next) => {
   if (!user)
     throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
 
+  // Use password_hash field for comparison (password is virtual and returns undefined)
   const isValidPassword = await bcrypt.compare(data.password, user.password_hash);
   if (!isValidPassword) {
     throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");

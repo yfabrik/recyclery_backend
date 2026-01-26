@@ -63,6 +63,10 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Recyclery",
+      indexes: [
+        { fields: ["is_active"] },
+        { fields: ["manager_id"] },
+      ],
       hooks: {
         beforeDestroy: async (recyclery) => {
           // Get all cash registers for this recyclery

@@ -138,6 +138,38 @@ export const addHoraire = async (req, res) => {
     notes: z.string().nullish(),
   })
   const data = dataSchema.parse(req.body)
+
+  const existing = await TaskSchedule.findAll({
+    where: {
+      category: "vente",
+      store_id: data.store_id,
+    },
+  });
+
+  const toMinutes = (/** @type {Date | number} */ v) => {
+    const d = v instanceof Date ? v : new Date(v);
+    return d.getHours() * 60 + d.getMinutes();
+  };
+  const newStart = toMinutes(data.open_time);
+  const newEnd = toMinutes(data.close_time);
+  const dayRef = data.day_of_week instanceof Date ? data.day_of_week : new Date(data.day_of_week);
+  const newDay = dayRef.getDay();
+
+  const hasOverlap = existing.some((e) => {
+    if (!e.scheduled_date || !e.start_time || !e.end_time) return false;
+    if (e.scheduled_date.getDay() !== newDay) return false;
+    const start = toMinutes(e.start_time);
+    const end = toMinutes(e.end_time);
+    return start < newEnd && end > newStart;
+  });
+
+  if (hasOverlap) {
+    throw createHttpError.Conflict(
+      "Un créneau chevauche déjà ce horaire pour ce magasin et ce jour"
+    );
+  }
+
+
   const horaires = await TaskSchedule.create({
     name: "vente-" + data.day_of_week + ' ' + data.store_id,
 
@@ -206,6 +238,38 @@ export const updateHoraire = async (req, res) => {
   const id = idSchema().parse(req.params.id)
   const schedule = await TaskSchedule.findByPk(id)
   if (!schedule) throw new createHttpError.NotFound("horaires pas trouvé")
+
+    const existing = await TaskSchedule.findAll({
+      where: {
+        category: "vente",
+        store_id: data.store_id,
+        id: { [Op.ne]: id }
+      },
+    });
+  
+    const toMinutes = (/** @type {Date | number} */ v) => {
+      const d = v instanceof Date ? v : new Date(v);
+      return d.getHours() * 60 + d.getMinutes();
+    };
+    const newStart = toMinutes(data.open_time);
+    const newEnd = toMinutes(data.close_time);
+    const dayRef = data.day_of_week instanceof Date ? data.day_of_week : new Date(data.day_of_week);
+    const newDay = dayRef.getDay();
+  
+    const hasOverlap = existing.some((e) => {
+      if (!e.scheduled_date || !e.start_time || !e.end_time) return false;
+      if (e.scheduled_date.getDay() !== newDay) return false;
+      const start = toMinutes(e.start_time);
+      const end = toMinutes(e.end_time);
+      return start < newEnd && end > newStart;
+    });
+  
+    if (hasOverlap) {
+      throw createHttpError.Conflict(
+        "Un créneau chevauche déjà ce horaire pour ce magasin et ce jour"
+      );
+    }
+  
   await schedule.update({
     name: "vente-" + data.day_of_week + ' ' + data.store_id,
     recurrence_pattern: "weekly",

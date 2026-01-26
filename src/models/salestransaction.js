@@ -49,6 +49,11 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "SalesTransaction",
+      indexes: [
+        { fields: ["cash_session_id"] },
+        { fields: ["createdAt"] },
+        { fields: ["status"] },
+      ],
     },
   );
   return SalesTransaction;

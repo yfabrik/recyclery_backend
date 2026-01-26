@@ -31,6 +31,7 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Category",
+      indexes: [{ fields: ["parent_id"] }],
     }
   );
   return Category;
