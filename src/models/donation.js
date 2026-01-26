@@ -16,17 +16,28 @@ export default (sequelize, DataTypes) => {
   }
   Donation.init(
     {
-      donor_name: {type:DataTypes.STRING,validate:{isAlphanumeric:true}},
+      donor_name: { type: DataTypes.STRING, validate: { isAlphanumeric: true } },
       donor_phone: { type: DataTypes.STRING, validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ } },
       donor_email: { type: DataTypes.STRING, validate: { isEmail: true } },
       item_description: DataTypes.TEXT,
       estimated_value: DataTypes.DECIMAL(10, 2),
       status: { type: DataTypes.ENUM("pending", "accepted", "rejected"), defaultValue: "pending" },
       received_at: DataTypes.DATE,
+      donorContact: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          return this.donor_email || this.donor_phone || null;
+        },
+      },
     },
     {
       sequelize,
       modelName: "Donation",
+      indexes: [
+        { fields: ["recyclery_id"] },
+        { fields: ["status"] },
+        { fields: ["createdAt"] },
+      ],
     }
   );
   return Donation;

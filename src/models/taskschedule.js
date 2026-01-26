@@ -50,9 +50,10 @@ export default (sequelize, DataTypes) => {
       day_of_week: {
         type: DataTypes.VIRTUAL,
         get() {
-          const d = new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(this.scheduled_date)
-          return d.charAt(0).toUpperCase() + d.slice(1)
-        }
+          if (!this.scheduled_date) return null;
+          const d = new Intl.DateTimeFormat("fr-FR", { weekday: "long" }).format(this.scheduled_date);
+          return d ? d.charAt(0).toUpperCase() + d.slice(1) : null;
+        },
       },
       // status: DataTypes.STRING,
       // notes: DataTypes.TEXT,
@@ -60,6 +61,12 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "TaskSchedule",
+      indexes: [
+        { fields: ["store_id"] },
+        { fields: ["scheduled_date"] },
+        { fields: ["status"] },
+        { fields: ["category"] },
+      ],
       hooks: {
         afterCreate: async (schedule) => {
           const data = schedule.dataValues;
@@ -138,6 +145,270 @@ export default (sequelize, DataTypes) => {
             } else {
               logger.error(`Task model not found for schedule ${schedule.id}`);
             }
+          }
+        },
+        afterUpdate: async (schedule) => {
+          const Task = schedule.sequelize.models.Task;
+          if (!Task) {
+            logger.error(`Task model not found for schedule ${schedule.id}`);
+            return;
+          }
+
+          const now = new Date();
+          // Access previous values (Sequelize stores them in _previousDataValues during hooks)
+          const previousValues = schedule._previousDataValues || {};
+          const currentValues = schedule.dataValues;
+
+          // Helper function to generate tasks based on recurrence pattern
+          const generateTasks = (baseDate, recurrencePattern, isRecurring, data) => {
+            const tasksToCreate = [];
+            if (!isRecurring) {
+              // If not recurring, create just one task
+              tasksToCreate.push({
+                name: data.name,
+                category: data.category,
+                description: data.description,
+                priority: data.priority,
+                required_skills: data.required_skills,
+                location: data.location,
+                equipment_needed: data.equipment_needed,
+                hourly_rate: data.hourly_rate,
+                notes: data.notes,
+                status: data.status,
+                scheduled_date: new Date(baseDate),
+                start_time: data.start_time,
+                end_time: data.end_time,
+                schedule_id: schedule.id,
+              });
+              return tasksToCreate;
+            }
+
+            // Calculate end date (one month from the base date)
+            const endDate = new Date(baseDate);
+            endDate.setMonth(endDate.getMonth() + 1);
+
+            if (recurrencePattern === "daily") {
+              let currentDate = new Date(baseDate);
+              while (currentDate < endDate) {
+                tasksToCreate.push({
+                  name: data.name,
+                  category: data.category,
+                  description: data.description,
+                  priority: data.priority,
+                  required_skills: data.required_skills,
+                  location: data.location,
+                  equipment_needed: data.equipment_needed,
+                  hourly_rate: data.hourly_rate,
+                  notes: data.notes,
+                  status: data.status,
+                  scheduled_date: new Date(currentDate),
+                  start_time: data.start_time,
+                  end_time: data.end_time,
+                  schedule_id: schedule.id,
+                });
+                currentDate = new Date(currentDate);
+                currentDate.setDate(currentDate.getDate() + 1);
+              }
+            } else if (recurrencePattern === "weekly") {
+              let currentDate = new Date(baseDate);
+              while (currentDate < endDate) {
+                tasksToCreate.push({
+                  name: data.name,
+                  category: data.category,
+                  description: data.description,
+                  priority: data.priority,
+                  required_skills: data.required_skills,
+                  location: data.location,
+                  equipment_needed: data.equipment_needed,
+                  hourly_rate: data.hourly_rate,
+                  notes: data.notes,
+                  status: data.status,
+                  scheduled_date: new Date(currentDate),
+                  start_time: data.start_time,
+                  end_time: data.end_time,
+                  schedule_id: schedule.id,
+                });
+                currentDate = new Date(currentDate);
+                currentDate.setDate(currentDate.getDate() + 7);
+              }
+            } else if (recurrencePattern === "monthly") {
+              const nextMonthDate = new Date(baseDate);
+              nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+              tasksToCreate.push({
+                name: data.name,
+                category: data.category,
+                description: data.description,
+                priority: data.priority,
+                required_skills: data.required_skills,
+                location: data.location,
+                equipment_needed: data.equipment_needed,
+                hourly_rate: data.hourly_rate,
+                notes: data.notes,
+                status: data.status,
+                scheduled_date: nextMonthDate,
+                start_time: data.start_time,
+                end_time: data.end_time,
+                schedule_id: schedule.id,
+              });
+            } else {
+              // If no recurrence pattern or unknown pattern, create just the initial task
+              tasksToCreate.push({
+                name: data.name,
+                category: data.category,
+                description: data.description,
+                priority: data.priority,
+                required_skills: data.required_skills,
+                location: data.location,
+                equipment_needed: data.equipment_needed,
+                hourly_rate: data.hourly_rate,
+                notes: data.notes,
+                status: data.status,
+                scheduled_date: new Date(baseDate),
+                start_time: data.start_time,
+                end_time: data.end_time,
+                schedule_id: schedule.id,
+              });
+            }
+            return tasksToCreate;
+          };
+
+          // Check if is_recurring changed from true to false
+          const wasRecurring = previousValues.is_recurring;
+          const isRecurring = currentValues.is_recurring;
+          const recurringChanged = wasRecurring !== undefined && wasRecurring !== isRecurring;
+
+          // Check if recurrence_pattern changed
+          const patternChanged =
+            previousValues.recurrence_pattern !== undefined &&
+            previousValues.recurrence_pattern !== currentValues.recurrence_pattern;
+
+          // Check if scheduled_date changed (day changed)
+          const prevDate = previousValues.scheduled_date
+            ? new Date(previousValues.scheduled_date).getTime()
+            : null;
+          const currDate = currentValues.scheduled_date
+            ? new Date(currentValues.scheduled_date).getTime()
+            : null;
+          const dateChanged = prevDate !== null && currDate !== null && prevDate !== currDate;
+
+          // Get all future tasks for this schedule
+          const futureTasks = await Task.findAll({
+            where: {
+              schedule_id: schedule.id,
+              scheduled_date: {
+                [Op.gte]: now,
+              },
+            },
+          });
+
+          // Case 1: is_recurring changed from true to false - delete all future tasks
+          if (recurringChanged && wasRecurring === true && isRecurring === false) {
+            if (futureTasks.length > 0) {
+              await Task.destroy({
+                where: {
+                  id: {
+                    [Op.in]: futureTasks.map((t) => t.id),
+                  },
+                },
+              });
+              logger.info(
+                `Deleted ${futureTasks.length} future task(s) for schedule ${schedule.id} because is_recurring changed to false`
+              );
+            }
+            return;
+          }
+
+          // Case 2: is_recurring changed from false to true - create tasks based on recurrence pattern
+          if (recurringChanged && wasRecurring === false && isRecurring === true) {
+            const baseDate = new Date(currentValues.scheduled_date || now);
+            const tasksToCreate = generateTasks(
+              baseDate,
+              currentValues.recurrence_pattern,
+              true,
+              currentValues
+            );
+            if (tasksToCreate.length > 0) {
+              await Task.bulkCreate(tasksToCreate);
+              logger.info(
+                `Created ${tasksToCreate.length} task(s) for schedule ${schedule.id} because is_recurring changed to true with pattern ${currentValues.recurrence_pattern || "none"}`
+              );
+            }
+            return;
+          }
+
+          // Case 3: recurrence_pattern changed or scheduled_date changed - remove and recreate future tasks
+          if (patternChanged || dateChanged) {
+            // Delete all future tasks
+            if (futureTasks.length > 0) {
+              await Task.destroy({
+                where: {
+                  id: {
+                    [Op.in]: futureTasks.map((t) => t.id),
+                  },
+                },
+              });
+              logger.info(
+                `Deleted ${futureTasks.length} future task(s) for schedule ${schedule.id} because ${patternChanged ? "recurrence_pattern" : "scheduled_date"} changed`
+              );
+            }
+
+            // Recreate tasks with new pattern/date
+            if (isRecurring) {
+              const baseDate = new Date(currentValues.scheduled_date || now);
+              const tasksToCreate = generateTasks(
+                baseDate,
+                currentValues.recurrence_pattern,
+                isRecurring,
+                currentValues
+              );
+              if (tasksToCreate.length > 0) {
+                await Task.bulkCreate(tasksToCreate);
+                logger.info(
+                  `Created ${tasksToCreate.length} task(s) for schedule ${schedule.id} with new ${patternChanged ? "recurrence_pattern" : "scheduled_date"}`
+                );
+              }
+            }
+            return;
+          }
+
+          // Case 4: Other fields changed (name, description, times, etc.) - update existing future tasks
+          const fieldsToUpdate = {};
+          const updatableFields = [
+            "name",
+            "description",
+            "category",
+            "priority",
+            "required_skills",
+            "location",
+            "equipment_needed",
+            "hourly_rate",
+            "notes",
+            "status",
+            "start_time",
+            "end_time",
+          ];
+
+          for (const field of updatableFields) {
+            if (
+              previousValues[field] !== undefined &&
+              previousValues[field] !== currentValues[field]
+            ) {
+              fieldsToUpdate[field] = currentValues[field];
+            }
+          }
+
+          if (Object.keys(fieldsToUpdate).length > 0 && futureTasks.length > 0) {
+            await Task.update(fieldsToUpdate, {
+              where: {
+                schedule_id: schedule.id,
+                scheduled_date: {
+                  [Op.gte]: now,
+                },
+              },
+            });
+            logger.info(
+              `Updated ${futureTasks.length} future task(s) for schedule ${schedule.id} with fields: ${Object.keys(fieldsToUpdate).join(", ")}`
+            );
           }
         },
         beforeDestroy: async (schedule) => {

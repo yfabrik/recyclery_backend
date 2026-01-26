@@ -35,13 +35,10 @@ export const register = async (req, res, next) => {
     );
   }
 
-  const saltRounds = 10;
-  const hashedPassword = await bcrypt.hash(data.password, saltRounds);
-
+  // Password will be automatically hashed by the model's virtual field setter
   const user = await User.create({
     ...data,
-    password: hashedPassword,
-
+    password: data.password, // Virtual field will auto-hash this
   });
 
 
@@ -86,7 +83,8 @@ export const login = async (req, res, next) => {
   if (!user)
     throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
 
-  const isValidPassword = await bcrypt.compare(data.password, user.password);
+  // Use password_hash field for comparison (password is virtual and returns undefined)
+  const isValidPassword = await bcrypt.compare(data.password, user.password_hash);
   if (!isValidPassword) {
     throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
   }

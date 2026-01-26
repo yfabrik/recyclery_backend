@@ -31,6 +31,10 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Refund",
+      indexes: [
+        { fields: ["transaction_id"] },
+        { fields: ["status"] },
+      ],
     }
   );
   return Refund;

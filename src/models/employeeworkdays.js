@@ -11,7 +11,7 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       // this.belongsTo(models.User, { foreignKey: "employee_id" });
-      this.belongsTo(models.Employee);
+      this.belongsTo(models.Employee, { foreignKey: "employee_id" });
     }
   }
   EmployeeWorkdays.init(
@@ -26,6 +26,10 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "EmployeeWorkdays",
+      indexes: [
+        { fields: ["employee_id"] },
+        { fields: ["employee_id", "day_of_week"] },
+      ],
     },
   );
   return EmployeeWorkdays;

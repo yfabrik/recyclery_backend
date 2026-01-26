@@ -25,9 +25,18 @@ export default (sequelize, DataTypes) => {
       difference_amount: {
         type: DataTypes.VIRTUAL,
         get() {
-          return this.status == "open" ? 0 : this.closing_amount - this.expected_amount
-        }
-      }, //computed field ?
+          if (this.status === "open") return 0;
+          const closing = Number(this.closing_amount) || 0;
+          const expected = Number(this.expected_amount) || 0;
+          return closing - expected;
+        },
+      },
+      isOpen: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          return this.status === "open";
+        },
+      },
       status: { type: DataTypes.ENUM("open", "close"), defaultValue: "open" }, //tant que closed at existe pas status == open else open==false so => isOpen ? compouted ?
       notes: DataTypes.TEXT,
       // opened_at DATETIME DEFAULT CURRENT_TIMESTAMP, //createdAt
@@ -36,6 +45,12 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "CashSession",
+      indexes: [
+        { fields: ["cash_register_id"] },
+        { fields: ["user_id", "status"] },
+        { fields: ["status"] },
+        { fields: ["createdAt"] },
+      ],
     }
   );
   return CashSession;

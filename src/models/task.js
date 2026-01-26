@@ -34,8 +34,10 @@ export default (sequelize, DataTypes) => {
     day_of_week: {
       type: DataTypes.VIRTUAL,
       get() {
-        new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(this.scheduled_date)
-      }
+        if (!this.scheduled_date) return null;
+        const d = new Intl.DateTimeFormat("fr-FR", { weekday: "long" }).format(this.scheduled_date);
+        return d ? d.charAt(0).toUpperCase() + d.slice(1) : null;
+      },
     },
     start_time: DataTypes.DATE,
     end_time: DataTypes.DATE,
@@ -44,7 +46,12 @@ export default (sequelize, DataTypes) => {
     status: DataTypes.STRING
   }, {
     sequelize,
-    modelName: 'Task',
+    modelName: "Task",
+    indexes: [
+      { fields: ["schedule_id"] },
+      { fields: ["scheduled_date"] },
+      { fields: ["status"] },
+    ],
   });
   return Task;
 };

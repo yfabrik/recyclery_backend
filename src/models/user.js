@@ -1,5 +1,6 @@
 "use strict";
 import { Model } from "sequelize";
+import bcrypt from "bcryptjs";
 /**
  * @param {import("sequelize").Sequelize} sequelize
  * @param {import("sequelize").DataTypes} DataTypes
@@ -38,7 +39,26 @@ export default (sequelize, DataTypes) => {
     {
       username: {type:DataTypes.STRING,unique:true},
       email: { type: DataTypes.STRING, unique: true, validate: { isEmail: true } },
-      password: DataTypes.STRING,
+      password_hash: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        field: 'password' // Store in the 'password' column in the database
+      },
+      password: {
+        type: DataTypes.VIRTUAL,
+        set(value) {
+          // When password is set, hash it and store in password_hash
+          if (value && typeof value === 'string') {
+            const saltRounds = 10;
+            const hashedPassword = bcrypt.hashSync(value, saltRounds);
+            this.setDataValue('password_hash', hashedPassword);
+          }
+        },
+        get() {
+          // Never return the password (even hashed) for security
+          return undefined;
+        }
+      },
       role: {
         type: DataTypes.STRING, //TODO foreignkey role
         defaultValue: "employee",
@@ -53,13 +73,29 @@ export default (sequelize, DataTypes) => {
       modelName: "User",
       defaultScope: {
         attributes: {
-          exclude: ["password"]
+          exclude: ["password_hash"]
         }
       },
       scopes: {
         withPassword: {
           attributes: {
-            include: ['password']
+            include: ['password_hash']
+          }
+        }
+      },
+      hooks: {
+        beforeCreate: async (user) => {
+          // Ensure password is hashed if set via password_hash directly
+          if (user.password_hash && !user.password_hash.startsWith('$2')) {
+            const saltRounds = 10;
+            user.password_hash = await bcrypt.hash(user.password_hash, saltRounds);
+          }
+        },
+        beforeUpdate: async (user) => {
+          // Hash password if password_hash was changed directly and is not already hashed
+          if (user.changed('password_hash') && user.password_hash && !user.password_hash.startsWith('$2')) {
+            const saltRounds = 10;
+            user.password_hash = await bcrypt.hash(user.password_hash, saltRounds);
           }
         }
       }

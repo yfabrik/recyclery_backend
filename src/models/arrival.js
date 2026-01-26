@@ -53,6 +53,11 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Arrival",
+      indexes: [
+        { fields: ["category_id"] },
+        { fields: ["status"] },
+        { fields: ["createdAt"] },
+      ],
     }
   );
   return Arrival;
