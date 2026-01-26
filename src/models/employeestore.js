@@ -10,8 +10,8 @@ export default (sequelize, DataTypes) => {
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
-      this.belongsTo(models.Recyclery,{foreignKey:"store_id"})
-      this.belongsTo(models.Employee,{foreignKey:"employee_id"})
+      // this.belongsTo(models.Recyclery,{foreignKey:"store_id"})
+      // this.belongsTo(models.Employee,{foreignKey:"employee_id"})
       
     }
   }
