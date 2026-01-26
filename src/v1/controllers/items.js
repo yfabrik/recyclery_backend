@@ -32,7 +32,7 @@ export const listLabeledItem = async (req, res) => {
     category_id: idSchema().optional(),
     search: z.string().optional(),
     recyclery_id: idSchema().optional(),
-    barcode: z.string().optional(),
+    barcode: idSchema().optional(),//TODO verifier
   });
   const { search, ...filter } = filterSchema.parse(req.query);
   /**
@@ -81,7 +81,7 @@ export const listLabeledItem = async (req, res) => {
 export const getItemFromBarcode = async (req, res) => {
   logger.warn("used getItemFromBarcode TO REMOVE");
   const { barcode } = req.params;
-  const item = await LabeledItem.findOne({ where: { barcode: barcode } });
+  const item = await LabeledItem.findOne({ where: { id: +barcode } });
 
   if (!item) throw new createHttpError[404]("Article non trouvé"); //TODO barcode as query param
 

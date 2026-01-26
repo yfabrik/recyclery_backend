@@ -14,7 +14,6 @@ import { router } from "./v1/routes/index.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import createHttpError from "http-errors";
 import cors from "cors";
-import logger from "./services/logger.js";
 app.use(cors());
 app.use("/api", router);
 

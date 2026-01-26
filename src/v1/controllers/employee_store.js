@@ -160,7 +160,7 @@ export const assignUserToStore = async (req, res) => {
 
     // Add or update the store assignment
     await employee.addStore(store, {
-      through: { is_primary: is_primary },
+      through: { is_primary: data.is_primary },
       transaction: t,
     });
   });
@@ -191,12 +191,12 @@ export const assignUserToStore = async (req, res) => {
  */
 export const removeEmployeeStore = async (req, res) => {
   const dataSchema = z.object({
-    employee_id: idSchema("employee_id est requis"),
+    employeeId: idSchema("employee_id est requis"),
     store_id: idSchema().nullish(),
   });
   const data = dataSchema.parse(req.params);  
   
-  const employee = await Employee.findByPk(data.employee_id);
+  const employee = await Employee.findByPk(data.employeeId);
   if (!employee) {
     throw new createHttpError[404]("Employé non trouvé");
   }

@@ -187,9 +187,9 @@ export const updatePointPrecense = async (req, res) => {
   const conflict = await TaskSchedule.findAll({
     where: {
       //TODO faudra comparer les heures aussi
+      category:"point",
       collection_point_id: data.collection_point_id,
-      scheduled_date: data.day_of_week,//TODO faut que je reprenne le jour de la semaine depuis la date pour les comparer
-      store_id: data.store_id,
+      ...(data.store_id ? {store_id: data.store_id}:{}),
       id: { [Op.ne]: id }
     }
   })
@@ -229,14 +229,6 @@ export const updatePointPrecense = async (req, res) => {
   //   },
   // });
   // Vérifier s'il n'y a pas de conflit avec d'autres jours de présence du même point, jour et créneau
-
-  if (conflict) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Des jours de présence existent déjà pour ce point, ce jour et ce créneau",
-    });
-  }
 
   existing.collection_point_id = data.collection_point_id;
   existing.store_id = data.store_id;
