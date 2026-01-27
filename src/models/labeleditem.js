@@ -52,7 +52,7 @@ export default (sequelize, DataTypes) => {
       cost: { type: DataTypes.DECIMAL(10, 2) },
       condition_state: { type: DataTypes.ENUM("excellent", "good", "fair", "poor"), defaultValue: "good" },
       status: { type: DataTypes.ENUM("available", "sold"), defaultValue: "available" },
-      sold_at: DataTypes.DATE,
+      // sold_at: DataTypes.DATE,//trouvable dans transaction
     },
     {
       sequelize,
@@ -65,14 +65,14 @@ export default (sequelize, DataTypes) => {
         { fields: ["transaction_id"] },
       ],
       hooks: {
-        beforeCreate(instance) {
-          if (instance.status === "sold" && !instance.sold_at) instance.sold_at = new Date();
-        },
-        beforeUpdate(instance) {
-          if (instance.changed("status") && instance.status === "sold" && !instance.sold_at) {
-            instance.sold_at = new Date();
-          }
-        },
+        // beforeCreate(instance) {
+        //   if (instance.status === "sold" && !instance.sold_at) instance.sold_at = new Date();
+        // },
+        // beforeUpdate(instance) {
+        //   if (instance.changed("status") && instance.status === "sold" && !instance.sold_at) {
+        //     instance.sold_at = new Date();
+        //   }
+        // },
       },
     }
   );
