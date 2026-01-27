@@ -100,12 +100,15 @@ export const getActiveSession = async (req, res) => {
     order: [["createdAt", "DESC"]],
   });
 
-  const tmp = session.get({ plain: true });
-  const t = {
-    ...tmp,
-    CashRegister: tmp?.CashRegister,
-    Recyclery: tmp?.CashRegister?.Recyclery,
-  };
+  let t;
+  if (session) {
+    const tmp = session.get({ plain: true });
+    t = {
+      ...tmp,
+      CashRegister: tmp?.CashRegister,
+      Recyclery: tmp?.CashRegister?.Recyclery,
+    };
+  }
 
   res.json({ success: true, session: t });
 };
