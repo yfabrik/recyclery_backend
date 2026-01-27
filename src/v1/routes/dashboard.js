@@ -6,30 +6,6 @@ import { dashboardActivities, dashboardCharts, dashboardStats, dashboardStoreSta
 
 
 export const router = Router();
-// Route de test sans authentification
-router.get('/test', async (req, res) => {
-
-  res.json({
-    success: true,
-    message: 'API Dashboard fonctionne',
-    data: {
-      itemsCount:0,
-      transactionsCount: 0,
-      timestamp: new Date().toISOString()
-    }
-  });
-
-});
-
-// Route pour créer des données de test (développement uniquement)
-router.post('/create-test-data', authenticateToken, async (req, res) => {
-
-  res.json({
-    success: true,
-    message: 'Données de test créées avec succès',
-    data: "testData"
-  });
-});
 
 // Route pour récupérer les statistiques du dashboard
 router.get('/stats', authenticateToken, asyncHandler(dashboardStats))

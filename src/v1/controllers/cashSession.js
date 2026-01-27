@@ -4,7 +4,7 @@ import db from "../../models/index.js";
 import { listCaisses } from "./cashRegister.js";
 import logger from "../../services/logger.js";
 import createHttpError from "http-errors";
-import * as z from "zod"
+import * as z from "zod";
 import { idSchema } from "../../services/zod.js";
 const {
   CashSession,
@@ -16,22 +16,21 @@ const {
   Sequelize,
 } = db;
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 // 🧠 GET /cash-sessions
 export const listCashSessions = async (req, res) => {
-
   const filterSchema = z.object({
     store_id: z.coerce.number().positive().optional(),
     user_id: z.coerce.number().positive().optional(),
     status: z.enum(["open", "close"]).optional(),
-  })
-  const data = filterSchema.parse(req.query)
+  });
+  const data = filterSchema.parse(req.query);
   /**
- * @type {import("sequelize").WhereOptions}
- */
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
 
   if (data.store_id) where.store_id = data.store_id;
@@ -50,9 +49,9 @@ export const listCashSessions = async (req, res) => {
             "COALESCE",
             Sequelize.fn(
               "SUM",
-              Sequelize.col("SalesTransactions.total_amount")
+              Sequelize.col("SalesTransactions.total_amount"),
             ),
-            0
+            0,
           ),
           "total_sales",
         ],
@@ -60,7 +59,11 @@ export const listCashSessions = async (req, res) => {
     },
     where,
     include: [
-      { model: CashRegister, attributes: ["name"], include: [{ model: Recyclery, attributes: ["name"] }] },
+      {
+        model: CashRegister,
+        attributes: ["name"],
+        include: [{ model: Recyclery, attributes: ["name"] }],
+      },
 
       { model: User, attributes: ["username"] },
       {
@@ -75,9 +78,9 @@ export const listCashSessions = async (req, res) => {
   res.json({ success: true, sessions });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 // 🧠 GET /cash-sessions/active
 export const getActiveSession = async (req, res) => {
@@ -85,24 +88,31 @@ export const getActiveSession = async (req, res) => {
   const session = await CashSession.findOne({
     where: {
       user_id: userId,
-      status: "open"
+      status: "open",
     },
     include: [
-      { model: CashRegister, attributes: ["name"], include: [{ model: Recyclery, attributes: ["name"] }] },
-
+      {
+        model: CashRegister,
+        attributes: ["name"],
+        include: [{ model: Recyclery, attributes: ["name"] }],
+      },
     ],
     order: [["createdAt", "DESC"]],
   });
 
-  const tmp = session.get({ plain: true })
-  const t = { ...tmp, CashRegister: tmp?.CashRegister, Recyclery: tmp?.CashRegister?.Recyclery }
+  const tmp = session.get({ plain: true });
+  const t = {
+    ...tmp,
+    CashRegister: tmp?.CashRegister,
+    Recyclery: tmp?.CashRegister?.Recyclery,
+  };
 
   res.json({ success: true, session: t });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 // 🧠 POST /cash-sessions/open
 export const openCashSession = async (req, res) => {
@@ -110,16 +120,15 @@ export const openCashSession = async (req, res) => {
     cash_register_id: idSchema("caisse requise"),
     store_id: idSchema("magasin requis"),
     opening_amount: z.coerce.number().positive("argent requis"),
-    notes: z.string().nullish()
-  })
-  const data = dataSchema.parse(req.body)
+    notes: z.string().nullish(),
+  });
+  const data = dataSchema.parse(req.body);
 
   const userId = req.user.id;
   const existing = await CashSession.findOne({
     where: { user_id: userId, status: "open" },
   });
-  if (existing) throw new createHttpError.Conflict("Already open session")
-
+  if (existing) throw new createHttpError.Conflict("Already open session");
 
   const sessionNumber = `SES${Date.now().toString().slice(-8)}`;
 
@@ -137,27 +146,25 @@ export const openCashSession = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 // 🧠 PUT /cash-sessions/:id/close
 export const closeCashSession = async (req, res) => {
   const { id } = req.params;
   const dataSchema = z.object({
     closing_amount: z.coerce.number().positive("argent requis"),
-    notes: z.string().nullish()
-  })
-  const data = dataSchema.parse(req.body)
+    notes: z.string().nullish(),
+  });
+  const data = dataSchema.parse(req.body);
   const userId = req.user.id;
-
-
 
   const session = await CashSession.findOne({
     where: { id, user_id: userId, status: "open" },
   });
-  if (!session) throw new createHttpError[404]("Session not found or already closed")
-
+  if (!session)
+    throw new createHttpError[404]("Session not found or already closed");
 
   const sales = await SalesTransaction.findAll({
     where: { cash_session_id: id },
@@ -168,8 +175,8 @@ export const closeCashSession = async (req, res) => {
   });
 
   const totalSales = parseFloat(sales[0].total_sales);
-  const expected = (session.opening_amount) + totalSales;
-  const difference = (data.closing_amount) - expected;
+  const expected = session.opening_amount + totalSales;
+  const difference = data.closing_amount - expected;
 
   await session.update({
     closing_amount: data.closing_amount,
@@ -188,17 +195,20 @@ export const closeCashSession = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const getSessionById = async (req, res) => {
   const { id } = req.params;
 
   const session = await CashSession.findByPk(id, {
     include: [
-      { model: CashRegister, attributes: ["name"] },
-      { model: Recyclery, attributes: ["name"] },
+      {
+        model: CashRegister,
+        attributes: ["name"],
+        include: [{ model: Recyclery, attributes: ["name"] }],
+      },
       { model: User, attributes: ["username"] },
     ],
   });
@@ -220,9 +230,9 @@ export const getSessionById = async (req, res) => {
   res.json({ success: true, session: { ...session.toJSON(), transactions } });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const getRegistersByStore = async (req, res) => {
   const { store_id } = req.params;
@@ -232,7 +242,7 @@ export const getRegistersByStore = async (req, res) => {
       .json({ success: false, message: "Missing store_id" });
 
   req.query.store_id = store_id;
-  logger.info("called get register by store REMAKE THIS ONE")
+  logger.info("called get register by store REMAKE THIS ONE");
   return await listCaisses(req, res);
 
   const registers = await CashRegister.findAll({

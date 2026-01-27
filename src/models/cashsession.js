@@ -31,12 +31,12 @@ export default (sequelize, DataTypes) => {
           return closing - expected;
         },
       },
-      isOpen: {
-        type: DataTypes.VIRTUAL,
-        get() {
-          return this.status === "open";
-        },
-      },
+      // isOpen: {
+      //   type: DataTypes.VIRTUAL,
+      //   get() {
+      //     return this.status === "open";
+      //   },
+      // },
       status: { type: DataTypes.ENUM("open", "close"), defaultValue: "open" }, //tant que closed at existe pas status == open else open==false so => isOpen ? compouted ?
       notes: DataTypes.TEXT,
       // opened_at DATETIME DEFAULT CURRENT_TIMESTAMP, //createdAt
