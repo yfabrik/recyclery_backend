@@ -36,7 +36,7 @@ describe("arrival controller functions", () => {
             weight: 10,
             arrival_date: new Date(),
             arrival_time: new Date(),
-            source_type: "a",
+            source_type: "point",
             // source_details,
             collection_point_id: 1,
             // collection_point_name,

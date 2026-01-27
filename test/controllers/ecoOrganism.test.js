@@ -40,7 +40,7 @@ describe("collection schedule controller functions", () => {
       contact_email: "a@a.fr",
       contact_phone: "0123456789",
       address: "ailleur",
-      website: "example.com",
+      website: "http://example.com",
       is_active: true,
     };
     const req = {

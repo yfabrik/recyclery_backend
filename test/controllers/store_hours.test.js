@@ -29,7 +29,7 @@ describe("store_hours controller functions", () => {
   it("should create a new horaires  pour recyclerie test", async () => {
     const body = {
       store_id: 1,
-      day_of_week: "monday",
+      day_of_week: "Lundi",
       time_slot_name: "Matin",
       is_open: true,
       open_time: "09:00",

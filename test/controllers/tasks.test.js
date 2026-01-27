@@ -16,8 +16,8 @@ describe("tasks controller functions", () => {
         const body = {
             name: "a",
             // description:"b",
-            category:1,
-            priority:2,
+            category:"custom",
+            priority:"medium",
             // estimated_duration,
             // required_skills,
             // location,

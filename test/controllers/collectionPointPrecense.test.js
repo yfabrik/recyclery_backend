@@ -33,7 +33,7 @@ describe("collection schedule controller functions", () => {
             collection_point_id: 1,
             store_id: 1,
             day_of_week: 1,
-            time_slot_name: "a",
+            time_slot_name: "Lundi",
             is_present: true,
             start_time: 9,
             end_time:12,
