@@ -11,7 +11,7 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.hasMany(models.SalesItem, { foreignKey: "transaction_id" });
-      // this.belongsTo(models.User, { foreignKey: "created_by" });
+      this.belongsTo(models.User, { foreignKey: "created_by" });
       // this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
       this.belongsTo(models.CashSession, { foreignKey: "cash_session_id" });
       this.hasMany(models.LabeledItem, { foreignKey: "transaction_id" });
