@@ -77,7 +77,7 @@ export const createCollectionSchedule = async (req, res) => {
     scheduled_date: z.coerce.date(
       "Le point de collecte, la date et l'heure sont requis",
     ),
-    scheduled_time: z.iso.time(
+    scheduled_time: z.coerce.date(
       "Le point de collecte, la date et l'heure sont requis",
     ),
     employee_id: z.string().optional(),

@@ -347,8 +347,23 @@ export const transactionsStats = async (req, res) => {
    */
   const where = {};
   if (filter.store_id) where.store_id = filter.store_id;
-  if (filter.date_from && filter.date_to)
-    where.createdAt = { [Op.between]: [filter.date_from, filter.date_to] };
+
+  const {date_from,date_to} = filter
+    if (date_from || date_to) {
+    where.createdAt = {};
+    if (date_from) {
+      // Set to start of day (00:00:00)
+      const dateFrom = new Date(date_from);
+      dateFrom.setHours(0, 0, 0, 0);
+      where.createdAt[Op.gte] = dateFrom;
+    }
+    if (date_to) {
+      // Set to end of day (23:59:59.999) to include all transactions from that day
+      const dateTo = new Date(date_to);
+      dateTo.setHours(23, 59, 59, 999);
+      where.createdAt[Op.lte] = dateTo;
+    }
+  }
 
   // Subquery for total refunded amounts per transaction
   const refundSubquery = literal(`(
@@ -468,8 +483,23 @@ const include = [];
  {
     include.push({ model: CashSession, include: [{ model: CashRegister,where: { recyclery_id: store_id } }] });
   }
-  if (date_from && date_to)
-    where.createdAt = { [Op.between]: [date_from, date_to] };
+
+    if (date_from || date_to) {
+    where.createdAt = {};
+    if (date_from) {
+      // Set to start of day (00:00:00)
+      const dateFrom = new Date(date_from);
+      dateFrom.setHours(0, 0, 0, 0);
+      where.createdAt[Op.gte] = dateFrom;
+    }
+    if (date_to) {
+      // Set to end of day (23:59:59.999) to include all transactions from that day
+      const dateTo = new Date(date_to);
+      dateTo.setHours(23, 59, 59, 999);
+      where.createdAt[Op.lte] = dateTo;
+    }
+  }
+
 
   const postalStats = await SalesTransaction.findAll({
     where,

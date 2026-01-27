@@ -1,37 +1,51 @@
 import { col, fn, literal, Op } from "sequelize";
 import db from "../../models/index.js";
 import createHttpError from "http-errors";
-import * as z from "zod"
+import * as z from "zod";
 import { idSchema, nullishToNull } from "../../services/zod.js";
 const { Arrival, Category, User, CollectionPoint } = db;
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listArrivals = async (req, res) => {
   const filterSchema = z.object({
     category_id: idSchema().optional(),
     source_type: z.enum(["point", "apport", "house_clearance"]).optional(),
     status: z.enum(["received"]).optional(),
-    date_from: z.coerce.date(),
-    date_to: z.coerce.date(),
-
-  })
-  const { date_from, date_to, ...rest } = filterSchema.parse(req.query)
+    date_from: z.coerce.date().optional(),
+    date_to: z.coerce.date().optional(),
+  });
+  const { date_from, date_to, ...rest } = filterSchema.parse(req.query);
   /**
- * @type {import("sequelize").WhereOptions}
- */
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = { ...rest };
-  if (date_from) {
-    where.arrival_date = {
-      ...(where.arrival_date || {}),
-      [Op.gte]: date_from,
-    };
+  if (date_from || date_to) {
+    where.arrival_date = {};
+    if (date_from) {
+      // Set to start of day (00:00:00)
+      const dateFrom = new Date(date_from);
+      dateFrom.setHours(0, 0, 0, 0);
+      where.arrival_date[Op.gte] = dateFrom;
+    }
+    if (date_to) {
+      // Set to end of day (23:59:59.999) to include all transactions from that day
+      const dateTo = new Date(date_to);
+      dateTo.setHours(23, 59, 59, 999);
+      where.arrival_date[Op.lte] = dateTo;
+    }
   }
-  if (date_to) {
-    where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
-  }
+  // if (date_from) {
+  //   where.arrival_date = {
+  //     ...(where.arrival_date || {}),
+  //     [Op.gte]: date_from,
+  //   };
+  // }
+  // if (date_to) {
+  //   where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
+  // }
 
   const arrivals = await Arrival.findAll({
     where,
@@ -50,9 +64,9 @@ export const listArrivals = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const detailArrival = async (req, res) => {
   const { id } = req.params;
@@ -64,16 +78,16 @@ export const detailArrival = async (req, res) => {
       { model: CollectionPoint },
     ],
   });
-  if (!arrival) throw new createHttpError[404]("Arrivage non trouvé")
+  if (!arrival) throw new createHttpError[404]("Arrivage non trouvé");
   res.json({
     success: true,
     arrival: arrival,
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const createArrival = async (req, res) => {
   const dataSchema = z.object({
@@ -88,13 +102,14 @@ export const createArrival = async (req, res) => {
     collection_point_name: z.string().nullish(),
     collection_point_address: z.string().nullish(),
     notes: z.string().nullish(),
-  })
-  const data = dataSchema.parse(req.body)
+  });
+  const data = dataSchema.parse(req.body);
 
-  const category = await Category.findByPk(data.subcategory_id ?? data.category_id);
+  const category = await Category.findByPk(
+    data.subcategory_id ?? data.category_id,
+  );
   // Vérifier si la catégorie existe
-  if (!category) throw new createHttpError[404]("Catégorie non trouvée")
-
+  if (!category) throw new createHttpError[404]("Catégorie non trouvée");
 
   const arrival = await Arrival.create({
     ...data,
@@ -109,9 +124,9 @@ export const createArrival = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const updateArrival = async (req, res) => {
   const dataSchema = z.object({
@@ -126,15 +141,18 @@ export const updateArrival = async (req, res) => {
     collection_point_name: z.string().nullish(),
     collection_point_address: z.string().nullish(),
     notes: z.string().nullish(),
-  })
+  });
   const id = idSchema().parse(req.params.id);
-  const data = dataSchema.parse(req.body)
+  const data = dataSchema.parse(req.body);
 
   const arrival = await Arrival.findByPk(id);
   // Vérifier si l'arrivage existe
 
-  if (!arrival) throw new createHttpError[404]("Arrivage non trouvé")
-  await arrival.update({ ...data, category_id: data.subcategory_id ?? data.category_id })
+  if (!arrival) throw new createHttpError[404]("Arrivage non trouvé");
+  await arrival.update({
+    ...data,
+    category_id: data.subcategory_id ?? data.category_id,
+  });
 
   res.json({
     success: true,
@@ -142,24 +160,24 @@ export const updateArrival = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const deleteArrival = async (req, res) => {
   const id = idSchema().parse(req.params.id);
   const arrival = await Arrival.destroy({ where: { id } });
   // Vérifier si l'arrivage existe
-  if (!arrival) throw new createHttpError[404]("Arrivage non trouvé")
+  if (!arrival) throw new createHttpError[404]("Arrivage non trouvé");
   res.json({
     success: true,
     message: "Arrivage supprimé avec succès",
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const statsSummary = async (req, res) => {
   const { date_from, date_to } = req.query;
@@ -168,17 +186,22 @@ export const statsSummary = async (req, res) => {
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
-
-  if (date_from) {
-    where.arrival_date = {
-      ...(where.arrival_date || {}),
-      [Op.gte]: date_from,
-    };
+  if (date_from || date_to) {
+    where.arrival_date = {};
+    if (date_from) {
+      // Set to start of day (00:00:00)
+      const dateFrom = new Date(date_from);
+      dateFrom.setHours(0, 0, 0, 0);
+      where.arrival_date[Op.gte] = dateFrom;
+    }
+    if (date_to) {
+      // Set to end of day (23:59:59.999) to include all transactions from that day
+      const dateTo = new Date(date_to);
+      dateTo.setHours(23, 59, 59, 999);
+      where.arrival_date[Op.lte] = dateTo;
+    }
   }
 
-  if (date_to) {
-    where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
-  }
 
   const stats = await Arrival.findOne({
     attributes: [
@@ -192,7 +215,7 @@ export const statsSummary = async (req, res) => {
       [
         fn(
           "COUNT",
-          literal("CASE WHEN source_type = 'collection_point' THEN 1 END")
+          literal("CASE WHEN source_type = 'collection_point' THEN 1 END"),
         ),
         "from_collection_points",
       ],
@@ -240,24 +263,30 @@ export const statsSummary = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const statsByCategories = async (req, res) => {
   const { date_from, date_to } = req.query;
   const where = {};
-  if (date_from) {
-    where.arrival_date = {
-      ...(where.arrival_date || {}),
-      [Op.gte]: date_from,
-    };
-  }
 
-  if (date_to) {
-    where.arrival_date = { ...(where.arrival_date || {}), [Op.lte]: date_to };
+    if (date_from || date_to) {
+    where.arrival_date = {};
+    if (date_from) {
+      // Set to start of day (00:00:00)
+      const dateFrom = new Date(date_from);
+      dateFrom.setHours(0, 0, 0, 0);
+      where.arrival_date[Op.gte] = dateFrom;
+    }
+    if (date_to) {
+      // Set to end of day (23:59:59.999) to include all transactions from that day
+      const dateTo = new Date(date_to);
+      dateTo.setHours(23, 59, 59, 999);
+      where.arrival_date[Op.lte] = dateTo;
+    }
   }
-
+  
   const stats = await Arrival.findAll({
     attributes: {
       include: [
