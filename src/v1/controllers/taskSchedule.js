@@ -1,8 +1,7 @@
+import createHttpError from "http-errors";
 import { col, fn, literal, Op } from "sequelize";
 import * as z from "zod";
 import db from "../../models/index.js";
-import category from "../../models/category.js";
-import createHttpError from "http-errors";
 import { idSchema } from "../../services/zod.js";
 
 const {
@@ -712,7 +711,7 @@ export const findAvailableEMployee = async (req, res) => {
         },
         {
           model: Recyclery,
-          as:"stores",
+          as: "stores",
           where: { id: schedule.store_id },
           required: true,
         },
@@ -749,6 +748,19 @@ export const findAvailableEMployee = async (req, res) => {
         },
       ],
     });
+    const toMinutes = (/** @type {Date | number} */ v) => {
+      const d = v instanceof Date ? v : new Date(v);
+      return d.getHours() * 60 + d.getMinutes();
+    };
+    const newStart = toMinutes(schedule.start_time);
+    const newEnd = toMinutes(schedule.end_time);
+
+    const hasOverlap = conflicts.filter((e) => {
+      if (!e.scheduled_date || !e.start_time || !e.end_time) return false;
+      const start = toMinutes(e.start_time);
+      const end = toMinutes(e.end_time);
+      return start < newEnd && end > newStart;
+    });
 
     // Vérifier si l'employé est déjà assigné à cette tâche
     //FIXME
@@ -758,9 +770,9 @@ export const findAvailableEMployee = async (req, res) => {
 
     availableEmployees.push({
       ...employee.get({ plain: true }),
-      is_available: conflicts.length === 0,
-      has_conflicts: conflicts.length > 0,
-      conflicts: conflicts,
+      is_available: hasOverlap.length === 0,
+      has_conflicts: hasOverlap.length > 0,
+      conflicts: hasOverlap,
       already_assigned: schedule.Employees.some((u) => u.id == employee.id),
     });
   }
