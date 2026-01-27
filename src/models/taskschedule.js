@@ -15,14 +15,11 @@ export default (sequelize, DataTypes) => {
       // this.hasOne(models.TaskTemplate,{foreignKey:"template_id"})
       this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
       this.belongsTo(models.CollectionPoint,{foreignKey:"collection_point_id"})
-      // this.belongsToMany(models.User,{through:"taskSchedule_employee",foreignKey:"schedule_id"})
-      // this.belongsTo(models.User, { foreignKey: "assigned_to" });
       this.belongsToMany(models.Employee, { through: "employee_schedule" });
 
     }
   }
 
-  // receipt_number: DataTypes.STRING, //assoc ?
   TaskSchedule.init(
     {
       is_recurring: { type: DataTypes.BOOLEAN, defaultValue: true },
@@ -41,9 +38,6 @@ export default (sequelize, DataTypes) => {
       // assigned_to: DataTypes.INTEGER,//assoc
       notes: DataTypes.TEXT,
       status: DataTypes.STRING,
-      // task_id: DataTypes.INTEGER,//assoc
-      // assigned_to: DataTypes.INTEGER, //assoc //task a deja un assigned
-      // store_id: DataTypes.INTEGER,//assoc
       scheduled_date: DataTypes.DATE,
       start_time: DataTypes.DATE,
       end_time: DataTypes.DATE,
@@ -89,6 +83,10 @@ export default (sequelize, DataTypes) => {
                 start_time: data.start_time,
                 end_time: data.end_time,
                 schedule_id: schedule.id,
+                ...(data?.store_id?{store_id: data.store_id}:{}),
+                ...(data?.collection_point_id?{collection_point_id: data.collection_point_id}:{})
+
+
               });
               // Create new date object for next iteration to avoid mutation
               currentDate = new Date(currentDate);
@@ -105,6 +103,9 @@ export default (sequelize, DataTypes) => {
                 start_time: data.start_time,
                 end_time: data.end_time,
                 schedule_id: schedule.id,
+                ...(data?.store_id?{store_id: data.store_id}:{}),
+                ...(data?.collection_point_id?{collection_point_id: data.collection_point_id}:{})
+
               });
               // Create new date object for next iteration to avoid mutation
               currentDate = new Date(currentDate);
@@ -121,6 +122,9 @@ export default (sequelize, DataTypes) => {
               start_time: data.start_time,
               end_time: data.end_time,
               schedule_id: schedule.id,
+              ...(data?.store_id?{store_id: data.store_id}:{}),
+                ...(data?.collection_point_id?{collection_point_id: data.collection_point_id}:{})
+
             });
           } else {
             // If no recurrence pattern or unknown pattern, create just the initial task
@@ -131,6 +135,9 @@ export default (sequelize, DataTypes) => {
               start_time: data.start_time,
               end_time: data.end_time,
               schedule_id: schedule.id,
+              ...(data?.store_id?{store_id: data.store_id}:{}),
+                ...(data?.collection_point_id?{collection_point_id: data.collection_point_id}:{})
+
             });
           }
 
@@ -179,6 +186,10 @@ export default (sequelize, DataTypes) => {
                 start_time: data.start_time,
                 end_time: data.end_time,
                 schedule_id: schedule.id,
+...(data?.store_id?{store_id: data.store_id}:{}),
+                ...(data?.collection_point_id?{collection_point_id: data.collection_point_id}:{})
+
+
               });
               return tasksToCreate;
             }
@@ -205,6 +216,9 @@ export default (sequelize, DataTypes) => {
                   start_time: data.start_time,
                   end_time: data.end_time,
                   schedule_id: schedule.id,
+                  ...(data?.store_id?{store_id: data.store_id}:{}),
+                ...(data?.collection_point_id?{collection_point_id: data.collection_point_id}:{})
+
                 });
                 currentDate = new Date(currentDate);
                 currentDate.setDate(currentDate.getDate() + 1);
@@ -227,6 +241,9 @@ export default (sequelize, DataTypes) => {
                   start_time: data.start_time,
                   end_time: data.end_time,
                   schedule_id: schedule.id,
+                  ...(data?.store_id?{store_id: data.store_id}:{}),
+                ...(data?.collection_point_id?{collection_point_id: data.collection_point_id}:{})
+
                 });
                 currentDate = new Date(currentDate);
                 currentDate.setDate(currentDate.getDate() + 7);
@@ -249,6 +266,9 @@ export default (sequelize, DataTypes) => {
                 start_time: data.start_time,
                 end_time: data.end_time,
                 schedule_id: schedule.id,
+                ...(data?.store_id?{store_id: data.store_id}:{}),
+                ...(data?.collection_point_id?{collection_point_id: data.collection_point_id}:{})
+
               });
             } else {
               // If no recurrence pattern or unknown pattern, create just the initial task
@@ -267,6 +287,9 @@ export default (sequelize, DataTypes) => {
                 start_time: data.start_time,
                 end_time: data.end_time,
                 schedule_id: schedule.id,
+                ...(data?.store_id?{store_id: data.store_id}:{}),
+                ...(data?.collection_point_id?{collection_point_id: data.collection_point_id}:{})
+
               });
             }
             return tasksToCreate;

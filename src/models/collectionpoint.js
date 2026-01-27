@@ -14,8 +14,8 @@ export default (sequelize, DataTypes) => {
       // this.hasMany(models.CollectionSchedule, {
       //   foreignKey: "collection_point_id",
       // });
-      this.hasMany(models.TaskSchedule, { onDelete: "CASCADE" })//FIXME need to trigger hook to delete futur tasks ?
-      this.hasMany(models.Task)
+      this.hasMany(models.TaskSchedule, { onDelete: "CASCADE",foreignKey:"collection_point_id" })//FIXME need to trigger hook to delete futur tasks ?
+      this.hasMany(models.Task,{ foreignKey: "collection_point_id" })
       this.hasMany(models.Arrival, { foreignKey: "collection_point_id" })
     }
   }

@@ -138,7 +138,11 @@ export const createTask = async (req, res) => {
       .default([])
       .transform((val) => JSON.stringify(val)),
     // location: z.string().optional(),
-    equipment_needed: z.array(z.string()).nullish(),
+    equipment_needed: z
+      .array(z.string())
+      .nullish()
+      .default([])
+      .transform((val) => JSON.stringify(val)),
     // hourly_rate: z.coerce.number().nullish(),
     is_recurring: z.coerce.boolean().nullish(),
     recurrence_pattern: z.string().nullish(),

@@ -19,8 +19,14 @@ export default (sequelize, DataTypes) => {
       //   as: "horaires",
       //   onDelete: "CASCADE"
       // });
-      this.hasMany(models.Task, { onDelete: "CASCADE" }); //ouverture boutique + ?
-      this.hasMany(models.TaskSchedule, { onDelete: "CASCADE" });
+      this.hasMany(models.Task, {
+        onDelete: "CASCADE",
+        foreignKey: "store_id",
+      }); //ouverture boutique + ?
+      this.hasMany(models.TaskSchedule, {
+        onDelete: "CASCADE",
+        foreignKey: "store_id",
+      });
 
       // this.belongsToMany(models.User, {
       //   through: "EmployeeStore",
@@ -41,6 +47,7 @@ export default (sequelize, DataTypes) => {
         as: "caisses",
         onDelete: "CASCADE", //TODO le cash register est censé refuser de se delete si ya une caisse ouverte, estce que le cascade empeche le delete du store aussi ou faut un truc en +
       });
+      this.hasMany(models.CollectionPoint, { foreignKey: "recyclery_id" });
     }
   }
 
@@ -63,10 +70,7 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Recyclery",
-      indexes: [
-        { fields: ["is_active"] },
-        { fields: ["manager_id"] },
-      ],
+      indexes: [{ fields: ["is_active"] }, { fields: ["manager_id"] }],
       hooks: {
         beforeDestroy: async (recyclery) => {
           // Get all cash registers for this recyclery
