@@ -4,11 +4,33 @@ import "dotenv/config";
 import helmet from "helmet";
 import cron from "node-cron";
 import { generateFutureTasks } from "./services/taskGenerator.js";
+import rateLimit from "express-rate-limit";
 import logger from "./services/logger.js";
 
 export const app = express();
 app.use(helmet());
 app.use(express.json());
+
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 1000, // limite chaque IP à 1000 requêtes par windowMs (plus permissif)
+  message: {
+    error: "Trop de requêtes depuis cette IP, veuillez réessayer plus tard.",
+  },
+  skip: (req) => {
+    // Skip rate limiting en développement pour localhost
+    return (
+      req.ip === "127.0.0.1" ||
+      req.ip === "::1" ||
+      req.ip === "::ffff:127.0.0.1" ||
+      process.env.RATE_LIMIT_WHITELIST?.split(",")
+        .map((v) => v.trim())
+        ?.includes(req.ip)
+    );
+  },
+});
+
+app.use("/api/", limiter);
 
 import { router } from "./v1/routes/index.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -58,11 +80,15 @@ app.listen(5000, () => {
       logger.info("Starting scheduled task generation...");
       const result = await generateFutureTasks(db);
       logger.info(
-        `Scheduled task generation completed: ${result.created} task(s) created for ${result.schedules} schedule(s)`
+        `Scheduled task generation completed: ${result.created} task(s) created for ${result.schedules} schedule(s)`,
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Error in scheduled task generation: ${errorMessage}`, error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      logger.error(
+        `Error in scheduled task generation: ${errorMessage}`,
+        error,
+      );
     }
   });
 
@@ -73,10 +99,11 @@ app.listen(5000, () => {
       logger.info("Running initial task generation on startup...");
       const result = await generateFutureTasks(db);
       logger.info(
-        `Initial task generation completed: ${result.created} task(s) created for ${result.schedules} schedule(s)`
+        `Initial task generation completed: ${result.created} task(s) created for ${result.schedules} schedule(s)`,
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       logger.error(`Error in initial task generation: ${errorMessage}`, error);
     }
   }, 5000); // Wait 5 seconds after server start to ensure DB is ready
