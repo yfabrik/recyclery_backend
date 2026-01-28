@@ -1,6 +1,7 @@
 "use strict";
 import { Op } from "sequelize";
 import logger from "./logger.js";
+import { generateTasksBetweenDates } from "./taskScheduleUtils.js";
 
 /**
  * Generates tasks for active recurring schedules
@@ -80,86 +81,17 @@ export async function generateFutureTasks(db) {
           })
         );
 
-        const tasksToCreate = [];
         const scheduleData = schedule.dataValues;
 
-        // Generate tasks based on recurrence pattern
-        if (schedule.recurrence_pattern === "daily") {
-          let currentDate = new Date(startDate);
-          while (currentDate <= endDate) {
-            const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}`;
-            if (!existingDates.has(dateKey)) {
-              tasksToCreate.push({
-                name: scheduleData.name,
-                category: scheduleData.category,
-                description: scheduleData.description,
-                priority: scheduleData.priority,
-                required_skills: scheduleData.required_skills,
-                location: scheduleData.location,
-                equipment_needed: scheduleData.equipment_needed,
-                hourly_rate: scheduleData.hourly_rate,
-                notes: scheduleData.notes,
-                status: scheduleData.status,
-                scheduled_date: new Date(currentDate),
-                start_time: scheduleData.start_time,
-                end_time: scheduleData.end_time,
-                schedule_id: schedule.id,
-              });
-            }
-            currentDate = new Date(currentDate);
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-        } else if (schedule.recurrence_pattern === "weekly") {
-          let currentDate = new Date(startDate);
-          while (currentDate <= endDate) {
-            const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}`;
-            if (!existingDates.has(dateKey)) {
-              tasksToCreate.push({
-                name: scheduleData.name,
-                category: scheduleData.category,
-                description: scheduleData.description,
-                priority: scheduleData.priority,
-                required_skills: scheduleData.required_skills,
-                location: scheduleData.location,
-                equipment_needed: scheduleData.equipment_needed,
-                hourly_rate: scheduleData.hourly_rate,
-                notes: scheduleData.notes,
-                status: scheduleData.status,
-                scheduled_date: new Date(currentDate),
-                start_time: scheduleData.start_time,
-                end_time: scheduleData.end_time,
-                schedule_id: schedule.id,
-              });
-            }
-            currentDate = new Date(currentDate);
-            currentDate.setDate(currentDate.getDate() + 7);
-          }
-        } else if (schedule.recurrence_pattern === "monthly") {
-          let currentDate = new Date(startDate);
-          while (currentDate <= endDate) {
-            const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}`;
-            if (!existingDates.has(dateKey)) {
-              tasksToCreate.push({
-                name: scheduleData.name,
-                category: scheduleData.category,
-                description: scheduleData.description,
-                priority: scheduleData.priority,
-                required_skills: scheduleData.required_skills,
-                location: scheduleData.location,
-                equipment_needed: scheduleData.equipment_needed,
-                hourly_rate: scheduleData.hourly_rate,
-                notes: scheduleData.notes,
-                status: scheduleData.status,
-                scheduled_date: new Date(currentDate),
-                start_time: scheduleData.start_time,
-                end_time: scheduleData.end_time,
-                schedule_id: schedule.id,
-              });
-            }
-            currentDate = new Date(currentDate);
-            currentDate.setMonth(currentDate.getMonth() + 1);
-          }
-        }
+        // Generate tasks based on recurrence pattern using shared utility
+        const tasksToCreate = generateTasksBetweenDates(
+          startDate,
+          endDate,
+          schedule.recurrence_pattern,
+          scheduleData,
+          schedule.id,
+          existingDates
+        );
 
         // Bulk create tasks if any were generated
         if (tasksToCreate.length > 0) {
