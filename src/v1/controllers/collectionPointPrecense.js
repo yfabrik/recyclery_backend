@@ -2,56 +2,73 @@ import { Op } from "sequelize";
 import db from "../../models/index.js";
 import createHttpError from "http-errors";
 import { createTask, detailTask, listTasks } from "./tasks.js";
-import * as z from "zod"
+import * as z from "zod";
 import { listSchedules } from "./taskSchedule.js";
 import { idSchema } from "../../services/zod.js";
 
-
 const getDateFromDay = (day) => {
-  const today = new Date()
-  let d
-  let i = 0
+  const today = new Date();
+  let d;
+  let i = 0;
   while (i < 7) {
-    const jour = new Intl.DateTimeFormat("fr-FR", { weekday: "long", }).format(today.setDate(today.getDate() + 1))
-    console.log(jour)
+    const jour = new Intl.DateTimeFormat("fr-FR", { weekday: "long" }).format(
+      today.setDate(today.getDate() + 1),
+    );
+    console.log(jour);
     if (jour == day.toLowerCase()) {
-      d = today
-      break
+      d = today;
+      break;
     }
-    i++
+    i++;
   }
-  if (!d) throw new createHttpError[400]
-  return d
-}
-
+  if (!d) throw new createHttpError[400]();
+  return d;
+};
 
 const dataSchema = z.object({
-  collection_point_id: idSchema("ID du point de collecte et jour de la semaine sont obligatoires"),
+  collection_point_id: idSchema(
+    "ID du point de collecte et jour de la semaine sont obligatoires",
+  ),
   store_id: idSchema().nullish(),
-  day_of_week: z.enum(["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]).transform(val => getDateFromDay(val)),
+  day_of_week: z
+    .enum([
+      "Lundi",
+      "Mardi",
+      "Mercredi",
+      "Jeudi",
+      "Vendredi",
+      "Samedi",
+      "Dimanche",
+    ])
+    .transform((val) => getDateFromDay(val)),
   is_open: z.coerce.boolean().default(true),
-  start_time: z.union([z.iso.time().transform(val => {
-    const [hours, min] = val.split(":")
-    return new Date().setHours(hours, min)
-  }), z.coerce.date()]),
-  end_time:z.union([z.iso.time().transform(val => {
-    const [hours, min] = val.split(":")
-    return new Date().setHours(hours, min)
-  }), z.coerce.date()]),
+  start_time: z.union([
+    z.iso.time().transform((val) => {
+      const [hours, min] = val.split(":");
+      return new Date().setHours(hours, min);
+    }),
+    z.coerce.date(),
+  ]),
+  end_time: z.union([
+    z.iso.time().transform((val) => {
+      const [hours, min] = val.split(":");
+      return new Date().setHours(hours, min);
+    }),
+    z.coerce.date(),
+  ]),
   is_24h: z.coerce.boolean().default(false),
   notes: z.string().nullish(),
-  is_present: z.coerce.boolean().default(true)
-})
+  is_present: z.coerce.boolean().default(true),
+});
 
 const { CollectionPointPresence, CollectionPoint, TaskSchedule, Task } = db;
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listPointPrecense = async (req, res) => {
-
-  return await listSchedules(req, res)
+  return await listSchedules(req, res);
   const presence_hours = await CollectionPointPresence.findAll({
     include: [{ model: CollectionPoint }],
   });
@@ -61,17 +78,17 @@ export const listPointPrecense = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const detailPointPrecense = async (req, res) => {
   const { collectionPointId } = req.params;
 
-  return detailTask(req, res)
+  return detailTask(req, res);
   const presence_hours = await CollectionPointPresence.findByPk(
     collectionPointId,
-    { include: [{ model: CollectionPoint }], order: [["day_of_week"]] }
+    { include: [{ model: CollectionPoint }], order: [["day_of_week"]] },
   );
   res.json({
     success: true,
@@ -79,20 +96,24 @@ export const detailPointPrecense = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const createPointPrecense = async (req, res) => {
+  const data = dataSchema.parse(req.body);
 
-  const data = dataSchema.parse(req.body)
-
-  const existing = await TaskSchedule.findAll({
-    where: {
-      category: "point",
-      collection_point_id: data.collection_point_id,
-    },
+  const point = await CollectionPoint.findByPk(data.collection_point_id, {
+    include: [{ model: TaskSchedule, where: { category: "point" } }],
   });
+  // const existing = await TaskSchedule.findAll({
+  //   where: {
+  //     category: "point",
+  //     collection_point_id: data.collection_point_id,
+  //   },
+  // });
+  if (!point) throw new createHttpError.NotFound("point pas trouvé");
+  const existing = point.get({ plain: true }).TaskSchedules || [];
 
   const toMinutes = (/** @type {Date | number} */ v) => {
     const d = v instanceof Date ? v : new Date(v);
@@ -100,7 +121,10 @@ export const createPointPrecense = async (req, res) => {
   };
   const newStart = toMinutes(data.start_time);
   const newEnd = toMinutes(data.end_time);
-  const dayRef = data.day_of_week instanceof Date ? data.day_of_week : new Date(data.day_of_week);
+  const dayRef =
+    data.day_of_week instanceof Date
+      ? data.day_of_week
+      : new Date(data.day_of_week);
   const newDay = dayRef.getDay();
 
   const hasOverlap = existing.some((e) => {
@@ -113,18 +137,18 @@ export const createPointPrecense = async (req, res) => {
 
   if (hasOverlap) {
     throw createHttpError.Conflict(
-      "Un créneau chevauche déjà ce horaire pour ce point de collecte et ce jour"
+      "Un créneau chevauche déjà ce horaire pour ce point de collecte et ce jour",
     );
   }
-  
+
   const presence = await TaskSchedule.create({
-    name: "point-" + data.day_of_week + data.collection_point_id,
+    name: point.name,
     category: "point",
     scheduled_date: data.day_of_week,
     recurrence_pattern: "weekly",
-    collection_point_id:data.collection_point_id,
-    ...data
-  })
+    collection_point_id: data.collection_point_id,
+    ...data,
+  });
 
   // const where = {};
   // if (day_of_week) where.day_of_week = day_of_week;
@@ -163,16 +187,14 @@ export const createPointPrecense = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const updatePointPrecense = async (req, res) => {
-
-
-  const data = dataSchema.parse(req.body)
+  const data = dataSchema.parse(req.body);
   const id = idSchema().parse(req.params.id);
-  const existing = await TaskSchedule.findByPk(id)
+  const existing = await TaskSchedule.findByPk(id);
 
   // const existing = await CollectionPointPresence.findByPk(id);
   // Vérifier que les jours de présence existent
@@ -187,14 +209,12 @@ export const updatePointPrecense = async (req, res) => {
   const conflict = await TaskSchedule.findAll({
     where: {
       //TODO faudra comparer les heures aussi
-      category:"point",
+      category: "point",
       collection_point_id: data.collection_point_id,
-      ...(data.store_id ? {store_id: data.store_id}:{}),
-      id: { [Op.ne]: id }
-    }
-  })
-
-
+      ...(data.store_id ? { store_id: data.store_id } : {}),
+      id: { [Op.ne]: id },
+    },
+  });
 
   const toMinutes = (/** @type {Date | number} */ v) => {
     const d = v instanceof Date ? v : new Date(v);
@@ -202,7 +222,10 @@ export const updatePointPrecense = async (req, res) => {
   };
   const newStart = toMinutes(data.start_time);
   const newEnd = toMinutes(data.end_time);
-  const dayRef = data.day_of_week instanceof Date ? data.day_of_week : new Date(data.day_of_week);
+  const dayRef =
+    data.day_of_week instanceof Date
+      ? data.day_of_week
+      : new Date(data.day_of_week);
   const newDay = dayRef.getDay();
 
   const hasOverlap = conflict.some((e) => {
@@ -215,7 +238,7 @@ export const updatePointPrecense = async (req, res) => {
 
   if (hasOverlap) {
     throw createHttpError.Conflict(
-      "Un créneau chevauche déjà ce horaire pour ce point de collecte et ce jour"
+      "Un créneau chevauche déjà ce horaire pour ce point de collecte et ce jour",
     );
   }
 
@@ -246,9 +269,9 @@ export const updatePointPrecense = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const deletePointPrecense = async (req, res) => {
   const id = z.coerce.number().positive().parse(req.params.id);
@@ -269,7 +292,7 @@ export const deletePointPrecense = async (req, res) => {
 const syncCollectionPointPresenceToPlanning = async (
   collectionPointId,
   startDate,
-  endDate
+  endDate,
 ) => {
   // Récupérer les jours de présence du point de collecte
   const presenceHours = await CollectionPointPresence.findAll({
@@ -279,7 +302,7 @@ const syncCollectionPointPresenceToPlanning = async (
 
   if (presenceHours.length === 0)
     throw new createHttpError[404](
-      "Aucun jour de présence configuré pour ce point de collecte - synchronisation ignorée"
+      "Aucun jour de présence configuré pour ce point de collecte - synchronisation ignorée",
     );
   // Récupérer les informations du point de collecte
   const collectionPoint = await CollectionPoint.findByPk(collectionPointId);
@@ -312,7 +335,7 @@ const syncCollectionPointPresenceToPlanning = async (
 
     // Trouver les jours de présence pour ce jour de la semaine (par nom de jour)
     const dayPresence = presenceHours.filter(
-      (presence) => presence.day_of_week === dayName
+      (presence) => presence.day_of_week === dayName,
     );
 
     for (const presence of dayPresence) {
@@ -347,8 +370,9 @@ const syncCollectionPointPresenceToPlanning = async (
 
       if (isValidPresence) {
         // Créer une tâche pour cette présence
-        const taskName = `${pointName} - Présence (${presence.time_slot_name || "Standard"
-          })`;
+        const taskName = `${pointName} - Présence (${
+          presence.time_slot_name || "Standard"
+        })`;
         const taskDescription = `Présence au point de collecte ${pointName} de ${startTime} à ${endTime}`;
 
         // Vérifier si une tâche similaire existe déjà pour cette date
@@ -422,9 +446,9 @@ const syncCollectionPointPresenceToPlanning = async (
   };
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const planningSync = async (req, res) => {
   const { collection_point_id, start_date, end_date } = req.body;
@@ -439,7 +463,7 @@ export const planningSync = async (req, res) => {
   const result = await syncCollectionPointPresenceToPlanning(
     collection_point_id,
     start_date,
-    end_date
+    end_date,
   );
 
   if (result.success) {
