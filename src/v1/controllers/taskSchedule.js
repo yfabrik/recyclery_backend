@@ -266,16 +266,6 @@ export const findSchedule = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createSchedule = async (req, res) => {
-  const {
-    task_id,
-    assigned_to,
-    store_id,
-    scheduled_date,
-    start_time,
-    end_time,
-    notes,
-  } = req.body;
-
   const dataSchema = z.object({
     scheduled_date: z.coerce.date("date requis"),
     start_time: z.coerce.date("heure de debut requis"),
@@ -285,12 +275,13 @@ export const createSchedule = async (req, res) => {
     store_id: idSchema().optional(),
     recurrence_pattern: z.enum(["daily", "weekly", "monthly"]).optional(),
     is_recurring: z.coerce.boolean().default(true),
+    name:z.string().nullish()
   });
 
   const data = dataSchema.parse(req.body);
 
   const schedule = await TaskSchedule.create({
-    name: data.category + data.scheduled_date.toString(),
+    name: data.category,
     ...data,
   });
 
