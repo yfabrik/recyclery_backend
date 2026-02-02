@@ -155,7 +155,7 @@ export const createTask = async (req, res) => {
   const data = dataSchema.parse(req.body);
   const name =
     data.name ??
-    data.category + "_" + data.scheduled_date.toLocaleDateString("fr-FR");
+    data.category;
   let schedule = null;
   if (data.recurrence_pattern && data.recurrence_pattern != "none") {
     schedule = await TaskSchedule.create({
