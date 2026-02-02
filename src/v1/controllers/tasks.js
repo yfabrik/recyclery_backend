@@ -20,7 +20,7 @@ export const listTasks = async (req, res) => {
       .transform((val) => (val ? val.split(",") : []))
       .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
     category: z
-      .enum(["point", "vente", "collection"])
+      .enum(["point", "vente", "collection", "custom"])
       .nullable()
       .optional()
       .default(
@@ -34,6 +34,8 @@ export const listTasks = async (req, res) => {
       ),
     priority: z.string().optional(),
     search: z.string().optional(),
+    date_from: z.coerce.date().nullish(),
+    date_to: z.coerce.date().nullish(),
   });
   // const category = req.originalUrl == '/api/collection-point-presence' ? "point" : req.originalUrl == '/api/store-hours' ? "vente" : req.originalUrl == '/api/collections' ? "collection" : null
   const data = includeSchema.parse({ ...req.query });
@@ -42,7 +44,23 @@ export const listTasks = async (req, res) => {
    * @type {import("sequelize").WhereOptions<import("../../models/types/taskModel.js").TaskAttributes>}
    */
   const where = {};
-  if (data.category && data.category !== "all") where.category = data.category;
+  if (data.date_from || data.date_to) {
+    where.scheduled_date = {};
+    if (data.date_from) {
+      // Set to start of day (00:00:00)
+      const dateFrom = new Date(data.date_from);
+      dateFrom.setHours(0, 0, 0, 0);
+      where.scheduled_date[Op.gte] = dateFrom;
+    }
+    if (data.date_to) {
+      // Set to end of day (23:59:59.999) to include all transactions from that day
+      const dateTo = new Date(data.date_to);
+      dateTo.setHours(23, 59, 59, 999);
+      where.scheduled_date[Op.lte] = dateTo;
+    }
+  }
+
+  if (data.category) where.category = data.category;
 
   if (data.priority && data.priority !== "all") where.priority = data.priority;
 
@@ -153,9 +171,7 @@ export const createTask = async (req, res) => {
     scheduled_date: z.coerce.date().optional().default(new Date()),
   });
   const data = dataSchema.parse(req.body);
-  const name =
-    data.name ??
-    data.category;
+  const name = data.name ?? data.category;
   let schedule = null;
   if (data.recurrence_pattern && data.recurrence_pattern != "none") {
     schedule = await TaskSchedule.create({
@@ -214,10 +230,9 @@ export const updateTask = async (req, res) => {
 
   if (!existing) throw new createHttpError[404]("Tâche non trouvée");
 
-
   await existing.update({
-    ...data
-  })
+    ...data,
+  });
   // existing.name = data.name;
   // existing.description = data.description;
   // existing.category = data.category;
