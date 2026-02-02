@@ -32,9 +32,6 @@ export default (sequelize, DataTypes) => {
       location: DataTypes.STRING,
       equipment_needed: DataTypes.TEXT,
       hourly_rate: DataTypes.DECIMAL,
-      // is_recurring: DataTypes.BOOLEAN,
-      // recurrence_pattern: DataTypes.STRING,
-      // assigned_to: DataTypes.INTEGER,//assoc
       scheduled_date: DataTypes.DATE,
       day_of_week: {
         type: DataTypes.VIRTUAL,

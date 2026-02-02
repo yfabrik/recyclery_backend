@@ -35,7 +35,7 @@ export const listSchedules = async (req, res) => {
         ? "vente"
         : req.originalUrl == "/api/collections"
           ? "collection"
-          : undefined;
+          : req.query?.category;
 
   const filter = filterSchema.parse({ ...req.query, category });
   /**
