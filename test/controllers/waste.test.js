@@ -1,32 +1,41 @@
-import { beforeAll, expect, jest } from "@jest/globals";
-import db from "../../src/models";
-import { createWaste, detailWaste, listWaste } from "../../src/v1/controllers/waste";
+import { beforeAll, afterAll, expect, jest } from "@jest/globals";
+import db from "../../src/models/index.js";
+import { createWaste, detailWaste, listWaste } from "../../src/v1/controllers/waste.js";
 const { User, Category } = db
 
 beforeAll(async () => {
     await db.sequelize.sync({ force: true });
 
-    await User.create({ email: "a@example.com" })
-    await Category.create({ name: "a" })
-    await Category.create({ name: "b" })
+    await User.create({ 
+        email: "employee@test.com",
+        username: "testemployee",
+        role: "employee"
+    })
+    await Category.create({ name: "Déchets électroniques" })
+    await Category.create({ name: "Déchets non recyclables", parent_id: 1 })
 
+})
+
+afterAll(async () => {
+  // Global teardown handles database cleanup
 })
 
 describe("waste controller functions", () => {
 
-    it("should create a waste", async () => {
+    it("should create a waste disposal record", async () => {
+        const disposalDate = new Date("2026-01-28T10:00:00Z");
         const body = {
-            disposal_date: new Date(),
+            disposal_date: disposalDate,
             category_id: 1,
             subcategory_id: 2,
-            // eco_organism_id,
+            eco_organism_id: 1,
             disposal_type: "landfill",
-            weight_kg: 50,
-            // volume_m3,
-            // transport_method,
-            // transport_company,
-            // transport_cost,
-            // notes,
+            weight_kg: 125.5,
+            volume_m3: 2.5,
+            transport_method: "truck",
+            transport_company: "Transport Vert",
+            transport_cost: 150.00,
+            notes: "Déchets non recyclables - envoi vers décharge agréée",
         };
         const req = {
             query: {},

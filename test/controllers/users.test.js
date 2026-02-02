@@ -1,18 +1,27 @@
-import { jest } from "@jest/globals";
+import { beforeAll, afterAll, jest, expect } from "@jest/globals";
+import db from "../../src/models/index.js";
 import {
   createUser,
   deleteUser,
   findUserById,
   listUsers,
   updateUser,
-} from "../../src/v1/controllers/users";
+} from "../../src/v1/controllers/users.js";
+
+beforeAll(async () => {
+  await db.sequelize.sync({ force: true });
+});
+
+afterAll(async () => {
+  // Global teardown handles database cleanup
+});
 
 describe("User controller functions", () => {
   it("should create user", async () => {
     const body = {
-      username: "john",
-      email: "john@example.com",
-      password: "secret",
+      username: "john_doe",
+      email: "john.doe@test.com",
+      password: "SecurePassword123!",
       role: "employee",
     };
     const req = {
@@ -30,8 +39,8 @@ describe("User controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         user: expect.objectContaining({
-          username: "john",
-          email: "john@example.com",
+          username: "john_doe",
+          email: "john.doe@test.com",
           role: "employee",
         }),
         success: true,
@@ -54,8 +63,8 @@ describe("User controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         user: expect.objectContaining({
-          username: "john",
-          email: "john@example.com",
+          username: "john_doe",
+          email: "john.doe@test.com",
           role: "employee",
         }),
       })
@@ -160,8 +169,58 @@ describe("User controller functions", () => {
       json: jest.fn(),
     };
 
-    expect(async () => {
-      await findUserById(req, res);
-    }).rejects.toThrow("NotFoundError");
+    await expect(findUserById(req, res)).rejects.toThrow();
+  });
+
+  it("should create user with different roles", async () => {
+    const body = {
+      username: "manager_user",
+      email: "manager@test.com",
+      password: "SecurePassword123!",
+      role: "manager",
+    };
+    const req = {
+      query: {},
+      body,
+    };
+
+    const res = {
+      json: jest.fn(),
+    };
+
+    await createUser(req, res);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user: expect.objectContaining({
+          username: "manager_user",
+          email: "manager@test.com",
+          role: "manager",
+        }),
+        success: true,
+      })
+    );
+  });
+
+  it("should filter users by role", async () => {
+    const req = {
+      query: { role: "employee" },
+    };
+
+    const res = {
+      json: jest.fn(),
+    };
+
+    await listUsers(req, res);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ 
+        users: expect.arrayContaining([
+          expect.objectContaining({
+            role: "employee"
+          })
+        ])
+      })
+    );
   });
 });

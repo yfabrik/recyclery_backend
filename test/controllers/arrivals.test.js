@@ -1,49 +1,53 @@
-import { beforeAll, jest } from "@jest/globals";
-import db from "../../src/models";
+import { beforeAll, afterAll, jest, expect } from "@jest/globals";
+import db from "../../src/models/index.js";
 
-import { createArrival, deleteArrival, detailArrival, listArrivals } from "../../src/v1/controllers/arrivals";
+import { createArrival, deleteArrival, detailArrival, listArrivals, updateArrival } from "../../src/v1/controllers/arrivals.js";
 const { Recyclery, Category, User, CollectionPoint } = db
 
 beforeAll(async () => {
     await db.sequelize.sync({ force: true });
     await Recyclery.create({
-        name: "recyclerie test",
-        address: "address test",
-        phone: "0123456789",
-        email: "recyclery@test.com",
-        // manager_id,
-        city: "orgelet",
+        name: "Recyclerie Test Orgelet",
+        address: "123 Rue de la Recyclerie",
+        phone: "+33 1 23 45 67 89",
+        email: "recyclery.orgelet@test.com",
+        city: "Orgelet",
         postal_code: "39270"
     })
-    await Category.create({ name: "a" })
-    await Category.create({ name: "b" })
-    await User.create({ email: "a@example.com" })
+    await Category.create({ name: "Électronique" })
+    await Category.create({ name: "Mobilier", parent_id: 1 })
+    await User.create({ 
+        email: "employee@test.com",
+        username: "testemployee",
+        role: "employee"
+    })
     await CollectionPoint.create({
-        name: "a",
-        address: "ailleur",
-        city: "orgelet",
+        name: "Point de collecte Centre-ville",
+        address: "45 Avenue Principale",
+        city: "Orgelet",
         postal_code: "39270",
     })
 
 })
 
+afterAll(async () => {
+  // Global teardown handles database cleanup
+})
+
 describe("arrival controller functions", () => {
 
-    it("should create a arrival", async () => {
+    it("should create an arrival from collection point", async () => {
+        const arrivalDate = new Date("2026-01-28T10:00:00Z");
+        const arrivalTime = new Date("2026-01-28T10:30:00Z");
         const body = {
             category_id: 1,
             subcategory_id: 2,
-            weight: 10,
-            arrival_date: new Date(),
-            arrival_time: new Date(),
+            weight: 15.5,
+            arrival_date: arrivalDate,
+            arrival_time: arrivalTime,
             source_type: "point",
-            // source_details,
             collection_point_id: 1,
-            // collection_point_name,
-            // collection_point_address,
-            // volunteer_donation,
-            // house_clearance,
-            // notes
+            notes: "Collecte matin - bon état général"
         };
         const req = {
             query: {},
@@ -58,18 +62,59 @@ describe("arrival controller functions", () => {
 
         await createArrival(req, res);
 
+        expect(res.status).toHaveBeenCalledWith(201);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                arrival: expect.objectContaining({
+                    id: expect.any(Number),
+                    category_id: 2, // When subcategory_id is provided, it becomes the category_id
+                    subcategory_id: 2,
+                    weight: 15.5,
+                    source_type: "point"
+                }),
+                success: true,
+                message: "Arrivage créé avec succès"
+            })
+        );
+    });
+
+    it("should create an arrival from direct donation", async () => {
+        const arrivalDate = new Date("2026-01-28T14:00:00Z");
+        const arrivalTime = new Date("2026-01-28T14:15:00Z");
+        const body = {
+            category_id: 1,
+            weight: 8.2,
+            arrival_date: arrivalDate,
+            arrival_time: arrivalTime,
+            source_type: "apport",
+            source_details: "Donation directe d'un particulier",
+            notes: "Meubles en bon état"
+        };
+        const req = {
+            query: {},
+            user: { id: 1, role: "admin" },
+            body,
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        await createArrival(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(201);
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 arrival: expect.any(Object),
-                success: true,
-
+                success: true
             })
         );
     });
 
     it("should list arrivals", async () => {
         const req = {
-            query: { store_id: 1 },
+            query: {},
             user: { id: 1, role: "admin" },
         };
 
@@ -80,12 +125,46 @@ describe("arrival controller functions", () => {
         await listArrivals(req, res);
 
         expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({ arrivals: expect(array.every(obj => obj.hasOwnProperty("id"))).toBe(true), success: true })
+            expect.objectContaining({ 
+                arrivals: expect.arrayContaining([
+                    expect.objectContaining({
+                        id: expect.any(Number),
+                        weight: expect.any(Number),
+                        source_type: expect.any(String)
+                    })
+                ]), 
+                success: true 
+            })
         );
     });
-    it("should find arrival 1", async () => {
+
+    it("should list arrivals filtered by source type", async () => {
         const req = {
-            query: { store_id: 1 },
+            query: { source_type: "point" },
+            user: { id: 1, role: "admin" },
+        };
+
+        const res = {
+            json: jest.fn(),
+        };
+
+        await listArrivals(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ 
+                arrivals: expect.any(Array),
+                success: true 
+            })
+        );
+        const response = res.json.mock.calls[0][0];
+        if (response.arrivals.length > 0) {
+            expect(response.arrivals.every(arr => arr.source_type === "point")).toBe(true);
+        }
+    });
+
+    it("should find arrival by id", async () => {
+        const req = {
+            query: {},
             user: { id: 1, role: "admin" },
             params: { id: 1 }
         };
@@ -97,12 +176,53 @@ describe("arrival controller functions", () => {
         await detailArrival(req, res);
 
         expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({ arrival: expect.any(Object), success: true })
+            expect.objectContaining({ 
+                arrival: expect.objectContaining({
+                    id: 1,
+                    weight: expect.any(Number)
+                }), 
+                success: true 
+            })
         );
     });
-    it("should delete arrival 1", async () => {
+
+    it("should update arrival", async () => {
+        const arrivalDate = new Date("2026-01-28T16:00:00Z");
+        const arrivalTime = new Date("2026-01-28T16:30:00Z");
+        const body = {
+            category_id: 1,
+            subcategory_id: 2,
+            weight: 20.0,
+            arrival_date: arrivalDate,
+            arrival_time: arrivalTime,
+            source_type: "point",
+            collection_point_id: 1,
+            notes: "Mise à jour - poids corrigé"
+        };
         const req = {
-            query: { store_id: 1 },
+            query: {},
+            user: { id: 1, role: "admin" },
+            params: { id: 1 },
+            body
+        };
+
+        const res = {
+            json: jest.fn(),
+        };
+
+        await updateArrival(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ 
+                success: true,
+                message: "Arrivage mis à jour avec succès"
+            })
+        );
+    });
+
+    it("should delete arrival", async () => {
+        const req = {
+            query: {},
             user: { id: 1, role: "admin" },
             params: { id: 1 }
         };
@@ -114,9 +234,68 @@ describe("arrival controller functions", () => {
         await deleteArrival(req, res);
 
         expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({ success: true })
+            expect.objectContaining({ 
+                success: true,
+                message: "Arrivage supprimé avec succès"
+            })
         );
     });
 
+    it("should fail to find non-existent arrival", async () => {
+        const req = {
+            query: {},
+            user: { id: 1, role: "admin" },
+            params: { id: 999 }
+        };
+
+        const res = {
+            json: jest.fn(),
+        };
+
+        await expect(detailArrival(req, res)).rejects.toThrow();
+    });
+
+    it("should list arrivals filtered by date range", async () => {
+        const req = {
+            query: { 
+                date_from: "2026-01-01",
+                date_to: "2026-01-31"
+            },
+            user: { id: 1, role: "admin" },
+        };
+
+        const res = {
+            json: jest.fn(),
+        };
+
+        await listArrivals(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ 
+                arrivals: expect.any(Array),
+                success: true 
+            })
+        );
+    });
+
+    it("should list arrivals filtered by category", async () => {
+        const req = {
+            query: { category_id: 1 },
+            user: { id: 1, role: "admin" },
+        };
+
+        const res = {
+            json: jest.fn(),
+        };
+
+        await listArrivals(req, res);
+
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ 
+                arrivals: expect.any(Array),
+                success: true 
+            })
+        );
+    });
 
 });

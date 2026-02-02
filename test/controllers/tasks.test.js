@@ -1,32 +1,38 @@
-import { beforeAll, expect, jest } from "@jest/globals";
-import db from "../../src/models";
-import { addUserToTask, createTask, detailTask, getUsersFromTask, listTasks, removeUserFromTask } from "../../src/v1/controllers/tasks";
+import { beforeAll, afterAll, expect, jest } from "@jest/globals";
+import db from "../../src/models/index.js";
+import { addUserToTask, createTask, detailTask, getUsersFromTask, listTasks, removeUserFromTask } from "../../src/v1/controllers/tasks.js";
 const { User } = db
 
 beforeAll(async () => {
     await db.sequelize.sync({ force: true });
 
-    await User.create({ email: "a@example.com" })
+    await User.create({ 
+        email: "employee@test.com",
+        username: "testemployee",
+        role: "employee"
+    })
 
+})
+
+afterAll(async () => {
+  // Global teardown handles database cleanup
 })
 
 describe("tasks controller functions", () => {
 
     it("should create a task", async () => {
         const body = {
-            name: "a",
-            // description:"b",
-            category:"custom",
-            priority:"medium",
-            // estimated_duration,
-            // required_skills,
-            // location,
-            // equipment_needed,
-            // hourly_rate,
-            // is_recurring,
-            // recurrence_pattern,
-            // assigned_to,
-            // notes,
+            name: "Nettoyage et tri des arrivages",
+            description: "Trier et nettoyer les articles reçus ce matin, vérifier leur état",
+            category: "custom",
+            priority: "medium",
+            estimated_duration: 120,
+            required_skills: "tri, nettoyage",
+            location: "Entrepôt principal",
+            equipment_needed: "Gants, produits de nettoyage",
+            hourly_rate: 12.50,
+            is_recurring: false,
+            notes: "Tâche importante pour maintenir la qualité des articles",
         };
         const req = {
             query: {},

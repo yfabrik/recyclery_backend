@@ -1,29 +1,36 @@
-import { beforeAll, expect, jest } from "@jest/globals";
-import db from "../../src/models";
-import { createCollectionPoint, deleteCollectionPoint, detailCollectionPoint, listCollectionPoints, updateCollectionPoint } from "../../src/v1/controllers/collectionPoints";
+import { beforeAll, afterAll, expect, jest } from "@jest/globals";
+import db from "../../src/models/index.js";
+import { createCollectionPoint, deleteCollectionPoint, detailCollectionPoint, listCollectionPoints, updateCollectionPoint } from "../../src/v1/controllers/collectionPoints.js";
 const { User } = db
 
 beforeAll(async () => {
     await db.sequelize.sync({ force: true });
 
-    await User.create({ email: "a@example.com" })
+    await User.create({ 
+        email: "employee@test.com",
+        username: "testemployee",
+        role: "employee"
+    })
 
+})
+
+afterAll(async () => {
+  // Global teardown handles database cleanup
 })
 
 describe("collection points controller functions", () => {
 
-    it("should create a point", async () => {
+    it("should create a collection point", async () => {
         const body = {
-            name: "a",
-            address: "ailleur",
-            city: "orgelet",
+            name: "Point de collecte Centre-ville",
+            address: "45 Avenue Principale",
+            city: "Orgelet",
             postal_code: "39270",
-            // contact_person,
-            // contact_phone,
-            // contact_email,
-            // type,
-            // notes,
-            // recyclery_id,
+            contact_person: "Jean Dupont",
+            contact_phone: "+33 1 23 45 67 89",
+            contact_email: "collecte.centreville@test.com",
+            type: "permanent",
+            notes: "Point de collecte principal - accès facile",
         };
         const req = {
             query: {},
@@ -40,24 +47,23 @@ describe("collection points controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
-                collection_point: expect.any(Object),
+                collection_point: expect.objectContaining({
+                    id: expect.any(Number),
+                    name: "Point de collecte Centre-ville",
+                    city: "Orgelet"
+                }),
                 success: true
             })
         );
     });
 
-    it("should deny the creation", async () => {
+    it("should deny the creation with duplicate email", async () => {
         const body = {
-            name: "a",
-            address: "ailleur",
-            city: "orgelet",
+            name: "Autre point",
+            address: "12 Rue Autre",
+            city: "Orgelet",
             postal_code: "39270",
-            // contact_person,
-            // contact_phone,
-            contact_email:"c@example.com",
-            // type,
-            // notes,
-            // recyclery_id,
+            contact_email: "collecte.centreville@test.com",
         };
         const req = {
             query: {},
@@ -100,19 +106,17 @@ describe("collection points controller functions", () => {
             })
         );
     });
-        it("should update the point id 1", async () => {
-
+    it("should update the collection point", async () => {
         const req = {
-            query: { 
-              
-        },
+            query: {},
             user: { id: 1, role: "admin" },
             params: { id: 1 },
-            body:{
-  name: "updated name",
-                address: "autres",
-                city:"b",
-                postal_code:"01000"
+            body: {
+                name: "Point de collecte Centre-ville Mise à jour",
+                address: "50 Avenue Principale",
+                city: "Orgelet",
+                postal_code: "39270",
+                contact_email: "collecte.centreville@test.com",
             }
         };
 
@@ -125,9 +129,12 @@ describe("collection points controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
-                collection_point: expect.objectContaining({name: "updated name",
-            address: "autres",city:"b",
-                postal_code:"01000", contact_email:"c@example.com",}),
+                collection_point: expect.objectContaining({
+                    name: "Point de collecte Centre-ville Mise à jour",
+                    address: "50 Avenue Principale",
+                    city: "Orgelet",
+                    postal_code: "39270"
+                }),
                 success: true
             })
         );

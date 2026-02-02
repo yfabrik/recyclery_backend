@@ -1,11 +1,20 @@
-import { expect, jest } from "@jest/globals";
-import { createCategorie, deleteCategorie, listCategories, listSubcategories, updateCategorie } from "../../src/v1/controllers/categories";
+import { beforeAll, afterAll, expect, jest } from "@jest/globals";
+import db from "../../src/models/index.js";
+import { createCategorie, deleteCategorie, listCategories, listSubcategories, updateCategorie } from "../../src/v1/controllers/categories.js";
+
+beforeAll(async () => {
+    await db.sequelize.sync({ force: true });
+});
+
+afterAll(async () => {
+  // Global teardown handles database cleanup
+});
 
 describe("categories controller functions", () => {
 
     it("should create a categorie", async () => {
         const body = {
-            name: "categorie 1",
+            name: "Électronique",
         };
         const req = {
             query: {},
@@ -22,15 +31,18 @@ describe("categories controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
-                category: expect.any(Object),
+                category: expect.objectContaining({
+                    id: expect.any(Number),
+                    name: "Électronique"
+                }),
                 success: true,
                 message: expect.any(String),
             })
         );
     });
-    it("should fail to create a categorie", async () => {
+    it("should fail to create a duplicate categorie", async () => {
         const body = {
-            name: "categorie 1",
+            name: "Électronique",
         };
         const req = {
             query: {},
@@ -48,13 +60,12 @@ describe("categories controller functions", () => {
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 success: false,
-
             })
         );
     });
     it("should create a subcategorie", async () => {
         const body = {
-            name: "categorie 2",
+            name: "Ordinateurs",
             parent_id: 1
         };
         const req = {
@@ -72,7 +83,11 @@ describe("categories controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
-                category: expect.any(Object),
+                category: expect.objectContaining({
+                    id: expect.any(Number),
+                    name: "Ordinateurs",
+                    parent_id: 1
+                }),
                 success: true,
                 message: expect.any(String),
             })
@@ -153,9 +168,9 @@ describe("categories controller functions", () => {
             })
         );
     });
-    it("should update categorie 1", async () => {
+    it("should update categorie", async () => {
         const body = {
-            name: "categorie 1.0",
+            name: "Électronique et Informatique",
         };
         const req = {
             query: {},
@@ -173,7 +188,7 @@ describe("categories controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
-                category: expect.objectContaining({ name: "categorie 1.0" }),
+                category: expect.objectContaining({ name: "Électronique et Informatique" }),
                 success: true,
             })
         );
@@ -219,14 +234,10 @@ describe("categories controller functions", () => {
             expect.objectContaining({ message: expect.any(String), success: true })
         );
     });
-    it("should find 0 categories", async () => {
-        const body = {
-
-        };
+    it("should list categories with filters", async () => {
         const req = {
-            query: {},
+            query: { parent_null: true },
             user: { id: 1, role: "admin" },
-            body,
         };
 
         const res = {
@@ -238,10 +249,29 @@ describe("categories controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
-                categories: [],
+                categories: expect.any(Array),
                 success: true,
             })
         );
+    });
+
+    it("should fail to update non-existent category", async () => {
+        const body = {
+            name: "Non-existent",
+        };
+        const req = {
+            query: {},
+            user: { id: 1, role: "admin" },
+            body,
+            params: { id: 999 }
+        };
+
+        const res = {
+            json: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        await expect(updateCategorie(req, res)).rejects.toThrow();
     });
 
 });

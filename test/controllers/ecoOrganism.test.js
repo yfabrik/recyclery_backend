@@ -1,5 +1,5 @@
-import { beforeAll, expect, jest } from "@jest/globals";
-import db from "../../src/models";
+import { beforeAll, afterAll, expect, jest } from "@jest/globals";
+import db from "../../src/models/index.js";
 import {
   createEcoOrganism,
   deleteEcoOrganism,
@@ -14,33 +14,40 @@ const { User, CollectionPoint, Recyclery } = db;
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });
 
-  await User.create({ email: "a@example.com", role: "employee" });
+  await User.create({ 
+    email: "employee@test.com",
+    username: "testemployee",
+    role: "employee" 
+  });
   await Recyclery.create({
-    name: "recyclerie test",
-    address: "address test",
-    phone: "0123456789",
-    email: "recyclery@test.com",
-    // manager_id:1,
-    city: "orgelet",
+    name: "Recyclerie Test Orgelet",
+    address: "123 Rue de la Recyclerie",
+    phone: "+33 1 23 45 67 89",
+    email: "recyclery.orgelet@test.com",
+    city: "Orgelet",
     postal_code: "39270",
   });
   await CollectionPoint.create({
-    name: "a",
-    address: "ailleur",
-    city: "orgelet",
+    name: "Point de collecte Centre-ville",
+    address: "45 Avenue Principale",
+    city: "Orgelet",
     postal_code: "39270",
   });
 });
 
+afterAll(async () => {
+  // Global teardown handles database cleanup
+});
+
 describe("collection schedule controller functions", () => {
-  it("should create a eco organism", async () => {
+  it("should create an eco organism", async () => {
     const body = {
-      name: "a",
-      description: "b",
-      contact_email: "a@a.fr",
-      contact_phone: "0123456789",
-      address: "ailleur",
-      website: "http://example.com",
+      name: "Eco-Organisme Recyclage Électronique",
+      description: "Organisme agréé pour la collecte et le recyclage des déchets électroniques",
+      contact_email: "contact@eco-org-recyclage.fr",
+      contact_phone: "+33 1 23 45 67 89",
+      address: "123 Rue de l'Environnement, 75001 Paris",
+      website: "https://www.eco-org-recyclage.fr",
       is_active: true,
     };
     const req = {

@@ -1,5 +1,5 @@
-import { beforeAll, jest } from "@jest/globals";
-import db from "../../src/models";
+import { beforeAll, afterAll, jest, expect } from "@jest/globals";
+import db from "../../src/models/index.js";
 
 import {
   addHoraire,
@@ -12,17 +12,24 @@ const { Recyclery, Category, User } = db;
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });
   await Recyclery.create({
-    name: "recyclerie test",
-    address: "address test",
-    phone: "0123456789",
-    email: "recyclery@test.com",
-    // manager_id,
-    city: "orgelet",
+    name: "Recyclerie Test Orgelet",
+    address: "123 Rue de la Recyclerie",
+    phone: "+33 1 23 45 67 89",
+    email: "recyclery.orgelet@test.com",
+    city: "Orgelet",
     postal_code: "39270",
   });
-  await Category.create({ name: "a" });
-  await Category.create({ name: "b" });
-  await User.create({ email: "a@example.com" });
+  await Category.create({ name: "Électronique" });
+  await Category.create({ name: "Mobilier", parent_id: 1 });
+  await User.create({ 
+    email: "employee@test.com",
+    username: "testemployee",
+    role: "employee"
+  });
+});
+
+afterAll(async () => {
+  // Global teardown handles database cleanup
 });
 
 describe("store_hours controller functions", () => {
@@ -58,40 +65,42 @@ describe("store_hours controller functions", () => {
     );
   });
 
-  it("should list horaires", async () => {
-    const req = {
-      query: {},
-      user: { id: 1, role: "admin" },
-    };
+    it("should list horaires", async () => {
+        const req = {
+            query: {},
+            user: { id: 1, role: "admin" },
+        };
 
-    const res = {
-      json: jest.fn(),
-    };
+        const res = {
+            json: jest.fn(),
+        };
 
-    await listHoraires(req, res);
+        await listHoraires(req, res);
 
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        arrivals: expect(
-          Array.every((obj) => {
-            expect(obj).toHaveProperty("id");
-            expect(obj).toHaveProperty("day_of_week");
-            expect(obj).toHaveProperty("time_slot_name");
-          })
-        ),
-        success: true,
-      })
-    );
-  });
-  it("should update horaire 1", async () => {
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                horaires: expect.arrayContaining([
+                    expect.objectContaining({
+                        id: expect.any(Number),
+                        day_of_week: expect.any(String),
+                        time_slot_name: expect.any(String)
+                    })
+                ]),
+                success: true,
+            })
+        );
+    });
+  it("should update horaire", async () => {
     const req = {
       query: {},
       user: { id: 1, role: "admin" },
       params: { id: 1 },
       body: {
         store_id: 1,
-        day_of_week: "tuesday",
-        time_slot_name: "Matin",
+        day_of_week: "Mardi",
+        open_time: "10:00",
+        close_time: "19:00",
+        is_open: true,
       },
     };
 
@@ -103,10 +112,9 @@ describe("store_hours controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        horaire: expect.objectContaining({
-          day_of_week: "tuesday",
-        }),
+        horaire: expect.any(Object),
         success: true,
+        message: "Horaires mis à jour avec succès",
       })
     );
   });

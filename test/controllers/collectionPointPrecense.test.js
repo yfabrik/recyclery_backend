@@ -1,43 +1,48 @@
-import { beforeAll, expect, jest } from "@jest/globals";
-import db from "../../src/models";
-import { createPointPrecense, deletePointPrecense, detailPointPrecense, listPointPrecense } from "../../src/v1/controllers/collectionPointPrecense";
+import { beforeAll, afterAll, expect, jest } from "@jest/globals";
+import db from "../../src/models/index.js";
+import { createPointPrecense, deletePointPrecense, detailPointPrecense, listPointPrecense } from "../../src/v1/controllers/collectionPointPrecense.js";
 const { User, CollectionPoint, Recyclery } = db
 
 beforeAll(async () => {
     await db.sequelize.sync({ force: true });
 
-    await User.create({ email: "a@example.com", role: "employee" })
+    await User.create({ 
+        email: "employee@test.com",
+        username: "testemployee",
+        role: "employee" 
+    })
     await Recyclery.create({
-        name: "recyclerie test",
-        address: "address test",
-        phone: "0123456789",
-        email: "recyclery@test.com",
-        // manager_id:1,
-        city: "orgelet",
+        name: "Recyclerie Test Orgelet",
+        address: "123 Rue de la Recyclerie",
+        phone: "+33 1 23 45 67 89",
+        email: "recyclery.orgelet@test.com",
+        city: "Orgelet",
         postal_code: "39270"
     })
     await CollectionPoint.create({
-        name: "a",
-        address: "ailleur",
-        city: "orgelet",
+        name: "Point de collecte Centre-ville",
+        address: "45 Avenue Principale",
+        city: "Orgelet",
         postal_code: "39270",
-
     });
 
 })
 
+afterAll(async () => {
+  // Global teardown handles database cleanup
+})
+
 describe("collection schedule controller functions", () => {
 
-    it("should create a point precense", async () => {
+    it("should create a point presence", async () => {
         const body = {
             collection_point_id: 1,
             store_id: 1,
             day_of_week: 1,
-            time_slot_name: "Lundi",
+            time_slot_name: "Lundi Matin",
             is_present: true,
             start_time: 9,
-            end_time:12,
-
+            end_time: 12,
         }
         const req = {
             query: {},

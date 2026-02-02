@@ -1,33 +1,40 @@
-import { beforeAll, expect, jest } from "@jest/globals";
-import db from "../../src/models";
-import { addUserToSchedule, createCollectionSchedule, deleteCollectionSchedule, detailBSD, generateBSD, removeUserFromSchedule } from "../../src/v1/controllers/CollectionSchedule";
+import { beforeAll, afterAll, expect, jest } from "@jest/globals";
+import db from "../../src/models/index.js";
+import { addUserToSchedule, createCollectionSchedule, deleteCollectionSchedule, detailBSD, generateBSD, removeUserFromSchedule } from "../../src/v1/controllers/CollectionSchedule.js";
 const { User, CollectionPoint } = db
 
 beforeAll(async () => {
     await db.sequelize.sync({ force: true });
 
-    await User.create({ email: "a@example.com" ,role:"employee"})
+    await User.create({ 
+        email: "employee@test.com",
+        username: "testemployee",
+        role: "employee"
+    })
     await CollectionPoint.create({
-        name: "a",
-        address: "ailleur",
-        city: "orgelet",
+        name: "Point de collecte Centre-ville",
+        address: "45 Avenue Principale",
+        city: "Orgelet",
         postal_code: "39270",
-
     });
 
+})
+
+afterAll(async () => {
+  // Global teardown handles database cleanup
 })
 
 describe("collection schedule controller functions", () => {
 
     it("should create a schedule", async () => {
+        const scheduledDate = new Date("2026-02-01T09:00:00Z");
+        const scheduledTime = new Date("2026-02-01T09:30:00Z");
         const body = {
             collection_point_id: 1,
-            scheduled_date: Date(),
-            scheduled_time: Date(),
-            // employee_id,
-            // vehicle,
-            // estimated_duration,
-            // notes,
+            scheduled_date: scheduledDate,
+            scheduled_time: scheduledTime,
+            estimated_duration: 120,
+            notes: "Collecte matin - véhicule utilitaire",
         };
         const req = {
             query: {},
@@ -44,7 +51,6 @@ describe("collection schedule controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
-                // collection_point: expect.any(Object),
                 success: true
             })
         );

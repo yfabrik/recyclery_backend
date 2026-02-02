@@ -1,24 +1,41 @@
-import { beforeAll, expect, jest } from "@jest/globals";
-import db from "../../src/models";
-import { createRefund, createTransaction, listRefunds, listTransactions } from "../../src/v1/controllers/salesTransactions";
+import { beforeAll, afterAll, expect, jest } from "@jest/globals";
+import db from "../../src/models/index.js";
+import { createRefund, createTransaction, listRefunds, listTransactions } from "../../src/v1/controllers/salesTransactions.js";
 const { Recyclery, CashRegister, User, CashSession } = db
 
 beforeAll(async () => {
     await db.sequelize.sync({ force: true });
-    await User.create({ email: "a@example.com" })
+    await User.create({ 
+        email: "cashier@test.com",
+        username: "cashier1",
+        role: "employee"
+    })
     await Recyclery.create({
-        name: "recyclerie test",
-        address: "address test",
-        phone: "0123456789",
-        email: "recyclery@test.com",
-        // manager_id:1,
-        city: "orgelet",
+        name: "Recyclerie Test Orgelet",
+        address: "123 Rue de la Recyclerie",
+        phone: "+33 1 23 45 67 89",
+        email: "recyclery.orgelet@test.com",
+        city: "Orgelet",
         postal_code: "39270"
     })
 
-    await CashRegister.create({ name: "caisse 1", recyclery_id: 1 })
-    await CashSession.create({ cash_register_id: 1, user_id: 1, opening_amount: 500, recyclery_id: 1 })
+    await CashRegister.create({ 
+        name: "Caisse Principale", 
+        recyclery_id: 1,
+        is_active: true
+    })
+    await CashSession.create({ 
+        cash_register_id: 1, 
+        user_id: 1, 
+        opening_amount: 500.00, 
+        recyclery_id: 1,
+        status: "open"
+    })
 
+})
+
+afterAll(async () => {
+  // Global teardown handles database cleanup
 })
 
 describe("transactions controller functions", () => {
@@ -27,11 +44,24 @@ describe("transactions controller functions", () => {
         const body = {
             cash_session_id: 1,
             store_id: 1,
-            total_amount: 10,
+            total_amount: 45.50,
             payment_method: "cash",
-            payment_amount: 24,
-            change_amount: 0,
-            items: [],
+            payment_amount: 50.00,
+            change_amount: 4.50,
+            items: [
+                {
+                    item_id: 1,
+                    quantity: 1,
+                    unit_price: 25.00,
+                    total_price: 25.00
+                },
+                {
+                    item_id: 2,
+                    quantity: 2,
+                    unit_price: 10.25,
+                    total_price: 20.50
+                }
+            ],
         };
         const req = {
             query: {},
@@ -86,11 +116,10 @@ describe("transactions controller functions", () => {
     it("should create a refund", async () => {
         const body = {
             cash_register_id: 1,
-
             transaction_id: 1,
             refund_type: 'full',
-            refund_amount: 10,
-            refund_reason: "a"
+            refund_amount: 45.50,
+            refund_reason: "Article défectueux - retour client"
         };
         const req = {
             params: { store_id: 1 },
