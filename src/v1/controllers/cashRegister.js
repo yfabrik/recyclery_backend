@@ -12,7 +12,7 @@ const { CashRegister, CashSession, Recyclery, Sequelize } = db;
  * @param {import("express").Response} res 
  */
 export const listCaisses = async (req, res) => {
-  const {id : store_id} = req.params
+  const {id : store_id} = req.params || {}
   const filterSchema = z.object({
     is_active: z.coerce.boolean().optional(),
     store_id: idSchema().optional()//TODO fix NAME ?
@@ -168,10 +168,16 @@ export const updateCaisse = async (req, res) => {
 
   // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
   const duplicateRegister = await CashRegister.findAll({
-    where: { [Op.and]: [{ name: data.name }, { recyclery_id: existingRegister.recyclery_id }] },
+    where: { 
+      [Op.and]: [
+        { name: data.name }, 
+        { recyclery_id: existingRegister.recyclery_id },
+        { id: { [Op.ne]: id } } // Exclude current record
+      ] 
+    },
   });
 
-  if (duplicateRegister) {
+  if (duplicateRegister.length > 0) {
     throw new createHttpError.Conflict(
       "Une autre caisse avec ce nom existe déjà dans ce magasin"
     );
