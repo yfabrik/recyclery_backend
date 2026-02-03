@@ -104,7 +104,7 @@ export const createPointPrecense = async (req, res) => {
   const data = dataSchema.parse(req.body);
 
   const point = await CollectionPoint.findByPk(data.collection_point_id, {
-    include: [{ model: TaskSchedule, where: { category: "point" } }],
+    include: [{ model: TaskSchedule, where: { category: "point" } ,required:false }],
   });
   // const existing = await TaskSchedule.findAll({
   //   where: {
