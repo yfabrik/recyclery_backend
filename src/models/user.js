@@ -70,7 +70,7 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ },
       },
-      contract_hours: { type: DataTypes.INTEGER, defaultValue: 35 }, //peut etre obtenu from employee workday ?
+      // contract_hours: { type: DataTypes.INTEGER, defaultValue: 35 }, //peut etre obtenu from employee workday ?
       isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
       last_login: DataTypes.DATE,
     },
