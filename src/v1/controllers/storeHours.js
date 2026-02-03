@@ -157,8 +157,9 @@ export const addHoraire = async (req, res) => {
   const data = dataSchema.parse(req.body);
 
   const store = await Recyclery.findByPk(data.store_id, {
-    include: [{ model: TaskSchedule, where: { category: "vente" } }],
+    include: [{ model: TaskSchedule, where: { category: "vente" }, required: false }],
   });
+
   if (!store) throw new createHttpError.NotFound("magasin pas trouvé");
   // const existing = await TaskSchedule.findAll({
   //   where: {
