@@ -22,6 +22,7 @@ export default (sequelize, DataTypes) => {
       start_time: DataTypes.TIME,
       end_time: DataTypes.STRING,
       notes: DataTypes.TEXT,
+      week: DataTypes.STRING
     },
     {
       sequelize,

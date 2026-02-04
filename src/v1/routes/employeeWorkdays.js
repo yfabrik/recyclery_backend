@@ -3,6 +3,8 @@ import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 import { cast, col, literal } from "sequelize";
+import z from "zod";
+import { idSchema } from "../../services/zod.js";
 
 const { EmployeeWorkdays, Employee } = db;
 export const router = Router();
@@ -19,7 +21,7 @@ router.get(
       success: true,
       workdays,
     });
-  })
+  }),
 );
 
 // Obtenir les jours de travail d'un employé
@@ -84,7 +86,7 @@ router.get(
       success: true,
       workdays,
     });
-  })
+  }),
 );
 
 // Créer ou mettre à jour les jours de travail d'un employé
@@ -92,15 +94,37 @@ router.post(
   "/employee/:employeeId",
   authenticateToken,
   asyncHandler(async (req, res) => {
-    const { employeeId } = req.params;
-    const { workdays } = req.body; // Array of workday objects
+    const dataSchema = z.object({
+      day_of_week: z.enum([
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+      ]),
+      time_slot: z.enum(["morning", "afternoon"]),
+      is_working: z.boolean(),
+      start_time: z.iso.time(),
+      end_time: z.iso.time(),
+      notes: z.string().nullish(),
+      week: z.string().regex(/^week[1-9]$/, "week format incorrect"),
+    });
+    const schema = z.object({
+      workdays: z.array(dataSchema, "workdays doit être un tableau"),
+    });
 
-    if (!Array.isArray(workdays)) {
-      return res.status(400).json({
-        success: false,
-        error: "workdays doit être un tableau",
-      });
-    }
+    const { workdays } = schema.parse(req.body);
+    const employeeId = idSchema().parse(req.params.employeeId);
+    // const { workdays } = req.body; // Array of workday objects
+
+    // if (!Array.isArray(workdays)) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     error: "workdays doit être un tableau",
+    //   });
+    // }
 
     // Vérifier que l'employé existe
     const employee = await Employee.findByPk(employeeId);
@@ -111,54 +135,59 @@ router.post(
         error: "Employé non trouvé",
       });
     }
-    await employee.removeEmployeeWorkdays();
     // Supprimer les anciens jours de travail de cet employé
-
-    // Insérer les nouveaux jours de travail
-    const validDays = [
-      "monday",
-      "tuesday",
-      "wednesday",
-      "thursday",
-      "friday",
-      "saturday",
-      "sunday",
-    ];
-    const validTimeSlots = ["morning", "afternoon"];
-
+    await employee.removeEmployeeWorkdays();
     for (const workday of workdays) {
-      const {
-        day_of_week,
-        time_slot,
-        is_working = true,
-        start_time,
-        end_time,
-        notes,
-      } = workday;
-
-      if (
-        !validDays.includes(day_of_week) ||
-        !validTimeSlots.includes(time_slot)
-      ) {
-        continue; // Ignorer les entrées invalides
-      }
       await EmployeeWorkdays.create({
         employee_id: employeeId,
-        day_of_week,
-        time_slot,
-        is_working: is_working ? 1 : 0,
-        start_time,
-        end_time,
-        notes,
+        ...workday,
       });
     }
 
+    // // Insérer les nouveaux jours de travail
+    // const validDays = [
+    //   "monday",
+    //   "tuesday",
+    //   "wednesday",
+    //   "thursday",
+    //   "friday",
+    //   "saturday",
+    //   "sunday",
+    // ];
+    // const validTimeSlots = ["morning", "afternoon"];
+
+    // for (const workday of workdays) {
+    //   const {
+    //     day_of_week,
+    //     time_slot,
+    //     is_working = true,
+    //     start_time,
+    //     end_time,
+    //     notes,
+    //   } = workday;
+
+    //   if (
+    //     !validDays.includes(day_of_week) ||
+    //     !validTimeSlots.includes(time_slot)
+    //   ) {
+    //     continue; // Ignorer les entrées invalides
+    //   }
+    //   await EmployeeWorkdays.create({
+    //     employee_id: employeeId,
+    //     day_of_week,
+    //     time_slot,
+    //     is_working: is_working ? 1 : 0,
+    //     start_time,
+    //     end_time,
+    //     notes,
+    //   });
+    // }
     res.json({
       success: true,
 
       message: "Jours de travail mis à jour avec succès",
     });
-  })
+  }),
 );
 
 // Créer un jour de travail individuel
@@ -208,7 +237,7 @@ router.post(
       workday_id: result.id,
       workday: result,
     });
-  })
+  }),
 );
 
 // Mettre à jour un jour de travail
@@ -227,18 +256,18 @@ router.put(
         error: "Jour de travail non trouvé",
       });
     }
-    (result.is_working = is_working ? 1 : 0),
+    ((result.is_working = is_working ? 1 : 0),
       (result.start_time = start_time || null),
       (result.end_time = end_time || null),
       (result.notes = notes || null),
-      await result.save();
+      await result.save());
 
     res.json({
       success: true,
       message: "Jour de travail mis à jour avec succès",
       workday: result,
     });
-  })
+  }),
 );
 
 // Supprimer un jour de travail
@@ -261,7 +290,7 @@ router.delete(
       success: true,
       message: "Jour de travail supprimé avec succès",
     });
-  })
+  }),
 );
 
 // Supprimer tous les jours de travail d'un employé
@@ -279,5 +308,5 @@ router.delete(
       success: true,
       message: `${result} jour(s) de travail supprimé(s) avec succès`,
     });
-  })
+  }),
 );
