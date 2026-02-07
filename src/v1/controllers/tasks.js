@@ -4,7 +4,7 @@ import * as z from "zod";
 import collection from "../../models/poubelle/collection.js";
 import createHttpError from "http-errors";
 
-const { Task, User, TaskSchedule, Employee } = db;
+const { Task, User, TaskSchedule, Employee, Recyclery } = db;
 
 /**
  *
@@ -12,7 +12,7 @@ const { Task, User, TaskSchedule, Employee } = db;
  * @param {import("express").Response} res
  */
 export const listTasks = async (req, res) => {
-  const ALLOWED_INCLUDES = ["user", "comments", "project", "task"];
+  const ALLOWED_INCLUDES = ["user", "store"];
   const includeSchema = z.object({
     include: z
       .string()
@@ -78,6 +78,12 @@ export const listTasks = async (req, res) => {
     include.push({
       model: Employee,
     });
+  if (data.include.includes("store"))
+    include.push({
+      model: Recyclery,
+      required: false
+    });
+
 
   const tasks = await Task.findAll({
     include,
