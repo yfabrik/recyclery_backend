@@ -26,6 +26,7 @@ export default (sequelize, DataTypes) => {
       this.hasMany(models.TaskSchedule, {
         onDelete: "CASCADE",
         foreignKey: "store_id",
+        // as:"horaires"
       });
 
       // this.belongsToMany(models.User, {

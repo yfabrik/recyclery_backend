@@ -11,7 +11,8 @@ const {
   SalesTransaction,
   LabeledItem,
   EmployeeWorkdays,
-  Employee
+  Employee,
+  TaskSchedule
 } = db;
 /**
  *
@@ -19,7 +20,7 @@ const {
  * @param {import("express").Response} res
  */
 export const listRecycleries = async (req, res) => {
-  const ALLOWED_INCLUDES = ["employees"];
+  const ALLOWED_INCLUDES = ["employees", "horaires"];
   const filterSchema = z.object({
     include: z
       .string()
@@ -40,6 +41,13 @@ export const listRecycleries = async (req, res) => {
       include: [{ model: EmployeeWorkdays }],
     });
 
+  if (filter.include.includes("horaires"))
+    include.push({
+      model: TaskSchedule,
+      // as: "horaires",
+      required: false,
+      where:{category:"vente"}
+    })
   include.push(
     {
       model: CashRegister,

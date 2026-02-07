@@ -11,8 +11,14 @@ const { CollectionPoint, Recyclery, CollectionSchedule, TaskSchedule } = db;
  * @param {import("express").Response} res 
  */
 export const listCollectionPoints = async (req, res) => {
+  const ALLOWED_INCLUDES = ["horaires"]
   const filterSchema = z.object({
-    active_only: z.coerce.boolean().optional()
+    active_only: z.coerce.boolean().optional(),
+    include: z
+      .string()
+      .optional()
+      .transform((val) => (val ? val.split(",") : []))
+      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
   })
   const filter = filterSchema.parse(req.query)
   /**
@@ -20,6 +26,14 @@ export const listCollectionPoints = async (req, res) => {
  */
   const where = {};
   if (typeof filter.active_only == "boolean") where.is_active = filter.active_only;
+
+  // const include=[]
+  // if (filter.include.includes("horaires"))
+  //   include.push({
+  //     model: TaskSchedule,
+  //     as: "horaires",
+  //     required: false
+  //   })
 
   const collection_points = await CollectionPoint.findAll({
     where,
