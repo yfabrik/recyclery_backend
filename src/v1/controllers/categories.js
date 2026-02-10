@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { literal, Op } from "sequelize";
 import db from "../../models/index.js";
 import * as z from "zod";
 import logger from "../../services/logger.js";
@@ -14,6 +14,11 @@ const dataSchema = z.object({
   defaultWeight: z.number().nonnegative().default(0),
   defaultPrice: z.number().nonnegative().default(0),
 });
+
+const IOValues = {
+  IN: 1 << 1,
+  OUT: 1 << 0,
+};
 /**
  *
  * @param {string} name
@@ -31,14 +36,18 @@ const findExistingCategory = async (name, parent_id = null) => {
  * @param {import("express").Response} res
  */
 export const listCategories = async (req, res) => {
+  const ALLOWED_INCLUDES = ["category", "parent"];
   const filtersSchema = z.object({
     include: z
       .string()
       .toLowerCase()
       .optional()
-      .transform((val) => (val ? val.split(",") : [])),
+      .transform((val) => (val ? val.split(",") : []))
+      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
     only_category: z.coerce.boolean().optional().default(false),
     only_sub: z.coerce.boolean().optional().default(false),
+    out: z.coerce.boolean().optional(),
+    in: z.coerce.boolean().optional(),
   });
   const filters = filtersSchema.parse(req.query);
 
@@ -54,9 +63,36 @@ export const listCategories = async (req, res) => {
   if (filters.only_sub) {
     where.parent_id = { [Op.not]: null };
   }
-  if (filters.include.includes("category"))
-    include.push({ model: Category, as: "subcategories" });
 
+  if (filters.in) where.IO = literal(`Category.IO & ${IOValues.IN} != 0`);
+  if (filters.out) where.IO = literal(`Category.IO & ${IOValues.OUT} != 0`);
+
+  if (filters.include.includes("category")) {
+    const insideWhere = {};
+    if (typeof filters.in == "boolean" && filters.in)
+      insideWhere.IO = literal(`subcategories.IO & ${IOValues.IN} != 0`);
+    if (typeof filters.out == "boolean" && filters.out)
+      insideWhere.IO = literal(`subcategories.IO & ${IOValues.OUT} != 0`);
+    include.push({
+      model: Category,
+      as: "subcategories",
+      where: { ...insideWhere },
+      required: false,
+    });
+  }
+  if (filters.include.includes("parent")) {
+    const insideWhere = {};
+    if (typeof filters.in == "boolean" && filters.in)
+      insideWhere.IO = literal(`parent.IO & ${IOValues.IN} != 0`);
+    if (typeof filters.out == "boolean" && filters.out)
+      insideWhere.IO = literal(`parent.IO & ${IOValues.OUT} != 0`);
+    include.push({
+      model: Category,
+      as: "parent",
+      required: false,
+      where: { ...insideWhere },
+    });
+  }
   const categories = await Category.findAll({ where, include });
 
   res.json({
@@ -161,22 +197,62 @@ export const updateCategorie = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const patchCategory = async (req, res) => {
-  const IOValues = {
-    IN: 1 << 1,
-    OUT: 1 << 0,
-  };
   const dataSchema = z.object({
     in: z.boolean().optional(),
     out: z.boolean().optional(),
   });
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
-  const category = await Category.findByPk(id);
+  const category = await Category.findByPk(id, {
+    include: [
+      {
+        model: Category,
+        as: "parent",
+      },
+      {
+        model: Category,
+        as: "subcategories",
+      },
+    ],
+  });
+
   if (!category) throw new createHttpError.NotFound("categorie non trouvé");
+  const parent = category?.parent;
+  const subcategories = category?.subcategories;
+
   if (typeof data.in == "boolean")
-    data.in ? (category.IO |= IOValues.IN) : (category.IO &= ~IOValues.IN);
+    if (data.in) {
+      category.IO |= IOValues.IN;
+      if (parent) {
+        parent.IO |= IOValues.IN;
+        await parent.save();
+      }
+    } else {
+      category.IO &= ~IOValues.IN;
+      subcategories.map(async (cat) => {
+        cat.IO &= ~IOValues.IN;
+        await cat.save();
+      });
+    }
   if (typeof data.out == "boolean")
-    data.out ? (category.IO |= IOValues.OUT) : (category.IO &= ~IOValues.OUT);
+    if (data.out) {
+      category.IO |= IOValues.OUT;
+      if (parent) {
+        parent.IO |= IOValues.OUT;
+        await parent.save();
+      }
+    } else {
+      category.IO &= ~IOValues.OUT;
+      subcategories.map(async (cat) => {
+        cat.IO &= ~IOValues.OUT;
+        await cat.save();
+      });
+    }
+
+  // data.in ? (category.IO |= IOValues.IN) : (category.IO &= ~IOValues.IN);
+  // if (typeof data.out == "boolean")
+  //   data.out ? (category.IO |= IOValues.OUT) : (category.IO &= ~IOValues.OUT);
+
   await category.save();
   res.json({
     success: true,
