@@ -207,7 +207,7 @@ export default (sequelize, DataTypes) => {
       hooks: {
         beforeCreate: async (data, options) => {
           logger.info("check for conflict before create schedule");
-          conflictCheck(data);
+          await conflictCheck(data);
         },
 
         afterCreate: async (schedule) => {
@@ -232,7 +232,7 @@ export default (sequelize, DataTypes) => {
         },
         beforeUpdate: async (data, options) => {
           logger.info("check for conflict before update schedule", data);
-          conflictCheck(data);
+          await conflictCheck(data);
         },
         afterUpdate: async (schedule) => {
           const Task = schedule.sequelize.models.Task;

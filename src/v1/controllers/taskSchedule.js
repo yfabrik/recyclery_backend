@@ -430,7 +430,7 @@ export const updateSchedule = async (req, res) => {
   // }
 
   if (!data.name) data.name = data.category;
-  existingSchedules.update({ ...data });
+  await existingSchedules.update({ ...data });
   // if (assigned_to) {
   //   existingSchedules.assigned_to = assigned_to;
   // }
@@ -690,9 +690,8 @@ export const findAvailableEMployee = async (req, res) => {
     .toLowerCase();
 
   const newYear = new Date(taskDate.getFullYear(), 0, 1);
-  const weekNumber = Math.ceil(
-    (taskDate - newYear) / (7 * 24 * 60 * 60 * 1000),
-  );
+  const dayNumber = Math.floor((taskDate - newYear) / (24 * 60 * 60 * 1000));
+  const weekNumber = Math.ceil((taskDate.getDay() + 1 + dayNumber) / 7);
   if (!schedule.store_id)
     allEmployees = await Employee.findAll({
       include: [
