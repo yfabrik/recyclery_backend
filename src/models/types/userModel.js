@@ -3,6 +3,8 @@
  * @property {string} username - Username for the user
  * @property {string} email - Email address (must be unique and valid email format)
  * @property {string} password - Password hash (excluded from default scope)
+ * @property {string} [password_hash] - Password hash (excluded from default scope)
+ * 
  * @property {string} [role] - User role (default: "employee")
  * @property {string} [phone] - Phone number
  * @property {number} [contract_hours] - Contract hours per week (default: 35)

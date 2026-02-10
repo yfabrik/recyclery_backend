@@ -5,8 +5,8 @@ import { findUserByEmail } from "../../services/users.js";
 import { col, fn, Op } from "sequelize";
 import * as z from "zod";
 import { idSchema, phoneSchema } from "../../services/zod.js";
+import bcrypt from "bcryptjs";
 const { User, Recyclery, EmployeeWorkdays } = db;
-
 /**
  *
  * @param {import("express").Request} req
@@ -50,7 +50,6 @@ export const listUsers = async (req, res) => {
   //     model: Recyclery,
   //     as: "stores",
   //   });
-
 
   const users = await User.findAll({
     where,
@@ -252,5 +251,39 @@ export const userStats = async (req, res) => {
       recentLogins: recentLogins,
       activeEmployees: activeEmployees,
     },
+  });
+};
+
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const updatePassword = async (req, res) => {
+  const id = idSchema().parse(req.params.id);
+  const dataSchema = z.object({
+    currentPassword: z.string("mot de passe actuel requis"),
+    newPassword: z
+      .string("nouveau mot de passe requis")
+      .min(6, "mot de passe tros court"),
+  });
+
+  const data = dataSchema.parse(req.body);
+  const user = await User.scope("withPassword").findByPk(id);
+  if (!user) throw new createHttpError.NotFound("utilisateur non trouvé");
+  const isValidPassword = await bcrypt.compare(
+    data.currentPassword,
+    user.password_hash,
+  );
+  if (!isValidPassword) {
+    throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
+  }
+  await user.update({
+    password: data.newPassword,
+  });
+
+  res.json({
+    success: true,
+    message: "password updated",
   });
 };

@@ -4,6 +4,7 @@ import {
   deleteUser,
   findUserById,
   listUsers,
+  updatePassword,
   updateUser,
   userStats,
 } from "../controllers/users.js";
@@ -50,3 +51,5 @@ router.put("/:id", asyncHandler(updateUser));
 router.delete("/:id", asyncHandler(deleteUser));
 
 // Obtenir les statistiques des utilisateurs
+
+router.patch("/:id/password",asyncHandler(updatePassword))
