@@ -404,6 +404,11 @@ export const transactionsStats = async (req, res) => {
     raw: true
   });
   // const stats = rows[0].get({ plain: true });
+  const statsRow = rows[0] ?? {
+    total_sales_before_refunds: 0,
+    average_transaction: 0,
+    sessions_count: 0,
+  };
   const methods = await SalesTransaction.findAll({
     attributes: [
       "payment_method",
@@ -446,10 +451,10 @@ export const transactionsStats = async (req, res) => {
     success: true,
     stats: {
       total_transactions: count,
-      total_sales: rows[0].total_sales_before_refunds,
-      ...rows[0],
+      total_sales: statsRow.total_sales_before_refunds,
+      ...statsRow,
       total_refunded: 0,
-      payment_methods: methods
+      payment_methods: methods ?? []
       // total_sales_before_refunds: parseFloat(
       //   stats[0].total_sales_before_refunds || 0,
       // ),
