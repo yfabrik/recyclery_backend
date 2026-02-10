@@ -1,7 +1,10 @@
 "use strict";
 import { Op } from "sequelize";
 import logger from "./logger.js";
-import { generateTasksBetweenDates } from "./taskScheduleUtils.js";
+import {
+  generateTasksBetweenDates,
+  recurrencePatternRegistry,
+} from "./taskScheduleUtils.js";
 
 /**
  * Generates tasks for active recurring schedules
@@ -28,7 +31,9 @@ export async function generateFutureTasks(db) {
       },
     });
 
-    logger.info(`Found ${activeSchedules.length} active recurring schedule(s) to process`);
+    logger.info(
+      `Found ${activeSchedules.length} active recurring schedule(s) to process`,
+    );
 
     for (const schedule of activeSchedules) {
       try {
@@ -42,10 +47,21 @@ export async function generateFutureTasks(db) {
 
         // Determine the start date for generating new tasks
         let startDate;
+        let next =
+          schedule.recurrence_pattern == "weekly"
+            ? 7
+            : schedule.recurrence_pattern == "daily"
+              ? 1
+              : 0;
         if (latestTask && latestTask.scheduled_date) {
           // Start from the day after the latest task
           startDate = new Date(latestTask.scheduled_date);
-          startDate.setDate(startDate.getDate() + 1);
+          const cfg =
+            recurrencePatternRegistry[schedule.recurrencePattern] ||
+            recurrencePatternRegistry.default;
+          startDate.setDate(startDate.getDate() + cfg.stepDays);
+          startDate.setMonth(startDate.getMonth() + cfg.stepMonths);
+          
         } else {
           // If no tasks exist, use the schedule's scheduled_date or current date
           startDate = schedule.scheduled_date
@@ -78,7 +94,7 @@ export async function generateFutureTasks(db) {
           existingTasks.map((t) => {
             const d = new Date(t.scheduled_date);
             return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-          })
+          }),
         );
 
         const scheduleData = schedule.dataValues;
@@ -90,15 +106,16 @@ export async function generateFutureTasks(db) {
           schedule.recurrence_pattern,
           scheduleData,
           schedule.id,
-          existingDates
+          existingDates,
         );
+        console.log("task to create ", tasksToCreate);
 
         // Bulk create tasks if any were generated
         if (tasksToCreate.length > 0) {
           await Task.bulkCreate(tasksToCreate);
           totalCreated += tasksToCreate.length;
           logger.info(
-            `Created ${tasksToCreate.length} task(s) for schedule ${schedule.id} (${schedule.recurrence_pattern})`
+            `Created ${tasksToCreate.length} task(s) for schedule ${schedule.id} (${schedule.recurrence_pattern})`,
           );
         }
 
@@ -106,13 +123,13 @@ export async function generateFutureTasks(db) {
       } catch (error) {
         logger.error(
           `Error processing schedule ${schedule.id}: ${error.message}`,
-          error
+          error,
         );
       }
     }
 
     logger.info(
-      `Task generation completed: ${totalCreated} task(s) created for ${processedSchedules} schedule(s)`
+      `Task generation completed: ${totalCreated} task(s) created for ${processedSchedules} schedule(s)`,
     );
 
     return {
