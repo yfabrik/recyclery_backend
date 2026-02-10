@@ -154,3 +154,32 @@ export const updateCategorie = async (req, res) => {
     category,
   });
 };
+
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const patchCategory = async (req, res) => {
+  const IOValues = {
+    IN: 1 << 1,
+    OUT: 1 << 0,
+  };
+  const dataSchema = z.object({
+    in: z.boolean().optional(),
+    out: z.boolean().optional(),
+  });
+  const id = idSchema().parse(req.params.id);
+  const data = dataSchema.parse(req.body);
+  const category = await Category.findByPk(id);
+  if (!category) throw new createHttpError.NotFound("categorie non trouvé");
+  if (typeof data.in == "boolean")
+    data.in ? (category.IO |= IOValues.IN) : (category.IO &= ~IOValues.IN);
+  if (typeof data.out == "boolean")
+    data.out ? (category.IO |= IOValues.OUT) : (category.IO &= ~IOValues.OUT);
+  await category.save();
+  res.json({
+    success: true,
+    message: "Catégorie mise à jour avec succès",
+  });
+};

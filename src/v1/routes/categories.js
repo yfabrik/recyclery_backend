@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 
-import { createCategorie, deleteCategorie, listCategories, listSubcategories, updateCategorie } from "../controllers/categories.js";
+import { createCategorie, deleteCategorie, listCategories, listSubcategories, patchCategory, updateCategorie } from "../controllers/categories.js";
 
 
 export const router = Router();
@@ -91,3 +91,5 @@ router.get(
   "/subcategories",
   asyncHandler(listSubcategories)
 );
+
+router.patch("/:id" ,asyncHandler(patchCategory))
