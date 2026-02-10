@@ -14,6 +14,19 @@ const {
   Employee,
 } = db;
 
+const dataSchema = z.object({
+  scheduled_date: z.coerce.date("date requis"),
+  start_time: z.coerce.date("heure de debut requis"),
+  end_time: z.coerce.date("heure de fin requis"),
+  category: z.enum(["vente", "point", "collection", "custom"]),
+  notes: z.string().optional(),
+  store_id: idSchema().optional(),
+  collection_point_id: idSchema().optional(),
+  recurrence_pattern: z.enum(["daily", "weekly", "monthly"]).optional(),
+  is_recurring: z.coerce.boolean().default(true),
+  name: z.string().nullish(),
+  location: z.string().nullish(),
+});
 /**
  *
  * @param {import("express").Request} req
@@ -266,18 +279,6 @@ export const findSchedule = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createSchedule = async (req, res) => {
-  const dataSchema = z.object({
-    scheduled_date: z.coerce.date("date requis"),
-    start_time: z.coerce.date("heure de debut requis"),
-    end_time: z.coerce.date("heure de fin requis"),
-    category: z.enum(["vente", "point", "collection", "custom"]),
-    notes: z.string().optional(),
-    store_id: idSchema().optional(),
-    recurrence_pattern: z.enum(["daily", "weekly", "monthly"]).optional(),
-    is_recurring: z.coerce.boolean().default(true),
-    name:z.string().nullish()
-  });
-
   const data = dataSchema.parse(req.body);
 
   const schedule = await TaskSchedule.create({
@@ -376,15 +377,8 @@ export const createSchedule = async (req, res) => {
  */
 export const updateSchedule = async (req, res) => {
   const { id } = req.params;
-  const {
-    task_id,
-    assigned_to,
-    scheduled_date,
-    start_time,
-    end_time,
-    status,
-    notes,
-  } = req.body;
+
+  const data = dataSchema.parse(req.body);
 
   // Vérifier que le planning existe
   const existingSchedules = await TaskSchedule.findByPk(id);
@@ -392,49 +386,71 @@ export const updateSchedule = async (req, res) => {
   if (!existingSchedules) throw new createHttpError[404]("Planning non trouvé");
 
   // Vérifier les conflits d'horaires (sauf pour le planning en cours de modification)
-  if (assigned_to && scheduled_date && start_time && end_time) {
-    const conflicts = await TaskSchedule.findAll({
-      where: {
-        assigned_to,
-        scheduled_date,
-        id: { [Op.not]: id },
-        status: { [Op.in]: ["scheduled", "in_progress"] },
-        start_time: { [Op.lt]: end_time },
-        end_time: { [Op.gt]: start_time },
-      },
-    });
+  // if (data.scheduled_date && data.start_time && data.end_time) {
+  //   const where = { id: { [Op.not]: id } };
+  //   if (data.start_time) {
+  //     // Set to start of day (00:00:00)
+  //     const dateFrom = new Date(data.start_time);
+  //     dateFrom.setHours(0, 0, 0, 0);
+  //     where.scheduled_date[Op.gte] = dateFrom;
+  //   }
+  //   if (data.end_time) {
+  //     // Set to end of day (23:59:59.999) to include all transactions from that day
+  //     const dateTo = new Date(data.end_time);
+  //     dateTo.setHours(23, 59, 59, 999);
+  //     where.scheduled_date[Op.lte] = dateTo;
+  //   }
+  //   const conflicts = await TaskSchedule.findAll({
+  //     where,
 
-    if (conflicts.length > 0) {
-      return res.status(409).json({
-        success: false,
-        message: "Conflit d'horaires avec une autre tâche planifiée",
-      });
-    }
-  }
+  //     // status: { [Op.in]: ["scheduled", "in_progress"] },
+  //     // start_time: { [Op.lt]: end_time },
+  //     // end_time: { [Op.gt]: start_time },
+  //   });
 
-  if (task_id) {
-    existingSchedules.task_id = task_id;
-  }
-  if (assigned_to) {
-    existingSchedules.assigned_to = assigned_to;
-  }
-  if (scheduled_date) {
-    existingSchedules.scheduled_date = scheduled_date;
-  }
-  if (start_time) {
-    existingSchedules.start_time = start_time;
-  }
-  if (end_time) {
-    existingSchedules.end_time = end_time;
-  }
-  if (status) {
-    existingSchedules.status = status;
-  }
-  if (notes !== undefined) {
-    existingSchedules.notes = notes;
-  }
+  //   conflicts.forEach((conflict) => {
+  //     if (!conflict.start_time || !conflict.end_time) return;
+  //     const conflictStart =
+  //       new Date(conflict.start_time).getHours() +
+  //       new Date(conflict.start_time).getMinutes() * 60;
+  //     const conflictEnd =
+  //       new Date(conflict.end_time).getHours() +
+  //       new Date(conflict.end_time).getMinutes() * 60;
+  //     const start =
+  //       data.start_time &&
+  //       data.start_time.getHours() + data.start_time.getMinutes() * 60;
+  //     const end =
+  //       data.end_time &&
+  //       data.end_time.getHours() + data.end_time.getMinutes() * 60;
+  //     if (conflictEnd > start && conflictStart < end)
+  //       throw new createHttpError.Conflict(
+  //         "Conflit d'horaires avec une autre tâche planifiée",
+  //       );
+  //   });
+  // }
 
-  await existingSchedules.save();
+  if (!data.name) data.name = data.category;
+  existingSchedules.update({ ...data });
+  // if (assigned_to) {
+  //   existingSchedules.assigned_to = assigned_to;
+  // }
+  // if (scheduled_date) {
+  //   existingSchedules.scheduled_date = scheduled_date;
+  // }
+  // if (start_time) {
+  //   existingSchedules.start_time = start_time;
+  // }
+  // if (end_time) {
+  //   existingSchedules.end_time = end_time;
+  // }
+  // if (status) {
+  //   existingSchedules.status = status;
+  // }
+  // if (notes !== undefined) {
+  //   existingSchedules.notes = notes;
+  // }
+
+  // await existingSchedules.save();
 
   res.json({
     success: true,
@@ -673,6 +689,10 @@ export const findAvailableEMployee = async (req, res) => {
     .toLocaleDateString("en-US", { weekday: "long" })
     .toLowerCase();
 
+  const newYear = new Date(taskDate.getFullYear(), 0, 1);
+  const weekNumber = Math.ceil(
+    (taskDate - newYear) / (7 * 24 * 60 * 60 * 1000),
+  );
   if (!schedule.store_id)
     allEmployees = await Employee.findAll({
       include: [
@@ -683,6 +703,7 @@ export const findAvailableEMployee = async (req, res) => {
           where: {
             day_of_week: dayOfWeek,
             is_working: true, // or 1
+            week: weekNumber % 2 ? "week2" : "week1",
           },
         },
       ],
@@ -698,6 +719,7 @@ export const findAvailableEMployee = async (req, res) => {
           where: {
             day_of_week: dayOfWeek,
             is_working: true, // or 1
+            week: weekNumber % 2 ? "week2" : "week1",
           },
         },
         {

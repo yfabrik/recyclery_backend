@@ -113,33 +113,33 @@ export const createPointPrecense = async (req, res) => {
   //   },
   // });
   if (!point) throw new createHttpError.NotFound("point pas trouvé");
-  const existing = point.get({ plain: true }).TaskSchedules || [];
+  // const existing = point.get({ plain: true }).TaskSchedules || [];
 
-  const toMinutes = (/** @type {Date | number} */ v) => {
-    const d = v instanceof Date ? v : new Date(v);
-    return d.getHours() * 60 + d.getMinutes();
-  };
-  const newStart = toMinutes(data.start_time);
-  const newEnd = toMinutes(data.end_time);
-  const dayRef =
-    data.day_of_week instanceof Date
-      ? data.day_of_week
-      : new Date(data.day_of_week);
-  const newDay = dayRef.getDay();
+  // const toMinutes = (/** @type {Date | number} */ v) => {
+  //   const d = v instanceof Date ? v : new Date(v);
+  //   return d.getHours() * 60 + d.getMinutes();
+  // };
+  // const newStart = toMinutes(data.start_time);
+  // const newEnd = toMinutes(data.end_time);
+  // const dayRef =
+  //   data.day_of_week instanceof Date
+  //     ? data.day_of_week
+  //     : new Date(data.day_of_week);
+  // const newDay = dayRef.getDay();
 
-  const hasOverlap = existing.some((e) => {
-    if (!e.scheduled_date || !e.start_time || !e.end_time) return false;
-    if (e.scheduled_date.getDay() !== newDay) return false;
-    const start = toMinutes(e.start_time);
-    const end = toMinutes(e.end_time);
-    return start < newEnd && end > newStart;
-  });
+  // const hasOverlap = existing.some((e) => {
+  //   if (!e.scheduled_date || !e.start_time || !e.end_time) return false;
+  //   if (e.scheduled_date.getDay() !== newDay) return false;
+  //   const start = toMinutes(e.start_time);
+  //   const end = toMinutes(e.end_time);
+  //   return start < newEnd && end > newStart;
+  // });
 
-  if (hasOverlap) {
-    throw createHttpError.Conflict(
-      "Un créneau chevauche déjà ce horaire pour ce point de collecte et ce jour",
-    );
-  }
+  // if (hasOverlap) {
+  //   throw createHttpError.Conflict(
+  //     "Un créneau chevauche déjà ce horaire pour ce point de collecte et ce jour",
+  //   );
+  // }
 
   const presence = await TaskSchedule.create({
     name: point.name,
@@ -206,41 +206,41 @@ export const updatePointPrecense = async (req, res) => {
     });
   }
 
-  const conflict = await TaskSchedule.findAll({
-    where: {
-      //TODO faudra comparer les heures aussi
-      category: "point",
-      collection_point_id: data.collection_point_id,
-      ...(data.store_id ? { store_id: data.store_id } : {}),
-      id: { [Op.ne]: id },
-    },
-  });
+  // const conflict = await TaskSchedule.findAll({
+  //   where: {
+  //     //TODO faudra comparer les heures aussi
+  //     category: "point",
+  //     collection_point_id: data.collection_point_id,
+  //     ...(data.store_id ? { store_id: data.store_id } : {}),
+  //     id: { [Op.ne]: id },
+  //   },
+  // });
 
-  const toMinutes = (/** @type {Date | number} */ v) => {
-    const d = v instanceof Date ? v : new Date(v);
-    return d.getHours() * 60 + d.getMinutes();
-  };
-  const newStart = toMinutes(data.start_time);
-  const newEnd = toMinutes(data.end_time);
-  const dayRef =
-    data.day_of_week instanceof Date
-      ? data.day_of_week
-      : new Date(data.day_of_week);
-  const newDay = dayRef.getDay();
+  // const toMinutes = (/** @type {Date | number} */ v) => {
+  //   const d = v instanceof Date ? v : new Date(v);
+  //   return d.getHours() * 60 + d.getMinutes();
+  // };
+  // const newStart = toMinutes(data.start_time);
+  // const newEnd = toMinutes(data.end_time);
+  // const dayRef =
+  //   data.day_of_week instanceof Date
+  //     ? data.day_of_week
+  //     : new Date(data.day_of_week);
+  // const newDay = dayRef.getDay();
 
-  const hasOverlap = conflict.some((e) => {
-    if (!e.scheduled_date || !e.start_time || !e.end_time) return false;
-    if (e.scheduled_date.getDay() !== newDay) return false;
-    const start = toMinutes(e.start_time);
-    const end = toMinutes(e.end_time);
-    return start < newEnd && end > newStart;
-  });
+  // const hasOverlap = conflict.some((e) => {
+  //   if (!e.scheduled_date || !e.start_time || !e.end_time) return false;
+  //   if (e.scheduled_date.getDay() !== newDay) return false;
+  //   const start = toMinutes(e.start_time);
+  //   const end = toMinutes(e.end_time);
+  //   return start < newEnd && end > newStart;
+  // });
 
-  if (hasOverlap) {
-    throw createHttpError.Conflict(
-      "Un créneau chevauche déjà ce horaire pour ce point de collecte et ce jour",
-    );
-  }
+  // if (hasOverlap) {
+  //   throw createHttpError.Conflict(
+  //     "Un créneau chevauche déjà ce horaire pour ce point de collecte et ce jour",
+  //   );
+  // }
 
   // const conflict = await CollectionPointPresence.findOne({
   //   where: {
@@ -256,7 +256,7 @@ export const updatePointPrecense = async (req, res) => {
   existing.collection_point_id = data.collection_point_id;
   existing.store_id = data.store_id;
   existing.scheduled_date = data.day_of_week;
-  existing.is_present = data.is_present;
+  existing.is_recurring = data.is_present;
   existing.start_time = data.start_time;
   existing.end_time = data.end_time;
   existing.is_24h = data.is_24h;
