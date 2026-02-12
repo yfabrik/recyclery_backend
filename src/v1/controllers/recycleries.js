@@ -46,7 +46,7 @@ export const listRecycleries = async (req, res) => {
       model: TaskSchedule,
       // as: "horaires",
       required: false,
-      where:{category:"vente"}
+      where: { category: "vente" }
     })
   include.push(
     {
@@ -156,10 +156,26 @@ export const updateRecyclerie = async (req, res) => {
   });
   const data = dataSchema.parse(req.body);
 
-  const recyclerie = await Recyclery.findByPk(id);
+  const recyclerie = await Recyclery.findByPk(id, { include: [{ model: TaskSchedule }] });
   if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
 
-  await recyclerie.update({ ...data })
+
+  //TODO FIXME IMPORTANT URGENT make transaction work
+  try {
+    if (data.is_active != recyclerie.is_active || data.name != recyclerie.name)
+      for (const schedule of recyclerie.TaskSchedules) {
+        await schedule.update({ is_recurring: data.is_active, name: data.name },)
+      }
+
+    await recyclerie.update({
+      ...data
+    },)
+
+    // await t.commit()
+  } catch (err) {
+    // await t.rollback()
+    throw err
+  }
 
   res.json({
     success: true,
