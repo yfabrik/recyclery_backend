@@ -108,7 +108,6 @@ export async function generateFutureTasks(db) {
           schedule.id,
           existingDates,
         );
-        console.log("task to create ", tasksToCreate);
 
         // Bulk create tasks if any were generated
         if (tasksToCreate.length > 0) {

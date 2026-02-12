@@ -184,7 +184,6 @@ export const dashboardCharts = async (req, res) => {
     labels.push(date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }));
   }
 
-  console.log('Données des graphiques calculées:', { sales: salesData, revenue: revenueData, labels });
 
   res.json({
     success: true,

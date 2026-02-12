@@ -14,7 +14,6 @@ const getDateFromDay = (day) => {
     const jour = new Intl.DateTimeFormat("fr-FR", { weekday: "long" }).format(
       today.setDate(today.getDate() + 1),
     );
-    console.log(jour);
     if (jour == day.toLowerCase()) {
       d = today;
       break;
