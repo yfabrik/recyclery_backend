@@ -14,7 +14,7 @@
  * @property {string|null} [notes] - Additional notes about the task
  * @property {string|null} [status] - Current status of the task (e.g., "pending", "in_progress", "completed", "cancelled")
  * @property {number|null} [schedule_id] - Foreign key reference to the associated TaskSchedule
- * @property {number|null} [recyclery_id] - Foreign key reference to the associated Recyclery
+ * @property {number|null} [store_id] - Foreign key reference to the associated Recyclery
  * @property {number|null} [collection_point_id] - Foreign key reference to the associated CollectionPoint
  * 
  * @typedef { import("./baseModelAttributes.js").baseAttributes & TaskCreateAttributes} TaskAttributes

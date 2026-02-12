@@ -3,6 +3,7 @@ import db from "../../models/index.js";
 import * as z from "zod";
 import collection from "../../models/poubelle/collection.js";
 import createHttpError from "http-errors";
+import { idSchema } from "../../services/zod.js";
 
 const { Task, User, TaskSchedule, Employee, Recyclery } = db;
 
@@ -36,6 +37,7 @@ export const listTasks = async (req, res) => {
     search: z.string().optional(),
     date_from: z.coerce.date().nullish(),
     date_to: z.coerce.date().nullish(),
+    store_id: idSchema().nullish()
   });
   // const category = req.originalUrl == '/api/collection-point-presence' ? "point" : req.originalUrl == '/api/store-hours' ? "vente" : req.originalUrl == '/api/collections' ? "collection" : null
   const data = includeSchema.parse({ ...req.query });
@@ -69,6 +71,8 @@ export const listTasks = async (req, res) => {
       { name: { [Op.like]: data.search } },
       { description: { [Op.like]: data.search } },
     ];
+  if (data.store_id)
+    where.store_id = data.store_id
 
   /**
    * @type {import("sequelize").FindOptions<import("../../models/types/taskModel.js").TaskAttributes>["include"]}
@@ -161,7 +165,7 @@ export const createTask = async (req, res) => {
       .nullish()
       .default([])
       .transform((val) => JSON.stringify(val)),
-    // location: z.string().optional(),
+    location: z.string().nullish(),
     equipment_needed: z
       .array(z.string())
       .nullish()
@@ -175,6 +179,7 @@ export const createTask = async (req, res) => {
     start_time: z.coerce.date().nullish(),
     end_time: z.coerce.date().nullish(),
     scheduled_date: z.coerce.date().optional().default(new Date()),
+    store_id: idSchema().nullish()
   });
   const data = dataSchema.parse(req.body);
   const name = data.name ?? data.category;
@@ -218,7 +223,7 @@ export const updateTask = async (req, res) => {
       .nullish()
       .default([])
       .transform((val) => JSON.stringify(val)),
-    // location: z.string().optional(),
+    location: z.string().nullish(),
     equipment_needed: z.array(z.string()).nullish(),
     // hourly_rate: z.coerce.number().nullish(),
     is_recurring: z.coerce.boolean().nullish(),
@@ -228,6 +233,7 @@ export const updateTask = async (req, res) => {
     start_time: z.coerce.date().nullish(),
     end_time: z.coerce.date().nullish(),
     scheduled_date: z.coerce.date().optional().default(new Date()),
+    store_id: idSchema().nullish()
   });
 
   const data = dataSchema.parse(req.body);
