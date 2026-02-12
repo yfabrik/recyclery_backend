@@ -13,6 +13,7 @@
  * @property {number|null} [recyclery_id] - Foreign key reference to the Recyclery
  * 
  * @typedef { import("./baseModelAttributes.js").baseAttributes & CollectionPointCreateAttributes} CollectionPointAttributes
+ * @property {<Array<import("./taskSchedule.js").TaskScheduleInstance>>|null} [TaskSchedules] - list of schedules
  */
 
 /**
@@ -41,4 +42,5 @@
  * @property {() => Promise<Array<import("./taskModel.js").TaskInstance>>} getTasks - Get all tasks associated with this collection point (has-many relationship).
  * 
  * @property {() => Promise<Array<import("./taskSchedule.js").TaskScheduleInstance>>} getTaskSchedules - Get all task schedules associated with this collection point (has-many relationship through collection_point_id foreign key). CASCADE delete enabled.
- */
+ * 
+*/

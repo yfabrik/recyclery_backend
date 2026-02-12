@@ -26,7 +26,7 @@ export default (sequelize, DataTypes) => {
     }
   }
 
-  const conflictCheck = async (data) => {
+  const conflictCheck = async (data, options) => {
     const values = data.dataValues;
     const toMinutes = (/** @type {Date | number} */ v) => {
       const d = v instanceof Date ? v : new Date(v);
@@ -43,7 +43,7 @@ export default (sequelize, DataTypes) => {
 
     const existing = await TaskSchedule.findAll({
       where,
-    });
+    }, { options });
 
     const hasOverlap = existing.some((e) => {
       if (!e.scheduled_date || !e.start_time || !e.end_time) return false;
@@ -66,9 +66,9 @@ export default (sequelize, DataTypes) => {
     tasksToCreate,
     recurrencePattern,
     reason = "",
+    options//TODO FIXME URGENT options fait planter quand on passe de inactiv a active collection point
   ) => {
     if (tasksToCreate.length === 0) return;
-
     const Task = schedule.sequelize.models.Task;
     if (!Task) {
       logger.error(`Task model not found for schedule ${schedule.id}`);
@@ -83,7 +83,7 @@ export default (sequelize, DataTypes) => {
   };
 
   // Helper function to get future tasks
-  const getFutureTasks = async (Task, scheduleId, now) => {
+  const getFutureTasks = async (Task, scheduleId, now, options) => {
     return await Task.findAll({
       where: {
         schedule_id: scheduleId,
@@ -91,20 +91,19 @@ export default (sequelize, DataTypes) => {
           [Op.gte]: now,
         },
       },
-    });
+    }, options);
   };
 
   // Helper function to delete future tasks
-  const deleteFutureTasks = async (Task, futureTasks, scheduleId, reason) => {
+  const deleteFutureTasks = async (Task, futureTasks, scheduleId, reason, options) => {
     if (futureTasks.length === 0) return;
-
     await Task.destroy({
       where: {
         id: {
           [Op.in]: futureTasks.map((t) => t.id),
         },
       },
-    });
+    }, options);
     logger.info(
       `Deleted ${futureTasks.length} future task(s) for schedule ${scheduleId} because ${reason}`,
     );
@@ -117,6 +116,7 @@ export default (sequelize, DataTypes) => {
     previousValues,
     currentValues,
     now,
+    options
   ) => {
     const fieldsToUpdate = {};
     const updatableFields = [
@@ -152,7 +152,7 @@ export default (sequelize, DataTypes) => {
           [Op.gte]: now,
         },
       },
-    });
+    }, options);
 
     const updatedCount = result[0];
     if (updatedCount > 0) {
@@ -211,10 +211,10 @@ export default (sequelize, DataTypes) => {
       hooks: {
         beforeCreate: async (data, options) => {
           logger.info("check for conflict before create schedule");
-          await conflictCheck(data);
+          await conflictCheck(data, options);
         },
 
-        afterCreate: async (schedule) => {
+        afterCreate: async (schedule, options) => {
           const data = schedule.dataValues;
           const baseDate = new Date(schedule.scheduled_date);
           const isRecurring = schedule.is_recurring ?? true;
@@ -236,9 +236,12 @@ export default (sequelize, DataTypes) => {
         },
         beforeUpdate: async (data, options) => {
           logger.info("check for conflict before update schedule", data);
-          await conflictCheck(data);
+          await conflictCheck(data, options);
+          logger.info("no conflict");
+
         },
-        afterUpdate: async (schedule) => {
+        afterUpdate: async (schedule, options) => {
+          logger.info("after update schedules");
           const Task = schedule.sequelize.models.Task;
           if (!Task) {
             logger.error(`Task model not found for schedule ${schedule.id}`);
@@ -270,7 +273,7 @@ export default (sequelize, DataTypes) => {
             prevDate !== null && currDate !== null && prevDate !== currDate;
 
           // Get all future tasks for this schedule
-          const futureTasks = await getFutureTasks(Task, schedule.id, now);
+          const futureTasks = await getFutureTasks(Task, schedule.id, now, options);
 
           // Case 1: is_recurring changed from true to false - delete all future tasks
           if (
@@ -278,11 +281,13 @@ export default (sequelize, DataTypes) => {
             wasRecurring === true &&
             isRecurring === false
           ) {
+
             await deleteFutureTasks(
               Task,
               futureTasks,
               schedule.id,
               "is_recurring changed to false",
+              options
             );
             return;
           }
@@ -306,21 +311,25 @@ export default (sequelize, DataTypes) => {
               tasksToCreate,
               currentValues.recurrence_pattern,
               "because is_recurring changed to true with pattern",
+              options
             );
             return;
           }
 
           // Case 3: recurrence_pattern changed or scheduled_date changed - remove and recreate future tasks
           if (patternChanged || dateChanged) {
+
             await deleteFutureTasks(
               Task,
               futureTasks,
               schedule.id,
               `${patternChanged ? "recurrence_pattern" : "scheduled_date"} changed`,
+              options
             );
 
             // Recreate tasks with new pattern/date
             if (isRecurring) {
+
               const baseDate = new Date(currentValues.scheduled_date || now);
               const tasksToCreate = generateTasksFromSchedule(
                 baseDate,
@@ -334,10 +343,12 @@ export default (sequelize, DataTypes) => {
                 tasksToCreate,
                 currentValues.recurrence_pattern,
                 `with new ${patternChanged ? "recurrence_pattern" : "scheduled_date"}`,
+                options
               );
             }
             return;
           }
+
 
           // Case 4: Other fields changed - update existing future tasks
           await updateFutureTasksFields(
@@ -346,6 +357,7 @@ export default (sequelize, DataTypes) => {
             previousValues,
             currentValues,
             now,
+            options
           );
         },
         beforeDestroy: async (schedule) => {

@@ -147,6 +147,7 @@ export const createPointPrecense = async (req, res) => {
     scheduled_date: data.day_of_week,
     recurrence_pattern: "weekly",
     collection_point_id: data.collection_point_id,
+    store_id:point.recyclery_id,
     ...data,
   });
 

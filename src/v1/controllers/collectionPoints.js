@@ -118,7 +118,12 @@ export const updateCollectionPoint = async (req, res) => {
   const data = dataSchema.parse(req.body)
   const id = idSchema().parse(req.params.id)
 
-  const point = await CollectionPoint.findByPk(id);
+  const point = await CollectionPoint.findByPk(id, {
+    include: [{
+      model: TaskSchedule,
+    }]
+  });
+
   // Vérifier si le point existe
   if (!point) throw new createHttpError[404]("Point de collecte non trouvé")
   // const existing = await CollectionPoint.findOne({
@@ -133,9 +138,28 @@ export const updateCollectionPoint = async (req, res) => {
   //     error: "Un point de collecte avec ce nom existe déjà",
   //   });
   // }
-  await point.update({
-    ...data
-  })
+  //update les task schedule associé
+
+  // const t = await db.sequelize.transaction()
+
+  //TODO FIXME IMPORTANT URGENT make transaction work
+  try {
+    if (data.is_active != point.is_active || data.recyclery_id != point.recyclery_id || data.name != point.name)
+      for (const schedule of point.TaskSchedules) {
+        await schedule.update({ is_recurring: data.is_active, store_id: data.recyclery_id, name: data.name },)
+      }
+
+    await point.update({
+      ...data
+    },)
+
+    // await t.commit()
+  } catch (err) {
+    // await t.rollback()
+    throw err
+  }
+
+
 
 
   res.json({
