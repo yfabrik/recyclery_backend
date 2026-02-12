@@ -127,7 +127,12 @@ router.post(
     // }
 
     // Vérifier que l'employé existe
-    const employee = await Employee.findByPk(employeeId);
+    const employee = await Employee.findByPk(employeeId, {
+      include: [{
+        model: EmployeeWorkdays,
+        // as: "horaires"
+      }]
+    });
 
     if (!employee) {
       return res.status(404).json({
@@ -136,13 +141,20 @@ router.post(
       });
     }
     // Supprimer les anciens jours de travail de cet employé
-    await employee.removeEmployeeWorkdays();
-    for (const workday of workdays) {
-      await EmployeeWorkdays.create({
-        employee_id: employeeId,
-        ...workday,
-      });
-    }
+    const transaction = await db.sequelize.transaction()
+    await EmployeeWorkdays.destroy({ where: { employee_id: employee.id }, transaction })
+    // await employee.removeHoraires();
+    const workdayToCreate = workdays.map(workday => ({ employee_id: employeeId, ...workday }))
+    await EmployeeWorkdays.bulkCreate(workdayToCreate, { transaction })
+
+    await transaction.commit()
+
+    // for (const workday of workdays) {
+    //   await EmployeeWorkdays.create({
+    //     employee_id: employeeId,
+    //     ...workday,
+    //   });
+    // }
 
     // // Insérer les nouveaux jours de travail
     // const validDays = [

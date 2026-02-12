@@ -16,7 +16,10 @@ export default (sequelize, DataTypes) => {
       });
       this.belongsToMany(models.Task, { through: "employee_task" });
       this.belongsToMany(models.TaskSchedule, { through: "employee_schedule" });
-      this.hasMany(models.EmployeeWorkdays, { foreignKey: "employee_id" });
+      this.hasMany(models.EmployeeWorkdays, { 
+        foreignKey: "employee_id", 
+        // as: "horaires" 
+      });
     }
   }
   Employee.init(

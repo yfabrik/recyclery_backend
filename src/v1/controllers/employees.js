@@ -17,7 +17,10 @@ export const listEmployees = async (req, res) => {
         model: Recyclery,
         as: "stores",
       },
-      { model: EmployeeWorkdays },
+      { 
+        model: EmployeeWorkdays,
+        // as:"horaires" 
+      },
     ],
   });
 

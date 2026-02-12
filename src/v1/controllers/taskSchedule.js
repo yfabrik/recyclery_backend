@@ -555,7 +555,9 @@ export const addEmployeeToSchedule = async (req, res) => {
         as: "stores",
         where: { id: currentSchedule.store_id || 1 },
       },
-      { model: EmployeeWorkdays, where: { day_of_week: dayOfWeek } },
+      { model: EmployeeWorkdays, 
+        // as:"horaires", 
+        where: { day_of_week: dayOfWeek } },
     ],
   });
 
@@ -697,6 +699,7 @@ export const findAvailableEMployee = async (req, res) => {
       include: [
         {
           model: EmployeeWorkdays,
+          // as:"horaires",
           attributes: [],
           required: true, // INNER JOIN
           where: {
@@ -713,6 +716,7 @@ export const findAvailableEMployee = async (req, res) => {
       include: [
         {
           model: EmployeeWorkdays,
+          // as:"horaires",
           attributes: [],
           required: true, // INNER JOIN
           where: {
