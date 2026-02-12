@@ -35,8 +35,12 @@ export default (sequelize, DataTypes) => {
     const newStart = toMinutes(values.start_time);
     const newEnd = toMinutes(values.end_time);
 
+
     const where = { category: values.category };
+    if (values.store_id) where.store_id = values.store_id
+    if (values.collection_point_id) where.collection_point_id = values.collection_point_id
     if (values.id) where.id = { [Op.not]: values.id };
+
     const existing = await TaskSchedule.findAll({
       where,
     });
@@ -254,7 +258,7 @@ export default (sequelize, DataTypes) => {
           const patternChanged =
             previousValues.recurrence_pattern !== undefined &&
             previousValues.recurrence_pattern !==
-              currentValues.recurrence_pattern;
+            currentValues.recurrence_pattern;
 
           const prevDate = previousValues.scheduled_date
             ? new Date(previousValues.scheduled_date).getTime()
