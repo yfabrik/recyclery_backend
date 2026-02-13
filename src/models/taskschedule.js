@@ -26,6 +26,12 @@ export default (sequelize, DataTypes) => {
     }
   }
 
+
+  /**
+   * 
+   * @param {TaskSchedule} data 
+   * @param {import("sequelize").InstanceUpdateOptions<any> | import("sequelize").CreateOptions<any>} options 
+   */
   const conflictCheck = async (data, options) => {
     const values = data.dataValues;
     const toMinutes = (/** @type {Date | number} */ v) => {
@@ -35,7 +41,9 @@ export default (sequelize, DataTypes) => {
     const newStart = toMinutes(values.start_time);
     const newEnd = toMinutes(values.end_time);
 
-
+    /**
+     * @type {import("sequelize").WhereOptions<import("./types/taskSchedule.js").TaskScheduleInstance>}
+     */
     const where = { category: values.category };
     if (values.store_id) where.store_id = values.store_id
     if (values.collection_point_id) where.collection_point_id = values.collection_point_id
@@ -132,6 +140,7 @@ export default (sequelize, DataTypes) => {
       "status",
       "start_time",
       "end_time",
+      "store_id"
     ];
 
     for (const field of updatableFields) {
