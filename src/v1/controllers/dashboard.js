@@ -1,7 +1,7 @@
 import { Op } from "sequelize";
 import db from "../../models/index.js";
 
-const { LabeledItem, SalesTransaction, Donation, CollectionSchedule, Category, User, CollectionPoint, Recyclery, CashSession } = db
+const { LabeledItem, SalesTransaction, Donation, CollectionSchedule, Category, User, CollectionPoint, Recyclery, CashSession, CashRegister } = db
 // Fonctions utilitaires
 function formatTimeAgo(dateString) {
   const date = new Date(dateString);
@@ -57,7 +57,7 @@ export const dashboardStats = async (req, res) => {
   stats.scheduledCollections = await CollectionSchedule.count({ where: { scheduled_date: { [Op.gt]: currentMonth } } })
 
   // 7. Nombre de catégories actives
-  stats.categoriesCount = await LabeledItem.count({ distinct:true, col: "category_id", where: { status: "available" } })
+  stats.categoriesCount = await LabeledItem.count({ distinct: true, col: "category_id", where: { status: "available" } })
 
   // 8. Nombre d'utilisateurs actifs
   stats.usersCount = await User.count()
@@ -73,8 +73,8 @@ export const dashboardStats = async (req, res) => {
 
   stats.lastMonthSales = lastMonthRevenueResult.length
 
-  stats.thisMonthRevenue =month_transactions.reduce((prev, current) => prev += current.total_amount, 0);
-  stats.thisMonthSales=month_transactions.length
+  stats.thisMonthRevenue = month_transactions.reduce((prev, current) => prev += current.total_amount, 0);
+  stats.thisMonthSales = month_transactions.length
 
   res.json({
     success: true,
@@ -93,7 +93,7 @@ export const dashboardActivities = async (req, res) => {
   const activities = [];
 
   // 1. Ventes récentes
-  const recentSales = await LabeledItem.findAll({ where: { status: "sold" }, include: [{ model: Category,as:"category" }], limit: 5, order: [["updatedAt", "DESC"]] })
+  const recentSales = await LabeledItem.findAll({ where: { status: "sold" }, include: [{ model: Category, as: "category" }], limit: 5, order: [["updatedAt", "DESC"]] })
 
   recentSales.forEach(sale => {
     activities.push({
@@ -203,7 +203,7 @@ export const dashboardCharts = async (req, res) => {
 export const dashboardStoreStats = async (req, res) => {
 
   // Récupérer tous les magasins actifs
-  const stores = await Recyclery.findAll({ where: { is_active:true }, order: [["name"]] })
+  const stores = await Recyclery.findAll({ where: { is_active: true }, include: [{ model: CashRegister, as: "caisses", }], order: [["name"]] })
 
   const storesStats = [];
 
@@ -216,7 +216,21 @@ export const dashboardStoreStats = async (req, res) => {
 
   for (const store of stores) {
     // Statistiques des ventes du mois en cours
-    const month_transactions = await SalesTransaction.findAll({ where: { createdAt: { [Op.gt]: currentMonth }, store_id: store.id } })
+    const caissesId = store.caisses.map(caisse => caisse.id)
+    const month_transactions = await SalesTransaction.findAll({
+      where: {
+        createdAt: { [Op.gt]: currentMonth }
+      },
+      include: [
+        {
+          model: CashSession,
+          where: {
+            cash_register_id: { [Op.in]: caissesId }
+          },
+          required: true
+        }
+      ]
+    })
 
     const currentMonthSales = month_transactions.length;
 
@@ -226,7 +240,12 @@ export const dashboardStoreStats = async (req, res) => {
     const lastMonthRevenueResult = await SalesTransaction.findAll({ where: { createdAt: { [Op.between]: [lastMonthStr, currentMonth] } } })
     const lastMonthRevenue = lastMonthRevenueResult.reduce((prev, current) => prev += current.total_amount, 0);
 
-    const sessions = await CashSession.count({ where: { store_id: store.id, createdAt: { [Op.between]: [lastMonthStr, currentMonth] } } })
+    const sessions = await CashSession.count({
+      where: {
+        createdAt: { [Op.between]: [lastMonthStr, currentMonth] }
+      },
+      include: [{ model: CashRegister, where: { recyclery_id: store.id }, required: true }]
+    })
 
 
     // Ventes des 7 derniers jours
