@@ -3,7 +3,7 @@ import db from "../../models/index.js";
 import createHttpError from "http-errors";
 import { createTask, detailTask, listTasks } from "./tasks.js";
 import * as z from "zod";
-import { listSchedules } from "./taskSchedule.js";
+import { deleteSchedule, listSchedules } from "./taskSchedule.js";
 import { idSchema } from "../../services/zod.js";
 
 const getDateFromDay = (day) => {
@@ -103,7 +103,7 @@ export const createPointPrecense = async (req, res) => {
   const data = dataSchema.parse(req.body);
 
   const point = await CollectionPoint.findByPk(data.collection_point_id, {
-    include: [{ model: TaskSchedule, where: { category: "point" } ,required:false }],
+    include: [{ model: TaskSchedule, where: { category: "point" }, required: false }],
   });
   // const existing = await TaskSchedule.findAll({
   //   where: {
@@ -146,7 +146,7 @@ export const createPointPrecense = async (req, res) => {
     scheduled_date: data.day_of_week,
     recurrence_pattern: "weekly",
     collection_point_id: data.collection_point_id,
-    store_id:point.recyclery_id,
+    store_id: point.recyclery_id,
     ...data,
   });
 
@@ -275,6 +275,7 @@ export const updatePointPrecense = async (req, res) => {
  */
 export const deletePointPrecense = async (req, res) => {
   const id = z.coerce.number().positive().parse(req.params.id);
+  return deleteSchedule(req, res);
 
   const deleted = await TaskSchedule.destroy({ where: { id } });
   if (deleted == 0)
@@ -370,9 +371,8 @@ const syncCollectionPointPresenceToPlanning = async (
 
       if (isValidPresence) {
         // Créer une tâche pour cette présence
-        const taskName = `${pointName} - Présence (${
-          presence.time_slot_name || "Standard"
-        })`;
+        const taskName = `${pointName} - Présence (${presence.time_slot_name || "Standard"
+          })`;
         const taskDescription = `Présence au point de collecte ${pointName} de ${startTime} à ${endTime}`;
 
         // Vérifier si une tâche similaire existe déjà pour cette date

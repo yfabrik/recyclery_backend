@@ -463,11 +463,11 @@ export const updateSchedule = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const deleteSchedule = async (req, res) => {
-  const { id } = req.params;
+  const id = idSchema().parse(req.params.id);
 
-  const result = await TaskSchedule.destroy({ where: { id } });
-
-  if (result === 0) throw new createHttpError[404]("Planning non trouvé");
+  const scheduleToDelete = await TaskSchedule.findByPk(id)
+  if (!scheduleToDelete) throw new createHttpError[404]("Planning non trouvé");
+  scheduleToDelete.destroy()
 
   res.json({
     success: true,
@@ -555,9 +555,11 @@ export const addEmployeeToSchedule = async (req, res) => {
         as: "stores",
         where: { id: currentSchedule.store_id || 1 },
       },
-      { model: EmployeeWorkdays, 
+      {
+        model: EmployeeWorkdays,
         // as:"horaires", 
-        where: { day_of_week: dayOfWeek } },
+        where: { day_of_week: dayOfWeek }
+      },
     ],
   });
 

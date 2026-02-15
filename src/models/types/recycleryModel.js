@@ -10,6 +10,7 @@
  * @property {number|null} [manager_id] - Foreign key reference to the User who manages this recyclery
  * 
  * @typedef { import("./baseModelAttributes.js").baseAttributes & RecycleryCreateAttributes} RecycleryAttributes
+ * @property {Array<CashRegisterInstance>|null} [caissses] - Foreign key reference to the User who manages this recyclery
  */
 
 /**

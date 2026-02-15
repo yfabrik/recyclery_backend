@@ -315,8 +315,8 @@ export const updateHoraire = async (req, res) => {
   // }
 
   await schedule.update({
-    name: "vente-" + data.day_of_week + " " + data.store_id,
-    recurrence_pattern: "weekly",
+    // name: "vente-" + data.day_of_week + " " + data.store_id,
+    // recurrence_pattern: "weekly",
     scheduled_date: data.day_of_week,
     start_time: data.open_time,
     end_time: data.close_time,
