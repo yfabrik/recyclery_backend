@@ -1,10 +1,11 @@
 import { Router } from "express";
+import z from "zod";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-import { cast, col, literal } from "sequelize";
-import z from "zod";
 import { idSchema } from "../../services/zod.js";
+import logger from "../../services/logger.js";
+import { createEmployeeWorkdays, listEmployeeWorkdays } from "../controllers/employeeWorkdays.js";
 
 const { EmployeeWorkdays, Employee } = db;
 export const router = Router();
@@ -13,6 +14,8 @@ router.get(
   "/",
   authenticateToken,
   asyncHandler(async (req, res) => {
+  logger.error("called useless fn in the router 1")
+
     const workdays = await EmployeeWorkdays.findAll({
       include: [{ model: Employee }],
       order: [[Employee, "nom"], ["day_of_week"], ["time_slot"]],
@@ -28,178 +31,14 @@ router.get(
 router.get(
   "/employee/:employeeId",
   authenticateToken,
-  asyncHandler(async (req, res) => {
-    const { employeeId } = req.params;
-
-    const workdays = await EmployeeWorkdays.findAll({
-      where: { employee_id: employeeId },
-
-      // order: [
-      //   [
-      //     literal(`
-      //   CASE day_of_week
-      //     WHEN 'monday' THEN 1
-      //     WHEN 'tuesday' THEN 2
-      //     WHEN 'wednesday' THEN 3
-      //     WHEN 'thursday' THEN 4
-      //     WHEN 'friday' THEN 5
-      //     WHEN 'saturday' THEN 6
-      //     WHEN 'sunday' THEN 7
-      //   END
-      // `),
-      //     "ASC",
-      //   ],
-      //   [
-      //     literal(`
-      //   CASE time_slot
-      //     WHEN 'morning' THEN 1
-      //     WHEN 'afternoon' THEN 2
-      //   END
-      // `),
-      //     "ASC",
-      //   ],
-      // ],
-    });
-    // const workdays = await database.query(
-    //   `
-    //   SELECT * FROM employee_workdays
-    //   WHERE employee_id = ?
-    //   ORDER BY
-    //     CASE day_of_week
-    //       WHEN 'monday' THEN 1
-    //       WHEN 'tuesday' THEN 2
-    //       WHEN 'wednesday' THEN 3
-    //       WHEN 'thursday' THEN 4
-    //       WHEN 'friday' THEN 5
-    //       WHEN 'saturday' THEN 6
-    //       WHEN 'sunday' THEN 7
-    //     END,
-    //     CASE time_slot
-    //       WHEN 'morning' THEN 1
-    //       WHEN 'afternoon' THEN 2
-    //     END
-    // `,
-    //   [employeeId]
-    // );
-
-    res.json({
-      success: true,
-      workdays,
-    });
-  }),
+  asyncHandler(listEmployeeWorkdays),
 );
 
 // Créer ou mettre à jour les jours de travail d'un employé
 router.post(
   "/employee/:employeeId",
   authenticateToken,
-  asyncHandler(async (req, res) => {
-    const dataSchema = z.object({
-      day_of_week: z.enum([
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-        "sunday",
-      ]),
-      time_slot: z.enum(["morning", "afternoon"]),
-      is_working: z.boolean(),
-      start_time: z.iso.time(),
-      end_time: z.iso.time(),
-      notes: z.string().nullish(),
-      week: z.string().regex(/^week[1-9]$/, "week format incorrect"),
-    });
-    const schema = z.object({
-      workdays: z.array(dataSchema, "workdays doit être un tableau"),
-    });
-
-    const { workdays } = schema.parse(req.body);
-    const employeeId = idSchema().parse(req.params.employeeId);
-    // const { workdays } = req.body; // Array of workday objects
-
-    // if (!Array.isArray(workdays)) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     error: "workdays doit être un tableau",
-    //   });
-    // }
-
-    // Vérifier que l'employé existe
-    const employee = await Employee.findByPk(employeeId, {
-      include: [{
-        model: EmployeeWorkdays,
-        // as: "horaires"
-      }]
-    });
-
-    if (!employee) {
-      return res.status(404).json({
-        success: false,
-        error: "Employé non trouvé",
-      });
-    }
-    // Supprimer les anciens jours de travail de cet employé
-    const transaction = await db.sequelize.transaction()
-    await EmployeeWorkdays.destroy({ where: { employee_id: employee.id }, transaction })
-    // await employee.removeHoraires();
-    const workdayToCreate = workdays.map(workday => ({ employee_id: employeeId, ...workday }))
-    await EmployeeWorkdays.bulkCreate(workdayToCreate, { transaction })
-
-    await transaction.commit()
-
-    // for (const workday of workdays) {
-    //   await EmployeeWorkdays.create({
-    //     employee_id: employeeId,
-    //     ...workday,
-    //   });
-    // }
-
-    // // Insérer les nouveaux jours de travail
-    // const validDays = [
-    //   "monday",
-    //   "tuesday",
-    //   "wednesday",
-    //   "thursday",
-    //   "friday",
-    //   "saturday",
-    //   "sunday",
-    // ];
-    // const validTimeSlots = ["morning", "afternoon"];
-
-    // for (const workday of workdays) {
-    //   const {
-    //     day_of_week,
-    //     time_slot,
-    //     is_working = true,
-    //     start_time,
-    //     end_time,
-    //     notes,
-    //   } = workday;
-
-    //   if (
-    //     !validDays.includes(day_of_week) ||
-    //     !validTimeSlots.includes(time_slot)
-    //   ) {
-    //     continue; // Ignorer les entrées invalides
-    //   }
-    //   await EmployeeWorkdays.create({
-    //     employee_id: employeeId,
-    //     day_of_week,
-    //     time_slot,
-    //     is_working: is_working ? 1 : 0,
-    //     start_time,
-    //     end_time,
-    //     notes,
-    //   });
-    // }
-    res.json({
-      success: true,
-
-      message: "Jours de travail mis à jour avec succès",
-    });
-  }),
+  asyncHandler(createEmployeeWorkdays),
 );
 
 // Créer un jour de travail individuel
@@ -207,6 +46,8 @@ router.post(
   "/",
   authenticateToken,
   asyncHandler(async (req, res) => {
+  logger.error("called useless fn in the router 4")
+
     const {
       employee_id,
       day_of_week,
@@ -257,6 +98,8 @@ router.put(
   "/:id",
   authenticateToken,
   asyncHandler(async (req, res) => {
+  logger.error("called useless fn in the router 5")
+
     const { id } = req.params;
     const { is_working, start_time, end_time, notes } = req.body;
 
@@ -287,6 +130,8 @@ router.delete(
   "/:id",
   authenticateToken,
   asyncHandler(async (req, res) => {
+  logger.error("called useless fn in the router6 ")
+
     const { id } = req.params;
 
     const result = await EmployeeWorkdays.destroy({ where: { id } });
@@ -310,6 +155,8 @@ router.delete(
   "/employee/:employeeId",
   authenticateToken,
   asyncHandler(async (req, res) => {
+  logger.error("called useless fn in the router 7")
+
     const { employeeId } = req.params;
 
     const result = await EmployeeWorkdays.destroy({

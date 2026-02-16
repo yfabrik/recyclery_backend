@@ -2,45 +2,43 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-import { findUserById, listUsers } from "../controllers/users.js";
-import { assignUserToStore, getEmployeeStoreById, listEmployeeStore, listStoreEmployee, removeEmployeeStore } from "../controllers/employee_store.js";
-const { User,  Recyclery } = db;
+import {
+  assignUserToStore,
+  getEmployeeStoreById,
+  listEmployeeStore,
+  listStoreEmployee,
+  removeEmployeeStore,
+} from "../controllers/employee_store.js";
+import logger from "../../services/logger.js";
+const { User, Recyclery } = db;
 
 export const router = Router();
 // router.use(authenticateToken);
 // Obtenir toutes les affectations employés-magasins
-router.get(
-  "/",
-  authenticateToken,
-  asyncHandler(listEmployeeStore)
-);
+router.get("/", authenticateToken, asyncHandler(listEmployeeStore));
 
 // Obtenir les affectations d'un employé
 router.get(
   "/employee/:employeeId",
   authenticateToken,
-  asyncHandler(
-    getEmployeeStoreById
-  ));
+  asyncHandler(getEmployeeStoreById),
+);
 
 // Obtenir les employés d'un magasin
 router.get(
   "/store/:storeId",
   authenticateToken,
-  asyncHandler(listStoreEmployee)
+  asyncHandler(listStoreEmployee),
 );
 
 // Créer une nouvelle affectation
-router.post(
-  "/",
-  authenticateToken,
-  asyncHandler(assignUserToStore)
-);
+router.post("/", authenticateToken, asyncHandler(assignUserToStore));
 
 // Mettre à jour une affectation
 router.put("/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { is_primary } = req.body;
+  logger.error("called useless fn in the router");
 
   // Si c'est une affectation principale, retirer le statut principal des autres affectations de cet employé
   //   if (is_primary) {
@@ -81,6 +79,7 @@ router.put("/:id", authenticateToken, async (req, res) => {
 // Supprimer une affectation
 router.delete("/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
+  logger.error("called useless fn in the router");
 
   //   const result = await database.run(
   //     "DELETE FROM employee_stores WHERE id = ?",
@@ -104,5 +103,5 @@ router.delete("/:id", authenticateToken, async (req, res) => {
 router.delete(
   "/employee/:employeeId",
   authenticateToken,
-  asyncHandler(removeEmployeeStore)
+  asyncHandler(removeEmployeeStore),
 );

@@ -56,6 +56,21 @@ export const listSchedules = async (req, res) => {
    */
   const where = {};
 
+    if (filter.start_date || filter.end_date) {
+      where.scheduled_date = {};
+      if (filter.start_date) {
+        // Set to start of day (00:00:00)
+        const dateFrom = new Date(filter.start_date);
+        dateFrom.setHours(0, 0, 0, 0);
+        where.scheduled_date[Op.gte] = dateFrom;
+      }
+      if (filter.end_date) {
+        // Set to end of day (23:59:59.999) to include all transactions from that day
+        const dateTo = new Date(filter.end_date);
+        dateTo.setHours(23, 59, 59, 999);
+        where.scheduled_date[Op.lte] = dateTo;
+      }
+    }
   // if (start_date) {
   //   where.scheduled_date = {
   //     ...(where.scheduled_date || {}),
@@ -286,83 +301,6 @@ export const createSchedule = async (req, res) => {
     ...data,
   });
 
-  // const where = {
-  //     scheduled_date,
-  //     status: {
-  //         [Op.in]: ["scheduled", "in_progress"],
-  //     },
-  //     [Op.not]: {
-  //         [Op.or]: [
-  //             { end_time: { [Op.lte]: start_time } },
-  //             { start_time: { [Op.gte]: end_time } },
-  //         ],
-  //     },
-  // };
-  // // Vérifier que la tâche existe (seulement si task_id est fourni)
-  // //FIXME the fuck ?
-  // if (task_id) {
-  //     const tasks = await Task.findByPk(task_id);
-
-  //     if (!tasks) {
-  //         return res.status(404).json({
-  //             success: false,
-  //             message: "Tâche non trouvée",
-  //         });
-  //     }
-  // }
-
-  // // Vérifier que l'employé existe (seulement si assigned_to est fourni)
-  // if (assigned_to) {
-  //     const users = await User.findByPk(assigned_to);
-
-  //     if (!users) {
-  //         return res.status(404).json({
-  //             success: false,
-  //             message: "Employé non trouvé",
-  //         });
-  //     }
-  //     where.assigned_to = assigned_to;
-  // }
-
-  // Vérifier les conflits d'horaires (désactivé temporairement pour debug)
-
-  // const conflicts = await TaskSchedule.findAll({
-  //     where,
-  // });
-
-  // Gérer les tâches avec task_id null (tâches d'ouverture)
-
-  // if (task_id === null || task_id === "null") {
-  //     // Vérifier que la tâche avec ID 1 existe, sinon en créer une
-  //     const task1 = await Task.findOrCreate({
-  //         where: { id: 1 },
-  //         defaults: {
-  //             name: "Tâche par défaut",
-  //             description: "Tâche par défaut pour les tâches d ouverture",
-  //             category: "store_operations",
-  //             priority: "medium",
-  //             estimated_duration: 480,
-
-  //             location: "Magasin",
-  //             is_recurring: false,
-  //             recurrence_pattern: "none",
-  //             status: "active",
-  //         },
-  //     });
-  // }
-
-  // Pour les tâches d'ouverture, on utilise la tâche par défaut (ID 1)
-
-  // const result = await TaskSchedule.create({
-  //     task_id: task_id === null || task_id === "null" ? 1 : task_id,
-  //     assigned_to: assigned_to ? assigned_to : null,
-  //     store_id,
-  //     scheduled_date,
-  //     start_time,
-  //     end_time,
-  //     notes,
-  // });
-
   res.status(201).json({
     success: true,
     message: "Planning créé avec succès",
@@ -385,72 +323,9 @@ export const updateSchedule = async (req, res) => {
 
   if (!existingSchedules) throw new createHttpError[404]("Planning non trouvé");
 
-  // Vérifier les conflits d'horaires (sauf pour le planning en cours de modification)
-  // if (data.scheduled_date && data.start_time && data.end_time) {
-  //   const where = { id: { [Op.not]: id } };
-  //   if (data.start_time) {
-  //     // Set to start of day (00:00:00)
-  //     const dateFrom = new Date(data.start_time);
-  //     dateFrom.setHours(0, 0, 0, 0);
-  //     where.scheduled_date[Op.gte] = dateFrom;
-  //   }
-  //   if (data.end_time) {
-  //     // Set to end of day (23:59:59.999) to include all transactions from that day
-  //     const dateTo = new Date(data.end_time);
-  //     dateTo.setHours(23, 59, 59, 999);
-  //     where.scheduled_date[Op.lte] = dateTo;
-  //   }
-  //   const conflicts = await TaskSchedule.findAll({
-  //     where,
-
-  //     // status: { [Op.in]: ["scheduled", "in_progress"] },
-  //     // start_time: { [Op.lt]: end_time },
-  //     // end_time: { [Op.gt]: start_time },
-  //   });
-
-  //   conflicts.forEach((conflict) => {
-  //     if (!conflict.start_time || !conflict.end_time) return;
-  //     const conflictStart =
-  //       new Date(conflict.start_time).getHours() +
-  //       new Date(conflict.start_time).getMinutes() * 60;
-  //     const conflictEnd =
-  //       new Date(conflict.end_time).getHours() +
-  //       new Date(conflict.end_time).getMinutes() * 60;
-  //     const start =
-  //       data.start_time &&
-  //       data.start_time.getHours() + data.start_time.getMinutes() * 60;
-  //     const end =
-  //       data.end_time &&
-  //       data.end_time.getHours() + data.end_time.getMinutes() * 60;
-  //     if (conflictEnd > start && conflictStart < end)
-  //       throw new createHttpError.Conflict(
-  //         "Conflit d'horaires avec une autre tâche planifiée",
-  //       );
-  //   });
-  // }
 
   if (!data.name) data.name = data.category;
   await existingSchedules.update({ ...data });
-  // if (assigned_to) {
-  //   existingSchedules.assigned_to = assigned_to;
-  // }
-  // if (scheduled_date) {
-  //   existingSchedules.scheduled_date = scheduled_date;
-  // }
-  // if (start_time) {
-  //   existingSchedules.start_time = start_time;
-  // }
-  // if (end_time) {
-  //   existingSchedules.end_time = end_time;
-  // }
-  // if (status) {
-  //   existingSchedules.status = status;
-  // }
-  // if (notes !== undefined) {
-  //   existingSchedules.notes = notes;
-  // }
-
-  // await existingSchedules.save();
 
   res.json({
     success: true,
@@ -647,18 +522,16 @@ export const addEmployeeToSchedule = async (req, res) => {
 export const removeEmployeeFromSchedule = async (req, res) => {
   const { scheduleId, employeeId } = req.params;
 
-  const query =
-    "DELETE FROM task_schedule_employees WHERE schedule_id = ? AND employee_id = ?";
   const result = await Task.findByPk(scheduleId, {
     include: [{ model: Employee }],
   });
+  if (!result) throw new createHttpError[404]("Assignation non trouvée");
 
   await result.removeEmployee(employeeId);
   // const result = await TaskSchedule.destroy({
   //   // where: { schedule_id: scheduleId, employee_id: employeeId },
   // });
 
-  if (result === 0) throw new createHttpError[404]("Assignation non trouvée");
   res.json({
     success: true,
     message: "Employé retiré avec succès",

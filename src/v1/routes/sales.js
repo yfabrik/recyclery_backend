@@ -2,6 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
+import logger from "../../services/logger.js";
 const { SalesTransaction, SalesItem, LabeledItem, User } = db;
 
 export const router = Router();
@@ -11,6 +12,8 @@ router.use(authenticateToken);
 router.get(
   "/",
   asyncHandler(async (req, res) => {
+  logger.error("called useless fn in the router")
+
     const { recyclery_id } = req.query;
           /**
    * @type {import("sequelize").WhereOptions}
@@ -34,6 +37,8 @@ router.get(
 router.post(
   "/",
   asyncHandler(async (req, res) => {
+  logger.error("called useless fn in the router")
+
     const {
       customer_name,
       customer_email,

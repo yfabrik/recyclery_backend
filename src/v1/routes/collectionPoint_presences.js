@@ -7,7 +7,6 @@ import {
   deletePointPrecense,
   detailPointPrecense,
   listPointPrecense,
-  planningSync,
   updatePointPrecense,
 } from "../controllers/collectionPointPrecense.js";
 
@@ -32,5 +31,3 @@ router.put("/:id", authenticateToken, asyncHandler(updatePointPrecense));
 // Supprimer des jours de présence
 router.delete("/:id", authenticateToken, asyncHandler(deletePointPrecense));
 
-// Route pour synchroniser les jours de présence avec le planning
-router.post("/sync-to-planning", authenticateToken,asyncHandler(planningSync))

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import { addEmployeeToSchedule, createSchedule, deleteSchedule, findAvailableEMployee, findSchedule, getEmployeeSchedule, listSchedules, planningStats, removeEmployeeFromSchedule, updateSchedule } from "../controllers/taskSchedule.js";
+import logger from "../../services/logger.js";
 
 export const router = Router();
 
@@ -63,6 +64,8 @@ router.get(
   authenticateToken,
   asyncHandler(async (req, res) => {
     const { scheduleId } = req.params;
+  logger.error("called useless fn in the router")
+
 
     // const query = `
     //   SELECT u.id, u.username, u.role, u.email

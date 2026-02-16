@@ -6,6 +6,19 @@ import logger from "../../services/logger.js";
 import { asOptionalStringWithoutEmpty, idSchema, nullishToNull, phoneSchema } from "../../services/zod.js";
 
 const { EcoOrganism, WasteDisposal } = db;
+
+
+  const dataSchema = z.object({
+    name: z.string().trim().nonempty("Le nom est requis"),
+    description: z.string().nullish(),
+    contact_email: z.email().nullish(),
+    contact_phone: phoneSchema().nullish(),
+    address: z.string().nullish(),
+    website: z.url().nullish(),
+    is_active: z.boolean().optional().default(true),
+  })
+
+
 /**
  * 
  * @param {import("express").Request} req 
@@ -58,17 +71,8 @@ export const detailEcoOrganism = async (req, res) => {
  * @param {import("express").Response} res 
  */
 export const createEcoOrganism = async (req, res) => {
-  const dataSchema = z.object({
-    name: z.string().trim().nonempty("Le nom est requis"),
-    description: z.string().nullish(),
-    contact_email: z.email().nullish(),
-    contact_phone: phoneSchema().nullish(),
-    address: z.string().nullish(),
-    website: z.url().nullish(),
-    is_active: z.boolean().optional().default(true),
-  })
-  const data = dataSchema.parse(req.body)
 
+  const data = dataSchema.parse(req.body)
 
   const created = await EcoOrganism.create({
     ...data
@@ -86,24 +90,14 @@ export const createEcoOrganism = async (req, res) => {
  */
 export const updateEcoOrganism = async (req, res) => {
   const id = idSchema().parse(req.params.id);
-  const dataSchema = z.object({
-    name: z.string().trim().nonempty("Le nom est requis"),
-    description: z.string().nullish(),
-    contact_email: z.email().nullish(),
-    contact_phone: phoneSchema().nullish(),
-    address: z.string().nullish(),
-    website: z.url().nullish(),
-    is_active: z.boolean().optional().default(true),
-  })
-  const data = dataSchema.parse(req.body)
 
+  const data = dataSchema.parse(req.body)
 
   const eco_organism = await EcoOrganism.findByPk(id);
   if (!eco_organism) throw new createHttpError[404]("eco organisme pas trouvé")
-  await eco_organism?.update({
+  await eco_organism.update({
     ...data
   })
-
 
   res.json({ message: "Éco-organisme mis à jour avec succès", eco_organism });
 };

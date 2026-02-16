@@ -1,6 +1,7 @@
 "use strict";
 import createHttpError from "http-errors";
 import { Model } from "sequelize";
+import { required } from "zod/mini";
 /**
  * @param {import("sequelize").Sequelize} sequelize
  * @param {import("sequelize").DataTypes} DataTypes
@@ -76,21 +77,23 @@ export default (sequelize, DataTypes) => {
         beforeDestroy: async (recyclery) => {
           // Get all cash registers for this recyclery
           const CashRegister = recyclery.sequelize.models.CashRegister;
+          const Sessions = recyclery.sequelize.models.CashSession;
+
           if (CashRegister) {
-            const caisses = await recyclery.getCaisses();
-
-            // Check each cash register for open sessions
-            for (const caisse of caisses) {
-              const openSessions = await caisse.countSessions({
-                where: { status: "open" },
-              });
-
-              if (openSessions > 0) {
-                throw new createHttpError[424](
-                  `Impossible de supprimer la recyclerie car la caisse "${caisse.name}" a des sessions ouvertes`,
-                );
-              }
-            }
+            const caisses = await recyclery.getCaisses({
+              include: [
+                {
+                  model: Sessions,
+                  as: "sessions",
+                  where: { status: "open" },
+                  required: true,
+                },
+              ],
+            });
+            if (caisses) throw new createHttpError[424](
+                  `Impossible de supprimer la recyclerie car les caisses: "${caisses.map(caisse=>caisse.name)}" sont ouvertes`,
+                )
+           
           }
         },
       },

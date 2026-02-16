@@ -1,8 +1,8 @@
-import { literal, Op } from "sequelize";
-import db from "../../models/index.js";
-import * as z from "zod";
-import logger from "../../services/logger.js";
 import createHttpError from "http-errors";
+import { literal, Op } from "sequelize";
+import * as z from "zod";
+import db from "../../models/index.js";
+import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
 const { Category } = db;
 

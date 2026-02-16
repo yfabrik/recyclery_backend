@@ -59,55 +59,7 @@ export const listUsers = async (req, res) => {
   res.json({ users });
 };
 
-/**
- *
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- */
-// export const listAllUsersInfo = async (req, res) => {
-//   const { store_id, role, active } = req.query;
-//   /**
-//    * @type {import("sequelize").WhereOptions}
-//    */
-//   const where = {};
-//   if (store_id) where.recyclery_id = store_id;
-//   if (role) where.role = role;
-//   if (active) where.isActive = active;
 
-//   const users = await User.findAll({
-//     attributes: { exclude: ["password"] },
-//     where,
-//     include: [
-//       {
-//         model: Recyclery,
-//         as: "managedStores",
-//       },
-//       {
-//         model: Recyclery,
-//         as: "stores",
-//       },
-//       {
-//         model: EmployeeWorkdays,
-//       },
-//     ],
-//   });
-
-//   res.json({ users });
-// };
-/**
- *
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- */
-// export const listEmployees = async (req, res) => {
-//   const users = await User.findAll({
-//     where: {
-//       role: "employee",
-//     },
-//   });
-
-//   res.json({ users });
-// };
 /**
  *
  * @param {import("express").Request} req
@@ -188,13 +140,7 @@ export const updateUser = async (req, res) => {
     ...data,
   });
 
-  // user.username = data.username || user.username;
-  // user.email = data.email || user.email;
-  // user.role = data.role || user.role;
-  // user.recyclery_id = recyclery_id || user.recyclery_id;
-  // user.phone = data.phone || user.phone;
-  // user.contract_hours = data.contract_hours || user.contract_hours;
-  // await user.save();
+
   res.json({
     success: true,
     user,

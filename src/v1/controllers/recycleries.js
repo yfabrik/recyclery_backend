@@ -1,9 +1,13 @@
 import createHttpError from "http-errors";
-import db from "../../models/index.js";
-import * as z from "zod";
-import { listCaisses } from "../../services/caisse.js";
 import { col, fn, literal, Op, where } from "sequelize";
-import { asOptionalStringWithoutEmpty, idSchema, nullishToNull, phoneSchema, postalSchema } from "../../services/zod.js";
+import * as z from "zod";
+import db from "../../models/index.js";
+import { listCaisses } from "../../services/caisse.js";
+import {
+  idSchema,
+  phoneSchema,
+  postalSchema
+} from "../../services/zod.js";
 const {
   Recyclery,
   CashRegister,
@@ -12,8 +16,19 @@ const {
   LabeledItem,
   EmployeeWorkdays,
   Employee,
-  TaskSchedule
+  TaskSchedule,
 } = db;
+
+const dataSchema = z.object({
+  name: z.string("Le nom de la recyclerie est requis"),
+  address: z.string().nullish(),
+  phone: phoneSchema().nullish(),
+  email: z.email().nullish(),
+  manager_id: idSchema().nullish(),
+  city: z.string().nullish(),
+  postal_code: postalSchema().nullish(),
+  is_active: z.coerce.boolean().default(true),
+});
 /**
  *
  * @param {import("express").Request} req
@@ -46,8 +61,8 @@ export const listRecycleries = async (req, res) => {
       model: TaskSchedule,
       // as: "horaires",
       required: false,
-      where: { category: "vente" }
-    })
+      where: { category: "vente" },
+    });
   include.push(
     {
       model: CashRegister,
@@ -55,7 +70,7 @@ export const listRecycleries = async (req, res) => {
       as: "caisses",
       // separate:true
     },
-    { model: User, as: "manager" }
+    { model: User, as: "manager" },
   );
 
   const recycleries = await Recyclery.findAll({
@@ -85,12 +100,6 @@ export const listRecycleries = async (req, res) => {
  * @param {import("express").Response} res
  */
 
-// export const listStoreWIthEmployee = async (req, res) => {
-//   const stores = await Recyclery.findAll({
-//     include: [{ model: User, as: "employees", include: [{ model: EmployeeWorkdays }] }],
-//   });
-//   res.json({ success: true, stores });
-// };
 /**
  *
  * @param {import("express").Request} req
@@ -113,19 +122,7 @@ export const detailRecyclerie = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createRecyclerie = async (req, res) => {
-  const dataSchema = z.object({
-    name: z.string("Le nom de la recyclerie est requis"),
-    address: z.string().nullish(),
-    phone: phoneSchema().nullish(),
-    email: z.email().nullish(),
-    manager_id: idSchema().nullish(),
-    city: z.string().nullish(),
-    postal_code: postalSchema().nullish(),
-    is_active: z.coerce.boolean().default(true),
-  });
   const data = dataSchema.parse(req.body);
-
-
   const recyclery = await Recyclery.create({
     ...data,
   });
@@ -144,37 +141,32 @@ export const createRecyclerie = async (req, res) => {
  */
 export const updateRecyclerie = async (req, res) => {
   const { id } = req.params;
-  const dataSchema = z.object({
-    name: z.string("Le nom de la recyclerie est requis"),
-    address: z.string().nullish(),
-    phone: phoneSchema().nullish(),
-    email: z.email().nullish(),
-    manager_id: idSchema().nullish(),
-    city: z.string().nullish(),
-    postal_code: postalSchema().nullish(),
-    is_active: z.coerce.boolean().default(true),
-  });
+
   const data = dataSchema.parse(req.body);
 
-  const recyclerie = await Recyclery.findByPk(id, { include: [{ model: TaskSchedule }] });
+  const recyclerie = await Recyclery.findByPk(id, {
+    include: [{ model: TaskSchedule }],
+  });
   if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
-
 
   //TODO FIXME IMPORTANT URGENT make transaction work
   try {
     if (data.is_active != recyclerie.is_active || data.name != recyclerie.name)
       for (const schedule of recyclerie.TaskSchedules) {
-        await schedule.update({ is_recurring: data.is_active, name: data.name },)
+        await schedule.update({
+          is_recurring: data.is_active,
+          name: data.name,
+        });
       }
 
     await recyclerie.update({
-      ...data
-    },)
+      ...data,
+    });
 
     // await t.commit()
   } catch (err) {
     // await t.rollback()
-    throw err
+    throw err;
   }
 
   res.json({
@@ -193,9 +185,9 @@ export const updateRecyclerie = async (req, res) => {
 export const deleteRecyclerie = async (req, res) => {
   const { id } = req.params;
 
-  const recyclerie = await Recyclery.destroy({ where: { id } });
+  const recyclerie = await Recyclery.findByPk(id);
   if (!recyclerie) throw new createHttpError.NotFound("Recyclerie non trouvée");
-
+  await recyclerie.destroy();
   res.json({ message: "Recyclerie supprimée avec succès" });
 };
 /**
@@ -211,21 +203,6 @@ export const listCaissesRecyclerie = async (req, res) => {
   res.json({ success: true, cash_registers: caisses });
 };
 
-// export const createCaisse = async (req, res) => {
-//   const { id } = req.params;
-//   const { name } = req.body;
-
-//   if (!name) {
-//     throw new createHttpError.BadRequest("Le nom de la caisse est obligatoire");
-//   }
-//   const caisse = CashRegister.create({ name, recyclery_id: id });
-
-//   res.status(201).json({
-//     success: true,
-//     message: "Caisse créée avec succès",
-//     cash_register_id: caisse.id,
-//   });
-// };
 /**
  *
  * @param {import("express").Request} req

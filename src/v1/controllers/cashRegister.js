@@ -1,8 +1,8 @@
-import db from "../../models/index.js"
+import db from "../../models/index.js";
 
 import createHttpError from "http-errors";
 import { Op } from "sequelize";
-import * as z from "zod"
+import * as z from "zod";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
 const { CashRegister, CashSession, Recyclery, Sequelize } = db;
@@ -110,7 +110,6 @@ export const createCaisse = async (req, res) => {
   })
   const data = dataSchema.parse(req.body)
 
-
   // Vérifier que le magasin existe
   const store = await Recyclery.findByPk(data.store_id);
   if (!store) throw new createHttpError.NotFound("Magasin non trouvé");
@@ -165,6 +164,7 @@ export const updateCaisse = async (req, res) => {
   if (!existingRegister) {
     throw new createHttpError.NotFound("Caisse non trouvée");
   }
+  //TODO check on the model
 
   // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
   const duplicateRegister = await CashRegister.findAll({
@@ -204,21 +204,7 @@ export const deleteCaisse = async (req, res) => {
     throw new createHttpError.NotFound("Caisse non trouvée");
   }
 
-  // // Vérifier qu'il n'y a pas de sessions ouvertes pour cette caisse
-  // const openSessions = await existingRegister.getSessions({ where: { status: "open" } })
-  // // console.log(open)
-  // // const openSessions = await CashSession.findAll({
-  // //   where: { [Op.and]: [{ cash_register_id: id }, { status: "open" }] },
-  // // });
-
-  // if (openSessions[0]) {
-  //   throw new createHttpError[400](
-  //     "Impossible de supprimer une caisse avec des sessions ouvertes"
-  //   );
-  // }
-
   await existingRegister.destroy()
-  // await CashRegister.destroy({ where: { id } });
 
   res.json({
     success: true,
@@ -235,42 +221,4 @@ export const listCaissesMagasin = async (req, res) => {
   req.query.store_id = store_id;
   logger.info("called list caisse magasin, REMAKE THIS ONE")
   listCaisses(req, res);
-
-  // const registers = await CashRegister.findAll({
-  //     attributes: [
-  //         "id",
-  //         "name",
-  //         "is_active",
-  //         "created_at",
-  //         [Sequelize.col("Recyclery.name"), "store_name"],
-  //         // COUNT(cs.id) as total_sessions
-  //         [
-  //             Sequelize.fn("COUNT", Sequelize.col("CashSessions.id")),
-  //             "total_sessions",
-  //         ],
-  //         // MAX(cs.opened_at) as last_session
-  //         [
-  //             Sequelize.fn("MAX", Sequelize.col("CashSessions.opened_at")),
-  //             "last_session",
-  //         ],
-  //     ],
-  //     include: [
-  //         {
-  //             model: Recyclery,
-  //             attributes: [],
-  //             required: false,
-  //         },
-  //         {
-  //             model: CashSession,
-  //             attributes: [],
-  //             required: false,
-  //         },
-  //     ],
-  //     where: { [Op.and]: [{ recyclery_id: store_id }, { is_active: true }] },
-  // });
-
-  // res.json({
-  //     success: true,
-  //     data: registers,
-  // });
 };

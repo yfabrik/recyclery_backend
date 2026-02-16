@@ -1,11 +1,11 @@
-import { fn, col } from "sequelize";
+import { col, fn } from "sequelize";
 import db from "../../models/index.js";
 
-import { listCaisses } from "./cashRegister.js";
-import logger from "../../services/logger.js";
 import createHttpError from "http-errors";
 import * as z from "zod";
+import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
+import { listCaisses } from "./cashRegister.js";
 const {
   CashSession,
   CashRegister,
@@ -133,7 +133,7 @@ export const openCashSession = async (req, res) => {
   });
   if (existing) throw new createHttpError.Conflict("Already open session");
 
-  const sessionNumber = `SES${Date.now().toString().slice(-8)}`;
+  // const sessionNumber = `SES${Date.now().toString().slice(-8)}`;
 
   const session = await CashSession.create({
     // session_number: sessionNumber,
@@ -145,7 +145,7 @@ export const openCashSession = async (req, res) => {
     success: true,
     session,
     session_id: session.id,
-    session_number: sessionNumber,
+    // session_number: sessionNumber,
   });
 };
 /**

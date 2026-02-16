@@ -5,6 +5,14 @@ import createHttpError from "http-errors";
 
 const { Employee, Recyclery, EmployeeWorkdays } = db;
 
+const dataSchema = z.object({
+  nom: z.string("nom requis").trim().nonempty("nom requis"),
+  prenom: z.string("prenom requis").trim().nonempty("prenom requis"),
+  isActive: z.coerce.boolean().nullish(),
+  email: z.email().nullish(),
+  phone: phoneSchema().nullish(),
+});
+
 /**
  *
  * @param {import("express").Request} req
@@ -17,9 +25,9 @@ export const listEmployees = async (req, res) => {
         model: Recyclery,
         as: "stores",
       },
-      { 
+      {
         model: EmployeeWorkdays,
-        // as:"horaires" 
+        // as:"horaires"
       },
     ],
   });
@@ -36,13 +44,6 @@ export const listEmployees = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createEmployee = async (req, res) => {
-  const dataSchema = z.object({
-    nom: z.string("nom requis").trim().nonempty("nom requis"),
-    prenom: z.string("prenom requis").trim().nonempty("prenom requis"),
-    isActive: z.coerce.boolean().nullish(),
-    email: z.email().nullish(),
-    phone: phoneSchema().nullish(),
-  });
   const data = dataSchema.parse(req.body);
   const employee = await Employee.create({
     ...data,
@@ -60,13 +61,6 @@ export const createEmployee = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const updateEmployee = async (req, res) => {
-  const dataSchema = z.object({
-    nom: z.string("nom requis").trim().nonempty("nom requis"),
-    prenom: z.string("prenom requis").trim().nonempty("prenom requis"),
-    isActive: z.coerce.boolean().nullish(),
-    email: z.email().nullish(),
-    phone: phoneSchema().nullish(),
-  });
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
   const employee = await Employee.findByPk(id);

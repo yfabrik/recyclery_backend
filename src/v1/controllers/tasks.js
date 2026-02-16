@@ -7,6 +7,36 @@ import { idSchema } from "../../services/zod.js";
 
 const { Task, User, TaskSchedule, Employee, Recyclery } = db;
 
+
+const dataSchema = z.object({
+    name: z.string("Nom requis").nullish(),
+    description: z.string().nullish(),
+    category: z.string("categorie requis"),
+    priority: z.string("priorité requis"),
+    // estimated_duration: z.coerce.number().nullish(),
+    required_skills: z
+      .array(z.string())
+      .nullish()
+      .default([])
+      .transform((val) => JSON.stringify(val)),
+    location: z.string().nullish(),
+    equipment_needed: z
+      .array(z.string())
+      .nullish()
+      .default([])
+      .transform((val) => JSON.stringify(val)),
+    // hourly_rate: z.coerce.number().nullish(),
+    is_recurring: z.coerce.boolean().nullish(),
+    recurrence_pattern: z.string().nullish(),
+    assigned_to: z.string().nullish(),
+    notes: z.string().nullish(),
+    start_time: z.coerce.date().nullish(),
+    end_time: z.coerce.date().nullish(),
+    scheduled_date: z.coerce.date().optional().default(new Date()),
+    store_id: idSchema().nullish()
+  });
+
+
 /**
  *
  * @param {import("express").Request} req
@@ -154,33 +184,7 @@ export const detailTask = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createTask = async (req, res) => {
-  const dataSchema = z.object({
-    name: z.string("Nom requis").nullish(),
-    description: z.string().nullish(),
-    category: z.string("categorie requis"),
-    priority: z.string("priorité requis"),
-    // estimated_duration: z.coerce.number().nullish(),
-    required_skills: z
-      .array(z.string())
-      .nullish()
-      .default([])
-      .transform((val) => JSON.stringify(val)),
-    location: z.string().nullish(),
-    equipment_needed: z
-      .array(z.string())
-      .nullish()
-      .default([])
-      .transform((val) => JSON.stringify(val)),
-    // hourly_rate: z.coerce.number().nullish(),
-    is_recurring: z.coerce.boolean().nullish(),
-    recurrence_pattern: z.string().nullish(),
-    assigned_to: z.string().nullish(),
-    notes: z.string().nullish(),
-    start_time: z.coerce.date().nullish(),
-    end_time: z.coerce.date().nullish(),
-    scheduled_date: z.coerce.date().optional().default(new Date()),
-    store_id: idSchema().nullish()
-  });
+  
   const data = dataSchema.parse(req.body);
   const name = data.name ?? data.category;
   let schedule = null;
@@ -212,30 +216,6 @@ export const createTask = async (req, res) => {
 export const updateTask = async (req, res) => {
   const id = z.coerce.number().parse(req.params.id);
 
-  const dataSchema = z.object({
-    name: z.string("Nom requis").nullish(),
-    description: z.string().nullish(),
-    category: z.string("categorie requis"),
-    priority: z.string("priorité requis"),
-    // estimated_duration: z.coerce.number().nullish(),
-    required_skills: z
-      .array(z.string())
-      .nullish()
-      .default([])
-      .transform((val) => JSON.stringify(val)),
-    location: z.string().nullish(),
-    equipment_needed: z.array(z.string()).nullish(),
-    // hourly_rate: z.coerce.number().nullish(),
-    is_recurring: z.coerce.boolean().nullish(),
-    recurrence_pattern: z.string().nullish(),
-    assigned_to: z.string().nullish(),
-    notes: z.string().nullish(),
-    start_time: z.coerce.date().nullish(),
-    end_time: z.coerce.date().nullish(),
-    scheduled_date: z.coerce.date().optional().default(new Date()),
-    store_id: idSchema().nullish()
-  });
-
   const data = dataSchema.parse(req.body);
   // Vérifier que la tâche existe
   const existing = await Task.findByPk(id);
@@ -245,20 +225,6 @@ export const updateTask = async (req, res) => {
   await existing.update({
     ...data,
   });
-  // existing.name = data.name;
-  // existing.description = data.description;
-  // existing.category = data.category;
-  // existing.priority = data.priority;
-  // existing.estimated_duration = data.estimated_duration;
-  // existing.required_skills = JSON.stringify(data.required_skills || []);
-  // existing.location = location;
-  // existing.equipment_needed = JSON.stringify(data.equipment_needed || []);
-  // existing.hourly_rate = data.hourly_rate;
-  // existing.is_recurring = data.is_recurring;
-  // existing.recurrence_pattern = data.recurrence_pattern;
-  // existing.assigned_to = data.assigned_to;
-  // existing.notes = data.notes;
-  // await existing.save();
 
   res.json({
     success: true,
@@ -292,7 +258,7 @@ export const getUsersFromTask = async (req, res) => {
   const { taskId } = req.params;
 
   const tasks = await Task.findByPk(taskId, { include: [{ model: Employee }] });
-
+  if(!tasks) throw new createHttpError.NotFound("tache non trouvé")
   res.json({
     success: true,
     employees: tasks.Employees,

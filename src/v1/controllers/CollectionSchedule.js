@@ -1,15 +1,12 @@
-import { Op } from "sequelize";
+import createHttpError from "http-errors";
+import * as z from "zod";
 import db from "../../models/index.js";
+import logger from "../../services/logger.js";
 import {
-  listSchedules,
-  createSchedule,
-  updateSchedule,
   deleteSchedule,
   removeEmployeeFromSchedule,
+  updateSchedule
 } from "./taskSchedule.js";
-import logger from "../../services/logger.js";
-import * as z from "zod";
-import createHttpError from "http-errors";
 
 const {
   CollectionSchedule,

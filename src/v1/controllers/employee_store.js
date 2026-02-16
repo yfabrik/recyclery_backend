@@ -47,37 +47,7 @@ export const getEmployeeStoreById = async (req, res) => {
       },
     ],
   });
-  // const employeeStores = await EmployeeStore.findAll({
-  //   where: {
-  //     employeeId: employeeId,
-  //   },
-  //   // attributes: [
-  //   //   "employeeId",
-  //   //   "RecycleryId",
-  //   //   // cast boolean to integer
-  //   //   [cast(col("is_primary"), "INTEGER"), "is_primary"],
-  //   //   "createdAt",
-  //   //   "updatedAt",
-  //   //   [col("Recyclery.name"), "store_name"],
-  //   //   [col("Recyclery.address"), "store_address"],
-  //   // ],
-  //   include: [
-  //     {
-  //       model: Recyclery,
-  //       attributes: [
-  //         // ["name", "store_name"],
-  //         // ["address", "store_address"],
-  //       ],
-  //       required: false, // LEFT JOIN
-  //     },
-  //   ],
-  //   order: [
-  //     // [literal('"is_primary" DESC')], // order primary first
-  //     // [Recyclery, "name", "ASC"], // then by store name
-  //   ],
-  //   raw: true, // return plain objects
-  // });
-
+  
   if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
 
   const stores = user.get({ plain: true }).stores;

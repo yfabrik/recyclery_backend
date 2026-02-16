@@ -181,49 +181,6 @@ export const createTransaction = async (req, res) => {
     throw err;
   }
 
-  // const {
-  //   cash_session_id,
-  //   store_id,
-  //   total_amount,
-  //   payment_method = "cash",
-  //   payment_amount,
-  //   change_amount = 0,
-  //   customer_name,
-  //   customer_email,
-  //   customer_postal_code,
-  //   items = [],
-  // } = req.body;
-
-  // // Générer un numéro de transaction unique
-  // const timestamp = Date.now().toString();
-  // const transactionNumber = `TXN${timestamp.slice(-8)}`;
-
-  // // Insérer la transaction
-  // const result = await SalesTransaction.create({
-  //   transaction_number: transactionNumber,
-  //   cash_session_id,
-  //   store_id,
-  //   total_amount,
-  //   payment_method,
-  //   payment_amount,
-  //   change_amount,
-  //   customer_name,
-  //   customer_email,
-  //   customer_postal_code,
-  //   createdBy: req.user.id,
-  // });
-
-  // for await (const item of items) {
-  //   if (!item.labeled_item_id) continue;
-  //   const found = await LabeledItem.findOne({
-  //     where: { barcode: item.barcode },
-  //   });
-  //   if (!found) continue;
-  //   found.status = "sold";
-  //   found.sold_at = new Date();
-  //   found.transaction_id = result.id;
-  //   await found.save();
-  // }
 };
 /**
  *
