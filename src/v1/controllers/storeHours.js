@@ -1,15 +1,11 @@
-import { Op } from "sequelize";
-import db from "../../models/index.js";
-import {
-  createSchedule,
-  deleteSchedule,
-  listSchedules,
-  updateSchedule,
-} from "./taskSchedule.js";
 import createHttpError from "http-errors";
 import * as z from "zod";
-import { idSchema } from "../../services/zod.js";
+import db from "../../models/index.js";
 import logger from "../../services/logger.js";
+import { idSchema } from "../../services/zod.js";
+import {
+  deleteSchedule
+} from "./taskSchedule.js";
 
 const { StoreHours, Recyclery, TaskSchedule, Task } = db;
 
@@ -201,10 +197,13 @@ export const addHoraire = async (req, res) => {
 export const updateHoraire = async (req, res) => {
   const data = dataSchema.parse(req.body);
   const id = idSchema().parse(req.params.id);
-  const schedule = await TaskSchedule.findByPk(id);
+  const schedule = await TaskSchedule.findByPk(id, {
+    include: [{ model: Recyclery, required: false }],
+  });
   if (!schedule) throw new createHttpError.NotFound("horaires pas trouvé");
 
   await schedule.update({
+    name: "vente-" + schedule.Recyclery.name,
     // name: "vente-" + data.day_of_week + " " + data.store_id,
     // recurrence_pattern: "weekly",
     scheduled_date: data.day_of_week,
