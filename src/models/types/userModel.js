@@ -5,56 +5,45 @@
  * @property {string} password - Password hash (excluded from default scope)
  * @property {string} [password_hash] - Password hash (excluded from default scope)
  * 
- * @property {string} [role] - User role (default: "employee")
- * @property {string} [phone] - Phone number
- * @property {number} [contract_hours] - Contract hours per week (default: 35)
+ * @property {string|null} [role] - User role (default: "employee")
+ * @property {string|null} [phone] - Phone number
  * @property {boolean} [isActive] - Whether the user account is active (default: true)
- * @property {Date|string} [last_login] - Date and time of last login
+ * @property {Date|string|null} [last_login] - Date and time of last login
  * 
  * @typedef { import("./baseModelAttributes.js").baseAttributes & UserCreateAttributes} UserAttributes
  */
 
 /**
  * @typedef {import("sequelize").Model<UserAttributes, UserCreateAttributes> & UserAttributes} UserInstance
- * 
+ *
+ * @property {Array<import("./donationModel.js").DonationInstance>} [Donations] - Donations received by this user when loaded with include (received_by)
+ * @property {Array<import("./salesTransactionModel.js").SalesTransactionInstance>} [SalesTransactions] - Sales transactions created by this user when loaded with include (created_by)
+ * @property {Array<import("./collectionReceiptModel.js").CollectionReceiptInstance>} [CollectionReceipts] - Collection receipts processed by this user when loaded with include (processed_by)
+ * @property {Array<import("./labeledItemModel.js").LabeledItemInstance>} [LabeledItems] - Labeled items created by this user when loaded with include (created_by)
+ * @property {Array<import("./arrivalModel.js").ArrivalInstance>} [Arrivals] - Arrivals processed by this user when loaded with include (processed_by)
+ * @property {Array<import("./recycleryModel.js").RecycleryInstance>} [managedStores] - Recycleries managed by this user when loaded with include (alias "managedStores", manager_id)
+ *
  * @property {() => Promise<Array<import("./donationModel.js").DonationInstance>>} getDonations - Get all donations received by this user (has-many relationship through "received_by" foreign key).
- * 
- * @property {() => Promise<Array<import("./salesTransactionModel.js").SalesTransactionInstance>>} getSalesTransactions - Get all sales transactions created by this user (has-many relationship through "sold_by" foreign key).
- * 
- * @property {() => Promise<Array<import("./collectionSchedule.js").CollectionScheduleInstance>>} getCollectionSchedules - Get all collection schedules assigned to this user (many-to-many relationship through "user_schedule" table).
- * 
- * @property {(schedules: Array<import("./collectionSchedule.js").CollectionScheduleInstance|number>) => Promise<void>} setCollectionSchedules - Replace all collection schedules for this user. Takes an array of CollectionSchedule instances or schedule IDs.
- * 
- * @property {(schedules: Array<import("./collectionSchedule.js").CollectionScheduleInstance|number>) => Promise<void>} addCollectionSchedules - Add one or more collection schedules to this user. Takes an array of CollectionSchedule instances or schedule IDs.
- * 
- * @property {(schedules: Array<import("./collectionSchedule.js").CollectionScheduleInstance|number>) => Promise<void>} removeCollectionSchedules - Remove one or more collection schedules from this user. Takes an array of CollectionSchedule instances or schedule IDs.
- * 
+ *
+ * @property {(values?: import("./donationModel.js").DonationCreateAttributes) => Promise<import("./donationModel.js").DonationInstance>} createDonation - Create a new donation received by this user (has-many).
+ *
+ * @property {() => Promise<Array<import("./salesTransactionModel.js").SalesTransactionInstance>>} getSalesTransactions - Get all sales transactions created by this user (has-many relationship through "created_by" foreign key).
+ *
+ * @property {(values?: import("./salesTransactionModel.js").SalesTransactionCreateAttributes) => Promise<import("./salesTransactionModel.js").SalesTransactionInstance>} createSalesTransaction - Create a new sales transaction for this user (has-many).
+ *
  * @property {() => Promise<Array<import("./collectionReceiptModel.js").CollectionReceiptInstance>>} getCollectionReceipts - Get all collection receipts processed by this user (has-many relationship through "processed_by" foreign key).
- * 
+ *
+ * @property {(values?: import("./collectionReceiptModel.js").CollectionReceiptCreateAttributes) => Promise<import("./collectionReceiptModel.js").CollectionReceiptInstance>} createCollectionReceipt - Create a new collection receipt for this user (has-many).
+ *
  * @property {() => Promise<Array<import("./labeledItemModel.js").LabeledItemInstance>>} getLabeledItems - Get all labeled items created by this user (has-many relationship through "created_by" foreign key).
- * 
- * @property {() => Promise<Array<import("./taskModel.js").TaskInstance>>} getTasks - Get all tasks assigned to this user (many-to-many relationship through "task_user" table).
- * 
- * @property {(tasks: Array<import("./taskModel.js").TaskInstance|number>) => Promise<void>} setTasks - Replace all tasks for this user. Takes an array of Task instances or task IDs.
- * 
- * @property {(tasks: Array<import("./taskModel.js").TaskInstance|number>) => Promise<void>} addTasks - Add one or more tasks to this user. Takes an array of Task instances or task IDs.
- * 
- * @property {(tasks: Array<import("./taskModel.js").TaskInstance|number>) => Promise<void>} removeTasks - Remove one or more tasks from this user. Takes an array of Task instances or task IDs.
- * 
+ *
+ * @property {(values?: import("./labeledItemModel.js").LabeledItemCreateAttributes) => Promise<import("./labeledItemModel.js").LabeledItemInstance>} createLabeledItem - Create a new labeled item for this user (has-many).
+ *
  * @property {() => Promise<Array<import("./arrivalModel.js").ArrivalInstance>>} getArrivals - Get all arrivals processed by this user (has-many relationship through "processed_by" foreign key).
- * 
- * @property {() => Promise<Array<import("./taskSchedule.js").TaskScheduleInstance>>} getTaskSchedules - Get all task schedules assigned to this user (has-many relationship through "assigned_to" foreign key).
- * 
- * @property {() => Promise<Array<import("./recycleryModel.js").RecycleryInstance>>} getStores - Get all recycleries where this user is an employee (many-to-many relationship through "EmployeeStore" table). Uses "stores" alias.
- * 
- * @property {(stores: Array<import("./recycleryModel.js").RecycleryInstance|number>) => Promise<void>} setStores - Replace all recycleries for this user. Takes an array of Recyclery instances or recyclery IDs.
- * 
- * @property {(stores: Array<import("./recycleryModel.js").RecycleryInstance|number>) => Promise<void>} addStores - Add one or more recycleries to this user. Takes an array of Recyclery instances or recyclery IDs.
- * 
- * @property {(stores: Array<import("./recycleryModel.js").RecycleryInstance|number>) => Promise<void>} removeStores - Remove one or more recycleries from this user. Takes an array of Recyclery instances or recyclery IDs.
- * 
+ *
+ * @property {(values?: import("./arrivalModel.js").ArrivalCreateAttributes) => Promise<import("./arrivalModel.js").ArrivalInstance>} createArrival - Create a new arrival processed by this user (has-many).
+ *
  * @property {() => Promise<Array<import("./recycleryModel.js").RecycleryInstance>>} getManagedStores - Get all recycleries managed by this user (has-many relationship through "manager_id" foreign key). Uses "managedStores" alias.
- * 
- * @property {() => Promise<Array<import("./employeeWorkday.js").EmployeeWorkdaysInstance>>} getEmployeeWorkdays - Get all employee workdays for this user (has-many relationship through "employee_id" foreign key).
+ *
+ * @property {(values?: import("./recycleryModel.js").RecycleryCreateAttributes) => Promise<import("./recycleryModel.js").RecycleryInstance>} createManagedStore - Create a new recyclery and set this user as manager (has-many with alias "managedStores").
  */
-
