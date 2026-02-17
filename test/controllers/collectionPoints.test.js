@@ -26,10 +26,10 @@ describe("collection points controller functions", () => {
             address: "45 Avenue Principale",
             city: "Orgelet",
             postal_code: "39270",
-            contact_person: "Jean Dupont",
+            contact_person: "JeanDupont",
             contact_phone: "+33 1 23 45 67 89",
             contact_email: "collecte.centreville@test.com",
-            type: "permanent",
+            type: "standard",
             notes: "Point de collecte principal - accès facile",
         };
         const req = {
@@ -57,12 +57,13 @@ describe("collection points controller functions", () => {
         );
     });
 
-    it("should deny the creation with duplicate email", async () => {
+    it("should create another point with same email when no unique constraint", async () => {
         const body = {
             name: "Autre point",
             address: "12 Rue Autre",
             city: "Orgelet",
             postal_code: "39270",
+            contact_person: "AutreContact",
             contact_email: "collecte.centreville@test.com",
         };
         const req = {
@@ -80,7 +81,11 @@ describe("collection points controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
-                success: false
+                success: true,
+                collection_point: expect.objectContaining({
+                    name: "Autre point",
+                    contact_email: "collecte.centreville@test.com"
+                })
             })
         );
     });

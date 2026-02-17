@@ -90,7 +90,7 @@ export default (sequelize, DataTypes) => {
                 },
               ],
             });
-            if (caisses) throw new createHttpError[424](
+            if (Array.isArray(caisses) && caisses.length > 0) throw new createHttpError[424](
                   `Impossible de supprimer la recyclerie car les caisses: "${caisses.map(caisse=>caisse.name)}" sont ouvertes`,
                 )
            

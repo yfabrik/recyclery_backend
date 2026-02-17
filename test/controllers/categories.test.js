@@ -55,13 +55,7 @@ describe("categories controller functions", () => {
             status: jest.fn().mockReturnThis()
         };
 
-        await createCategorie(req, res);
-
-        expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({
-                success: false,
-            })
-        );
+        await expect(createCategorie(req, res)).rejects.toThrow("Une catégorie avec ce nom existe déjà");
     });
     it("should create a subcategorie", async () => {
         const body = {

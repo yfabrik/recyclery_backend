@@ -38,11 +38,10 @@ describe("collection schedule controller functions", () => {
         const body = {
             collection_point_id: 1,
             store_id: 1,
-            day_of_week: 1,
-            time_slot_name: "Lundi Matin",
+            day_of_week: "Lundi",
             is_present: true,
-            start_time: 9,
-            end_time: 12,
+            start_time: "09:00",
+            end_time: "12:00",
         }
         const req = {
             query: {},
@@ -82,7 +81,7 @@ describe("collection schedule controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
-                presence_hours: expect.any(Array),
+                schedules: expect.any(Array),
                 success: true
             })
         );
@@ -105,7 +104,7 @@ describe("collection schedule controller functions", () => {
 
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
-                presence_hours: expect.any(Object),
+                task: expect.any(Object),
                 success: true
             }))
 

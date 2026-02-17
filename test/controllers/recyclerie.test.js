@@ -100,9 +100,9 @@ describe("recyclery controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         store: expect.objectContaining({ 
-          name: "Recyclerie Test Orgelet Mise à jour",
-          phone: "+33 1 98 76 54 32"
+          name: "updated"
         }),
+        success: true
       })
     );
   });

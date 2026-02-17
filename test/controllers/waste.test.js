@@ -28,7 +28,6 @@ describe("waste controller functions", () => {
             disposal_date: disposalDate,
             category_id: 1,
             subcategory_id: 2,
-            eco_organism_id: 1,
             disposal_type: "landfill",
             weight_kg: 125.5,
             volume_m3: 2.5,

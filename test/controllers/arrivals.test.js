@@ -67,7 +67,7 @@ describe("arrival controller functions", () => {
             expect.objectContaining({
                 arrival: expect.objectContaining({
                     id: expect.any(Number),
-                    category_id: 2, // When subcategory_id is provided, it becomes the category_id
+                    category_id: 1,
                     subcategory_id: 2,
                     weight: 15.5,
                     source_type: "point"

@@ -29,7 +29,7 @@ describe("dons controller functions", () => {
 
     it("should create a donation", async () => {
         const body = {
-            donor_name: "Marie Martin",
+            donor_name: "MarieMartin",
             donor_contact: "+33 6 12 34 56 78",
             item_description: "Table en bois massif, 4 chaises, état correct",
             estimated_value: 150.00,
@@ -52,7 +52,7 @@ describe("dons controller functions", () => {
             expect.objectContaining({
                 donation: expect.objectContaining({
                     id: expect.any(Number),
-                    donor_name: "Marie Martin",
+                    donor_name: "MarieMartin",
                     estimated_value: expect.any(Number)
                 })
             })
