@@ -3,9 +3,19 @@
  * @property {boolean} [is_primary] - Whether this is the primary store assignment for the employee (default: false)
  * @property {number} employeeId - Foreign key reference to the Employee (required)
  * @property {number} recycleryId - Foreign key reference to the Recyclery (required)
- *
- * @typedef {import("./baseModelAttributes.js").baseAttributes & EmployeeStoreCreateAttributes} EmployeeStoreAttributes
- *
+ */
+
+/**
+ * Fetched row: all attributes present (no undefined).
+ * @typedef {Object} EmployeeStoreRow
+ * @property {boolean} is_primary
+ * @property {number} employeeId
+ * @property {number} recycleryId
+ */
+
+/** @typedef {import("./baseModelAttributes.js").baseAttributes &EmployeeStoreRow} EmployeeStoreAttributes */
+
+/**
  * @typedef {Object} EmployeeStoreInstanceMethods
  * @property {() => Promise<import("./recycleryModel.js").RecycleryInstance>} getRecyclery - Get the associated Recyclery (belongs-to). Uses "Recyclery" alias.
  * @property {(recyclery: import("./recycleryModel.js").RecycleryInstance | number) => Promise<void>} setRecyclery - Set the Recyclery for this assignment.

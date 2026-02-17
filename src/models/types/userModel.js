@@ -9,13 +9,26 @@
  * @property {string|null} [phone] - Phone number
  * @property {boolean} [isActive] - Whether the user account is active (default: true)
  * @property {Date|string|null} [last_login] - Date and time of last login
- * 
- * @typedef { import("./baseModelAttributes.js").baseAttributes & UserCreateAttributes} UserAttributes
  */
 
 /**
- * @typedef {import("sequelize").Model<UserAttributes, UserCreateAttributes> & UserAttributes} UserInstance
- *
+ * Fetched row: all attributes present (no undefined). Use for instance returned from findOne/findByPk/findAll.
+ * @typedef {Object} UserRow
+ * @property {string} username
+ * @property {string} email
+ * @property {string} password
+ * @property {string} [password_hash]
+ * @property {string|null} role
+ * @property {string|null} phone
+ * @property {boolean} isActive
+ * @property {Date|string|null} last_login
+ */
+
+/** @typedef {import("./baseModelAttributes.js").baseAttributes &UserRow} UserAttributes */
+
+/**
+ * Optional association properties present when the instance is loaded with include().
+ * @typedef {Object} UserInstanceAssociations
  * @property {Array<import("./donationModel.js").DonationInstance>} [Donations] - Donations received by this user when loaded with include (received_by)
  * @property {Array<import("./salesTransactionModel.js").SalesTransactionInstance>} [SalesTransactions] - Sales transactions created by this user when loaded with include (created_by)
  * @property {Array<import("./collectionReceiptModel.js").CollectionReceiptInstance>} [CollectionReceipts] - Collection receipts processed by this user when loaded with include (processed_by)
@@ -46,4 +59,8 @@
  * @property {() => Promise<Array<import("./recycleryModel.js").RecycleryInstance>>} getManagedStores - Get all recycleries managed by this user (has-many relationship through "manager_id" foreign key). Uses "managedStores" alias.
  *
  * @property {(values?: import("./recycleryModel.js").RecycleryCreateAttributes) => Promise<import("./recycleryModel.js").RecycleryInstance>} createManagedStore - Create a new recyclery and set this user as manager (has-many with alias "managedStores").
+ */
+
+/**
+ * @typedef {import("sequelize").Model<UserAttributes, UserCreateAttributes> & UserAttributes & UserInstanceAssociations} UserInstance
  */

@@ -10,14 +10,29 @@
  * @property {"pending"|"completed"|"cancelled"} [status] - Status of the transaction (default: "completed")
  * @property {number} [cash_session_id] - Foreign key reference to the CashSession
  * @property {number} [created_by] - Foreign key reference to the User who created the transaction
- *
- * @typedef { import("./baseModelAttributes.js").baseAttributes & SalesTransactionCreateAttributes} SalesTransactionAttributes
- * @property {number} [change_amount] - Virtual property: change amount computed from payment_amount - total_amount (read-only)
  */
 
 /**
- * @typedef {import("sequelize").Model<SalesTransactionAttributes, SalesTransactionCreateAttributes> & SalesTransactionAttributes} SalesTransactionInstance
- *
+ * Fetched row: all attributes present (no undefined). Use for instance returned from findOne/findByPk/findAll.
+ * @typedef {Object} SalesTransactionRow
+ * @property {number|string|null} total_amount
+ * @property {"cash"|"card"|"check"} payment_method
+ * @property {"sell"|"refund"} transactionType
+ * @property {number|string|null} payment_amount
+ * @property {string|null} customer_name
+ * @property {string|null} customer_email
+ * @property {string|null} customer_postal_code
+ * @property {"pending"|"completed"|"cancelled"} status
+ * @property {number} cash_session_id
+ * @property {number} created_by
+ * @property {number} [change_amount] - Virtual
+ */
+
+/** @typedef { import("./baseModelAttributes.js").baseAttributes &SalesTransactionRow} SalesTransactionAttributes */
+
+/**
+ * Optional association properties present when the instance is loaded with include().
+ * @typedef {Object} SalesTransactionInstanceAssociations
  * @property {Array<any>} [SalesItems] - Sales items when loaded with include
  * @property {Array<import("./labeledItemModel.js").LabeledItemInstance>} [LabeledItems] - Labeled items when loaded with include
  * @property {import("./userModel.js").UserInstance} [User] - User who created the transaction when loaded with include (created_by)
@@ -50,4 +65,8 @@
  * @property {() => Promise<import("./userModel.js").UserInstance|null>} getCreatedBy - Get the User who created this transaction (belongs-to relationship). Returns null if not set.
  *
  * @property {(user: import("./userModel.js").UserInstance|number|null) => Promise<void>} setCreatedBy - Set or unset the User who created this transaction. Takes a User instance, user ID, or null to remove the association.
+ */
+
+/**
+ * @typedef {import("sequelize").Model<SalesTransactionAttributes, SalesTransactionCreateAttributes> & SalesTransactionAttributes & SalesTransactionInstanceAssociations} SalesTransactionInstance
  */

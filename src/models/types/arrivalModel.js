@@ -14,12 +14,26 @@
  */
 
 /**
- * @typedef { import("./baseModelAttributes.js").baseAttributes & ArrivalCreateAttributes} ArrivalAttributes
+ * Fetched row: all attributes present (no undefined). Use for instance returned from findOne/findByPk/findAll.
+ * @typedef {Object} ArrivalRow
+ * @property {number} weight
+ * @property {Date|string} arrival_date
+ * @property {string|null} arrival_time
+ * @property {"point"|"apport"|"house_clearance"|null} source_type
+ * @property {string|null} source_details
+ * @property {string|null} notes
+ * @property {"received"|string} status
+ * @property {number|null} processed_by
+ * @property {number|null} collection_point_id
+ * @property {number|null} category_id
+ * @property {number|null} subcategory_id
  */
 
+/** @typedef { import("./baseModelAttributes.js").baseAttributes &ArrivalRow} ArrivalAttributes */
+
 /**
- * @typedef {import("sequelize").Model<ArrivalAttributes, ArrivalCreateAttributes> & ArrivalAttributes} ArrivalInstance
- *
+ * Optional association properties present when the instance is loaded with include().
+ * @typedef {Object} ArrivalInstanceAssociations
  * @property {import("./categoryModel.js").CategoryInstance} [categorie] - Associated Category when loaded with include (alias "categorie")
  * @property {import("./categoryModel.js").CategoryInstance} [subcategorie] - Associated subcategory Category when loaded with include (alias "subcategorie")
  * @property {import("./collectionPointModel.js").CollectionPointInstance} [CollectionPoint] - Associated CollectionPoint when loaded with include
@@ -40,4 +54,8 @@
  * @property {() => Promise<import("./userModel.js").UserInstance|null>} getProcessedBy - Get the User who processed this arrival (belongs-to relationship). Returns null if not set.
  *
  * @property {(user: import("./userModel.js").UserInstance|number|null) => Promise<void>} setProcessedBy - Set or unset the User who processed this arrival. Takes a User instance, user ID, or null to remove the association.
+ */
+
+/**
+ * @typedef {import("sequelize").Model<ArrivalAttributes, ArrivalCreateAttributes> & ArrivalAttributes & ArrivalInstanceAssociations} ArrivalInstance
  */

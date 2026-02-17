@@ -11,10 +11,25 @@
  * @property {string|null} [notes] - Additional notes about the collection point
  * @property {boolean} [is_active] - Whether the collection point is currently active (default: true)
  * @property {number|null} [recyclery_id] - Foreign key reference to the Recyclery
- * 
- * @typedef { import("./baseModelAttributes.js").baseAttributes & CollectionPointCreateAttributes} CollectionPointAttributes
- * @property {<Array<import("./taskSchedule.js").TaskScheduleInstance>>|null} [TaskSchedules] - list of schedules
  */
+
+/**
+ * Fetched row: all attributes present (no undefined). Use for instance returned from findOne/findByPk/findAll.
+ * @typedef {Object} CollectionPointRow
+ * @property {string} name
+ * @property {string|null} address
+ * @property {string|null} city
+ * @property {string|null} postal_code
+ * @property {string|null} contact_person
+ * @property {string|null} contact_phone
+ * @property {string|null} contact_email
+ * @property {"standard"|"entreprise"|"association"|"school"|"hospital"|"other"|null} type
+ * @property {string|null} notes
+ * @property {boolean} is_active
+ * @property {number|null} recyclery_id
+ */
+
+/** @typedef { import("./baseModelAttributes.js").baseAttributes &CollectionPointRow} CollectionPointAttributes */
 
 /**
  * Optional association properties present when the instance is loaded with include().
@@ -23,14 +38,10 @@
  * @property {Array<import("./taskScheduleModel.js").TaskScheduleInstance>} [TaskSchedules] - Task schedules when loaded with include
  * @property {Array<import("./taskModel.js").TaskInstance>} [Tasks] - Tasks when loaded with include
  * @property {Array<import("./arrivalModel.js").ArrivalInstance>} [Arrivals] - Arrivals when loaded with include
- */
-/**
- * @typedef {import("sequelize").Model<CollectionPointAttributes, CollectionPointCreateAttributes> & CollectionPointAttributes & CollectionPointInstanceAssociations} CollectionPointInstance
- *
  *
  * @property {() => Promise<import("./recycleryModel.js").RecycleryInstance|null>} getRecyclery - Get the associated Recyclery (belongs-to relationship). Returns null if no recyclery is associated.
  *
- * @property {(recyclery: import("./recycleryModel.js").RecycleryInstance|number|null) => Promise<void>} setRecyclery - Set or unset the Recyclery for this collection point. Takes a Recyclery instance, recyclery ID, or null to remove the association.
+ * @property {(recyclery: import("./recycleryModel.js").RecycleryInstance|number|null, options?: import("sequelize").BelongsToSetAssociationMixinOptions) => Promise<void>} setRecyclery - Set or unset the Recyclery for this collection point. Takes a Recyclery instance, recyclery ID, or null to remove the association.
  *
  * @property {() => Promise<Array<import("./arrivalModel.js").ArrivalInstance>>} getArrivals - Get all arrivals associated with this collection point (has-many relationship through collection_point_id foreign key).
  *
@@ -40,7 +51,7 @@
  *
  * @property {(arrivals: Array<import("./arrivalModel.js").ArrivalInstance|number>) => Promise<void>} removeArrivals - Remove one or more arrivals from this collection point. Takes an array of Arrival instances or arrival IDs.
  *
- * @property {(values?: import("./arrivalModel.js").ArrivalCreateAttributes) => Promise<import("./arrivalModel.js").ArrivalInstance>} createArrival - Create a new arrival for this collection point (has-many).
+ * @property {(values?: import("./arrivalModel.js").ArrivalCreateAttributes, options?: import("sequelize").CreateOptions) => Promise<import("./arrivalModel.js").ArrivalInstance>} createArrival - Create a new arrival for this collection point (has-many).
  *
  * @property {() => Promise<Array<import("./taskModel.js").TaskInstance>>} getTasks - Get all tasks associated with this collection point (has-many relationship).
  *
@@ -54,19 +65,23 @@
  *
  * @property {(tasks: Array<import("./taskModel.js").TaskInstance|number>) => Promise<void>} removeTasks - Remove one or more tasks from this collection point. Takes an array of Task instances or task IDs.
  *
- * @property {(values?: import("./taskModel.js").TaskCreateAttributes) => Promise<import("./taskModel.js").TaskInstance>} createTask - Create a new task for this collection point (has-many).
+ * @property {(values?: import("./taskModel.js").TaskCreateAttributes, options?: import("sequelize").CreateOptions) => Promise<import("./taskModel.js").TaskInstance>} createTask - Create a new task for this collection point (has-many).
  *
- * @property {() => Promise<Array<import("./taskSchedule.js").TaskScheduleInstance>>} getTaskSchedules - Get all task schedules associated with this collection point (has-many relationship through collection_point_id foreign key). CASCADE delete enabled.
+ * @property {() => Promise<Array<import("./taskScheduleModel.js").TaskScheduleInstance>>} getTaskSchedules - Get all task schedules associated with this collection point (has-many relationship through collection_point_id foreign key). CASCADE delete enabled.
  *
- * @property {(taskSchedules: Array<import("./taskSchedule.js").TaskScheduleInstance|number>) => Promise<void>} setTaskSchedules - Replace all task schedules associated with this collection point. Takes an array of TaskSchedule instances or schedule IDs.
+ * @property {(taskSchedules: Array<import("./taskScheduleModel.js").TaskScheduleInstance|number>) => Promise<void>} setTaskSchedules - Replace all task schedules associated with this collection point. Takes an array of TaskSchedule instances or schedule IDs.
  *
- * @property {(taskSchedule: import("./taskSchedule.js").TaskScheduleInstance|number) => Promise<void>} addTaskSchedule - Add a task schedule to this collection point.
+ * @property {(taskSchedule: import("./taskScheduleModel.js").TaskScheduleInstance|number) => Promise<void>} addTaskSchedule - Add a task schedule to this collection point.
  *
- * @property {(taskSchedules: Array<import("./taskSchedule.js").TaskScheduleInstance|number>) => Promise<void>} addTaskSchedules - Add one or more task schedules to this collection point. Takes an array of TaskSchedule instances or schedule IDs.
+ * @property {(taskSchedules: Array<import("./taskScheduleModel.js").TaskScheduleInstance|number>) => Promise<void>} addTaskSchedules - Add one or more task schedules to this collection point. Takes an array of TaskSchedule instances or schedule IDs.
  *
- * @property {(taskSchedule: import("./taskSchedule.js").TaskScheduleInstance|number) => Promise<void>} removeTaskSchedule - Remove a task schedule from this collection point.
+ * @property {(taskSchedule: import("./taskScheduleModel.js").TaskScheduleInstance|number) => Promise<void>} removeTaskSchedule - Remove a task schedule from this collection point.
  *
- * @property {(taskSchedules: Array<import("./taskSchedule.js").TaskScheduleInstance|number>) => Promise<void>} removeTaskSchedules - Remove one or more task schedules from this collection point. Takes an array of TaskSchedule instances or schedule IDs.
+ * @property {(taskSchedules: Array<import("./taskScheduleModel.js").TaskScheduleInstance|number>) => Promise<void>} removeTaskSchedules - Remove one or more task schedules from this collection point. Takes an array of TaskSchedule instances or schedule IDs.
  *
- * @property {(values?: import("./taskSchedule.js").TaskScheduleCreateAttributes) => Promise<import("./taskSchedule.js").TaskScheduleInstance>} createTaskSchedule - Create a new task schedule for this collection point (has-many).
+ * @property {(values?: import("./taskScheduleModel.js").TaskScheduleCreateAttributes, options?: import("sequelize").CreateOptions) => Promise<import("./taskScheduleModel.js").TaskScheduleInstance>} createTaskSchedule - Create a new task schedule for this collection point (has-many).
+ */
+
+/**
+ * @typedef {import("sequelize").Model<CollectionPointAttributes, CollectionPointCreateAttributes> & CollectionPointAttributes & CollectionPointInstanceAssociations} CollectionPointInstance
  */

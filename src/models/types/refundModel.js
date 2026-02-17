@@ -8,9 +8,23 @@
  * @property {"cash"|"card"|"check"|null} [refund_method] - Refund method
  * @property {number|null} [created_by] - Foreign key reference to the User who created the refund
  * @property {number|null} [transaction_id] - Foreign key reference to the SalesTransaction
- *
- * @typedef { import("./baseModelAttributes.js").baseAttributes & RefundCreateAttributes} RefundAttributes
  */
+
+/**
+ * Fetched row: all attributes present (no undefined).
+ * @typedef {Object} RefundRow
+
+ * @property {string|null} reason
+ * @property {number|string|null} refund_amount
+ * @property {string|null} notes
+ * @property {"pending"|"completed"|"cancelled"} status
+ * @property {"full"|"partial"|null} refund_type
+ * @property {"cash"|"card"|"check"|null} refund_method
+ * @property {number|null} created_by
+ * @property {number|null} transaction_id
+ */
+
+/** @typedef {import("./baseModelAttributes.js").baseAttributes &RefundRow} RefundAttributes */
 
 /**
  * @typedef {import("sequelize").Model<RefundAttributes, RefundCreateAttributes> & RefundAttributes} RefundInstance

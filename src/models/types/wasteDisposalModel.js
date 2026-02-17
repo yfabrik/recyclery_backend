@@ -12,9 +12,26 @@
  * @property {number|null} [subcategory_id] - Foreign key reference to the subcategory Category
  * @property {number|null} [eco_organism_id] - Foreign key reference to the EcoOrganism
  * @property {number|null} [created_by] - Foreign key reference to the User who created this disposal record
- *
- * @typedef { import("./baseModelAttributes.js").baseAttributes & WasteDisposalCreateAttributes} WasteDisposalAttributes
  */
+
+/**
+ * Fetched row: all attributes present (no undefined).
+ * @typedef {Object} WasteDisposalRow
+ * @property {Date|string} disposal_date
+ * @property {"eco_organism"|"landfill"|"recycling"|"other"} disposal_type
+ * @property {number|string} weight_kg
+ * @property {number|string|null} volume_m3
+ * @property {string|null} transport_method
+ * @property {string|null} transport_company
+ * @property {number|string|null} transport_cost
+ * @property {string|null} notes
+ * @property {number|null} category_id
+ * @property {number|null} subcategory_id
+ * @property {number|null} eco_organism_id
+ * @property {number|null} created_by
+ */
+
+/** @typedef {import("./baseModelAttributes.js").baseAttributes &WasteDisposalRow} WasteDisposalAttributes */
 
 /**
  * @typedef {import("sequelize").Model<WasteDisposalAttributes, WasteDisposalCreateAttributes> & WasteDisposalAttributes} WasteDisposalInstance

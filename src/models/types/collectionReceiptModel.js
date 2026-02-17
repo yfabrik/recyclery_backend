@@ -7,9 +7,21 @@
  * @property {string|null} [signature_data] - Signature data (TEXT type)
  * @property {string} [status] - Status of the receipt (default: "draft")
  * @property {number} schedule_id - Foreign key reference to the CollectionSchedule (required)
- * 
- * @typedef { import("./baseModelAttributes.js").baseAttributes & CollectionReceiptCreateAttributes} CollectionReceiptAttributes
  */
+
+/**
+ * Fetched row: all attributes present (no undefined).
+ * @typedef {Object} CollectionReceiptRow
+ * @property {string} receipt_number
+ * @property {string|null} items_collected
+ * @property {number|null} total_weight
+ * @property {string|null} notes
+ * @property {string|null} signature_data
+ * @property {string} status
+ * @property {number} schedule_id
+ */
+
+/** @typedef {import("./baseModelAttributes.js").baseAttributes &CollectionReceiptRow} CollectionReceiptAttributes */
 
 /**
  * @typedef {import("sequelize").Model<CollectionReceiptAttributes, CollectionReceiptCreateAttributes> & CollectionReceiptAttributes} CollectionReceiptInstance

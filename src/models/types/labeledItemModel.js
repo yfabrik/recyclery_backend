@@ -15,7 +15,6 @@
  * @property {number|null} [created_by] - Foreign key reference to the User who created the item
  * @property {number|null} [transaction_id] - Foreign key reference to the SalesTransaction if sold
  *
- * 
  * @typedef {Object} LabeledItemAttributesFetched
  * @property {string} barcode - Virtual barcode (computed from id); not in DB
  * @property {string|null} name - Name of the labeled item (if present in schema)
@@ -32,13 +31,17 @@
  * @property {number|null} recyclery_id - Foreign key reference to the associated Recyclery
  * @property {number|null} created_by - Foreign key reference to the User who created the item
  * @property {number|null} transaction_id - Foreign key reference to the SalesTransaction if sold
- *
- * @typedef { import("./baseModelAttributes.js").baseAttributes & LabeledItemCreateAttributes & LabeledItemAttributesFetched} LabeledItemAttributes
  */
 
 /**
- * @typedef {import("sequelize").Model<LabeledItemAttributes, LabeledItemCreateAttributes> & LabeledItemAttributes} LabeledItemInstance
- *
+ * Fetched row: all attributes present (no undefined). Use for instance returned from findOne/findByPk/findAll.
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & LabeledItemAttributesFetched} LabeledItemAttributes
+ */
+
+
+/**
+ * Optional association properties present when the instance is loaded with include().
+ * @typedef {Object} LabeledItemInstanceAssociations
  * @property {import("./categoryModel.js").CategoryInstance} [category] - Primary category when loaded with include (alias "category")
  * @property {import("./categoryModel.js").CategoryInstance} [subcategory] - Subcategory when loaded with include (alias "subcategory")
  * @property {import("./recycleryModel.js").RecycleryInstance} [recyclery] - Associated Recyclery when loaded with include (alias "recyclery")
@@ -64,4 +67,8 @@
  * @property {() => Promise<import("./salesTransactionModel.js").SalesTransactionInstance|null>} getSalesTransaction - Get the associated SalesTransaction if the item was sold (belongs-to relationship). Returns null if not sold or no transaction is associated.
  *
  * @property {(transaction: import("./salesTransactionModel.js").SalesTransactionInstance|number|null) => Promise<void>} setSalesTransaction - Set or unset the SalesTransaction for this item. Takes a SalesTransaction instance, transaction ID, or null to remove the association.
+ */
+
+/**
+ * @typedef {import("sequelize").Model<LabeledItemAttributes, LabeledItemCreateAttributes> & LabeledItemAttributes & LabeledItemInstanceAssociations} LabeledItemInstance
  */

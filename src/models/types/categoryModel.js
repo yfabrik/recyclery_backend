@@ -10,10 +10,21 @@
  *
  * @typedef {Object} CategoryAttributesIO
  * @property {number} IO - Always defined when fetched (optional at create, default: 0)
- *
- * @typedef { import("./baseModelAttributes.js").baseAttributes & CategoryCreateAttributes & CategoryAttributesIO} CategoryAttributes
- * 
  */
+
+/**
+ * Fetched row: all attributes present (no undefined). Use for instance returned from findOne/findByPk/findAll.
+ * @typedef {Object} CategoryRow
+ * @property {string} name
+ * @property {string|null} description
+ * @property {string|null} icon
+ * @property {number|null} parent_id
+ * @property {number} defaultWeight
+ * @property {number} defaultPrice
+ * @property {number} IO
+ */
+
+/** @typedef {import("./baseModelAttributes.js").baseAttributes &CategoryRow} CategoryAttributes */
 
 /**
  * Optional association properties present when the instance is loaded with include().
@@ -26,7 +37,7 @@
  *
  * @property {() => Promise<CategoryInstance|null>} getParent - Get the parent category of this category (belongs-to relationship). Returns null if this is a top-level category. Uses "parent" alias.
  *
- * @property {(parent: CategoryInstance|number|null) => Promise<void>} setParent - Set or unset the parent category. Takes a Category instance, category ID, or null to make this a top-level category.
+ * @property {(parent: CategoryInstance|number|null, options?: import("sequelize").BelongsToSetAssociationMixinOptions) => Promise<void>} setParent - Set or unset the parent category. Takes a Category instance, category ID, or null to make this a top-level category.
  *
  * @property {() => Promise<Array<import("./labeledItemModel.js").LabeledItemInstance>>} getLabeledItems - Get all labeled items associated with this category (has-many relationship through category_id foreign key).
  *
@@ -36,9 +47,9 @@
  *
  * @property {(labeledItems: Array<import("./labeledItemModel.js").LabeledItemInstance|number>) => Promise<void>} removeLabeledItems - Remove one or more labeled items from this category. Takes an array of LabeledItem instances or item IDs.
  *
- * @property {(values?: import("./labeledItemModel.js").LabeledItemCreateAttributes) => Promise<import("./labeledItemModel.js").LabeledItemInstance>} createLabeledItem - Create a new labeled item for this category (has-many).
+ * @property {(values?: import("./labeledItemModel.js").LabeledItemCreateAttributes, options?: import("sequelize").CreateOptions) => Promise<import("./labeledItemModel.js").LabeledItemInstance>} createLabeledItem - Create a new labeled item for this category (has-many).
  *
- * @property {(values?: CategoryCreateAttributes) => Promise<CategoryInstance>} createSubcategory - Create a new subcategory (has-many Category with alias "subcategories").
+ * @property {(values?: CategoryCreateAttributes, options?: import("sequelize").CreateOptions) => Promise<CategoryInstance>} createSubcategory - Create a new subcategory (has-many Category with alias "subcategories").
 
  */
 
