@@ -56,21 +56,21 @@ export const listSchedules = async (req, res) => {
    */
   const where = {};
 
-    if (filter.start_date || filter.end_date) {
-      where.scheduled_date = {};
-      if (filter.start_date) {
-        // Set to start of day (00:00:00)
-        const dateFrom = new Date(filter.start_date);
-        dateFrom.setHours(0, 0, 0, 0);
-        where.scheduled_date[Op.gte] = dateFrom;
-      }
-      if (filter.end_date) {
-        // Set to end of day (23:59:59.999) to include all transactions from that day
-        const dateTo = new Date(filter.end_date);
-        dateTo.setHours(23, 59, 59, 999);
-        where.scheduled_date[Op.lte] = dateTo;
-      }
+  if (filter.start_date || filter.end_date) {
+    where.scheduled_date = {};
+    if (filter.start_date) {
+      // Set to start of day (00:00:00)
+      const dateFrom = new Date(filter.start_date);
+      dateFrom.setHours(0, 0, 0, 0);
+      where.scheduled_date[Op.gte] = dateFrom;
     }
+    if (filter.end_date) {
+      // Set to end of day (23:59:59.999) to include all transactions from that day
+      const dateTo = new Date(filter.end_date);
+      dateTo.setHours(23, 59, 59, 999);
+      where.scheduled_date[Op.lte] = dateTo;
+    }
+  }
   // if (start_date) {
   //   where.scheduled_date = {
   //     ...(where.scheduled_date || {}),
@@ -296,6 +296,7 @@ export const findSchedule = async (req, res) => {
 export const createSchedule = async (req, res) => {
   const data = dataSchema.parse(req.body);
 
+
   const schedule = await TaskSchedule.create({
     ...data,
     name: data.name ?? data.category,
@@ -323,7 +324,6 @@ export const updateSchedule = async (req, res) => {
 
   if (!existingSchedules) throw new createHttpError[404]("Planning non trouvé");
 
-
   if (!data.name) data.name = data.category;
   await existingSchedules.update({ ...data, name: data.name ?? data.category });
 
@@ -340,9 +340,9 @@ export const updateSchedule = async (req, res) => {
 export const deleteSchedule = async (req, res) => {
   const id = idSchema().parse(req.params.id);
 
-  const scheduleToDelete = await TaskSchedule.findByPk(id)
+  const scheduleToDelete = await TaskSchedule.findByPk(id);
   if (!scheduleToDelete) throw new createHttpError[404]("Planning non trouvé");
-  scheduleToDelete.destroy()
+  scheduleToDelete.destroy();
 
   res.json({
     success: true,
@@ -395,9 +395,11 @@ export const getEmployeeSchedule = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const addEmployeeToSchedule = async (req, res) => {
-  const scheduleId = idSchema( "ID tâche du planning requis").parse(req.params.scheduleId);
+  const scheduleId = idSchema("ID tâche du planning requis").parse(
+    req.params.scheduleId,
+  );
 
-  const employee_id = idSchema( "ID employé requis").parse(req.body.employee_id);
+  const employee_id = idSchema("ID employé requis").parse(req.body.employee_id);
 
   // Vérifier que la tâche du planning existe et récupérer ses détails
   const task = await Task.findByPk(scheduleId, {
@@ -421,12 +423,14 @@ export const addEmployeeToSchedule = async (req, res) => {
       {
         model: Recyclery,
         as: "stores",
-        where:currentSchedule.store_id ? {  store_id: currentSchedule.store_id } : {},
+        where: currentSchedule.store_id
+          ? { store_id: currentSchedule.store_id }
+          : {},
       },
       {
         model: EmployeeWorkdays,
-        // as:"horaires", 
-        where: { day_of_week: dayOfWeek }
+        // as:"horaires",
+        where: { day_of_week: dayOfWeek },
       },
     ],
   });
@@ -446,7 +450,6 @@ export const addEmployeeToSchedule = async (req, res) => {
   // Créer l'assignation
   await task.addEmployee(employee);
 
-
   res.json({
     success: true,
     message: "Employé assigné avec succès",
@@ -459,8 +462,10 @@ export const addEmployeeToSchedule = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const removeEmployeeFromSchedule = async (req, res) => {
-  const scheduleId = idSchema( "ID tâche du planning requis").parse(req.params.scheduleId);
-  const employeeId = idSchema( "ID employé requis").parse(req.params.employeeId);
+  const scheduleId = idSchema("ID tâche du planning requis").parse(
+    req.params.scheduleId,
+  );
+  const employeeId = idSchema("ID employé requis").parse(req.params.employeeId);
 
   const result = await Task.findByPk(scheduleId, {
     include: [{ model: Employee }],

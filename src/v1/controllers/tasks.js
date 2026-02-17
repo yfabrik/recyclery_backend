@@ -6,11 +6,13 @@ import { idSchema } from "../../services/zod.js";
 
 const { Task, User, TaskSchedule, Employee, Recyclery } = db;
 
-
 const dataSchema = z.object({
   name: z.string("Nom requis").nullish(),
   description: z.string().nullish(),
-  category: z.enum(["point", "vente", "collection", "custom"], "categorie requise"),
+  category: z.enum(
+    ["point", "vente", "collection", "custom"],
+    "categorie requise",
+  ),
   priority: z.string("priorité requis"),
   // estimated_duration: z.coerce.number().nullish(),
   required_skills: z
@@ -32,9 +34,8 @@ const dataSchema = z.object({
   start_time: z.coerce.date().nullish(),
   end_time: z.coerce.date().nullish(),
   scheduled_date: z.coerce.date().optional().default(new Date()),
-  store_id: idSchema().nullish()
+  store_id: idSchema().nullish(),
 });
-
 
 /**
  *
@@ -66,7 +67,7 @@ export const listTasks = async (req, res) => {
     search: z.string().optional(),
     date_from: z.coerce.date().nullish(),
     date_to: z.coerce.date().nullish(),
-    store_id: idSchema().nullish()
+    store_id: idSchema().nullish(),
   });
   // const category = req.originalUrl == '/api/collection-point-presence' ? "point" : req.originalUrl == '/api/store-hours' ? "vente" : req.originalUrl == '/api/collections' ? "collection" : null
   const data = includeSchema.parse({ ...req.query });
@@ -100,8 +101,7 @@ export const listTasks = async (req, res) => {
       { name: { [Op.like]: data.search } },
       { description: { [Op.like]: data.search } },
     ];
-  if (data.store_id)
-    where.store_id = data.store_id
+  if (data.store_id) where.store_id = data.store_id;
 
   /**
    * @type {import("sequelize").FindOptions<import("../../models/types/taskModel.js").TaskAttributes>["include"]}
@@ -114,9 +114,8 @@ export const listTasks = async (req, res) => {
   if (data.include.includes("store"))
     include.push({
       model: Recyclery,
-      required: false
+      required: false,
     });
-
 
   const tasks = await Task.findAll({
     include,
@@ -184,9 +183,13 @@ export const detailTask = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createTask = async (req, res) => {
-
   const data = dataSchema.parse(req.body);
-  const name = data.name ?? data.category;
+  let name = data.name ?? data.category;
+  if (data.store_id && data.category == "custom") {
+    const store = await Recyclery.findByPk(data.store_id);
+    if (!store) throw new createHttpError.NotFound("magasin non trouvé");
+    name = store.name + "-" + name;
+  }
   let schedule = null;
   if (data.recurrence_pattern) {
     schedule = await TaskSchedule.create({
@@ -224,9 +227,19 @@ export const updateTask = async (req, res) => {
 
   if (!existing) throw new createHttpError[404]("Tâche non trouvée");
 
+  let name = data.name ?? data.category;
+
+  if (data.store_id && data.category == "custom") {
+    const store = await Recyclery.findByPk(data.store_id);
+    if (!store) throw new createHttpError.NotFound("magasin non trouvé");
+    name = store.name + "-" + name;
+  }
+
   await existing.update({
     ...data,
-    name: data.name ?? existing.name,
+    name,
+    start_time: data.start_time ?? existing.start_time,
+    end_time: data.end_time ?? existing.end_time,
   });
 
   res.json({
@@ -261,7 +274,7 @@ export const getUsersFromTask = async (req, res) => {
   const { taskId } = req.params;
 
   const tasks = await Task.findByPk(taskId, { include: [{ model: Employee }] });
-  if (!tasks) throw new createHttpError.NotFound("tache non trouvé")
+  if (!tasks) throw new createHttpError.NotFound("tache non trouvé");
   res.json({
     success: true,
     employees: tasks.Employees,
