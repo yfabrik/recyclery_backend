@@ -8,32 +8,32 @@ const { Task, User, TaskSchedule, Employee, Recyclery } = db;
 
 
 const dataSchema = z.object({
-    name: z.string("Nom requis").nullish(),
-    description: z.string().nullish(),
-    category: z.enum(["point", "vente", "collection", "custom"], "categorie requise"),
-    priority: z.string("priorité requis"),
-    // estimated_duration: z.coerce.number().nullish(),
-    required_skills: z
-      .array(z.string())
-      .nullish()
-      .default([])
-      .transform((val) => JSON.stringify(val)),
-    location: z.string().nullish(),
-    equipment_needed: z
-      .array(z.string())
-      .nullish()
-      .default([])
-      .transform((val) => JSON.stringify(val)),
-    // hourly_rate: z.coerce.number().nullish(),
-    is_recurring: z.coerce.boolean().nullish(),
-    recurrence_pattern: z.enum(["daily", "weekly", "monthly"]).nullish(),
-    assigned_to: idSchema().nullish(),
-    notes: z.string().nullish(),
-    start_time: z.coerce.date().nullish(),
-    end_time: z.coerce.date().nullish(),
-    scheduled_date: z.coerce.date().optional().default(new Date()),
-    store_id: idSchema().nullish()
-  });
+  name: z.string("Nom requis").nullish(),
+  description: z.string().nullish(),
+  category: z.enum(["point", "vente", "collection", "custom"], "categorie requise"),
+  priority: z.string("priorité requis"),
+  // estimated_duration: z.coerce.number().nullish(),
+  required_skills: z
+    .array(z.string())
+    .nullish()
+    .default([])
+    .transform((val) => JSON.stringify(val)),
+  location: z.string().nullish(),
+  equipment_needed: z
+    .array(z.string())
+    .nullish()
+    .default([])
+    .transform((val) => JSON.stringify(val)),
+  // hourly_rate: z.coerce.number().nullish(),
+  is_recurring: z.coerce.boolean().nullish(),
+  recurrence_pattern: z.enum(["daily", "weekly", "monthly"]).nullish(),
+  assigned_to: idSchema().nullish(),
+  notes: z.string().nullish(),
+  start_time: z.coerce.date().nullish(),
+  end_time: z.coerce.date().nullish(),
+  scheduled_date: z.coerce.date().optional().default(new Date()),
+  store_id: idSchema().nullish()
+});
 
 
 /**
@@ -127,8 +127,9 @@ export const listTasks = async (req, res) => {
   const t = tasks.map((t) => {
     return {
       ...t.get({ plain: true }),
-      start_time: new Date(t.start_time),
-      end_time: new Date(t.end_time),
+
+      start_time: t.start_time ? new Date(t.start_time) : null,
+      end_time: t.end_time ? new Date(t.end_time) : null,
     };
   });
 
@@ -183,7 +184,7 @@ export const detailTask = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createTask = async (req, res) => {
-  
+
   const data = dataSchema.parse(req.body);
   const name = data.name ?? data.category;
   let schedule = null;
@@ -196,6 +197,8 @@ export const createTask = async (req, res) => {
   const { is_recurring, recurrence_pattern, ...rest } = data;
   const task = await Task.create({
     ...rest,
+    start_time: data.start_time ? new Date(data.start_time) : undefined,
+    end_time: data.end_time ? new Date(data.end_time) : undefined,
     status: "a",
     schedule_id: schedule?.id || null,
     name,
@@ -223,6 +226,7 @@ export const updateTask = async (req, res) => {
 
   await existing.update({
     ...data,
+    name: data.name ?? existing.name,
   });
 
   res.json({
@@ -257,7 +261,7 @@ export const getUsersFromTask = async (req, res) => {
   const { taskId } = req.params;
 
   const tasks = await Task.findByPk(taskId, { include: [{ model: Employee }] });
-  if(!tasks) throw new createHttpError.NotFound("tache non trouvé")
+  if (!tasks) throw new createHttpError.NotFound("tache non trouvé")
   res.json({
     success: true,
     employees: tasks.Employees,
@@ -310,10 +314,11 @@ export const addUserToTask = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const removeUserFromTask = async (req, res) => {
-  const { taskId, employeeId } = req.params;
+  const employeeId = idSchema().parse(req.params.employeeId);
+  const taskId = idSchema().parse(req.params.taskId);
 
   const task = await Task.findByPk(taskId);
-  if(!task) throw new createHttpError[404]("Tâche non trouvée");
+  if (!task) throw new createHttpError[404]("Tâche non trouvée");
   await task.removeEmployee(employeeId);
 
   res.json({

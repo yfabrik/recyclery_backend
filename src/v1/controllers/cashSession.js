@@ -248,18 +248,18 @@ export const getRegistersByStore = async (req, res) => {
   logger.info("called get register by store REMAKE THIS ONE");
   return await listCaisses(req, res);
 
-  const registers = await CashRegister.findAll({
-    where: { store_id, is_active: 1 },
-    include: [{ model: CashSession, as: "sessions", attributes: [] }],
-    attributes: {
-      include: [
-        [fn("COUNT", col("cash_sessions.id")), "total_sessions"],
-        [fn("MAX", col("cash_sessions.opened_at")), "last_session"],
-      ],
-    },
-    group: ["CashRegister.id"],
-    order: [["name", "ASC"]],
-  });
+  // const registers = await CashRegister.findAll({
+  //   where: { store_id, is_active: 1 },
+  //   include: [{ model: CashSession, as: "sessions", attributes: [] }],
+  //   attributes: {
+  //     include: [
+  //       [fn("COUNT", col("cash_sessions.id")), "total_sessions"],
+  //       [fn("MAX", col("cash_sessions.opened_at")), "last_session"],
+  //     ],
+  //   },
+  //   group: ["CashRegister.id"],
+  //   order: [["name", "ASC"]],
+  // });
 
-  res.json({ success: true, registers });
+  // res.json({ success: true, registers });
 };

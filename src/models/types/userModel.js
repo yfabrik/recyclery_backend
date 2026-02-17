@@ -7,7 +7,7 @@
  * 
  * @property {string|null} [role] - User role (default: "employee")
  * @property {string|null} [phone] - Phone number
- * @property {boolean} [isActive] - Whether the user account is active (default: true)
+ * @property {boolean|null} [isActive] - Whether the user account is active (default: true)
  * @property {Date|string|null} [last_login] - Date and time of last login
  */
 

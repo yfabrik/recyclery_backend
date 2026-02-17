@@ -242,8 +242,8 @@ export const listSchedules = async (req, res) => {
   const result = schedules.map((s) => {
     return {
       ...s.get({ plain: true }),
-      start_time: new Date(s.start_time),
-      end_time: new Date(s.end_time),
+      start_time: s.start_time ? new Date(s.start_time) : null,
+      end_time: s.end_time ? new Date(s.end_time) : null,
     };
   });
   res.json({
@@ -297,8 +297,8 @@ export const createSchedule = async (req, res) => {
   const data = dataSchema.parse(req.body);
 
   const schedule = await TaskSchedule.create({
-    name: data.category,
     ...data,
+    name: data.name ?? data.category,
   });
 
   res.status(201).json({
@@ -325,7 +325,7 @@ export const updateSchedule = async (req, res) => {
 
 
   if (!data.name) data.name = data.category;
-  await existingSchedules.update({ ...data });
+  await existingSchedules.update({ ...data, name: data.name ?? data.category });
 
   res.json({
     success: true,
@@ -395,18 +395,11 @@ export const getEmployeeSchedule = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const addEmployeeToSchedule = async (req, res) => {
-  const { scheduleId } = req.params;
-  const { employee_id } = req.body;
+  const scheduleId = idSchema( "ID tâche du planning requis").parse(req.params.scheduleId);
 
-  if (!employee_id) {
-    return res.status(400).json({
-      success: false,
-      message: "ID employé requis",
-    });
-  }
+  const employee_id = idSchema( "ID employé requis").parse(req.body.employee_id);
 
   // Vérifier que la tâche du planning existe et récupérer ses détails
-  // const taskQuery = "SELECT * FROM task_schedules WHERE id = ?";
   const task = await Task.findByPk(scheduleId, {
     include: [{ model: Employee }],
   });
@@ -422,13 +415,13 @@ export const addEmployeeToSchedule = async (req, res) => {
     .toLowerCase();
 
   // Vérifier que l'employé existe, appartient au bon magasin ET est présent ce jour-là
-  let employee = await Employee.findAll({
+  let employee = await Employee.findOne({
     where: { id: employee_id },
     include: [
       {
         model: Recyclery,
         as: "stores",
-        where: { id: currentSchedule.store_id || 1 },
+        where:currentSchedule.store_id ? {  store_id: currentSchedule.store_id } : {},
       },
       {
         model: EmployeeWorkdays,
@@ -438,75 +431,21 @@ export const addEmployeeToSchedule = async (req, res) => {
     ],
   });
 
-  if (employee.length === 0)
+  if (!employee)
     throw new createHttpError[404](
       `Employé non trouvé, n'appartient pas à ce magasin ou ne travaille pas le ${dayOfWeek}`,
     );
 
   // Vérifier si l'assignation existe déjà
-
-  if (task.Employees.includes(employee[0].id))
+  //TODO check dans le model
+  if (task.Employees?.some((e) => e.id === employee.id))
     throw new createHttpError.Conflict(
       "Cet employé est déjà assigné à cette tâche",
     );
 
-  // NOUVELLE LOGIQUE : Vérifier les conflits d'horaires
-
-  // const conflicts = await TaskSchedule.findAll({
-  //   attributes: [
-  //     "id",
-  //     "scheduled_date",
-  //     "start_time",
-  //     "end_time",
-  //     [
-  //       literal(`
-  //     CASE
-  //       WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture magasin'
-  //       WHEN "Task"."name" IS NULL THEN 'Tâche sans nom'
-  //       ELSE "Task"."name"
-  //     END
-  //   `),
-  //       "task_name",
-  //     ],
-  //   ],
-
-  //   include: [
-  //     {
-  //       model: Task,
-  //       attributes: [],
-  //       required: false,
-  //     },
-  //   ],
-
-  //   where: {
-  //     employee_id: employee_id,
-  //     scheduled_date: currentSchedule.scheduled_date,
-  //     id: { [Op.ne]: scheduleId },
-
-  //     start_time: { [Op.lt]: currentSchedule.end_time },
-  //     end_time: { [Op.gt]: currentSchedule.start_time },
-  //   },
-  // });
-
-  // if (conflicts.length > 0) {
-  //   const conflictDetails = conflicts
-  //     .map((c) => `${c.task_name} (${c.start_time}-${c.end_time})`)
-  //     .join(", ");
-
-  //   return res.status(400).json({
-  //     success: false,
-  //     message: `L'employé est déjà assigné à d'autres tâches à ce moment : ${conflictDetails}`,
-  //     conflicts: conflicts,
-  //   });
-  // }
-
   // Créer l'assignation
   await task.addEmployee(employee);
-  // const created = await TaskSchedule.create({
-  //   // schedule_id: scheduleId,
-  //   employee_id,
-  //   assigned_at: Date.now(),
-  // });
+
 
   res.json({
     success: true,
@@ -520,7 +459,8 @@ export const addEmployeeToSchedule = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const removeEmployeeFromSchedule = async (req, res) => {
-  const { scheduleId, employeeId } = req.params;
+  const scheduleId = idSchema( "ID tâche du planning requis").parse(req.params.scheduleId);
+  const employeeId = idSchema( "ID employé requis").parse(req.params.employeeId);
 
   const result = await Task.findByPk(scheduleId, {
     include: [{ model: Employee }],
@@ -547,7 +487,6 @@ export const findAvailableEMployee = async (req, res) => {
   const { scheduleId } = req.params;
 
   // Récupérer les détails de la tâche
-  // const scheduleQuery = "SELECT * FROM task_schedules WHERE id = ?";
   const schedule = await Task.findByPk(scheduleId, {
     include: [{ model: Employee }],
   });
@@ -664,7 +603,7 @@ export const findAvailableEMployee = async (req, res) => {
       is_available: hasOverlap.length === 0,
       has_conflicts: hasOverlap.length > 0,
       conflicts: hasOverlap,
-      already_assigned: schedule.Employees.some((u) => u.id == employee.id),
+      already_assigned: schedule.Employees?.some((u) => u.id == employee.id),
     });
   }
 

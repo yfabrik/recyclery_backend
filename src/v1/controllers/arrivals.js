@@ -163,23 +163,27 @@ export const deleteArrival = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const statsSummary = async (req, res) => {
-  const { date_from, date_to } = req.query;
+  const filterSchema = z.object({
+    date_from: z.coerce.date().optional(),
+    date_to: z.coerce.date().optional(),
+  });
 
+  const data = filterSchema.parse(req.query);
   /**
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
-  if (date_from || date_to) {
+  if (data.date_from || data.date_to) {
     where.arrival_date = {};
-    if (date_from) {
+    if (data.date_from) {
       // Set to start of day (00:00:00)
-      const dateFrom = new Date(date_from);
+      const dateFrom = data.date_from;
       dateFrom.setHours(0, 0, 0, 0);
       where.arrival_date[Op.gte] = dateFrom;
     }
-    if (date_to) {
+    if (data.date_to) {
       // Set to end of day (23:59:59.999) to include all transactions from that day
-      const dateTo = new Date(date_to);
+      const dateTo = data.date_to;
       dateTo.setHours(23, 59, 59, 999);
       where.arrival_date[Op.lte] = dateTo;
     }
@@ -251,20 +255,27 @@ export const statsSummary = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const statsByCategories = async (req, res) => {
-  const { date_from, date_to } = req.query;
-  const where = {};
+  const filterSchema = z.object({
+    date_from: z.coerce.date().optional(),
+    date_to: z.coerce.date().optional(),
+  });
 
-  if (date_from || date_to) {
+  const data = filterSchema.parse(req.query);
+  /**
+   * @type {import("sequelize").WhereOptions}
+   */
+  const where = {};
+  if (data.date_from || data.date_to) {
     where.arrival_date = {};
-    if (date_from) {
+    if (data.date_from) {
       // Set to start of day (00:00:00)
-      const dateFrom = new Date(date_from);
+      const dateFrom = data.date_from;
       dateFrom.setHours(0, 0, 0, 0);
       where.arrival_date[Op.gte] = dateFrom;
     }
-    if (date_to) {
+    if (data.date_to) {
       // Set to end of day (23:59:59.999) to include all transactions from that day
-      const dateTo = new Date(date_to);
+      const dateTo = data.date_to;
       dateTo.setHours(23, 59, 59, 999);
       where.arrival_date[Op.lte] = dateTo;
     }
@@ -286,12 +297,12 @@ export const statsByCategories = async (req, res) => {
   });
 };
 
-// Générer un numéro d'arrivage unique
-const generateArrivalNumber = () => {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const timestamp = Date.now().toString().slice(-6);
-  return `ARR-${year}${month}${day}-${timestamp}`;
-};
+// // Générer un numéro d'arrivage unique
+// const generateArrivalNumber = () => {
+//   const date = new Date();
+//   const year = date.getFullYear();
+//   const month = String(date.getMonth() + 1).padStart(2, "0");
+//   const day = String(date.getDate()).padStart(2, "0");
+//   const timestamp = Date.now().toString().slice(-6);
+//   return `ARR-${year}${month}${day}-${timestamp}`;
+// };

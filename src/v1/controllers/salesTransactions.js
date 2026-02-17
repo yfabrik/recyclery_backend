@@ -97,7 +97,7 @@ export const listTransactions = async (req, res) => {
 };
 /**
  *
- * @param {import("express").Request} req
+ * @param {import("../../middlewares/auth.js").RequestWithUser} req
  * @param {import("express").Response} res
  */
 export const createTransaction = async (req, res) => {
@@ -107,6 +107,7 @@ export const createTransaction = async (req, res) => {
     labeled_item_id: idSchema().nullish(),
     category_id: idSchema(),
     subcategory_id: idSchema().nullish(),
+    weight: z.coerce.number().nullish(),
   });
   const dataSchema = z.object({
     cash_session_id: idSchema("sesions requis"),
@@ -142,7 +143,7 @@ export const createTransaction = async (req, res) => {
         if (!i) throw new createHttpError.NotFound("item not found");
         i.transaction_id = sale.id;
         i.status = "sold";
-        i.sold_by = req.user.id;
+        // i.sold_by = req.user.id;
         i.sold_at = new Date();
         await i.save({ transaction: t });
       } else {
@@ -157,7 +158,7 @@ export const createTransaction = async (req, res) => {
               transaction_id: sale.id,
               status: "sold",
               sold_at: new Date(),
-              sold_by: req.user.id,
+              // sold_by: req.user.id,
             },
             { transaction: t },
           );
@@ -184,7 +185,7 @@ export const createTransaction = async (req, res) => {
 };
 /**
  *
- * @param {import("express").Request} req
+ * @param {import("../../middlewares/auth.js").RequestWithUser} req
  * @param {import("express").Response} res
  */
 export const createRefund = async (req, res) => {
@@ -217,7 +218,7 @@ export const createRefund = async (req, res) => {
   }
 
   // Vérifier que le montant de remboursement ne dépasse pas le montant de la transaction
-  if (parseFloat(refund_amount) > transaction.total_amount) {
+  if (refund_amount > (transaction.total_amount ||0)) {
     return res.status(400).json({
       success: false,
       message:
@@ -434,7 +435,13 @@ export const transactionsStats = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const transactionStatsPostalCode = async (req, res) => {
-  const { store_id, period, date_from, date_to } = req.query;
+  const filterSchema = z.object({
+    store_id: z.union([idSchema(), z.literal("")]).nullish(),
+    date_from: z.coerce.date().nullish(),
+    date_to: z.coerce.date().nullish(),
+  });
+  const filter = filterSchema.parse(req.query);
+  const { store_id, date_from, date_to } = filter;
   /**
    * @type {import("sequelize").WhereOptions}
    */
@@ -491,7 +498,7 @@ const include = [];
 
 /**
  *
- * @param {import("express").Request} req
+ * @param {import("../../middlewares/auth.js").RequestWithUser} req
  * @param {import("express").Response} res
  */
 export const createAvoir = async (req, res) => {

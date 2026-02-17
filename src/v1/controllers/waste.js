@@ -19,42 +19,44 @@ const generateDisposalNumber = () => {
  */
 
 export const listWaste = async (req, res) => {
-  const {
-    category_id,
-    subcategory_id,
-    eco_organism_id,
-    disposal_type,
-    date_from,
-    date_to,
-    page = 1,
-    limit = 50,
-  } = req.query;
+  const filterSchema = z.object({
+    category_id: idSchema().nullish(),
+    subcategory_id: idSchema().nullish(),
+    eco_organism_id: idSchema().nullish(),
+    disposal_type: z.enum(["eco_organism", "landfill", "recycling", "other"]).nullish(),
+    date_from: z.coerce.date().nullish(),
+    date_to: z.coerce.date().nullish(),
+    page: z.coerce.number().optional().default(1),
+    limit: z.coerce.number().optional().default(50),
+  });
+  const filter = filterSchema.parse(req.query);
+
   /**
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
-  if (category_id) where.category_id = category_id;
-  if (subcategory_id) where.subcategory_id = subcategory_id;
-  if (eco_organism_id) where.eco_organism_id = eco_organism_id;
-  if (disposal_type) where.disposal_type = disposal_type;
+  if (filter.category_id) where.category_id = filter.category_id;
+  if (filter.subcategory_id) where.subcategory_id = filter.subcategory_id;
+  if (filter.eco_organism_id) where.eco_organism_id = filter.eco_organism_id;
+  if (filter.disposal_type) where.disposal_type = filter.disposal_type;
 
-  if (date_from || date_to) {
+  if (filter.date_from || filter.date_to) {
     where.disposal_date = {};
-    if (date_from) {
+    if (filter.date_from) {
       // Set to start of day (00:00:00)
-      const dateFrom = new Date(date_from);
+      const dateFrom = new Date(filter.date_from);
       dateFrom.setHours(0, 0, 0, 0);
       where.disposal_date[Op.gte] = dateFrom;
     }
-    if (date_to) {
+    if (filter.date_to) {
       // Set to end of day (23:59:59.999) to include all transactions from that day
-      const dateTo = new Date(date_to);
+      const dateTo = new Date(filter.date_to);
       dateTo.setHours(23, 59, 59, 999);
       where.disposal_date[Op.lte] = dateTo;
     }
   }
 
-  const offset = limit * (page - 1 >= 0 ? page - 1 : 0);
+  const offset = filter.limit * (filter.page - 1 >= 0 ? filter.page - 1 : 0);
   const waste = await WasteDisposal.findAll({
     where,
     include: [
@@ -74,10 +76,10 @@ export const listWaste = async (req, res) => {
   res.json({
     disposals: waste,
     pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit),
+      page: filter.page,
+      limit: filter.limit,
       total: wasteCount,
-      totalPages: Math.ceil(wasteCount / limit),
+      totalPages: Math.ceil(wasteCount / filter.limit),
     },
   });
 };
@@ -102,7 +104,7 @@ export const detailWaste = async (req, res) => {
 };
 /**
  *
- * @param {import("express").Request} req
+ * @param {import("../../middlewares/auth.js").RequestWithUser} req
  * @param {import("express").Response} res
  */
 export const createWaste = async (req, res) => {
@@ -220,23 +222,27 @@ export const deleteWaste = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const wasteStats = async (req, res) => {
-  const { date_from, date_to } = req.query;
+  const filterSchema = z.object({
+    date_from: z.coerce.date().nullish(),
+    date_to: z.coerce.date().nullish(),
+  });
+  const filter = filterSchema.parse(req.query);
   /**
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
 
-  if (date_from || date_to) {
+  if (filter.date_from || filter.date_to) {
     where.disposal_date = {};
-    if (date_from) {
+    if (filter.date_from) {
       // Set to start of day (00:00:00)
-      const dateFrom = new Date(date_from);
+      const dateFrom = new Date(filter.date_from);
       dateFrom.setHours(0, 0, 0, 0);
       where.disposal_date[Op.gte] = dateFrom;
     }
-    if (date_to) {
+    if (filter.date_to) {
       // Set to end of day (23:59:59.999) to include all transactions from that day
-      const dateTo = new Date(date_to);
+      const dateTo = new Date(filter.date_to);
       dateTo.setHours(23, 59, 59, 999);
       where.disposal_date[Op.lte] = dateTo;
     }

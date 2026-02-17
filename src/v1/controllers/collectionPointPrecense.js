@@ -48,14 +48,14 @@ const dataSchema = z.object({
   start_time: z.union([
     z.iso.time().transform((val) => {
       const [hours, min] = val.split(":");
-      return new Date().setHours(+hours, +min);
+      return new Date(new Date().setHours(+hours, +min));
     }),
     z.coerce.date(),
   ]),
   end_time: z.union([
     z.iso.time().transform((val) => {
       const [hours, min] = val.split(":");
-      return new Date().setHours(+hours, +min);
+      return new Date(new Date().setHours(+hours, +min));
     }),
     z.coerce.date(),
   ]),
@@ -99,6 +99,7 @@ export const createPointPrecense = async (req, res) => {
   
   const presence = await TaskSchedule.create({
     ...data,
+
     name: point.name,
     category: "point",
     scheduled_date: data.day_of_week,
@@ -132,16 +133,12 @@ export const updatePointPrecense = async (req, res) => {
     });
   }
 
+  const { day_of_week, ...rest } = data;
+  await existing.update({
+    ...rest,
+    scheduled_date: day_of_week,
 
-  existing.collection_point_id = data.collection_point_id;
-  existing.store_id = data.store_id;
-  existing.scheduled_date = data.day_of_week;
-  existing.is_recurring = data.is_present;
-  existing.start_time = new Date(data.start_time);
-  existing.end_time = new Date(data.end_time);
-  // existing.is_24h = data.is_24h;
-  existing.notes = data.notes;
-  await existing.save();
+  });
 
   res.json({
     success: true,

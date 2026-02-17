@@ -153,7 +153,7 @@ export const updateRecyclerie = async (req, res) => {
   //TODO FIXME IMPORTANT URGENT make transaction work
   try {
     if (data.is_active != recyclerie.is_active || data.name != recyclerie.name)
-      for (const schedule of recyclerie.TaskSchedules) {
+      for (const schedule of recyclerie.TaskSchedules || []) {
         await schedule.update({
           is_recurring: data.is_active,
           name: data.name,
@@ -255,9 +255,9 @@ export const recycleryStats = async (req, res) => {
   const salesRow = /** @type {{ monthly_sales?: number | string; monthly_revenue?: number | string } | null } */ (salesResult);
   const sales = salesRow
     ? {
-        monthly_sales: Number(salesRow.monthly_sales ?? 0),
-        monthly_revenue: Number(salesRow.monthly_revenue ?? 0),
-      }
+      monthly_sales: Number(salesRow.monthly_sales ?? 0),
+      monthly_revenue: Number(salesRow.monthly_revenue ?? 0),
+    }
     : { monthly_sales: 0, monthly_revenue: 0 };
 
   res.json({

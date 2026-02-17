@@ -33,9 +33,9 @@
  * @property {boolean|null} is_recurring
  * @property {string|null} notes
  * @property {string|null} status
- * @property {Date|string|null} scheduled_date
- * @property {Date|string|null} start_time
- * @property {Date|string|null} end_time
+ * @property {Date|string} scheduled_date
+ * @property {Date|string} start_time
+ * @property {Date|string} end_time
  * @property {"daily"|"weekly"|"monthly"|null} recurrence_pattern
  * @property {number|null} store_id
  * @property {number|null} collection_point_id

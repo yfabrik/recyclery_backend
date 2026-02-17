@@ -129,7 +129,7 @@ export const updateUser = async (req, res) => {
     recyclery_id: idSchema().nullish(),
     phone: phoneSchema().nullish(),
     contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
-    isActive: z.coerce.boolean().nullish().default(true),
+    isActive: z.coerce.boolean().optional().default(true),
   });
 
   const data = dataSchema.parse(req.body);

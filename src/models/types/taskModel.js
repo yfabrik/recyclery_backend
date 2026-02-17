@@ -29,9 +29,9 @@
  * @property {string|null} location
  * @property {string|null} equipment_needed
  * @property {number|string|null} hourly_rate
- * @property {Date|string|null} scheduled_date
- * @property {Date|string|null} start_time
- * @property {Date|string|null} end_time
+ * @property {Date|string} scheduled_date
+ * @property {Date|string} start_time
+ * @property {Date|string} end_time
  * @property {string|null} notes
  * @property {string|null} status
  * @property {number|null} schedule_id
@@ -67,6 +67,10 @@
  * @property {(employees: Array<import("./employeeModel.js").EmployeeInstance|number>, options?: import("sequelize").BelongsToManySetAssociationsMixinOptions) => Promise<void>} setEmployees - Replace all employees associated with this task. Takes an array of Employee instances or employee IDs.
  *
  * @property {(employees: Array<import("./employeeModel.js").EmployeeInstance|number>, options?: import("sequelize").BelongsToManySetAssociationsMixinOptions) => Promise<void>} addEmployees - Add one or more employees to this task. Takes an array of Employee instances or employee IDs.
+ *
+ * @property {(employee: import("./employeeModel.js").EmployeeInstance|number, options?: import("sequelize").BelongsToManyAddAssociationMixinOptions) => Promise<void>} addEmployee - Add one employee to this task (belongsToMany). Options include through (join attributes, e.g. assigned_by) and transaction.
+ *
+ * @property {(employee: import("./employeeModel.js").EmployeeInstance|number, options?: import("sequelize").BelongsToManyRemoveAssociationMixinOptions) => Promise<void>} removeEmployee - Remove one employee from this task (belongsToMany). Options include through (join attributes, e.g. assigned_by) and transaction.
  *
  * @property {(employees: Array<import("./employeeModel.js").EmployeeInstance|number>, options?: import("sequelize").BelongsToManySetAssociationsMixinOptions) => Promise<void>} removeEmployees - Remove one or more employees from this task. Takes an array of Employee instances or employee IDs.
  *
