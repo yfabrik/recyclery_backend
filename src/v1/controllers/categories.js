@@ -18,6 +18,7 @@ const dataSchema = z.object({
 const IOValues = {
   IN: 1 << 1,
   OUT: 1 << 0,
+  SELL: 1 << 2,
 };
 /**
  *
@@ -48,6 +49,7 @@ export const listCategories = async (req, res) => {
     only_sub: z.coerce.boolean().optional().default(false),
     out: z.coerce.boolean().optional(),
     in: z.coerce.boolean().optional(),
+    sell: z.coerce.boolean().optional(),
   });
   const filters = filtersSchema.parse(req.query);
 
@@ -66,6 +68,7 @@ export const listCategories = async (req, res) => {
 
   if (filters.in) where.IO = literal(`Category.IO & ${IOValues.IN} != 0`);
   if (filters.out) where.IO = literal(`Category.IO & ${IOValues.OUT} != 0`);
+  if (filters.sell) where.IO = literal(`Category.IO & ${IOValues.SELL} != 0`);
 
   if (filters.include.includes("category")) {
     const insideWhere = {};
@@ -73,6 +76,8 @@ export const listCategories = async (req, res) => {
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.IN} != 0`);
     if (typeof filters.out == "boolean" && filters.out)
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.OUT} != 0`);
+    if (typeof filters.sell == "boolean" && filters.sell)
+      insideWhere.IO = literal(`subcategories.IO & ${IOValues.SELL} != 0`);
     include.push({
       model: Category,
       as: "subcategories",
@@ -200,6 +205,7 @@ export const patchCategory = async (req, res) => {
   const dataSchema = z.object({
     in: z.boolean().optional(),
     out: z.boolean().optional(),
+    sell: z.boolean().optional(),
   });
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
@@ -245,6 +251,21 @@ export const patchCategory = async (req, res) => {
       category.IO &= ~IOValues.OUT;
       subcategories?.map(async (cat) => {
         cat.IO &= ~IOValues.OUT;
+        await cat.save();
+      });
+    }
+
+  if (typeof data.sell == "boolean")
+    if (data.sell) {
+      category.IO |= IOValues.SELL;
+      if (parent) {
+        parent.IO |= IOValues.SELL;
+        await parent.save();
+      }
+    } else {
+      category.IO &= ~IOValues.SELL;
+      subcategories?.map(async (cat) => {
+        cat.IO &= ~IOValues.SELL;
         await cat.save();
       });
     }
