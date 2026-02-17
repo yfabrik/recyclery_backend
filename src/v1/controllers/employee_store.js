@@ -51,7 +51,8 @@ export const getEmployeeStoreById = async (req, res) => {
 
   const stores = employee?.stores || [];
   const assignments = stores.map((s) => {
-    return { ...s, is_primary: s.EmployeeStore.is_primary };
+    const values = s.dataValues
+    return { ...values, is_primary: s.EmployeeStore.is_primary };
   });
   res.json({
     success: true,
