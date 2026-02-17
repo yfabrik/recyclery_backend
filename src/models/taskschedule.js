@@ -141,7 +141,7 @@ export default (sequelize, DataTypes) => {
       "start_time",
       "end_time",
       "store_id",
-      "collection_point_id",
+      // "collection_point_id",//pas utile de l'update en vrai
     ];
 
     for (const field of updatableFields) {

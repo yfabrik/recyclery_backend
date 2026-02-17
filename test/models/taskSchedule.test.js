@@ -211,23 +211,23 @@ describe("TaskSchedule Model", () => {
       expect(tasks[0].store_id).toBe(r2.id);
     });
 
-    it("should succeed when collection_point_id is changed to another point", async () => {
-      const recyclery = await createRecyclery();
-      const cp1 = await createCollectionPoint(recyclery.id, { name: "CP A" });
-      const cp2 = await createCollectionPoint(recyclery.id, { name: "CP B" });
-      const schedule = await TaskSchedule.create({
-        collection_point_id: cp1.id,
-        category: "collection",
-        scheduled_date: new Date("2030-09-01"),
-        start_time: new Date("2030-09-01T09:00:00Z"),
-        end_time: new Date("2030-09-01T12:00:00Z"),
-        is_recurring: false,
-      });
-      await schedule.update({ collection_point_id: cp2.id });
-      const tasks = await Task.findAll({ where: { schedule_id: schedule.id } });
-      expect(tasks.length).toBe(1);
-      expect(tasks[0].collection_point_id).toBe(cp2.id);
-    });
+  //   it("should succeed when collection_point_id is changed to another point", async () => {
+  //     const recyclery = await createRecyclery();
+  //     const cp1 = await createCollectionPoint(recyclery.id, { name: "CP A" });
+  //     const cp2 = await createCollectionPoint(recyclery.id, { name: "CP B" });
+  //     const schedule = await TaskSchedule.create({
+  //       collection_point_id: cp1.id,
+  //       category: "collection",
+  //       scheduled_date: new Date("2030-09-01"),
+  //       start_time: new Date("2030-09-01T09:00:00Z"),
+  //       end_time: new Date("2030-09-01T12:00:00Z"),
+  //       is_recurring: false,
+  //     });
+  //     await schedule.update({ collection_point_id: cp2.id });
+  //     const tasks = await Task.findAll({ where: { schedule_id: schedule.id } });
+  //     expect(tasks.length).toBe(1);
+  //     expect(tasks[0].collection_point_id).toBe(cp2.id);
+  //   });
   });
 
   describe("creation conflicts", () => {
