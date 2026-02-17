@@ -45,7 +45,7 @@ export const addMonths = (date, months) => {
 
 /**
  * Create a task object from schedule data
- * @param {import("../models/types/taskSchedule.js").TaskScheduleCreateAttributes|import("../models/types/taskSchedule.js").TaskScheduleAttributes} data - Schedule data object
+ * @param {import("../models/types/taskScheduleModel.js").TaskScheduleCreateAttributes|import("../models/types/taskScheduleModel.js").TaskScheduleAttributes} data - Schedule data object
  * @param {number} scheduleId - Schedule ID
  * @param {Date} scheduledDate - Scheduled date for the task
  * @returns {import("../models/types/taskModel.js").TaskCreateAttributes} Task object ready for creation
@@ -76,7 +76,7 @@ export const createTaskObject = (data, scheduleId, scheduledDate) => {
  * @param {Date} baseDate - Base date to start from
  * @param {"daily"|"weekly"|"monthly"|string|null} recurrencePattern - Pattern name (daily, weekly, monthly)
  * @param {boolean} isRecurring - Whether the schedule is recurring
- * @param {import("../models/types/taskSchedule.js").TaskScheduleCreateAttributes|import("../models/types/taskSchedule.js").TaskScheduleAttributes} data - Schedule data
+ * @param {import("../models/types/taskScheduleModel.js").TaskScheduleCreateAttributes|import("../models/types/taskScheduleModel.js").TaskScheduleAttributes} data - Schedule data
  * @param {number} scheduleId - Schedule ID
  * @returns {Array<import("../models/types/taskModel.js").TaskCreateAttributes>} Array of task objects ready for creation
  */
@@ -123,7 +123,7 @@ export const generateTasksFromSchedule = (baseDate, recurrencePattern, isRecurri
  * @param {Date} startDate - Start date (inclusive)
  * @param {Date} endDate - End date (inclusive)
  * @param {"daily"|"weekly"|"monthly"|string|null} recurrencePattern - Pattern name (daily, weekly, monthly)
- * @param {import("../models/types/taskSchedule.js").TaskScheduleCreateAttributes|import("../models/types/taskSchedule.js").TaskScheduleAttributes} data - Schedule data
+ * @param {import("../models/types/taskScheduleModel.js").TaskScheduleCreateAttributes|import("../models/types/taskScheduleModel.js").TaskScheduleAttributes} data - Schedule data
  * @param {number} scheduleId - Schedule ID
  * @param {Set<string>} [existingDates] - Set of existing date keys to avoid duplicates (format: "YYYY-M-D")
  * @returns {Array<import("../models/types/taskModel.js").TaskCreateAttributes>} Array of task objects ready for creation

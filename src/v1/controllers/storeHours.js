@@ -27,21 +27,25 @@ const dataSchema = z.object({
   start_time: z.union([
     z.iso.time().transform((val) => {
       const [hours, min] = val.split(":");
-      return new Date().setHours(hours, min);
+      return new Date().setHours(+hours, +min);
     }),
     z.coerce.date(),
   ]),
   end_time: z.union([
     z.iso.time().transform((val) => {
       const [hours, min] = val.split(":");
-      return new Date().setHours(hours, min);
+      return new Date().setHours(+hours, +min);
     }),
     z.coerce.date(),
   ]),
   is_24h: z.coerce.boolean().default(false),
   notes: z.string().nullish(),
 });
-
+/**
+ * 
+ * @param {string} day 
+ * @returns {Date}
+ */
 const getDateFromDay = (day) => {
   const today = new Date();
   let d;
@@ -176,8 +180,8 @@ export const addHoraire = async (req, res) => {
     priority: "low",
     recurrence_pattern: "weekly",
     scheduled_date: data.day_of_week,
-    start_time: data.start_time,
-    end_time: data.end_time,
+    start_time: new Date(data.start_time),
+    end_time: new Date(data.end_time),
     notes: null,
     status: "a",
     store_id: data.store_id,
@@ -203,12 +207,12 @@ export const updateHoraire = async (req, res) => {
   if (!schedule) throw new createHttpError.NotFound("horaires pas trouvé");
 
   await schedule.update({
-    name: "vente-" + schedule.Recyclery.name,
+    name: "vente-" + schedule.Recyclery?.name,
     // name: "vente-" + data.day_of_week + " " + data.store_id,
     // recurrence_pattern: "weekly",
     scheduled_date: data.day_of_week,
-    start_time: data.start_time,
-    end_time: data.end_time,
+    start_time: new Date(data.start_time),
+    end_time: new Date(data.end_time),
     notes: null,
     status: "a",
     store_id: data.store_id,

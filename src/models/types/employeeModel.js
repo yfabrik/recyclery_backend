@@ -2,27 +2,42 @@
  * @typedef {Object} EmployeeCreateAttributes
  * @property {string} nom - Last name of the employee (required)
  * @property {string} prenom - First name of the employee (required)
- * @property {boolean} [isActive] - Whether the employee is currently active (default: true)
+ * @property {boolean|null} [isActive] - Whether the employee is currently active (default: true)
  * @property {string|null} [email] - Email address of the employee
  * @property {string|null} [phone] - Phone number of the employee
- *
- * @typedef { import("./baseModelAttributes.js").baseAttributes & EmployeeCreateAttributes} EmployeeAttributes
- * @property {string} [fullName] - Virtual property: full name computed from nom and prenom (read-only)
  */
 
 /**
- * @typedef {import("sequelize").Model<EmployeeAttributes, EmployeeCreateAttributes> & EmployeeAttributes} EmployeeInstance
- *
+ * Attributes that are always defined after creation/fetch (optional at create, have default or stored).
+ * @typedef {Object} EmployeeAttributesFetched
+ * @property {boolean} isActive - Always defined when fetched (default: true at create)
+ * @property {string|null} email - Always defined when fetched
+ * @property {string|null} phone - Always defined when fetched
+ * @property {string} fullName - Virtual: full name computed from nom and prenom (read-only)
+ */
+
+/**
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & EmployeeCreateAttributes & EmployeeAttributesFetched} EmployeeAttributes
+ */
+
+/**
+ * 
+ * @typedef {Object} EmployeeInstanceAssociations
  * @property {Array<import("./recycleryModel.js").RecycleryInstance>} [stores] - Recycleries/stores when loaded with include (alias "stores")
  * @property {Array<import("./taskModel.js").TaskInstance>} [Tasks] - Tasks when loaded with include
- * @property {Array<import("./taskSchedule.js").TaskScheduleInstance>} [TaskSchedules] - Task schedules when loaded with include
+ * @property {Array<import("./taskScheduleModel.js").TaskScheduleInstance>} [TaskSchedules] - Task schedules when loaded with include
  * @property {Array<import("./employeeWorkday.js").EmployeeWorkdaysInstance>} [EmployeeWorkdays] - Workdays when loaded with include
+ * 
  *
  * @property {() => Promise<Array<import("./recycleryModel.js").RecycleryInstance>>} getStores - Get all recycleries/stores associated with this employee (many-to-many relationship through "EmployeeStore" table). Uses "stores" alias.
  *
  * @property {(stores: Array<import("./recycleryModel.js").RecycleryInstance|number>) => Promise<void>} setStores - Replace all recycleries/stores associated with this employee. Takes an array of Recyclery instances or recyclery IDs.
  *
+ * @property {(store: import("./recycleryModel.js").RecycleryInstance|number, options?: import("sequelize").BelongsToManyAddAssociationMixinOptions) => Promise<void>} addStore - Add one store to this employee (belongsToMany). Options include through (join attributes, e.g. is_primary) and transaction.
+ * 
  * @property {(stores: Array<import("./recycleryModel.js").RecycleryInstance|number>) => Promise<void>} addStores - Add one or more recycleries/stores to this employee. Takes an array of Recyclery instances or recyclery IDs.
+ *
+ * @property {(store: import("./recycleryModel.js").RecycleryInstance|number, options?: import("sequelize").BelongsToManyRemoveAssociationMixinOptions) => Promise<void>} removeStore - Remove one store from this employee (belongsToMany).
  *
  * @property {(stores: Array<import("./recycleryModel.js").RecycleryInstance|number>) => Promise<void>} removeStores - Remove one or more recycleries/stores from this employee. Takes an array of Recyclery instances or recyclery IDs.
  *
@@ -38,15 +53,15 @@
  *
  * @property {(values?: import("./taskModel.js").TaskCreateAttributes) => Promise<import("./taskModel.js").TaskInstance>} createTask - Create a new Task and add it to this employee (belongsToMany).
  *
- * @property {() => Promise<Array<import("./taskSchedule.js").TaskScheduleInstance>>} getTaskSchedules - Get all task schedules associated with this employee (many-to-many relationship through "employee_schedule" table).
+ * @property {() => Promise<Array<import("./taskScheduleModel.js").TaskScheduleInstance>>} getTaskSchedules - Get all task schedules associated with this employee (many-to-many relationship through "employee_schedule" table).
  *
- * @property {(taskSchedules: Array<import("./taskSchedule.js").TaskScheduleInstance|number>) => Promise<void>} setTaskSchedules - Replace all task schedules associated with this employee. Takes an array of TaskSchedule instances or schedule IDs.
+ * @property {(taskSchedules: Array<import("./taskScheduleModel.js").TaskScheduleInstance|number>) => Promise<void>} setTaskSchedules - Replace all task schedules associated with this employee. Takes an array of TaskSchedule instances or schedule IDs.
  *
- * @property {(taskSchedules: Array<import("./taskSchedule.js").TaskScheduleInstance|number>) => Promise<void>} addTaskSchedules - Add one or more task schedules to this employee. Takes an array of TaskSchedule instances or schedule IDs.
+ * @property {(taskSchedules: Array<import("./taskScheduleModel.js").TaskScheduleInstance|number>) => Promise<void>} addTaskSchedules - Add one or more task schedules to this employee. Takes an array of TaskSchedule instances or schedule IDs.
  *
- * @property {(taskSchedules: Array<import("./taskSchedule.js").TaskScheduleInstance|number>) => Promise<void>} removeTaskSchedules - Remove one or more task schedules from this employee. Takes an array of TaskSchedule instances or schedule IDs.
+ * @property {(taskSchedules: Array<import("./taskScheduleModel.js").TaskScheduleInstance|number>) => Promise<void>} removeTaskSchedules - Remove one or more task schedules from this employee. Takes an array of TaskSchedule instances or schedule IDs.
  *
- * @property {(values?: import("./taskSchedule.js").TaskScheduleCreateAttributes) => Promise<import("./taskSchedule.js").TaskScheduleInstance>} createTaskSchedule - Create a new TaskSchedule and add it to this employee (belongsToMany).
+ * @property {(values?: import("./taskScheduleModel.js").TaskScheduleCreateAttributes) => Promise<import("./taskScheduleModel.js").TaskScheduleInstance>} createTaskSchedule - Create a new TaskSchedule and add it to this employee (belongsToMany).
  *
  * @property {() => Promise<Array<import("./employeeWorkday.js").EmployeeWorkdaysInstance>>} getEmployeeWorkdays - Get all workdays associated with this employee (has-many relationship through employee_id foreign key).
  *
@@ -57,4 +72,8 @@
  * @property {(workdays: Array<import("./employeeWorkday.js").EmployeeWorkdaysInstance|number>) => Promise<void>} removeEmployeeWorkdays - Remove one or more workdays from this employee. Takes an array of EmployeeWorkdays instances or workday IDs.
  *
  * @property {(values?: import("./employeeWorkday.js").EmployeeWorkdaysCreateAttributes) => Promise<import("./employeeWorkday.js").EmployeeWorkdaysInstance>} createEmployeeWorkdays - Create a new employee workday for this employee (has-many).
+ 
  */
+/**
+ * @typedef {import("sequelize").Model<EmployeeAttributes, EmployeeCreateAttributes> & EmployeeAttributes & EmployeeInstanceAssociations} EmployeeInstance
+*/

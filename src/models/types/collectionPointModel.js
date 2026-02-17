@@ -7,7 +7,7 @@
  * @property {string|null} [contact_person] - Name of the contact person (alphanumeric)
  * @property {string|null} [contact_phone] - Phone number of the contact person
  * @property {string|null} [contact_email] - Email address of the contact person
- * @property {"standard"| "entreprise"| "association"| "school"| "hospital"| "other"} [type] - Type of collection point (default: "standard")
+ * @property {"standard"| "entreprise"| "association"| "school"| "hospital"| "other"|null} [type] - Type of collection point (default: "standard")
  * @property {string|null} [notes] - Additional notes about the collection point
  * @property {boolean} [is_active] - Whether the collection point is currently active (default: true)
  * @property {number|null} [recyclery_id] - Foreign key reference to the Recyclery
@@ -17,12 +17,16 @@
  */
 
 /**
- * @typedef {import("sequelize").Model<CollectionPointAttributes, CollectionPointCreateAttributes> & CollectionPointAttributes} CollectionPointInstance
- *
+ * Optional association properties present when the instance is loaded with include().
+ * @typedef {Object} CollectionPointInstanceAssociations
  * @property {import("./recycleryModel.js").RecycleryInstance} [Recyclery] - Associated Recyclery when loaded with include
- * @property {Array<import("./taskSchedule.js").TaskScheduleInstance>} [TaskSchedules] - Task schedules when loaded with include
+ * @property {Array<import("./taskScheduleModel.js").TaskScheduleInstance>} [TaskSchedules] - Task schedules when loaded with include
  * @property {Array<import("./taskModel.js").TaskInstance>} [Tasks] - Tasks when loaded with include
  * @property {Array<import("./arrivalModel.js").ArrivalInstance>} [Arrivals] - Arrivals when loaded with include
+ */
+/**
+ * @typedef {import("sequelize").Model<CollectionPointAttributes, CollectionPointCreateAttributes> & CollectionPointAttributes & CollectionPointInstanceAssociations} CollectionPointInstance
+ *
  *
  * @property {() => Promise<import("./recycleryModel.js").RecycleryInstance|null>} getRecyclery - Get the associated Recyclery (belongs-to relationship). Returns null if no recyclery is associated.
  *

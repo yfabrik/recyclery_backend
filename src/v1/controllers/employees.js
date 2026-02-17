@@ -1,7 +1,7 @@
-import z, { success } from "zod";
+import createHttpError from "http-errors";
+import z from "zod";
 import db from "../../models/index.js";
 import { idSchema, phoneSchema } from "../../services/zod.js";
-import createHttpError from "http-errors";
 
 const { Employee, Recyclery, EmployeeWorkdays } = db;
 
@@ -67,6 +67,7 @@ export const updateEmployee = async (req, res) => {
   if (!employee) throw new createHttpError.NotFound("employée pas trouvé");
   await employee.update({
     ...data,
+    isActive: data.isActive ?? employee.isActive,
   });
   res.json({
     success: true,

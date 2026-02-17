@@ -11,6 +11,7 @@ import {
 const {
   Recyclery,
   CashRegister,
+  CashSession,
   User,
   SalesTransaction,
   LabeledItem,
@@ -224,19 +225,40 @@ export const recycleryStats = async (req, res) => {
     raw: true,
   });
 
-  const sales = await SalesTransaction.findOne({
+  const startOfMonth = new Date(new Date().setDate(1));
+  const salesResult = await SalesTransaction.findOne({
     attributes: [
-      [fn("COUNT", col("*")), "monthly_sales"],
-      [fn("COALESCE", fn("SUM", col("total_amount")), 0), "monthly_revenue"],
+      [fn("COUNT", col("SalesTransaction.id")), "monthly_sales"],
+      [fn("COALESCE", fn("SUM", col("SalesTransaction.total_amount")), 0), "monthly_revenue"],
+    ],
+    include: [
+      {
+        model: CashSession,
+        required: true,
+        attributes: [],
+        include: [
+          {
+            model: CashRegister,
+            required: true,
+            where: { recyclery_id: id },
+            attributes: [],
+          },
+        ],
+      },
     ],
     where: {
-      recyclery_id: id,
-      createdAt: {
-        [Op.gte]: new Date(new Date().setDate(1)), // Start of the current month
-      },
+      createdAt: { [Op.gte]: startOfMonth },
     },
     raw: true,
   });
+
+  const salesRow = /** @type {{ monthly_sales?: number | string; monthly_revenue?: number | string } | null } */ (salesResult);
+  const sales = salesRow
+    ? {
+        monthly_sales: Number(salesRow.monthly_sales ?? 0),
+        monthly_revenue: Number(salesRow.monthly_revenue ?? 0),
+      }
+    : { monthly_sales: 0, monthly_revenue: 0 };
 
   res.json({
     stats: {

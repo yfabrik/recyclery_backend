@@ -8,7 +8,7 @@
  * @property {string|null} [location] - Location where the task schedule should be performed
  * @property {string|null} [equipment_needed] - Equipment needed for the task (stored as TEXT, can be JSON string or array)
  * @property {number|string|null} [hourly_rate] - Hourly rate for the task (DECIMAL type)
- * @property {boolean} [is_recurring] - Whether the task schedule is recurring (default: true)
+ * @property {boolean|null} [is_recurring] - Whether the task schedule is recurring (default: true)
  * @property {string|null} [notes] - Additional notes about the task schedule
  * @property {string|null} [status] - Current status of the task schedule
  * @property {Date|string} [scheduled_date] - Base date when the task schedule starts
@@ -17,18 +17,26 @@
  * @property {"daily"|"weekly"|"monthly"|null} [recurrence_pattern] - Recurrence pattern: "daily", "weekly", or "monthly"
  * @property {number|null} [store_id] - Foreign key reference to the associated Recyclery
  * @property {number|null} [collection_point_id] - Foreign key reference to the associated CollectionPoint
+ * 
+ * @typedef {Object} TaskScheduleAttributesFetched
+ * @property {string|null} [day_of_week] - Virtual property: day of the week computed from scheduled_date (read-only)   
+ * 
  *
- * @typedef { import("./baseModelAttributes.js").baseAttributes & TaskScheduleCreateAttributes} TaskScheduleAttributes
- * @property {string|null} [day_of_week] - Virtual property: day of the week computed from scheduled_date (read-only)
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & TaskScheduleCreateAttributes & TaskScheduleAttributesFetched} TaskScheduleAttributes
  */
 
 /**
- * @typedef {import("sequelize").Model<TaskScheduleAttributes, TaskScheduleCreateAttributes> & TaskScheduleAttributes} TaskScheduleInstance
- *
+ * 
+ * @typedef {Object} TaskScheduleInstanceFetched
  * @property {Array<import("./taskModel.js").TaskInstance>} [Tasks] - Tasks when loaded with include
  * @property {import("./recycleryModel.js").RecycleryInstance} [Recyclery] - Associated Recyclery when loaded with include (store_id)
  * @property {import("./collectionPointModel.js").CollectionPointInstance} [CollectionPoint] - Associated CollectionPoint when loaded with include
  * @property {Array<import("./employeeModel.js").EmployeeInstance>} [Employees] - Employees when loaded with include
+*/
+/**
+ * @typedef {import("sequelize").Model<TaskScheduleAttributes, TaskScheduleCreateAttributes> & TaskScheduleAttributes & TaskScheduleInstanceFetched} TaskScheduleInstance
+ *
+
  *
  * @property {() => Promise<Array<import("./taskModel.js").TaskInstance>>} getTasks - Get all tasks associated with this schedule (has-many relationship through schedule_id foreign key). Tasks are automatically created based on recurrence pattern. CASCADE delete enabled.
  *

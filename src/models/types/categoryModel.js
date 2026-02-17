@@ -6,14 +6,18 @@
  * @property {number|null} [parent_id] - Foreign key reference to the parent category (for hierarchical categories). Null for top-level categories.
  * @property {number|null} [defaultWeight] - Default weight for items in this category (default: 0, min: 0)
  * @property {number|null} [defaultPrice] - Default price for items in this category (default: 0, min: 0)
- * @property {number} [IO] - IO flag (required, default: 0)
+ * @property {number} [IO] - IO flag (optional at create; default: 0)
  *
- * @typedef { import("./baseModelAttributes.js").baseAttributes & CategoryCreateAttributes} CategoryAttributes
+ * @typedef {Object} CategoryAttributesIO
+ * @property {number} IO - Always defined when fetched (optional at create, default: 0)
+ *
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & CategoryCreateAttributes & CategoryAttributesIO} CategoryAttributes
+ * 
  */
 
 /**
- * @typedef {import("sequelize").Model<CategoryAttributes, CategoryCreateAttributes> & CategoryAttributes} CategoryInstance
- *
+ * Optional association properties present when the instance is loaded with include().
+ * @typedef {Object} CategoryInstanceAssociations
  * @property {Array<CategoryInstance>} [subcategories] - Subcategories when loaded with include (alias "subcategories")
  * @property {CategoryInstance} [parent] - Parent category when loaded with include (alias "parent")
  * @property {Array<import("./labeledItemModel.js").LabeledItemInstance>} [LabeledItems] - Labeled items when loaded with include
@@ -35,4 +39,9 @@
  * @property {(values?: import("./labeledItemModel.js").LabeledItemCreateAttributes) => Promise<import("./labeledItemModel.js").LabeledItemInstance>} createLabeledItem - Create a new labeled item for this category (has-many).
  *
  * @property {(values?: CategoryCreateAttributes) => Promise<CategoryInstance>} createSubcategory - Create a new subcategory (has-many Category with alias "subcategories").
+
  */
+
+/**
+ * @typedef {import("sequelize").Model<CategoryAttributes, CategoryCreateAttributes> & CategoryAttributes & CategoryInstanceAssociations} CategoryInstance
+  */

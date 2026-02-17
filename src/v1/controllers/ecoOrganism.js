@@ -46,7 +46,7 @@ export const listEcoOrganism = async (req, res) => {
  */
 export const listActiveEcoOrganism = async (req, res) => {
   logger.warn("use list active eco organise TO REMOVE")
-  req.query.active = 1;
+  req.query.active = "true";
   return listEcoOrganism(req, res);
   // const eco_organisms = await EcoOrganism.findAll({ where: { is_active } });
 
@@ -114,7 +114,7 @@ export const deleteEcoOrganism = async (req, res) => {
 
   if (waste > 0) {
     // If used in waste disposals, deactivate instead of delete
-    await EcoOrganism.update({ is_active: 0 }, { where: { id } });
+    await EcoOrganism.update({ is_active: false }, { where: { id } });
 
     res.json({ message: "Éco-organisme désactivé avec succès" });
   } else {

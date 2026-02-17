@@ -3,8 +3,8 @@ import db from "../../models/index.js";
 
 import { Op } from "sequelize";
 import z from "zod";
-import { idSchema, nullishToNull } from "../../services/zod.js";
 import logger from "../../services/logger.js";
+import { idSchema } from "../../services/zod.js";
 
 const { LabeledItem, Category, User } = db;
 
@@ -38,19 +38,18 @@ export const listLabeledItem = async (req, res) => {
     barcode: idSchema().optional(), //TODO verifier
   });
   const { search, ...filter } = filterSchema.parse(req.query);
-  /**
-   * @type {import("sequelize").WhereOptions}
-   */
-  const where = { ...filter };
-
-  if (search) {
-    const likeQuery = { [Op.like]: `%${search}%` };
-    where[Op.or] = [
-      { name: likeQuery },
-      { description: likeQuery },
-      { barcode: likeQuery },
-    ];
-  }
+  const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
+  /** @type {import("sequelize").WhereOptions<import("../../models/types/labeledItemModel.js").LabeledItemAttributes>} */
+  const where = likeQuery
+    ? {
+      ...filter,
+      [Op.or]: [
+        { name: likeQuery },
+        { description: likeQuery },
+        { barcode: likeQuery },
+      ],
+    }
+    : { ...filter };
 
   const labeledItems = await LabeledItem.findAll({
     where,
@@ -93,7 +92,7 @@ export const getItemFromBarcode = async (req, res) => {
 
 /**
  *
- * @param {import("express").Request} req
+ * @param {import("../../middlewares/auth.js").RequestWithUser} req
  * @param {import("express").Response} res
  */
 export const createLabeledItem = async (req, res) => {
@@ -125,7 +124,11 @@ export const updateItem = async (req, res) => {
 
   const item = await LabeledItem.findByPk(id);
   if (!item) throw new createHttpError[404]("item non trouvé");
-  await item.update({ ...data });
+  await item.update({
+    ...data,
+    condition_state: data.condition_state ?? item.condition_state,
+    weight: data.weight ?? item.weight
+  });
 
   res.json({ success: true, message: "Article mis à jour avec succès" });
 };
@@ -144,7 +147,7 @@ export const deleteLabeledItem = async (req, res) => {
 };
 /**
  *
- * @param {import("express").Request} req
+ * @param {import("../../middlewares/auth.js").RequestWithUser} req
  * @param {import("express").Response} res
  */
 export const tagItemAsSell = async (req, res) => {
@@ -153,7 +156,7 @@ export const tagItemAsSell = async (req, res) => {
     {
       status: "sold",
       sold_at: new Date(),
-      sold_by: req.user.id,
+      // sold_by: req.user.id,//TODO needed ? peut retrouvé depuis transaction
     },
     {
       where: {

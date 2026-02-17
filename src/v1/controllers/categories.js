@@ -229,7 +229,7 @@ export const patchCategory = async (req, res) => {
       }
     } else {
       category.IO &= ~IOValues.IN;
-      subcategories.map(async (cat) => {
+      subcategories?.map(async (cat) => {
         cat.IO &= ~IOValues.IN;
         await cat.save();
       });
@@ -243,7 +243,7 @@ export const patchCategory = async (req, res) => {
       }
     } else {
       category.IO &= ~IOValues.OUT;
-      subcategories.map(async (cat) => {
+      subcategories?.map(async (cat) => {
         cat.IO &= ~IOValues.OUT;
         await cat.save();
       });

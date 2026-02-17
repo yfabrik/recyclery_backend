@@ -14,11 +14,15 @@
  */
 
 /**
- * @typedef {import("sequelize").Model<CashSessionAttributes, CashSessionCreateAttributes> & CashSessionAttributes} CashSessionInstance
- *
- * @property {import("./cashRegisterModel.js").CashRegisterInstance} [CashRegister] - Associated CashRegister when loaded with include
- * @property {Array<import("./salesTransactionModel.js").SalesTransactionInstance>} [SalesTransactions] - Sales transactions when loaded with include
- * @property {import("./userModel.js").UserInstance} [User] - User who opened this session when loaded with include (user_id)
+ * Optional association properties present when the instance is loaded with include().
+ * @typedef {Object} CashSessionInstanceAssociations
+ * @property {import("./cashRegisterModel.js").CashRegisterInstance} [CashRegister] - Set when included (e.g. include: [CashRegister])
+ * @property {Array<import("./salesTransactionModel.js").SalesTransactionInstance>} [SalesTransactions] - Set when included
+ * @property {import("./userModel.js").UserInstance} [User] - Set when included (user_id)
+ */
+
+/**
+ * @typedef {import("sequelize").Model<CashSessionAttributes, CashSessionCreateAttributes> & CashSessionAttributes & CashSessionInstanceAssociations} CashSessionInstance
  *
  * @property {() => Promise<import("./cashRegisterModel.js").CashRegisterInstance|null>} getCashRegister - Get the associated CashRegister (belongs-to relationship). Returns null if not set.
  *

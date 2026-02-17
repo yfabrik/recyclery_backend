@@ -1,7 +1,6 @@
 import createHttpError from "http-errors";
-import db from "../../models/index.js";
-import { cast, col, literal, Op } from "sequelize";
 import z from "zod";
+import db from "../../models/index.js";
 import { idSchema } from "../../services/zod.js";
 const { Recyclery, sequelize, EmployeeStore, Employee } = db;
 /**
@@ -35,7 +34,7 @@ export const listEmployeeStore = async (req, res) => {
 export const getEmployeeStoreById = async (req, res) => {
   const { id, employeeId } = req.params;
 
-  const user = await Employee.findByPk(employeeId, {
+  const employee = await Employee.findByPk(employeeId, {
     include: [
       {
         model: Recyclery,
@@ -48,16 +47,16 @@ export const getEmployeeStoreById = async (req, res) => {
     ],
   });
   
-  if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
+  if (!employee) throw new createHttpError.NotFound("Utilisateur non trouvé");
 
-  const stores = user.get({ plain: true }).stores;
+  const stores = employee?.stores || [];
   const assignments = stores.map((s) => {
     return { ...s, is_primary: s.EmployeeStore.is_primary };
   });
   res.json({
     success: true,
     assignments,
-    stores: user.stores,
+    stores: employee.stores,
   });
 };
 /**

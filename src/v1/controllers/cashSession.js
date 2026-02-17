@@ -79,7 +79,7 @@ export const listCashSessions = async (req, res) => {
 };
 /**
  *
- * @param {import("express").Request} req
+ * @param {import("../../middlewares/auth.js").RequestWithUser} req
  * @param {import("express").Response} res
  */
 // 🧠 GET /cash-sessions/active
@@ -105,8 +105,8 @@ export const getActiveSession = async (req, res) => {
     const tmp = session.get({ plain: true });
     t = {
       ...tmp,
-      CashRegister: tmp?.CashRegister,
-      Recyclery: tmp?.CashRegister?.Recyclery,
+      CashRegister: session.CashRegister,
+      Recyclery:session.CashRegister?.Recyclery,
     };
   }
 
@@ -114,7 +114,7 @@ export const getActiveSession = async (req, res) => {
 };
 /**
  *
- * @param {import("express").Request} req
+ * @param {import("../../middlewares/auth.js").RequestWithUser} req
  * @param {import("express").Response} res
  */
 // 🧠 POST /cash-sessions/open
@@ -150,7 +150,7 @@ export const openCashSession = async (req, res) => {
 };
 /**
  *
- * @param {import("express").Request} req
+ * @param {import("../../middlewares/auth.js").RequestWithUser} req
  * @param {import("express").Response} res
  */
 // 🧠 PUT /cash-sessions/:id/close

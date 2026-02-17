@@ -1,8 +1,7 @@
-import { Op } from "sequelize";
-import db from "../../models/index.js";
-import * as z from "zod";
-import collection from "../../models/poubelle/collection.js";
 import createHttpError from "http-errors";
+import { Op } from "sequelize";
+import * as z from "zod";
+import db from "../../models/index.js";
 import { idSchema } from "../../services/zod.js";
 
 const { Task, User, TaskSchedule, Employee, Recyclery } = db;
@@ -11,7 +10,7 @@ const { Task, User, TaskSchedule, Employee, Recyclery } = db;
 const dataSchema = z.object({
     name: z.string("Nom requis").nullish(),
     description: z.string().nullish(),
-    category: z.string("categorie requis"),
+    category: z.enum(["point", "vente", "collection", "custom"], "categorie requise"),
     priority: z.string("priorité requis"),
     // estimated_duration: z.coerce.number().nullish(),
     required_skills: z
@@ -27,8 +26,8 @@ const dataSchema = z.object({
       .transform((val) => JSON.stringify(val)),
     // hourly_rate: z.coerce.number().nullish(),
     is_recurring: z.coerce.boolean().nullish(),
-    recurrence_pattern: z.string().nullish(),
-    assigned_to: z.string().nullish(),
+    recurrence_pattern: z.enum(["daily", "weekly", "monthly"]).nullish(),
+    assigned_to: idSchema().nullish(),
     notes: z.string().nullish(),
     start_time: z.coerce.date().nullish(),
     end_time: z.coerce.date().nullish(),
@@ -188,7 +187,7 @@ export const createTask = async (req, res) => {
   const data = dataSchema.parse(req.body);
   const name = data.name ?? data.category;
   let schedule = null;
-  if (data.recurrence_pattern && data.recurrence_pattern != "none") {
+  if (data.recurrence_pattern) {
     schedule = await TaskSchedule.create({
       ...data,
       name,
@@ -314,6 +313,7 @@ export const removeUserFromTask = async (req, res) => {
   const { taskId, employeeId } = req.params;
 
   const task = await Task.findByPk(taskId);
+  if(!task) throw new createHttpError[404]("Tâche non trouvée");
   await task.removeEmployee(employeeId);
 
   res.json({

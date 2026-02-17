@@ -38,7 +38,7 @@ export const listDons = async (req, res) => {
 }
 /**
  * 
- * @param {import("express").Request} req 
+ * @param {import("../../middlewares/auth.js").RequestWithUser} req 
  * @param {import("express").Response} res 
  */
 export const createDon = async (req, res) => {

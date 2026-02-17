@@ -6,6 +6,11 @@ import db from  "../models/index.js"
 const { User } = db
 
 /**
+ * @typedef {import("../models/types/userModel.js").UserInstance} UserInstance
+ * @typedef {import("express").Request & { user: UserInstance }} RequestWithUser
+ */
+
+/**
  * 
  * @param {import("express").Request} req 
  * @param {import("express").Response} res 

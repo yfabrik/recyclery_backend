@@ -44,7 +44,7 @@ export const register = async (req, res, next) => {
       username: user.username,
       email: user.email,
       role: user.role,
-      recyclery_id: user.recyclery_id,
+      // recyclery_id: user.recyclery_id,
     },
     process.env.JWT_SECRET,
     { expiresIn: "24h" },
@@ -58,7 +58,7 @@ export const register = async (req, res, next) => {
       username: user.username,
       email: user.email,
       role: user.role,
-      recyclery_id: user.recyclery_id,
+      // recyclery_id: user.recyclery_id,
     },
   });
 };
@@ -113,7 +113,7 @@ export const login = async (req, res, next) => {
 };
 /**
  *
- * @param {import("express").Request} req
+ * @param {import("../../middlewares/auth.js").RequestWithUser} req
  * @param {import("express").Response} res
  */
 export const userProfile = async (req, res) => {

@@ -8,10 +8,14 @@
  */
 
 /**
- * @typedef {import("sequelize").Model<CashRegisterAttributes, CashRegisterCreateAttributes> & CashRegisterAttributes} CashRegisterInstance
- *
- * @property {import("./recycleryModel.js").RecycleryInstance} [Recyclery] - Associated Recyclery when loaded with include
- * @property {Array<import("./cashSessionModel.js").CashSessionInstance>} [sessions] - Cash sessions when loaded with include (alias "sessions")
+ * Optional association properties present when the instance is loaded with include().
+ * @typedef {Object} CashRegisterInstanceAssociations
+ * @property {import("./recycleryModel.js").RecycleryInstance} [Recyclery] - Set when included (e.g. include: [Recyclery])
+ * @property {Array<import("./cashSessionModel.js").CashSessionInstance>} [sessions] - Set when included (alias "sessions")
+ */
+
+/**
+ * @typedef {import("sequelize").Model<CashRegisterAttributes, CashRegisterCreateAttributes> & CashRegisterAttributes & CashRegisterInstanceAssociations} CashRegisterInstance
  *
  * @property {() => Promise<import("./recycleryModel.js").RecycleryInstance|null>} getRecyclery - Get the recyclery/store associated with this cash register (belongs-to relationship). Returns null if no recyclery is assigned.
  *

@@ -5,19 +5,20 @@ import db from "../../models/index.js";
 import { idSchema } from "../../services/zod.js";
 const { Arrival, Category, User, CollectionPoint } = db;
 
-  const dataSchema = z.object({
-    category_id: idSchema("catégorie requis"),
-    subcategory_id: idSchema().nullish(),
-    weight: z.coerce.number().positive("poids requis"),
-    arrival_date: z.coerce.date("date d'arrivage requis"),
-    arrival_time: z.coerce.date(" date d'arrivage requis"),
-    source_type: z.enum(["point", "apport", "house_clearance"]),
-    source_details: z.string().nullish(),
-    collection_point_id: idSchema().nullish(),
-    collection_point_name: z.string().nullish(),
-    collection_point_address: z.string().nullish(),
-    notes: z.string().nullish(),
-  });
+const dataSchema = z.object({
+  category_id: idSchema("catégorie requis"),
+  subcategory_id: idSchema().nullish(),
+  weight: z.coerce.number().positive("poids requis"),
+  arrival_date: z.coerce.date("date d'arrivage requis"),
+  arrival_time: z.coerce.date(" date d'arrivage requis")
+    .transform((val) => val.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })),
+  source_type: z.enum(["point", "apport", "house_clearance"]),
+  source_details: z.string().nullish(),
+  collection_point_id: idSchema().nullish(),
+  collection_point_name: z.string().nullish(),
+  collection_point_address: z.string().nullish(),
+  notes: z.string().nullish(),
+});
 
 
 /**
@@ -93,13 +94,12 @@ export const detailArrival = async (req, res) => {
 };
 /**
  *
- * @param {import("express").Request} req
+ * @param {import("../../middlewares/auth.js").RequestWithUser} req
  * @param {import("express").Response} res
  */
 export const createArrival = async (req, res) => {
 
   const data = dataSchema.parse(req.body);
-
   const category = await Category.findByPk(
     data.subcategory_id ?? data.category_id,
   );
@@ -254,7 +254,7 @@ export const statsByCategories = async (req, res) => {
   const { date_from, date_to } = req.query;
   const where = {};
 
-    if (date_from || date_to) {
+  if (date_from || date_to) {
     where.arrival_date = {};
     if (date_from) {
       // Set to start of day (00:00:00)
@@ -269,7 +269,7 @@ export const statsByCategories = async (req, res) => {
       where.arrival_date[Op.lte] = dateTo;
     }
   }
-  
+
   const stats = await Arrival.findAll({
     attributes: {
       include: [

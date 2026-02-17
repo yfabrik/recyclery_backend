@@ -42,7 +42,7 @@ export default (sequelize, DataTypes) => {
     const newEnd = toMinutes(values.end_time);
 
     /**
-     * @type {import("sequelize").WhereOptions<import("./types/taskSchedule.js").TaskScheduleInstance>}
+     * @type {import("sequelize").WhereOptions<import("./types/taskScheduleModel.js").TaskScheduleInstance>}
      */
     const where = { category: values.category };
     if (values.store_id) where.store_id = values.store_id

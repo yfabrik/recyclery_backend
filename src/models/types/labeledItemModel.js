@@ -1,12 +1,11 @@
 /**
  * @typedef {Object} LabeledItemCreateAttributes
- * @property {string} [barcode] - Virtual barcode (computed from id); not in DB
  * @property {string|null} [name] - Name of the labeled item (if present in schema)
  * @property {string|null} [description] - Detailed description of the item
- * @property {number|string} [weight] - Weight of the item (DECIMAL type, default: 0)
- * @property {number|string} price - Selling price of the item (DECIMAL type, required)
- * @property {number|string|null} [cost] - Cost/purchase price of the item (DECIMAL type)
- * @property {"excellent"|"good"|"fair"|"poor"} [condition_state] - Condition of the item (default: "good")
+ * @property {number|null} [weight] - Weight of the item (DECIMAL type, default: 0)
+ * @property {number} price - Selling price of the item (DECIMAL type, required)
+ * @property {number|null} [cost] - Cost/purchase price of the item (DECIMAL type)
+ * @property {"excellent"|"good"|"fair"|"poor"|null} [condition_state] - Condition of the item (default: "good")
  * @property {string|null} [location] - Physical location where the item is stored
  * @property {"available"|"sold"} [status] - Current status of the item (default: "available")
  * @property {Date|string|null} [sold_at] - Date and time when the item was sold
@@ -16,7 +15,25 @@
  * @property {number|null} [created_by] - Foreign key reference to the User who created the item
  * @property {number|null} [transaction_id] - Foreign key reference to the SalesTransaction if sold
  *
- * @typedef { import("./baseModelAttributes.js").baseAttributes & LabeledItemCreateAttributes} LabeledItemAttributes
+ * 
+ * @typedef {Object} LabeledItemAttributesFetched
+ * @property {string} barcode - Virtual barcode (computed from id); not in DB
+ * @property {string|null} name - Name of the labeled item (if present in schema)
+ * @property {string|null} description - Detailed description of the item
+ * @property {number} weight - Weight of the item (DECIMAL type, default: 0)
+ * @property {number} price - Selling price of the item (DECIMAL type, required)
+ * @property {number|null} cost - Cost/purchase price of the item (DECIMAL type)
+ * @property {"excellent"|"good"|"fair"|"poor"} condition_state - Condition of the item (default: "good")
+ * @property {string|null} location - Physical location where the item is stored
+ * @property {"available"|"sold"} status - Current status of the item (default: "available")
+ * @property {Date|string|null} sold_at - Date and time when the item was sold
+ * @property {number|null} category_id - Foreign key reference to the primary Category
+ * @property {number|null} subcategory_id - Foreign key reference to the subcategory Category
+ * @property {number|null} recyclery_id - Foreign key reference to the associated Recyclery
+ * @property {number|null} created_by - Foreign key reference to the User who created the item
+ * @property {number|null} transaction_id - Foreign key reference to the SalesTransaction if sold
+ *
+ * @typedef { import("./baseModelAttributes.js").baseAttributes & LabeledItemCreateAttributes & LabeledItemAttributesFetched} LabeledItemAttributes
  */
 
 /**
