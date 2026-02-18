@@ -3,11 +3,7 @@ import { col, fn, literal, Op, where } from "sequelize";
 import * as z from "zod";
 import db from "../../models/index.js";
 import { listCaisses } from "../../services/caisse.js";
-import {
-  idSchema,
-  phoneSchema,
-  postalSchema
-} from "../../services/zod.js";
+import { idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
 const {
   Recyclery,
   CashRegister,
@@ -146,19 +142,19 @@ export const updateRecyclerie = async (req, res) => {
   const data = dataSchema.parse(req.body);
 
   const recyclerie = await Recyclery.findByPk(id, {
-    include: [{ model: TaskSchedule }],
+    include: [{ model: TaskSchedule, where: { category: "vente" } }],
   });
   if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
 
   //TODO FIXME IMPORTANT URGENT make transaction work
   try {
-    if (data.is_active != recyclerie.is_active || data.name != recyclerie.name)
-      for (const schedule of recyclerie.TaskSchedules || []) {
-        await schedule.update({
-          is_recurring: data.is_active,
-          name: data.name,
-        });
-      }
+    // if (data.is_active != recyclerie.is_active || data.name != recyclerie.name)
+    //   for (const schedule of recyclerie.TaskSchedules || []) {
+    //     await schedule.update({
+    //       is_recurring: data.is_active,
+    //       name: "vente-"+data.name,
+    //     });
+    //   }
 
     await recyclerie.update({
       ...data,
@@ -229,7 +225,10 @@ export const recycleryStats = async (req, res) => {
   const salesResult = await SalesTransaction.findOne({
     attributes: [
       [fn("COUNT", col("SalesTransaction.id")), "monthly_sales"],
-      [fn("COALESCE", fn("SUM", col("SalesTransaction.total_amount")), 0), "monthly_revenue"],
+      [
+        fn("COALESCE", fn("SUM", col("SalesTransaction.total_amount")), 0),
+        "monthly_revenue",
+      ],
     ],
     include: [
       {
@@ -252,12 +251,15 @@ export const recycleryStats = async (req, res) => {
     raw: true,
   });
 
-  const salesRow = /** @type {{ monthly_sales?: number | string; monthly_revenue?: number | string } | null } */ (salesResult);
+  const salesRow =
+    /** @type {{ monthly_sales?: number | string; monthly_revenue?: number | string } | null } */ (
+      salesResult
+    );
   const sales = salesRow
     ? {
-      monthly_sales: Number(salesRow.monthly_sales ?? 0),
-      monthly_revenue: Number(salesRow.monthly_revenue ?? 0),
-    }
+        monthly_sales: Number(salesRow.monthly_sales ?? 0),
+        monthly_revenue: Number(salesRow.monthly_revenue ?? 0),
+      }
     : { monthly_sales: 0, monthly_revenue: 0 };
 
   res.json({

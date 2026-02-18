@@ -74,6 +74,19 @@ export default (sequelize, DataTypes) => {
       modelName: "Recyclery",
       indexes: [{ fields: ["is_active"] }, { fields: ["manager_id"] }],
       hooks: {
+        afterUpdate: async (instance, options) => {
+          if (options.fields?.includes("name") ||options.fields?.includes("is_active")) {
+            for (const schedule of instance.TaskSchedules || []) {//TODO faudrait getTaskShcedule pour etre sur de les avoirs et where cat==vente
+              await schedule.update({
+                is_recurring: instance.is_active,
+                name: "vente-" + instance.name,
+              });
+            }
+          }
+
+          // console.log("recyclery", instance);
+          // console.log("options", options);
+        },
         beforeDestroy: async (recyclery) => {
           // Get all cash registers for this recyclery
           const CashRegister = recyclery.sequelize.models.CashRegister;
@@ -90,10 +103,10 @@ export default (sequelize, DataTypes) => {
                 },
               ],
             });
-            if (Array.isArray(caisses) && caisses.length > 0) throw new createHttpError[424](
-                  `Impossible de supprimer la recyclerie car les caisses: "${caisses.map(caisse=>caisse.name)}" sont ouvertes`,
-                )
-           
+            if (Array.isArray(caisses) && caisses.length > 0)
+              throw new createHttpError[424](
+                `Impossible de supprimer la recyclerie car les caisses: "${caisses.map((caisse) => caisse.name)}" sont ouvertes`,
+              );
           }
         },
       },
