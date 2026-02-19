@@ -4,8 +4,8 @@
  * @property {string} email - Email address (must be unique and valid email format)
  * @property {string} password - Password hash (excluded from default scope)
  * @property {string} [password_hash] - Password hash (excluded from default scope)
- * 
- * @property {string|null} [role] - User role (default: "employee")
+ *
+ * @property {"employee"|"manager"|"admin"|null} [role] - User role (default: "employee")
  * @property {string|null} [phone] - Phone number
  * @property {boolean|null} [isActive] - Whether the user account is active (default: true)
  * @property {Date|string|null} [last_login] - Date and time of last login
@@ -18,7 +18,7 @@
  * @property {string} email
  * @property {string} password
  * @property {string} [password_hash]
- * @property {string|null} role
+ * @property {"employee"|"manager"|"admin"} role
  * @property {string|null} phone
  * @property {boolean} isActive
  * @property {Date|string|null} last_login

@@ -24,6 +24,10 @@ export default (sequelize, DataTypes) => {
       expected_amount: DataTypes.DECIMAL(10, 2), //computed field ?
       difference_amount: {
         type: DataTypes.VIRTUAL,
+        /**
+         * @this {import("./types/cashSessionModel.js").CashSessionInstance}
+         * @returns 
+         */
         get() {
           if (this.status === "open") return 0;
           const closing = Number(this.closing_amount) || 0;
