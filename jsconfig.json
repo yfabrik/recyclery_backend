@@ -3,7 +3,7 @@
     "checkJs": true,
     "strict": true,
     "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "moduleResolution": "nodenext"
   },
   "include": ["src"]
 }

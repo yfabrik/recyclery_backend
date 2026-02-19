@@ -19,7 +19,7 @@ router.get("/", authenticateToken, asyncHandler(listPointPrecense));
 router.get(
   "/collection-point/:collectionPointId",
   authenticateToken,
-  asyncHandler(detailPointPrecense)
+  asyncHandler(detailPointPrecense),
 );
 
 // Créer de nouveaux jours de présence
@@ -30,4 +30,3 @@ router.put("/:id", authenticateToken, asyncHandler(updatePointPrecense));
 
 // Supprimer des jours de présence
 router.delete("/:id", authenticateToken, asyncHandler(deletePointPrecense));
-

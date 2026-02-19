@@ -25,8 +25,8 @@
 
 /**
  * @typedef {import("sequelize").Model<CollectionReceiptAttributes, CollectionReceiptCreateAttributes> & CollectionReceiptAttributes} CollectionReceiptInstance
- * 
+ *
  * @property {() => Promise<import("./collectionSchedule.js").CollectionScheduleInstance>} getCollectionSchedule - Get the associated CollectionSchedule (belongs-to relationship).
- * 
+ *
  * @property {(schedule: import("./collectionSchedule.js").CollectionScheduleInstance|number) => Promise<void>} setCollectionSchedule - Set the CollectionSchedule for this receipt. Takes a CollectionSchedule instance or schedule ID.
  */

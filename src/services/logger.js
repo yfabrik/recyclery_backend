@@ -25,7 +25,7 @@ const logger = createLogger({
   format: _format.combine(
     _format.timestamp(),
     _format.errors({ stack: true }),
-    _format.json()
+    _format.json(),
   ),
   transports: isProduction
     ? [
@@ -52,7 +52,7 @@ const logger = createLogger({
                 ? `\n${JSON.stringify(meta)}`
                 : "";
               return base + details + metaStr;
-            })
+            }),
           ),
         }),
       ]
@@ -69,7 +69,7 @@ const logger = createLogger({
                 ? `\n${JSON.stringify(meta)}`
                 : "";
               return base + details + metaStr;
-            })
+            }),
           ),
         }),
       ],

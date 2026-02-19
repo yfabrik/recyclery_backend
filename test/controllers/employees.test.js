@@ -41,7 +41,7 @@ describe("employees controller functions", () => {
       expect.objectContaining({
         success: true,
         data: expect.any(Array),
-      })
+      }),
     );
   });
 
@@ -76,7 +76,7 @@ describe("employees controller functions", () => {
           prenom: "Jean",
           email: "jean.dupont@test.com",
         }),
-      })
+      }),
     );
   });
 
@@ -124,7 +124,7 @@ describe("employees controller functions", () => {
         data: expect.objectContaining({
           prenom: "Jean-Pierre",
         }),
-      })
+      }),
     );
   });
 
@@ -182,7 +182,7 @@ describe("employees controller functions", () => {
       expect.objectContaining({
         success: true,
         message: "employee supprimé",
-      })
+      }),
     );
   });
 

@@ -44,7 +44,7 @@ describe("recyclery controller functions", () => {
         recyclery: expect.any(Object),
         // success: true,
         message: "Recyclerie créée avec succès",
-      })
+      }),
     );
   });
 
@@ -61,7 +61,7 @@ describe("recyclery controller functions", () => {
     await listRecycleries(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ stores: expect.any(Array) })
+      expect.objectContaining({ stores: expect.any(Array) }),
     );
   });
 
@@ -79,7 +79,7 @@ describe("recyclery controller functions", () => {
     await detailRecyclerie(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ store: expect.any(Object) })
+      expect.objectContaining({ store: expect.any(Object) }),
     );
   });
 
@@ -99,11 +99,11 @@ describe("recyclery controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        store: expect.objectContaining({ 
-          name: "updated"
+        store: expect.objectContaining({
+          name: "updated",
         }),
-        success: true
-      })
+        success: true,
+      }),
     );
   });
 
@@ -121,14 +121,14 @@ describe("recyclery controller functions", () => {
     await deleteRecyclerie(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Recyclerie supprimée avec succès" })
+      expect.objectContaining({ message: "Recyclerie supprimée avec succès" }),
     );
   });
-   it("shouldn't find recyclery 1", async () => {
+  it("shouldn't find recyclery 1", async () => {
     const req = {
       query: {},
       user: { id: 1, role: "admin" },
-      params:{id:1}
+      params: { id: 1 },
     };
 
     const res = {
@@ -138,7 +138,7 @@ describe("recyclery controller functions", () => {
     await detailRecyclerie(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ store: null })
+      expect.objectContaining({ store: null }),
     );
   });
 });

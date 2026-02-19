@@ -26,7 +26,7 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.VIRTUAL,
         /**
          * @this {import("./types/cashSessionModel.js").CashSessionInstance}
-         * @returns 
+         * @returns
          */
         get() {
           if (this.status === "open") return 0;
@@ -55,7 +55,7 @@ export default (sequelize, DataTypes) => {
         { fields: ["status"] },
         { fields: ["createdAt"] },
       ],
-    }
+    },
   );
   return CashSession;
 };

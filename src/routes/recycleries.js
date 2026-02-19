@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
-import db from  "../../models/index.js"
+import db from "../../models/index.js";
 
 const { Recyclery, User, CashRegister } = db;
 
@@ -11,7 +11,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const recycleries = await Recyclery.findAll();
     res.json(recycleries);
-  })
+  }),
 );
 
 router.get(
@@ -25,16 +25,16 @@ router.get(
       ],
     });
     res.json(recycleries);
-  })
+  }),
 );
 
 router.post(
   "/",
   asyncHandler(async (req, res) => {
     const { name, address, phone, email } = req.body;
-    const recyclerie = await Recyclery.create({name, address, phone, email});
+    const recyclerie = await Recyclery.create({ name, address, phone, email });
     res.json(recyclerie);
-  })
+  }),
 );
 
 router.put(
@@ -43,7 +43,7 @@ router.put(
     const { id } = req.params;
     const recycleries = await Recyclery.findByPk(id);
     res.json(recycleries);
-  })
+  }),
 );
 
 router.delete(
@@ -53,7 +53,7 @@ router.delete(
 
     const recycleries = await Recyclery.destroy({ where: { id: id } });
     res.json(recycleries);
-  })
+  }),
 );
 
 /////// employee part //////////
@@ -66,7 +66,7 @@ router.get(
       include: [{ model: User, as: "employees" }],
     });
     res.json(users.employees);
-  })
+  }),
 );
 
 router.post(
@@ -77,7 +77,7 @@ router.post(
     const recyclerie = await Recyclery.findByPk(id);
     await recyclerie.addEmployee(employeeId);
     res.json(recyclerie);
-  })
+  }),
 );
 
 router.delete(
@@ -91,7 +91,7 @@ router.delete(
     await users.removeEmployee(userId);
 
     res.json(users);
-  })
+  }),
 );
 
 router.get(
@@ -102,7 +102,7 @@ router.get(
       include: [{ model: User, as: "manager" }],
     });
     res.json(users);
-  })
+  }),
 );
 
 router.post(
@@ -116,7 +116,7 @@ router.post(
     await recyclerie.setManager(manager);
 
     res.json(recyclerie);
-  })
+  }),
 );
 
 ////////// caisse part ////////
@@ -129,7 +129,7 @@ router.get(
       include: [{ model: CashRegister, as: "caisses" }],
     });
     res.json(caisses);
-  })
+  }),
 );
 
 router.post(
@@ -140,5 +140,5 @@ router.post(
     const caisse = await CashRegister.create({ name, recyclery_id: id });
 
     res.json(caisse);
-  })
+  }),
 );

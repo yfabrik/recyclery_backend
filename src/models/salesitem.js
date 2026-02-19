@@ -6,14 +6,13 @@ import { Model } from "sequelize";
  */
 export default (sequelize, DataTypes) => {
   class SalesItem extends Model {
-/**
+    /**
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
       // define association here
       this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" });
       this.belongsTo(models.LabeledItem, { foreignKey: "labeled_item_id" });
-
     }
   }
 
@@ -31,7 +30,7 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "SalesItem",
-    }
+    },
   );
   return SalesItem;
 };

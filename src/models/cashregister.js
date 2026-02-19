@@ -33,14 +33,16 @@ export default (sequelize, DataTypes) => {
       ],
       hooks: {
         beforeDestroy: async (caisse) => {
-          const sessions = await caisse.countSessions({ where: { status: "open" } });
+          const sessions = await caisse.countSessions({
+            where: { status: "open" },
+          });
           if (sessions)
             throw new createHttpError[424](
-              "Impossible de supprimer une caisse avec des sessions ouvertes"
+              "Impossible de supprimer une caisse avec des sessions ouvertes",
             );
         },
       },
-    }
+    },
   );
   return CashRegister;
 };

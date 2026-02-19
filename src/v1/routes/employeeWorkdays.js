@@ -5,7 +5,10 @@ import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 import { idSchema } from "../../services/zod.js";
 import logger from "../../services/logger.js";
-import { createEmployeeWorkdays, listEmployeeWorkdays } from "../controllers/employeeWorkdays.js";
+import {
+  createEmployeeWorkdays,
+  listEmployeeWorkdays,
+} from "../controllers/employeeWorkdays.js";
 
 const { EmployeeWorkdays, Employee } = db;
 export const router = Router();
@@ -14,7 +17,7 @@ router.get(
   "/",
   authenticateToken,
   asyncHandler(async (req, res) => {
-  logger.error("called useless fn in the router 1")
+    logger.error("called useless fn in the router 1");
 
     const workdays = await EmployeeWorkdays.findAll({
       include: [{ model: Employee }],
@@ -46,7 +49,7 @@ router.post(
   "/",
   authenticateToken,
   asyncHandler(async (req, res) => {
-  logger.error("called useless fn in the router 4")
+    logger.error("called useless fn in the router 4");
 
     const {
       employee_id,
@@ -98,7 +101,7 @@ router.put(
   "/:id",
   authenticateToken,
   asyncHandler(async (req, res) => {
-  logger.error("called useless fn in the router 5")
+    logger.error("called useless fn in the router 5");
 
     const { id } = req.params;
     const { is_working, start_time, end_time, notes } = req.body;
@@ -130,7 +133,7 @@ router.delete(
   "/:id",
   authenticateToken,
   asyncHandler(async (req, res) => {
-  logger.error("called useless fn in the router6 ")
+    logger.error("called useless fn in the router6 ");
 
     const { id } = req.params;
 
@@ -155,7 +158,7 @@ router.delete(
   "/employee/:employeeId",
   authenticateToken,
   asyncHandler(async (req, res) => {
-  logger.error("called useless fn in the router 7")
+    logger.error("called useless fn in the router 7");
 
     const { employeeId } = req.params;
 

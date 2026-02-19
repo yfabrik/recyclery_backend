@@ -1,9 +1,8 @@
 import createHttpError from "http-errors";
 import jwt from "jsonwebtoken";
-import db from  "../models/index.js"
+import db from "../models/index.js";
 
-
-const { User } = db
+const { User } = db;
 
 /**
  * @typedef {import("../models/types/userModel.js").UserInstance} UserInstance
@@ -11,10 +10,10 @@ const { User } = db
  */
 
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
- * @param {import("express").NextFunction} next 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ * @param {import("express").NextFunction} next
  */
 export const authenticateToken = async (req, res, next) => {
   try {
@@ -26,17 +25,19 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     // Vérifier le token
-    const decoded =jwt.verify(
+    const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || "adapemont-secret-key"
+      process.env.JWT_SECRET || "adapemont-secret-key",
     );
 
     // Récupérer l'utilisateur
-    const user = await User.findByPk(decoded.id,{attributes:{exclude:["password"]}});
+    const user = await User.findByPk(decoded.id, {
+      attributes: { exclude: ["password"] },
+    });
 
     if (!user || !user.isActive) {
       throw new createHttpError.Unauthorized(
-        "Utilisateur non trouvé ou inactif"
+        "Utilisateur non trouvé ou inactif",
       );
     }
 

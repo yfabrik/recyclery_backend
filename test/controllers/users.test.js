@@ -45,7 +45,7 @@ describe("User controller functions", () => {
         }),
         success: true,
         message: "Utilisateur créé avec succès",
-      })
+      }),
     );
   });
 
@@ -67,7 +67,7 @@ describe("User controller functions", () => {
           email: "john.doe@test.com",
           role: "employee",
         }),
-      })
+      }),
     );
   });
   // it("should update john", async () => {
@@ -110,7 +110,7 @@ describe("User controller functions", () => {
     await listUsers(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ users: expect.any(Array) })
+      expect.objectContaining({ users: expect.any(Array) }),
     );
   });
 
@@ -128,7 +128,7 @@ describe("User controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         users: expect.any(Array),
-      })
+      }),
     );
     const users = res.json.mock.calls[0][0].users;
     expect(users.length).toBeGreaterThanOrEqual(0);
@@ -154,7 +154,7 @@ describe("User controller functions", () => {
       expect.objectContaining({
         success: true,
         message: "user removed",
-      })
+      }),
     );
   });
   it("shouldn't find john", async () => {
@@ -196,7 +196,7 @@ describe("User controller functions", () => {
           role: "manager",
         }),
         success: true,
-      })
+      }),
     );
   });
 
@@ -212,13 +212,13 @@ describe("User controller functions", () => {
     await listUsers(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ 
+      expect.objectContaining({
         users: expect.arrayContaining([
           expect.objectContaining({
-            role: "manager"
-          })
-        ])
-      })
+            role: "manager",
+          }),
+        ]),
+      }),
     );
   });
 });

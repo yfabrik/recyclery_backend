@@ -27,7 +27,7 @@ router.put(
   "/:id",
   authenticateToken,
   // requireRole(['admin', 'manager']),
-  asyncHandler(updateArrival)
+  asyncHandler(updateArrival),
 );
 
 // Supprimer un arrivage
@@ -35,19 +35,15 @@ router.delete(
   "/:id",
   authenticateToken,
   // requireRole(['admin', 'manager']),
-  asyncHandler(deleteArrival)
+  asyncHandler(deleteArrival),
 );
 
 // Obtenir les statistiques des arrivages
-router.get(
-  "/stats/summary",
-  authenticateToken,
-  asyncHandler(statsSummary)
-);
+router.get("/stats/summary", authenticateToken, asyncHandler(statsSummary));
 
 // Obtenir les arrivages par catégorie
 router.get(
   "/stats/by-category",
   authenticateToken,
-  asyncHandler(statsByCategories)
+  asyncHandler(statsByCategories),
 );

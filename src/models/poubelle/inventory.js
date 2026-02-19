@@ -22,7 +22,7 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Inventory",
-    }
+    },
   );
   return Inventory;
 };

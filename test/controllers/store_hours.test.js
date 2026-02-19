@@ -21,10 +21,10 @@ beforeAll(async () => {
   });
   await Category.create({ name: "Électronique" });
   await Category.create({ name: "Mobilier", parent_id: 1 });
-  await User.create({ 
+  await User.create({
     email: "employee@test.com",
     username: "testemployee",
-    role: "employee"
+    role: "employee",
   });
 });
 
@@ -61,35 +61,35 @@ describe("store_hours controller functions", () => {
       expect.objectContaining({
         id: 1,
         success: true,
-      })
+      }),
     );
   });
 
-    it("should list horaires", async () => {
-        const req = {
-            query: {},
-            user: { id: 1, role: "admin" },
-        };
+  it("should list horaires", async () => {
+    const req = {
+      query: {},
+      user: { id: 1, role: "admin" },
+    };
 
-        const res = {
-            json: jest.fn(),
-        };
+    const res = {
+      json: jest.fn(),
+    };
 
-        await listHoraires(req, res);
+    await listHoraires(req, res);
 
-        expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({
-                storeHours: expect.arrayContaining([
-                    expect.objectContaining({
-                        id: expect.any(Number),
-                        day_of_week: expect.any(String),
-                        name: expect.any(String)
-                    })
-                ]),
-                success: true,
-            })
-        );
-    });
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        storeHours: expect.arrayContaining([
+          expect.objectContaining({
+            id: expect.any(Number),
+            day_of_week: expect.any(String),
+            name: expect.any(String),
+          }),
+        ]),
+        success: true,
+      }),
+    );
+  });
   it.skip("should update horaire", async () => {
     const req = {
       query: {},
@@ -115,7 +115,7 @@ describe("store_hours controller functions", () => {
         horaire: expect.any(Object),
         success: true,
         message: "Horaires mis à jour avec succès",
-      })
+      }),
     );
   });
   it("should delete horaire 1", async () => {
@@ -132,7 +132,7 @@ describe("store_hours controller functions", () => {
     await removeHoraires(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ success: true })
+      expect.objectContaining({ success: true }),
     );
   });
 });

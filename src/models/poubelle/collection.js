@@ -26,7 +26,7 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Collection",
-    }
+    },
   );
   return Collection;
 };

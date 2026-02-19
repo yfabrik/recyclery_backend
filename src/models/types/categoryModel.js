@@ -55,4 +55,4 @@
 
 /**
  * @typedef {import("sequelize").Model<CategoryAttributes, CategoryCreateAttributes> & CategoryAttributes & CategoryInstanceAssociations} CategoryInstance
-  */
+ */

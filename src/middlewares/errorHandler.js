@@ -7,14 +7,14 @@ import {
 import logger from "../services/logger.js";
 import jwt from "jsonwebtoken";
 import { ZodError } from "zod";
-const { JsonWebTokenError, NotBeforeError, TokenExpiredError } = jwt
+const { JsonWebTokenError, NotBeforeError, TokenExpiredError } = jwt;
 
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
- * @param {import("express").NextFunction} next 
- * @param {import("express").ErrorRequestHandler} err  
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ * @param {import("express").NextFunction} next
+ * @param {import("express").ErrorRequestHandler} err
  */
 export const errorHandler = (err, req, res, next) => {
   logger.error(err?.message || "Unhandled error", {
@@ -78,12 +78,12 @@ export const errorHandler = (err, req, res, next) => {
   }
 
   if (err instanceof ZodError) {
-    console.log(err.issues)
+    console.log(err.issues);
     return res.status(400).json({
       success: false,
-      error: err.issues.map(e => e.message).toString(),
-      message: "validation error"
-    })
+      error: err.issues.map((e) => e.message).toString(),
+      message: "validation error",
+    });
   }
 
   if (isHttpError(err))

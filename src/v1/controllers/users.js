@@ -59,7 +59,6 @@ export const listUsers = async (req, res) => {
   res.json({ users });
 };
 
-
 /**
  *
  * @param {import("express").Request} req
@@ -139,7 +138,6 @@ export const updateUser = async (req, res) => {
   await user.update({
     ...data,
   });
-
 
   res.json({
     success: true,

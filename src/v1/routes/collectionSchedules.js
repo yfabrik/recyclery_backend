@@ -2,20 +2,30 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
-import { addUserToSchedule, createCollectionSchedule, deleteCollectionSchedule, detailBSD, generateBSD, listcollectionSchedule, removeUserFromSchedule, updateCollectionSchedule } from "../controllers/CollectionSchedule.js";
+import {
+  addUserToSchedule,
+  createCollectionSchedule,
+  deleteCollectionSchedule,
+  detailBSD,
+  generateBSD,
+  listcollectionSchedule,
+  removeUserFromSchedule,
+  updateCollectionSchedule,
+} from "../controllers/CollectionSchedule.js";
 import { col, fn, Op, QueryTypes } from "sequelize";
 
-
-const { CollectionSchedule, CollectionPoint, User, EmployeeWorkdays, sequelize } = db;
+const {
+  CollectionSchedule,
+  CollectionPoint,
+  User,
+  EmployeeWorkdays,
+  sequelize,
+} = db;
 
 export const router = Router();
 
 // Obtenir tous les plannings de collecte
-router.get(
-  "/",
-  authenticateToken,
-  asyncHandler(listcollectionSchedule)
-);
+router.get("/", authenticateToken, asyncHandler(listcollectionSchedule));
 // Obtenir les plannings pour le calendrier
 router.get(
   "/calendar",
@@ -23,11 +33,14 @@ router.get(
   asyncHandler(async (req, res) => {
     const { month, year } = req.query;
     /**
-* @type {import("sequelize").WhereOptions}
-*/
+     * @type {import("sequelize").WhereOptions}
+     */
     const where = {};
     if (month && year)
-      where[Op.eq] = [fn("strftime", "%Y-%m", col("scheduled_date")), "yearMonth"]
+      where[Op.eq] = [
+        fn("strftime", "%Y-%m", col("scheduled_date")),
+        "yearMonth",
+      ];
 
     const events = await CollectionSchedule.findAll({
       where,
@@ -38,16 +51,17 @@ router.get(
     // Transformer les données pour le calendrier
     const calendarEvents = events.map((event) => ({
       id: event.id,
-      title: `${event.collection_point_name} - ${event.employee_name || "Non assigné"
-        }`,
+      title: `${event.collection_point_name} - ${
+        event.employee_name || "Non assigné"
+      }`,
       start: `${event.scheduled_date}T${event.scheduled_time}`,
       end: event.estimated_duration
         ? new Date(
-          new Date(
-            `${event.scheduled_date}T${event.scheduled_time}`
-          ).getTime() +
-          event.estimated_duration * 60000
-        ).toISOString()
+            new Date(
+              `${event.scheduled_date}T${event.scheduled_time}`,
+            ).getTime() +
+              event.estimated_duration * 60000,
+          ).toISOString()
         : `${event.scheduled_date}T${event.scheduled_time}`,
       backgroundColor:
         event.status === "completed"
@@ -68,7 +82,7 @@ router.get(
       success: true,
       events: calendarEvents,
     });
-  })
+  }),
 );
 
 // Créer un nouveau planning de collecte
@@ -76,7 +90,7 @@ router.post(
   "/",
   authenticateToken,
   // requireRole(["admin", "manager"]),
-  asyncHandler(createCollectionSchedule)
+  asyncHandler(createCollectionSchedule),
 );
 
 // Mettre à jour un planning de collecte
@@ -84,7 +98,7 @@ router.put(
   "/:id",
   authenticateToken,
   // requireRole(["admin", "manager"]),
-  asyncHandler(updateCollectionSchedule)
+  asyncHandler(updateCollectionSchedule),
 );
 
 // Supprimer un planning de collecte
@@ -92,22 +106,14 @@ router.delete(
   "/:id",
   authenticateToken,
   // requireRole(["admin", "manager"]),
-  asyncHandler(deleteCollectionSchedule)
+  asyncHandler(deleteCollectionSchedule),
 );
 
 // Générer un bordereau de collecte
-router.post(
-  "/:id/receipt",
-  authenticateToken,
-  asyncHandler(generateBSD)
-);
+router.post("/:id/receipt", authenticateToken, asyncHandler(generateBSD));
 
 // Obtenir un bordereau de collecte
-router.get(
-  "/:id/receipt",
-  authenticateToken,
-  asyncHandler(detailBSD)
-);
+router.get("/:id/receipt", authenticateToken, asyncHandler(detailBSD));
 
 // Récupérer les employés disponibles pour une collecte spécifique (en tenant compte des conflits d'horaires et de la présence)
 router.get(
@@ -218,10 +224,10 @@ router.get(
             startTime: schedule.scheduled_time,
           },
           type: QueryTypes.SELECT,
-        }
+        },
       );
       const endTime = new Date(
-        `${schedule.scheduled_date} ${schedule.scheduled_time}`
+        `${schedule.scheduled_date} ${schedule.scheduled_time}`,
       );
       endTime.setHours(endTime.getHours() + 1); // Collecte dure 1h par défaut
       const endTimeStr = endTime.toTimeString().slice(0, 5);
@@ -251,19 +257,19 @@ router.get(
         });
       }
     });
-  })
+  }),
 );
 
 // Assigner un employé à une collecte spécifique
 router.post(
   "/:scheduleId/employees",
   authenticateToken,
-  asyncHandler(addUserToSchedule)
+  asyncHandler(addUserToSchedule),
 );
 
 // Retirer un employé d'une collecte spécifique
 router.delete(
   "/:scheduleId/employees/:employeeId",
   authenticateToken,
-  asyncHandler(removeUserFromSchedule)
+  asyncHandler(removeUserFromSchedule),
 );

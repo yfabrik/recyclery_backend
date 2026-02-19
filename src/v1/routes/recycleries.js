@@ -15,7 +15,7 @@ import { hasPermissions } from "../../middlewares/hasPermissions.js";
 
 export const router = Router();
 router.use(authenticateToken);
-router.use(hasPermissions)
+router.use(hasPermissions);
 
 // Obtenir toutes les recycleries
 router.get("/", asyncHandler(listRecycleries));
@@ -27,7 +27,7 @@ router.get("/:id", asyncHandler(detailRecyclerie));
 router.post(
   "/",
   // adminMiddleware,
-  asyncHandler(createRecyclerie)
+  asyncHandler(createRecyclerie),
 );
 
 // Mettre à jour une recyclerie
@@ -35,7 +35,7 @@ router.put(
   "/:id",
 
   //   adminMiddleware,
-  asyncHandler(updateRecyclerie)
+  asyncHandler(updateRecyclerie),
 );
 
 // Supprimer une recyclerie
@@ -43,20 +43,17 @@ router.delete(
   "/:id",
 
   //   adminMiddleware,
-  asyncHandler(deleteRecyclerie)
+  asyncHandler(deleteRecyclerie),
 );
 
 // Obtenir les statistiques d'une recyclerie
-router.get(
-  "/:id/stats",
-  asyncHandler(recycleryStats)
-);
+router.get("/:id/stats", asyncHandler(recycleryStats));
 
 // GET - Récupérer les caisses d'un magasin
 router.get(
   "/:id/cash-registers",
 
-  asyncHandler(listCaissesRecyclerie)
+  asyncHandler(listCaissesRecyclerie),
 );
 
 // POST - Créer une nouvelle caisse pour un magasin
@@ -64,5 +61,5 @@ router.post(
   "/:id/cash-registers",
 
   //   requireRole(["admin", "manager"]),
-  asyncHandler(createCaisse)
+  asyncHandler(createCaisse),
 );

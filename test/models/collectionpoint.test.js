@@ -21,7 +21,9 @@ describe("CollectionPoint Model", () => {
 
     it("should read a collection point by primary key", async () => {
       const recyclery = await createRecyclery();
-      const created = await createCollectionPoint(recyclery.id, { name: "ReadTest" });
+      const created = await createCollectionPoint(recyclery.id, {
+        name: "ReadTest",
+      });
       const found = await CollectionPoint.findByPk(created.id);
       expect(found).not.toBeNull();
       expect(found.name).toBe("ReadTest");
@@ -29,7 +31,9 @@ describe("CollectionPoint Model", () => {
 
     it("should update a collection point", async () => {
       const recyclery = await createRecyclery();
-      const created = await createCollectionPoint(recyclery.id, { name: "BeforeUpdate" });
+      const created = await createCollectionPoint(recyclery.id, {
+        name: "BeforeUpdate",
+      });
       await created.update({ name: "AfterUpdate", city: "Paris" });
       const reloaded = await CollectionPoint.findByPk(created.id);
       expect(reloaded.name).toBe("AfterUpdate");
@@ -38,7 +42,9 @@ describe("CollectionPoint Model", () => {
 
     it("should delete a collection point", async () => {
       const recyclery = await createRecyclery();
-      const created = await createCollectionPoint(recyclery.id, { name: "ToDelete" });
+      const created = await createCollectionPoint(recyclery.id, {
+        name: "ToDelete",
+      });
       const id = created.id;
       await created.destroy();
       const found = await CollectionPoint.findByPk(id);
@@ -49,7 +55,9 @@ describe("CollectionPoint Model", () => {
   describe("cascade on delete", () => {
     it("should remove TaskSchedules when collection point is deleted", async () => {
       const recyclery = await createRecyclery();
-      const cp = await createCollectionPoint(recyclery.id, { name: "CP Cascade" });
+      const cp = await createCollectionPoint(recyclery.id, {
+        name: "CP Cascade",
+      });
       const schedule = await TaskSchedule.create({
         collection_point_id: cp.id,
         category: "collection",

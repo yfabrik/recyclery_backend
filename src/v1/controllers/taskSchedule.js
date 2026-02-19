@@ -296,7 +296,6 @@ export const findSchedule = async (req, res) => {
 export const createSchedule = async (req, res) => {
   const data = dataSchema.parse(req.body);
 
-
   const schedule = await TaskSchedule.create({
     ...data,
     name: data.name ?? data.category,

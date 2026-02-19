@@ -18,7 +18,7 @@ router.get(
   "/",
   authenticateToken,
   //   requireModuleAccess('admin.eco_organisms', 'view'),
-  asyncHandler(listEcoOrganism)
+  asyncHandler(listEcoOrganism),
 );
 
 // GET active eco-organisms only
@@ -30,7 +30,7 @@ router.get(
   "/:id",
   authenticateToken,
   //  requireModuleAccess('admin.eco_organisms', 'view'),
-  asyncHandler(detailEcoOrganism)
+  asyncHandler(detailEcoOrganism),
 );
 
 // POST create new eco-organism
@@ -38,7 +38,7 @@ router.post(
   "/",
   authenticateToken,
   //  requireModuleAccess('admin.eco_organisms', 'manage'),
-  asyncHandler(createEcoOrganism)
+  asyncHandler(createEcoOrganism),
 );
 
 // PUT update eco-organism
@@ -46,7 +46,7 @@ router.put(
   "/:id",
   authenticateToken,
   //   requireModuleAccess('admin.eco_organisms', 'manage'),
-  asyncHandler(updateEcoOrganism)
+  asyncHandler(updateEcoOrganism),
 );
 
 // DELETE (deactivate) eco-organism
@@ -54,7 +54,7 @@ router.delete(
   "/:id",
   authenticateToken,
   // requireModuleAccess('admin.eco_organisms', 'manage'),
-  asyncHandler(deleteEcoOrganism)
+  asyncHandler(deleteEcoOrganism),
 );
 
 // GET eco-organism statistics
@@ -62,5 +62,5 @@ router.get(
   "/stats/summary",
   authenticateToken,
   //  requireModuleAccess('admin.eco_organisms', 'view'),
-  asyncHandler(ecoOrgaStats)
+  asyncHandler(ecoOrgaStats),
 );

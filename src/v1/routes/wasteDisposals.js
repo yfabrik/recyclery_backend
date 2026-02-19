@@ -22,7 +22,7 @@ router.get(
   "/:id",
   authenticateToken,
   // requireModuleAccess("waste.disposals", "view"),
-  asyncHandler(detailWaste)
+  asyncHandler(detailWaste),
 );
 
 // POST create new waste disposal
@@ -33,7 +33,7 @@ router.put(
   "/:id",
   authenticateToken,
   // requireModuleAccess("waste.disposals", "manage"),
-  asyncHandler(updateWaste)
+  asyncHandler(updateWaste),
 );
 
 // DELETE waste disposal
@@ -41,7 +41,7 @@ router.delete(
   "/:id",
   authenticateToken,
   // requireModuleAccess("waste.disposals", "manage"),
-  asyncHandler(deleteWaste)
+  asyncHandler(deleteWaste),
 );
 
 // GET waste disposal statistics
@@ -49,7 +49,7 @@ router.get(
   "/stats/summary",
   authenticateToken,
   // requireModuleAccess("waste.disposals", "view"),
-  asyncHandler(wasteStats)
+  asyncHandler(wasteStats),
 );
 
 // GET waste disposal statistics by category
@@ -57,5 +57,5 @@ router.get(
   "/stats/by-category",
   authenticateToken,
   // requireModuleAccess("waste.disposals", "view"),
-  asyncHandler(wasteStatsCategory)
+  asyncHandler(wasteStatsCategory),
 );

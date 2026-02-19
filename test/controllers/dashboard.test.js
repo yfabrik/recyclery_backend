@@ -73,7 +73,7 @@ describe("dashboard controller functions", () => {
           categoriesCount: expect.any(Number),
           usersCount: expect.any(Number),
         }),
-      })
+      }),
     );
   });
 
@@ -93,7 +93,7 @@ describe("dashboard controller functions", () => {
       expect.objectContaining({
         success: true,
         data: expect.any(Array),
-      })
+      }),
     );
   });
 
@@ -117,7 +117,7 @@ describe("dashboard controller functions", () => {
           revenue: expect.any(Array),
           labels: expect.any(Array),
         }),
-      })
+      }),
     );
   });
 
@@ -148,7 +148,7 @@ describe("dashboard controller functions", () => {
             }),
           }),
         ]),
-      })
+      }),
     );
   });
 });

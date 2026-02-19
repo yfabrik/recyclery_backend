@@ -7,8 +7,4 @@ export const router = Router();
 router.use(authenticateToken);
 
 // Obtenir toutes les sous-catégories
-router.get(
-  "/",
-  asyncHandler(listSubcategories)
-)
-
+router.get("/", asyncHandler(listSubcategories));

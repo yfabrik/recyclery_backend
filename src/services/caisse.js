@@ -1,7 +1,7 @@
 import { Op, Sequelize } from "sequelize";
-import db from  "../models/index.js"
+import db from "../models/index.js";
 
-const { CashRegister, CashSession,Recyclery } = db;
+const { CashRegister, CashSession, Recyclery } = db;
 
 export const listCaisses = async (store_id) => {
   const registers = await CashRegister.findAll({
@@ -44,6 +44,6 @@ export const findOpenSession = (user_id) => {
   const existingSession = CashSession.findAll({
     where: { user_id: user_id, status: "open" },
   });
-  
+
   return existingSession;
 };

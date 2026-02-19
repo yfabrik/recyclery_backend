@@ -84,4 +84,4 @@
  */
 /**
  * @typedef {import("sequelize").Model<EmployeeAttributes, EmployeeCreateAttributes> & EmployeeAttributes & EmployeeInstanceAssociations} EmployeeInstance
-*/
+ */

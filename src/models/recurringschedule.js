@@ -1,5 +1,5 @@
-'use strict';
-import { Model } from 'sequelize';
+"use strict";
+import { Model } from "sequelize";
 /**
  * @deprecated
  * @param {import("sequelize").Sequelize} sequelize
@@ -7,7 +7,7 @@ import { Model } from 'sequelize';
  */
 export default (sequelize, DataTypes) => {
   class RecurringSchedule extends Model {
-/**
+    /**
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
@@ -16,18 +16,21 @@ export default (sequelize, DataTypes) => {
   }
 
   //TODO doublon avec TaskSchedule ?
-  RecurringSchedule.init({
-    task_id: DataTypes.INTEGER,//assoc
-    assigned_to: DataTypes.INTEGER,//assoc
-    start_date: DataTypes.DATE,
-    end_date: DataTypes.DATE,
-    day_of_week: DataTypes.INTEGER,
-    start_time: DataTypes.TIME,
-    end_time: DataTypes.TIME,
-    is_active: DataTypes.BOOLEAN
-  }, {
-    sequelize,
-    modelName: 'RecurringSchedule',
-  });
+  RecurringSchedule.init(
+    {
+      task_id: DataTypes.INTEGER, //assoc
+      assigned_to: DataTypes.INTEGER, //assoc
+      start_date: DataTypes.DATE,
+      end_date: DataTypes.DATE,
+      day_of_week: DataTypes.INTEGER,
+      start_time: DataTypes.TIME,
+      end_time: DataTypes.TIME,
+      is_active: DataTypes.BOOLEAN,
+    },
+    {
+      sequelize,
+      modelName: "RecurringSchedule",
+    },
+  );
   return RecurringSchedule;
 };

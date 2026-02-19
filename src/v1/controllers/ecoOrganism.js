@@ -3,36 +3,39 @@ import db from "../../models/index.js";
 import createHttpError from "http-errors";
 import z, { optional } from "zod";
 import logger from "../../services/logger.js";
-import { asOptionalStringWithoutEmpty, idSchema, nullishToNull, phoneSchema } from "../../services/zod.js";
+import {
+  asOptionalStringWithoutEmpty,
+  idSchema,
+  nullishToNull,
+  phoneSchema,
+} from "../../services/zod.js";
 
 const { EcoOrganism, WasteDisposal } = db;
 
-
-  const dataSchema = z.object({
-    name: z.string().trim().nonempty("Le nom est requis"),
-    description: z.string().nullish(),
-    contact_email: z.email().nullish(),
-    contact_phone: phoneSchema().nullish(),
-    address: z.string().nullish(),
-    website: z.url().nullish(),
-    is_active: z.boolean().optional().default(true),
-  })
-
+const dataSchema = z.object({
+  name: z.string().trim().nonempty("Le nom est requis"),
+  description: z.string().nullish(),
+  contact_email: z.email().nullish(),
+  contact_phone: phoneSchema().nullish(),
+  address: z.string().nullish(),
+  website: z.url().nullish(),
+  is_active: z.boolean().optional().default(true),
+});
 
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listEcoOrganism = async (req, res) => {
   const filterSchema = z.object({
-    active: z.coerce.boolean().optional()
-  })
+    active: z.coerce.boolean().optional(),
+  });
   const filter = filterSchema.parse(req.query);
   /**
- * @type {import("sequelize").WhereOptions}
- */
-  const where = { };
+   * @type {import("sequelize").WhereOptions}
+   */
+  const where = {};
   if (filter.active) where.is_active = filter.active;
 
   const eco_organisms = await EcoOrganism.findAll({ where });
@@ -40,12 +43,12 @@ export const listEcoOrganism = async (req, res) => {
   res.json({ eco_organisms });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listActiveEcoOrganism = async (req, res) => {
-  logger.warn("use list active eco organise TO REMOVE")
+  logger.warn("use list active eco organise TO REMOVE");
   req.query.active = "true";
   return listEcoOrganism(req, res);
   // const eco_organisms = await EcoOrganism.findAll({ where: { is_active } });
@@ -53,29 +56,28 @@ export const listActiveEcoOrganism = async (req, res) => {
   // res.json({ eco_organisms });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const detailEcoOrganism = async (req, res) => {
   const id = idSchema().parse(req.params.id);
   const eco_organism = await EcoOrganism.findByPk(id);
 
-  if (!eco_organism) throw new createHttpError[404]("Éco-organisme non trouvé")
+  if (!eco_organism) throw new createHttpError[404]("Éco-organisme non trouvé");
 
   res.json({ eco_organism });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const createEcoOrganism = async (req, res) => {
-
-  const data = dataSchema.parse(req.body)
+  const data = dataSchema.parse(req.body);
 
   const created = await EcoOrganism.create({
-    ...data
+    ...data,
   });
 
   res.status(201).json({
@@ -84,27 +86,27 @@ export const createEcoOrganism = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const updateEcoOrganism = async (req, res) => {
   const id = idSchema().parse(req.params.id);
 
-  const data = dataSchema.parse(req.body)
+  const data = dataSchema.parse(req.body);
 
   const eco_organism = await EcoOrganism.findByPk(id);
-  if (!eco_organism) throw new createHttpError[404]("eco organisme pas trouvé")
+  if (!eco_organism) throw new createHttpError[404]("eco organisme pas trouvé");
   await eco_organism.update({
-    ...data
-  })
+    ...data,
+  });
 
   res.json({ message: "Éco-organisme mis à jour avec succès", eco_organism });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const deleteEcoOrganism = async (req, res) => {
   const { id } = req.params;
@@ -128,9 +130,9 @@ export const deleteEcoOrganism = async (req, res) => {
   }
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const ecoOrgaStats = async (req, res) => {
   const stats = await EcoOrganism.findOne({

@@ -18,7 +18,7 @@ router.put(
   "/:id/status",
   authenticateToken,
   // requireRole(["admin", "manager"]),
-  asyncHandler(updateRefund)
+  asyncHandler(updateRefund),
 );
 
 // GET - Récupérer les détails d'un avoir

@@ -70,7 +70,7 @@ describe("taskSchedule controller functions", () => {
       expect.objectContaining({
         success: true,
         schedules: expect.any(Array),
-      })
+      }),
     );
   });
 
@@ -91,7 +91,7 @@ describe("taskSchedule controller functions", () => {
       expect.objectContaining({
         success: true,
         schedules: expect.any(Array),
-      })
+      }),
     );
   });
 
@@ -132,7 +132,7 @@ describe("taskSchedule controller functions", () => {
           id: expect.any(Number),
           category: "custom",
         }),
-      })
+      }),
     );
   });
 
@@ -154,7 +154,7 @@ describe("taskSchedule controller functions", () => {
         schedule: expect.objectContaining({
           id: 1,
         }),
-      })
+      }),
     );
   });
 
@@ -176,7 +176,7 @@ describe("taskSchedule controller functions", () => {
       expect.objectContaining({
         success: false,
         message: "Planning non trouvé",
-      })
+      }),
     );
   });
 
@@ -207,7 +207,7 @@ describe("taskSchedule controller functions", () => {
       expect.objectContaining({
         success: true,
         message: "Planning mis à jour avec succès",
-      })
+      }),
     );
   });
 
@@ -244,7 +244,7 @@ describe("taskSchedule controller functions", () => {
       expect.objectContaining({
         success: true,
         schedules: expect.any(Array),
-      })
+      }),
     );
   });
 
@@ -268,7 +268,7 @@ describe("taskSchedule controller functions", () => {
       expect.objectContaining({
         success: true,
         schedules: expect.any(Array),
-      })
+      }),
     );
   });
 
@@ -292,7 +292,7 @@ describe("taskSchedule controller functions", () => {
           topTasks: expect.any(Array),
           topEmployees: expect.any(Array),
         }),
-      })
+      }),
     );
   });
 
@@ -336,7 +336,7 @@ describe("taskSchedule controller functions", () => {
       expect.objectContaining({
         success: true,
         message: "Planning supprimé avec succès",
-      })
+      }),
     );
   });
 

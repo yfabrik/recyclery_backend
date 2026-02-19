@@ -23,8 +23,6 @@ const configModule = await import(`../../config/config.json`, {
  */
 const config = configModule.default[env];
 
-
-
 /** @type { import("./types/models.js").db} */
 const db = {};
 
@@ -37,7 +35,7 @@ if (config.use_env_variable) {
     config.database,
     config.username,
     config.password,
-    config
+    config,
   );
 }
 

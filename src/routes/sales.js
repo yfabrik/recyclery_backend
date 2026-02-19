@@ -1,8 +1,8 @@
 import { Router } from "express";
-import db from  "../../models/index.js"
+import db from "../../models/index.js";
 
 import { asyncHandler } from "../middlewares/asyncHandler.js";
-const {  SalesTransaction, SalesItem, CashSession, LabeledItem } = db;
+const { SalesTransaction, SalesItem, CashSession, LabeledItem } = db;
 
 export const router = Router();
 router.get(
@@ -10,7 +10,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const sale = await SalesTransaction.findAll();
     res.json(sale);
-  })
+  }),
 );
 
 router.post(
@@ -68,5 +68,5 @@ router.post(
     });
 
     res.json(fullSale);
-  })
+  }),
 );

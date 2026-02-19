@@ -61,11 +61,20 @@ export const createTaskObject = (data, scheduleId, scheduledDate) => {
   };
 
   const optionalFields = [
-    "description", "priority", "required_skills", "location", "equipment_needed",
-    "hourly_rate", "notes", "status", "store_id", "collection_point_id",
+    "description",
+    "priority",
+    "required_skills",
+    "location",
+    "equipment_needed",
+    "hourly_rate",
+    "notes",
+    "status",
+    "store_id",
+    "collection_point_id",
   ];
   for (const key of optionalFields) {
-    if (data[key] !== undefined && data[key] !== null) Object.assign(task, { [key]: data[key] });
+    if (data[key] !== undefined && data[key] !== null)
+      Object.assign(task, { [key]: data[key] });
   }
 
   return task;
@@ -80,7 +89,13 @@ export const createTaskObject = (data, scheduleId, scheduledDate) => {
  * @param {number} scheduleId - Schedule ID
  * @returns {Array<import("../models/types/taskModel.js").TaskCreateAttributes>} Array of task objects ready for creation
  */
-export const generateTasksFromSchedule = (baseDate, recurrencePattern, isRecurring, data, scheduleId) => {
+export const generateTasksFromSchedule = (
+  baseDate,
+  recurrencePattern,
+  isRecurring,
+  data,
+  scheduleId,
+) => {
   const baseDateObj = new Date(baseDate);
 
   // If not recurring, use default (occurrences: 0) which means just one task on base date
@@ -88,8 +103,10 @@ export const generateTasksFromSchedule = (baseDate, recurrencePattern, isRecurri
     return [createTaskObject(data, scheduleId, new Date(baseDateObj))];
   }
 
-  const cfg = recurrencePatternRegistry[recurrencePattern] || recurrencePatternRegistry.default;
-  
+  const cfg =
+    recurrencePatternRegistry[recurrencePattern] ||
+    recurrencePatternRegistry.default;
+
   // If occurrences is 0, create just one task on base date
   if (cfg.occurrences === 0) {
     return [createTaskObject(data, scheduleId, new Date(baseDateObj))];
@@ -97,10 +114,10 @@ export const generateTasksFromSchedule = (baseDate, recurrencePattern, isRecurri
 
   // Generate tasks based on occurrences
   const tasksToCreate = [];
-  
+
   for (let i = 0; i < cfg.occurrences; i++) {
     let taskDate = new Date(baseDateObj);
-    
+
     // For daily/weekly: start from baseDate (i=0 gives baseDate)
     // For monthly: skip baseDate, start from baseDate + stepMonths (i=0 gives baseDate + stepMonths)
     if (cfg.stepDays > 0) {
@@ -110,7 +127,7 @@ export const generateTasksFromSchedule = (baseDate, recurrencePattern, isRecurri
       // Monthly: baseDate + ((i + 1) * stepMonths) to skip baseDate
       taskDate = addMonths(taskDate, cfg.stepMonths * (i + 1));
     }
-    
+
     tasksToCreate.push(createTaskObject(data, scheduleId, taskDate));
   }
 
@@ -128,19 +145,30 @@ export const generateTasksFromSchedule = (baseDate, recurrencePattern, isRecurri
  * @param {Set<string>} [existingDates] - Set of existing date keys to avoid duplicates (format: "YYYY-M-D")
  * @returns {Array<import("../models/types/taskModel.js").TaskCreateAttributes>} Array of task objects ready for creation
  */
-export const generateTasksBetweenDates = (startDate, endDate, recurrencePattern, data, scheduleId, existingDates = new Set()) => {
-  const cfg = recurrencePatternRegistry[recurrencePattern] || recurrencePatternRegistry.default;
+export const generateTasksBetweenDates = (
+  startDate,
+  endDate,
+  recurrencePattern,
+  data,
+  scheduleId,
+  existingDates = new Set(),
+) => {
+  const cfg =
+    recurrencePatternRegistry[recurrencePattern] ||
+    recurrencePatternRegistry.default;
   const tasksToCreate = [];
-  
+
   let currentDate = new Date(startDate);
-  
+
   while (currentDate <= endDate) {
     const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}`;
-    
+
     if (!existingDates.has(dateKey)) {
-      tasksToCreate.push(createTaskObject(data, scheduleId, new Date(currentDate)));
+      tasksToCreate.push(
+        createTaskObject(data, scheduleId, new Date(currentDate)),
+      );
     }
-    
+
     // Move to next occurrence based on pattern
     if (cfg.stepDays > 0) {
       currentDate = addDays(currentDate, cfg.stepDays);
@@ -151,6 +179,6 @@ export const generateTasksBetweenDates = (startDate, endDate, recurrencePattern,
       break;
     }
   }
-  
+
   return tasksToCreate;
 };

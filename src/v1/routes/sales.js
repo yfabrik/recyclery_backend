@@ -12,32 +12,30 @@ router.use(authenticateToken);
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-  logger.error("called useless fn in the router")
+    logger.error("called useless fn in the router");
 
     const { recyclery_id } = req.query;
-          /**
-   * @type {import("sequelize").WhereOptions}
-   */
+    /**
+     * @type {import("sequelize").WhereOptions}
+     */
     const where = {};
     if (recyclery_id) where.recyclery_id = recyclery_id;
 
     const sales = await SalesTransaction.findAll({
       where,
-      include: [
-        { model: User }
-      ],
-      order: [["createdAt", "DESC"]]
+      include: [{ model: User }],
+      order: [["createdAt", "DESC"]],
     });
 
     res.json({ sales });
-  })
+  }),
 );
 
 // Créer une nouvelle vente
 router.post(
   "/",
   asyncHandler(async (req, res) => {
-  logger.error("called useless fn in the router")
+    logger.error("called useless fn in the router");
 
     const {
       customer_name,
@@ -54,7 +52,7 @@ router.post(
     // Calculer le montant total
     const total_amount = items.reduce(
       (sum, item) => sum + item.unit_price * item.quantity,
-      0
+      0,
     );
     const transaction = await db.sequelize.transaction();
     try {
@@ -68,7 +66,7 @@ router.post(
           created_by: req.user.id,
           store_id: recyclery_id,
         },
-        { transaction }
+        { transaction },
       );
 
       // 2️⃣ Insert sale items
@@ -81,17 +79,17 @@ router.post(
               quantity: item.quantity,
               unit_price: item.unit_price,
             },
-            { transaction }
+            { transaction },
           );
 
           // 3️⃣ Mark the item as sold
           await LabeledItem.update(
             { status: "sold" },
-            { where: { id: item.item_id }, transaction }
+            { where: { id: item.item_id }, transaction },
           );
 
           return saleItem;
-        })
+        }),
       );
 
       // 4️⃣ Commit if everything succeeds
@@ -112,5 +110,5 @@ router.post(
       await transaction.rollback();
       res.status(500).json({ success: false, error: err.message });
     }
-  })
+  }),
 );

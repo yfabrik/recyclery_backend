@@ -48,12 +48,15 @@ export default (sequelize, DataTypes) => {
           const minutes = this.EmployeeWorkdays.reduce((prev, current) => {
             const start = current.start_time.split(":");
             const end = current.end_time.split(":");
-            const time = (Number(end[0])*60+Number(end[1]))-(Number(start[0])*60 +Number(start[1]))
+            const time =
+              Number(end[0]) * 60 +
+              Number(end[1]) -
+              (Number(start[0]) * 60 + Number(start[1]));
             // const time = (+end[0] - +start[0]) * 60 - (+end[1] - +start[1]);
             prev += time;
             return prev;
           }, 0);
-          return minutes/(60*2);
+          return minutes / (60 * 2);
         },
       },
       phone: DataTypes.STRING,

@@ -106,7 +106,7 @@ export const getActiveSession = async (req, res) => {
     t = {
       ...tmp,
       CashRegister: session.CashRegister,
-      Recyclery:session.CashRegister?.Recyclery,
+      Recyclery: session.CashRegister?.Recyclery,
     };
   }
 

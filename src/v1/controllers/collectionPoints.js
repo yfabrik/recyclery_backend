@@ -6,28 +6,36 @@ import { idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
 
 const { CollectionPoint, Recyclery, CollectionSchedule, TaskSchedule } = db;
 
-  const dataSchema = z.object({
-    name: z.string().trim().nonempty("nom requis"),
-    address: z.string().trim().nonempty("addresse requis"),
-    city: z.string().trim().nonempty("ville requis"),
-    postal_code: postalSchema("code postal requis"),
-    contact_person: z.string().nullish(),
-    contact_phone: phoneSchema().nullish(),
-    contact_email: z.email().nullish(),
-    type: z.enum(["standard", "entreprise", "association", "school", "hospital", "other"]).nullish(),
-    notes: z.string().nullish(),
-    recyclery_id: idSchema().nullish(),
-    is_active: z.coerce.boolean().optional().default(true),
-  })
-
+const dataSchema = z.object({
+  name: z.string().trim().nonempty("nom requis"),
+  address: z.string().trim().nonempty("addresse requis"),
+  city: z.string().trim().nonempty("ville requis"),
+  postal_code: postalSchema("code postal requis"),
+  contact_person: z.string().nullish(),
+  contact_phone: phoneSchema().nullish(),
+  contact_email: z.email().nullish(),
+  type: z
+    .enum([
+      "standard",
+      "entreprise",
+      "association",
+      "school",
+      "hospital",
+      "other",
+    ])
+    .nullish(),
+  notes: z.string().nullish(),
+  recyclery_id: idSchema().nullish(),
+  is_active: z.coerce.boolean().optional().default(true),
+});
 
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listCollectionPoints = async (req, res) => {
-  const ALLOWED_INCLUDES = ["horaires"]
+  const ALLOWED_INCLUDES = ["horaires"];
   const filterSchema = z.object({
     active_only: z.coerce.boolean().optional(),
     include: z
@@ -35,13 +43,14 @@ export const listCollectionPoints = async (req, res) => {
       .optional()
       .transform((val) => (val ? val.split(",") : []))
       .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
-  })
-  const filter = filterSchema.parse(req.query)
+  });
+  const filter = filterSchema.parse(req.query);
   /**
- * @type {import("sequelize").WhereOptions}
- */
+   * @type {import("sequelize").WhereOptions}
+   */
   const where = {};
-  if (typeof filter.active_only == "boolean") where.is_active = filter.active_only;
+  if (typeof filter.active_only == "boolean")
+    where.is_active = filter.active_only;
 
   // const include=[]
   // if (filter.include.includes("horaires"))
@@ -63,19 +72,18 @@ export const listCollectionPoints = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const detailCollectionPoint = async (req, res) => {
   const id = idSchema().parse(req.params.id);
-
 
   const point = await CollectionPoint.findByPk(id, {
     include: [{ model: Recyclery }, { model: TaskSchedule }],
   });
 
-  if (!point) throw new createHttpError[404]("Point de collecte non trouvé")
+  if (!point) throw new createHttpError[404]("Point de collecte non trouvé");
 
   res.json({
     success: true,
@@ -83,15 +91,15 @@ export const detailCollectionPoint = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const createCollectionPoint = async (req, res) => {
-  const data = dataSchema.parse(req.body)
+  const data = dataSchema.parse(req.body);
 
   const point = await CollectionPoint.create({
-    ...data
+    ...data,
   });
 
   res.status(201).json({
@@ -101,23 +109,24 @@ export const createCollectionPoint = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const updateCollectionPoint = async (req, res) => {
-
-  const data = dataSchema.parse(req.body)
-  const id = idSchema().parse(req.params.id)
+  const data = dataSchema.parse(req.body);
+  const id = idSchema().parse(req.params.id);
 
   const point = await CollectionPoint.findByPk(id, {
-    include: [{
-      model: TaskSchedule,
-    }]
+    include: [
+      {
+        model: TaskSchedule,
+      },
+    ],
   });
 
   // Vérifier si le point existe
-  if (!point) throw new createHttpError[404]("Point de collecte non trouvé")
+  if (!point) throw new createHttpError[404]("Point de collecte non trouvé");
 
   //update les task schedule associé
 
@@ -125,23 +134,28 @@ export const updateCollectionPoint = async (req, res) => {
 
   //TODO FIXME IMPORTANT URGENT make transaction work
   try {
-    if (data.is_active != point.is_active || data.recyclery_id != point.recyclery_id || data.name != point.name)
+    if (
+      data.is_active != point.is_active ||
+      data.recyclery_id != point.recyclery_id ||
+      data.name != point.name
+    )
       for (const schedule of point?.TaskSchedules || []) {
-        await schedule.update({ is_recurring: data.is_active, store_id: data.recyclery_id, name: data.name },)
+        await schedule.update({
+          is_recurring: data.is_active,
+          store_id: data.recyclery_id,
+          name: data.name,
+        });
       }
 
     await point.update({
-      ...data
-    },)
+      ...data,
+    });
 
     // await t.commit()
   } catch (err) {
     // await t.rollback()
-    throw err
+    throw err;
   }
-
-
-
 
   res.json({
     success: true,
@@ -150,16 +164,16 @@ export const updateCollectionPoint = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const deleteCollectionPoint = async (req, res) => {
-  const id = idSchema().parse(req.params.id)
+  const id = idSchema().parse(req.params.id);
   const point = await CollectionPoint.findByPk(id);
   // Vérifier si le point existe
-  if (!point) throw new createHttpError[404]("Point de collecte non trouvé")
-  await point.destroy()
+  if (!point) throw new createHttpError[404]("Point de collecte non trouvé");
+  await point.destroy();
 
   res.json({
     success: true,
@@ -167,9 +181,9 @@ export const deleteCollectionPoint = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const stats = async (req, res) => {
   const { id } = req.params;

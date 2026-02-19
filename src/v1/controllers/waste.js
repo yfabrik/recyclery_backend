@@ -23,7 +23,9 @@ export const listWaste = async (req, res) => {
     category_id: idSchema().nullish(),
     subcategory_id: idSchema().nullish(),
     eco_organism_id: idSchema().nullish(),
-    disposal_type: z.enum(["eco_organism", "landfill", "recycling", "other"]).nullish(),
+    disposal_type: z
+      .enum(["eco_organism", "landfill", "recycling", "other"])
+      .nullish(),
     date_from: z.coerce.date().nullish(),
     date_to: z.coerce.date().nullish(),
     page: z.coerce.number().optional().default(1),

@@ -76,7 +76,7 @@ export default (sequelize, DataTypes) => {
         { fields: ["category_id"] },
         { fields: ["eco_organism_id"] },
       ],
-    }
+    },
   );
 
   return WasteDisposal;

@@ -2,7 +2,12 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 
-import { createDon, donStats, listDons, updateDon } from "../controllers/donations.js";
+import {
+  createDon,
+  donStats,
+  listDons,
+  updateDon,
+} from "../controllers/donations.js";
 
 export const router = Router();
 // Obtenir tous les dons/apports
@@ -15,8 +20,4 @@ router.post("/", authenticateToken, asyncHandler(createDon));
 router.put("/:id", authenticateToken, asyncHandler(updateDon));
 
 // GET donation statistics
-router.get(
-  "/stats",
-  authenticateToken,
-  asyncHandler(donStats)
-);
+router.get("/stats", authenticateToken, asyncHandler(donStats));

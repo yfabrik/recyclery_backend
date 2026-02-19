@@ -7,21 +7,20 @@ import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
 const { CashRegister, CashSession, Recyclery, Sequelize } = db;
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listCaisses = async (req, res) => {
-  const {id : store_id} = req.params || {}
+  const { id: store_id } = req.params || {};
   const filterSchema = z.object({
     is_active: z.coerce.boolean().optional(),
-    store_id: idSchema().optional()//TODO fix NAME ?
-  })
+    store_id: idSchema().optional(), //TODO fix NAME ?
+  });
 
-
-  const filter = filterSchema.parse({store_id,...req.query})
+  const filter = filterSchema.parse({ store_id, ...req.query });
   /**
-   * @type {import("sequelize").WhereOptions<import("../../models/types/cashRegisterModel.js").CashRegisterAttributes>} 
+   * @type {import("sequelize").WhereOptions<import("../../models/types/cashRegisterModel.js").CashRegisterAttributes>}
    */
   const where = {};
   if (filter.store_id) {
@@ -42,7 +41,7 @@ export const listCaisses = async (req, res) => {
           Sequelize.fn("MAX", Sequelize.col("sessions.createdAt")),
           "last_session",
         ],
-      ]
+      ],
     },
     include: [
       {
@@ -67,13 +66,13 @@ export const listCaisses = async (req, res) => {
     success: true,
     data: cashRegister,
     cash_registers: cashRegister,
-    registers: cashRegister
+    registers: cashRegister,
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const detailCaisse = async (req, res) => {
   const id = idSchema().parse(req.params.id);
@@ -98,17 +97,17 @@ export const detailCaisse = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const createCaisse = async (req, res) => {
   const dataSchema = z.object({
     name: z.string("Nom obligatoire"),
     store_id: z.coerce.number("magasin obligatoire"),
-    is_active: z.coerce.boolean().optional().default(true)
-  })
-  const data = dataSchema.parse(req.body)
+    is_active: z.coerce.boolean().optional().default(true),
+  });
+  const data = dataSchema.parse(req.body);
 
   // Vérifier que le magasin existe
   const store = await Recyclery.findByPk(data.store_id);
@@ -121,7 +120,7 @@ export const createCaisse = async (req, res) => {
 
   if (existingRegister)
     throw new createHttpError.Conflict(
-      "Une caisse avec ce nom existe déjà dans ce magasin"
+      "Une caisse avec ce nom existe déjà dans ce magasin",
     );
 
   // const result = await store.createCaisse({
@@ -133,7 +132,7 @@ export const createCaisse = async (req, res) => {
   const result = await CashRegister.create({
     name: data.name,
     is_active: data.is_active,
-    recyclery_id: data.store_id
+    recyclery_id: data.store_id,
   });
 
   res.status(201).json({
@@ -144,19 +143,18 @@ export const createCaisse = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const updateCaisse = async (req, res) => {
   const id = idSchema().parse(req.params.id);
 
   const dataSchema = z.object({
     name: z.string("Nom obligatoire"),
-    is_active: z.coerce.boolean().optional().default(true)
-  })
-  const data = dataSchema.parse(req.body)
-
+    is_active: z.coerce.boolean().optional().default(true),
+  });
+  const data = dataSchema.parse(req.body);
 
   // Vérifier que la caisse existe
   const existingRegister = await CashRegister.findByPk(id);
@@ -168,21 +166,21 @@ export const updateCaisse = async (req, res) => {
 
   // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
   const duplicateRegister = await CashRegister.findAll({
-    where: { 
+    where: {
       [Op.and]: [
-        { name: data.name }, 
+        { name: data.name },
         { recyclery_id: existingRegister.recyclery_id },
-        { id: { [Op.ne]: id } } // Exclude current record
-      ] 
+        { id: { [Op.ne]: id } }, // Exclude current record
+      ],
     },
   });
 
   if (duplicateRegister.length > 0) {
     throw new createHttpError.Conflict(
-      "Une autre caisse avec ce nom existe déjà dans ce magasin"
+      "Une autre caisse avec ce nom existe déjà dans ce magasin",
     );
   }
-  await existingRegister.update({...data})
+  await existingRegister.update({ ...data });
 
   res.json({
     success: true,
@@ -191,9 +189,9 @@ export const updateCaisse = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const deleteCaisse = async (req, res) => {
   const id = idSchema().parse(req.params.id);
@@ -204,7 +202,7 @@ export const deleteCaisse = async (req, res) => {
     throw new createHttpError.NotFound("Caisse non trouvée");
   }
 
-  await existingRegister.destroy()
+  await existingRegister.destroy();
 
   res.json({
     success: true,
@@ -212,13 +210,13 @@ export const deleteCaisse = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listCaissesMagasin = async (req, res) => {
   const { store_id } = req.params;
   req.query.store_id = store_id;
-  logger.info("called list caisse magasin, REMAKE THIS ONE")
+  logger.info("called list caisse magasin, REMAKE THIS ONE");
   listCaisses(req, res);
 };

@@ -22,7 +22,10 @@ describe("SalesItem Model", () => {
         created_by: user.id,
         price: 5,
       });
-      const cr = await CashRegister.create({ name: "C", recyclery_id: recyclery.id });
+      const cr = await CashRegister.create({
+        name: "C",
+        recyclery_id: recyclery.id,
+      });
       const session = await CashSession.create({
         cash_register_id: cr.id,
         user_id: user.id,

@@ -25,7 +25,11 @@ describe("EmployeeStore Model", () => {
       });
       expect(found).not.toBeNull();
       const empId = found.employeeId ?? found.employee_id ?? found.EmployeeId;
-      const storeId = found.recycleryId ?? found.recyclery_id ?? found.RecycleryId ?? found.store_id;
+      const storeId =
+        found.recycleryId ??
+        found.recyclery_id ??
+        found.RecycleryId ??
+        found.store_id;
       expect(empId).toBe(employee.id);
       expect(storeId).toBe(recyclery.id);
     });

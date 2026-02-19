@@ -19,14 +19,14 @@ router.use(authenticateToken);
 router.get(
   "/stats/summary",
   authenticateToken,
-  asyncHandler(transactionsStats)
+  asyncHandler(transactionsStats),
 );
 
 // GET - Récupérer les statistiques par codes postaux
 router.get(
   "/stats/postal-codes",
   authenticateToken,
-  asyncHandler(transactionStatsPostalCode)
+  asyncHandler(transactionStatsPostalCode),
 );
 
 // GET - Récupérer les transactions

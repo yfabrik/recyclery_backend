@@ -16,7 +16,6 @@
  * @property {string} [use_env_variable] - Optional field
  */
 
-
 /**
  * @typedef {Object} DB
  * @property {import("sequelize")} Sequelize
@@ -52,5 +51,5 @@
  * @property { import("sequelize").ModelStatic<import("./taskScheduleModel.js").TaskScheduleInstance>} TaskSchedule
  * @property { import("sequelize").ModelStatic<import("./userModel.js").UserInstance>} User
  * @property { import("sequelize").ModelStatic<import("./wasteDisposalModel.js").WasteDisposalInstance>} WasteDisposal
- * 
+ *
  */

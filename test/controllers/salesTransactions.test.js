@@ -5,7 +5,7 @@
 
 // beforeAll(async () => {
 //     await db.sequelize.sync({ force: true });
-//     await User.create({ 
+//     await User.create({
 //         email: "cashier@test.com",
 //         username: "cashier1",
 //         role: "employee"
@@ -19,15 +19,15 @@
 //         postal_code: "39270"
 //     })
 
-//     await CashRegister.create({ 
-//         name: "Caisse Principale", 
+//     await CashRegister.create({
+//         name: "Caisse Principale",
 //         recyclery_id: 1,
 //         is_active: true
 //     })
-//     await CashSession.create({ 
-//         cash_register_id: 1, 
-//         user_id: 1, 
-//         opening_amount: 500.00, 
+//     await CashSession.create({
+//         cash_register_id: 1,
+//         user_id: 1,
+//         opening_amount: 500.00,
 //         recyclery_id: 1,
 //         status: "open"
 //     })
@@ -165,7 +165,6 @@
 //             })
 //         );
 //     });
-
 
 // });
 

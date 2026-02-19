@@ -4,9 +4,9 @@ import { col, fn, Op } from "sequelize";
 
 const { Refund, Recyclery, User, SalesTransaction } = db;
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const listRefunds = async (req, res) => {
   const { status, store_id, date_from, date_to } = req.query;
@@ -27,7 +27,7 @@ export const listRefunds = async (req, res) => {
   // Calculer le statut dynamique basé sur la date de création
   const refundsWithStatus = refunds.map((refund) => {
     const daysSinceCreation = Math.floor(
-      (new Date() - new Date(refund.created_at)) / (1000 * 60 * 60 * 24)
+      (new Date() - new Date(refund.created_at)) / (1000 * 60 * 60 * 24),
     );
     let computedStatus = "pending";
 
@@ -47,9 +47,9 @@ export const listRefunds = async (req, res) => {
   res.json({ success: true, refunds: refundsWithStatus });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const updateRefund = async (req, res) => {
   const { id } = req.params;
@@ -72,9 +72,9 @@ export const updateRefund = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const detailRefund = async (req, res) => {
   const { id } = req.params;
@@ -95,7 +95,7 @@ export const detailRefund = async (req, res) => {
 
   // Calculer le statut dynamique
   const daysSinceCreation = Math.floor(
-    (new Date() - new Date(refund.createdAt)) / (1000 * 60 * 60 * 24)
+    (new Date() - new Date(refund.createdAt)) / (1000 * 60 * 60 * 24),
   );
   let computedStatus = "pending";
 
@@ -115,13 +115,13 @@ export const detailRefund = async (req, res) => {
   });
 };
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const refundStats = async (req, res) => {
   const { store_id, date_from, date_to } = req.query;
-    /**
+  /**
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};

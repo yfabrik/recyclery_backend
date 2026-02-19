@@ -35,7 +35,7 @@
  * @property {Array<import("./cashRegisterModel.js").CashRegisterInstance>} [caisses] - Cash registers when loaded with include (alias "caisses")
  * @property {Array<import("./collectionPointModel.js").CollectionPointInstance>} [CollectionPoints] - Collection points when loaded with include
  * @property {Array<import("./taskScheduleModel.js").TaskScheduleInstance>} [TaskSchedules] - Task schedules when loaded with include (alias "horaires")
- * 
+ *
  * @property {() => Promise<Array<import("./labeledItemModel.js").LabeledItemInstance>>} getLabeledItems - Get all labeled items associated with this recyclery (has-many relationship).
  *
  * @property {(values?: import("./labeledItemModel.js").LabeledItemCreateAttributes) => Promise<import("./labeledItemModel.js").LabeledItemInstance>} createLabeledItem - Create a new labeled item for this recyclery (has-many).

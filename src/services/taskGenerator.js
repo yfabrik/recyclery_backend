@@ -61,7 +61,6 @@ export async function generateFutureTasks(db) {
             recurrencePatternRegistry.default;
           startDate.setDate(startDate.getDate() + cfg.stepDays);
           startDate.setMonth(startDate.getMonth() + cfg.stepMonths);
-          
         } else {
           // If no tasks exist, use the schedule's scheduled_date or current date
           startDate = schedule.scheduled_date

@@ -20,14 +20,20 @@ describe("User Model", () => {
     });
 
     it("should read a user by primary key", async () => {
-      const created = await createUser({ username: "readuser", email: "read@example.com" });
+      const created = await createUser({
+        username: "readuser",
+        email: "read@example.com",
+      });
       const found = await User.findByPk(created.id);
       expect(found).not.toBeNull();
       expect(found.username).toBe("readuser");
     });
 
     it("should update a user", async () => {
-      const created = await createUser({ username: "before", email: "before@example.com" });
+      const created = await createUser({
+        username: "before",
+        email: "before@example.com",
+      });
       await created.update({ username: "after", role: "admin" });
       const reloaded = await User.findByPk(created.id);
       expect(reloaded.username).toBe("after");
@@ -35,7 +41,10 @@ describe("User Model", () => {
     });
 
     it("should delete a user", async () => {
-      const created = await createUser({ username: "todel", email: "todel@example.com" });
+      const created = await createUser({
+        username: "todel",
+        email: "todel@example.com",
+      });
       const id = created.id;
       await created.destroy();
       const found = await User.findByPk(id);
@@ -49,7 +58,7 @@ describe("User Model", () => {
           username: "u2",
           email: "unique@example.com",
           password: "xxx",
-        })
+        }),
       ).rejects.toThrow();
     });
   });

@@ -6,7 +6,7 @@
 // beforeAll(async () => {
 //     await db.sequelize.sync({ force: true });
 
-//     await User.create({ 
+//     await User.create({
 //         email: "employee@test.com",
 //         username: "testemployee",
 //         role: "employee"
@@ -55,7 +55,6 @@
 //             })
 //         );
 //     });
-
 
 //     it("should create a bsd for schedule id 1", async () => {
 
@@ -191,8 +190,6 @@
 //             })
 //         );
 //     });
-
-
 
 // });
 

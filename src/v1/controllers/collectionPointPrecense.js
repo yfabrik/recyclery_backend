@@ -6,8 +6,8 @@ import { detailTask } from "./tasks.js";
 import { deleteSchedule, listSchedules } from "./taskSchedule.js";
 
 /**
- * 
- * @param {string} day 
+ *
+ * @param {string} day
  * @returns {Date}
  */
 const getDateFromDay = (day) => {
@@ -92,11 +92,13 @@ export const createPointPrecense = async (req, res) => {
   const data = dataSchema.parse(req.body);
 
   const point = await CollectionPoint.findByPk(data.collection_point_id, {
-    include: [{ model: TaskSchedule, where: { category: "point" }, required: false }],
+    include: [
+      { model: TaskSchedule, where: { category: "point" }, required: false },
+    ],
   });
- 
+
   if (!point) throw new createHttpError.NotFound("point pas trouvé");
-  
+
   const presence = await TaskSchedule.create({
     ...data,
 
@@ -107,7 +109,6 @@ export const createPointPrecense = async (req, res) => {
     collection_point_id: data.collection_point_id,
     store_id: point.recyclery_id,
   });
-
 
   res.json({
     success: true,
@@ -137,7 +138,6 @@ export const updatePointPrecense = async (req, res) => {
   await existing.update({
     ...rest,
     scheduled_date: day_of_week,
-
   });
 
   res.json({

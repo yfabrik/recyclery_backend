@@ -43,7 +43,7 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Store",
-    }
+    },
   );
   return Store;
 };

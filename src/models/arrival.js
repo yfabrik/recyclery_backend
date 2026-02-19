@@ -36,10 +36,12 @@ export default (sequelize, DataTypes) => {
       // category_id: DataTypes.INTEGER,//assoc
       // subcategory_id: DataTypes.INTEGER,//assoc
       /** les infos sont dans collection receipt */
-      weight: {type:DataTypes.DECIMAL(10,2),allowNull:false},
-      arrival_date: {type:DataTypes.DATE, defaultValue:DataTypes.NOW }, //TODO dateonly or merge with arrival time ?// createdAt
+      weight: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+      arrival_date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }, //TODO dateonly or merge with arrival time ?// createdAt
       arrival_time: DataTypes.TIME,
-      source_type: {type:DataTypes.ENUM("point","apport","house_clearance")}, //source table ?
+      source_type: {
+        type: DataTypes.ENUM("point", "apport", "house_clearance"),
+      }, //source table ?
       source_details: DataTypes.TEXT,
       // collection_point_id: DataTypes.INTEGER,//assoc ?
       // collection_point_name: DataTypes.STRING,//dans la table collection point ?
@@ -48,7 +50,7 @@ export default (sequelize, DataTypes) => {
       // house_clearance: DataTypes.BOOLEAN,
       notes: DataTypes.TEXT,
       // processed_by: DataTypes.INTEGER, //assoc
-      status: { type: DataTypes.ENUM("received"), defaultValue: "received" },//TODO ??? what are the types
+      status: { type: DataTypes.ENUM("received"), defaultValue: "received" }, //TODO ??? what are the types
     },
     {
       sequelize,
@@ -58,7 +60,7 @@ export default (sequelize, DataTypes) => {
         { fields: ["status"] },
         { fields: ["createdAt"] },
       ],
-    }
+    },
   );
   return Arrival;
 };

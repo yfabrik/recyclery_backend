@@ -42,13 +42,13 @@ export const listLabeledItem = async (req, res) => {
   /** @type {import("sequelize").WhereOptions<import("../../models/types/labeledItemModel.js").LabeledItemAttributes>} */
   const where = likeQuery
     ? {
-      ...filter,
-      [Op.or]: [
-        { name: likeQuery },
-        { description: likeQuery },
-        { barcode: likeQuery },
-      ],
-    }
+        ...filter,
+        [Op.or]: [
+          { name: likeQuery },
+          { description: likeQuery },
+          { barcode: likeQuery },
+        ],
+      }
     : { ...filter };
 
   const labeledItems = await LabeledItem.findAll({
@@ -127,7 +127,7 @@ export const updateItem = async (req, res) => {
   await item.update({
     ...data,
     condition_state: data.condition_state ?? item.condition_state,
-    weight: data.weight ?? item.weight
+    weight: data.weight ?? item.weight,
   });
 
   res.json({ success: true, message: "Article mis à jour avec succès" });

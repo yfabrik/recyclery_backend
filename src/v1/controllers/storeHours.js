@@ -3,9 +3,7 @@ import * as z from "zod";
 import db from "../../models/index.js";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
-import {
-  deleteSchedule
-} from "./taskSchedule.js";
+import { deleteSchedule } from "./taskSchedule.js";
 
 const { StoreHours, Recyclery, TaskSchedule, Task } = db;
 
@@ -42,8 +40,8 @@ const dataSchema = z.object({
   notes: z.string().nullish(),
 });
 /**
- * 
- * @param {string} day 
+ *
+ * @param {string} day
  * @returns {Date}
  */
 const getDateFromDay = (day) => {

@@ -8,7 +8,7 @@
  * @property {string|null} [notes] - Additional notes about the workday
  * @property {string|null} [week] - Week identifier
  * @property {number|null} [employee_id] - Foreign key reference to the Employee
- * 
+ *
  * @typedef {Object} EmployeeWorkdaysRow
  * @property {string} day_of_week
  * @property {string} time_slot
@@ -18,7 +18,7 @@
  * @property {string} notes
  * @property {string} week
  * @property {number} employee_id
- * 
+ *
  * @typedef { import("./baseModelAttributes.js").baseAttributes & EmployeeWorkdaysRow} EmployeeWorkdaysAttributes
  */
 

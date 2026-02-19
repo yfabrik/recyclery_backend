@@ -38,7 +38,6 @@
  * @typedef { import("./baseModelAttributes.js").baseAttributes & LabeledItemAttributesFetched} LabeledItemAttributes
  */
 
-
 /**
  * Optional association properties present when the instance is loaded with include().
  * @typedef {Object} LabeledItemInstanceAssociations

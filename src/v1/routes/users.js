@@ -20,10 +20,7 @@ router.get("/", asyncHandler(listUsers));
 // Obtenir tous les employés (utilisateurs avec rôles employee, admin, manager)
 // router.get("/employees", asyncHandler(listEmployees));
 
-router.get(
-  "/stats",
-  asyncHandler(userStats)
-);
+router.get("/stats", asyncHandler(userStats));
 
 // Obtenir les rôles disponibles
 router.get("/roles", (req, res) => {
@@ -52,4 +49,4 @@ router.delete("/:id", asyncHandler(deleteUser));
 
 // Obtenir les statistiques des utilisateurs
 
-router.patch("/:id/password",asyncHandler(updatePassword))
+router.patch("/:id/password", asyncHandler(updatePassword));

@@ -1,73 +1,73 @@
-'use strict';
+"use strict";
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('LabeledItems', {
+    await queryInterface.createTable("LabeledItems", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       barcode: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       name: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       description: {
-        type: Sequelize.TEXT
+        type: Sequelize.TEXT,
       },
       category_id: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       subcategory_id: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       weight: {
-        type: Sequelize.DECIMAL
+        type: Sequelize.DECIMAL,
       },
       price: {
-        type: Sequelize.DECIMAL
+        type: Sequelize.DECIMAL,
       },
       cost: {
-        type: Sequelize.DECIMAL
+        type: Sequelize.DECIMAL,
       },
       condition_state: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       location: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       store_id: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       arrival_id: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       status: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       created_by: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       sold_at: {
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
       },
       sold_by: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE
-      }
+        type: Sequelize.DATE,
+      },
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('LabeledItems');
-  }
+    await queryInterface.dropTable("LabeledItems");
+  },
 };

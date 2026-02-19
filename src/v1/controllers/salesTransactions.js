@@ -26,7 +26,7 @@ export const listTransactions = async (req, res) => {
   const filterSchema = z.object({
     store_id: z.preprocess(
       (val) => (val === "" ? undefined : val),
-      idSchema().optional().nullable()
+      idSchema().optional().nullable(),
     ),
     period: z.string().optional(),
     date_from: z.coerce.date().nullish(),
@@ -181,7 +181,6 @@ export const createTransaction = async (req, res) => {
     await t.rollback();
     throw err;
   }
-
 };
 /**
  *
@@ -218,7 +217,7 @@ export const createRefund = async (req, res) => {
   }
 
   // Vérifier que le montant de remboursement ne dépasse pas le montant de la transaction
-  if (refund_amount > (transaction.total_amount ||0)) {
+  if (refund_amount > (transaction.total_amount || 0)) {
     return res.status(400).json({
       success: false,
       message:
@@ -306,8 +305,8 @@ export const transactionsStats = async (req, res) => {
   const where = {};
   if (filter.store_id) where.store_id = filter.store_id;
 
-  const {date_from,date_to} = filter
-    if (date_from || date_to) {
+  const { date_from, date_to } = filter;
+  if (date_from || date_to) {
     where.createdAt = {};
     if (date_from) {
       // Set to start of day (00:00:00)
@@ -359,7 +358,7 @@ export const transactionsStats = async (req, res) => {
       //   "card",
       // ],
     ],
-    raw: true
+    raw: true,
   });
   // const stats = rows[0].get({ plain: true });
   const statsRow = rows[0] ?? {
@@ -412,7 +411,7 @@ export const transactionsStats = async (req, res) => {
       total_sales: statsRow.total_sales_before_refunds,
       ...statsRow,
       total_refunded: 0,
-      payment_methods: methods ?? []
+      payment_methods: methods ?? [],
       // total_sales_before_refunds: parseFloat(
       //   stats[0].total_sales_before_refunds || 0,
       // ),
@@ -446,14 +445,17 @@ export const transactionStatsPostalCode = async (req, res) => {
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
-const include = [];
+  const include = [];
   where.customer_postal_code = { [Op.ne]: null };
   if (store_id) //where.store_id = store_id;
- {
-    include.push({ model: CashSession, include: [{ model: CashRegister,where: { recyclery_id: store_id } }] });
+  {
+    include.push({
+      model: CashSession,
+      include: [{ model: CashRegister, where: { recyclery_id: store_id } }],
+    });
   }
 
-    if (date_from || date_to) {
+  if (date_from || date_to) {
     where.createdAt = {};
     if (date_from) {
       // Set to start of day (00:00:00)
@@ -468,7 +470,6 @@ const include = [];
       where.createdAt[Op.lte] = dateTo;
     }
   }
-
 
   const postalStats = await SalesTransaction.findAll({
     where,

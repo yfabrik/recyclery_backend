@@ -41,8 +41,7 @@ const mockSalesItem = {};
 // }));
 
 // 3) Now import app (routes will use the mocked middleware and models)
-import {app} from "../../src/index.js";
-
+import { app } from "../../src/index.js";
 
 describe("CashSession controllers (unit)", () => {
   beforeEach(() => {
@@ -70,7 +69,7 @@ describe("CashSession controllers (unit)", () => {
     expect(mockCashSession.findOne).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ user_id: 1, status: "open" }),
-      })
+      }),
     );
   });
 
@@ -92,7 +91,7 @@ describe("CashSession controllers (unit)", () => {
         cash_register_id: 1,
         user_id: 1,
         store_id: 1,
-      })
+      }),
     );
   });
 
@@ -119,7 +118,7 @@ describe("CashSession controllers (unit)", () => {
     expect(mockSalesTransaction.findAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { cash_session_id: "4" }, // note: param type depends on your route parsing
-      })
+      }),
     );
   });
 
@@ -138,12 +137,12 @@ describe("CashSession controllers (unit)", () => {
     expect(res.body.session).toBeDefined();
     expect(mockCashSession.findByPk).toHaveBeenCalledWith(
       "5",
-      expect.any(Object)
+      expect.any(Object),
     );
     expect(mockSalesTransaction.findAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { cash_session_id: "5" },
-      })
+      }),
     );
   });
 
@@ -159,7 +158,7 @@ describe("CashSession controllers (unit)", () => {
     expect(mockCashRegister.findAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { store_id: "2", is_active: 1 },
-      })
+      }),
     );
   });
 });

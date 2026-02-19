@@ -1,5 +1,5 @@
 import { Router } from "express";
-import db from  "../../models/index.js"
+import db from "../../models/index.js";
 
 import { asyncHandler } from "../middlewares/asyncHandler.js";
 const { CashRegister, CashSession } = db;
@@ -11,7 +11,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const session = await CashSession.findAll();
     res.json(session);
-  })
+  }),
 );
 
 router.get(
@@ -20,7 +20,7 @@ router.get(
     const { id } = req.params;
     const session = await CashSession.findByPk(id);
     res.json(session);
-  })
+  }),
 );
 router.post(
   "/:id/close",
@@ -31,7 +31,7 @@ router.post(
     session.closing_amount = money;
     await session.save();
     res.json(session);
-  })
+  }),
 );
 
 router.get(
@@ -42,5 +42,5 @@ router.get(
       include: [{ model: CashSession, as: "sessions" }],
     });
     res.json(cashRegister);
-  })
+  }),
 );

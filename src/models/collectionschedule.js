@@ -7,14 +7,19 @@ import { Model } from "sequelize";
  */
 export default (sequelize, DataTypes) => {
   class CollectionSchedule extends Model {
-/**
+    /**
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
-      this.belongsTo(models.CollectionPoint, { foreignKey: "collection_point_id" });
-      this.belongsToMany(models.User, { foreignKey: "schedule_id",through:"user_schedule" });
+      this.belongsTo(models.CollectionPoint, {
+        foreignKey: "collection_point_id",
+      });
+      this.belongsToMany(models.User, {
+        foreignKey: "schedule_id",
+        through: "user_schedule",
+      });
       this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
-      this.hasOne(models.CollectionReceipt, { foreignKey: "schedule_id" })
+      this.hasOne(models.CollectionReceipt, { foreignKey: "schedule_id" });
     }
   }
 
@@ -34,13 +39,13 @@ export default (sequelize, DataTypes) => {
       address: DataTypes.TEXT,
       contact_name: DataTypes.STRING,
       contact_phone: DataTypes.STRING,
-      
+
       // receipt_number: DataTypes.STRING, //assoc ?
     },
     {
       sequelize,
       modelName: "CollectionSchedule",
-    }
+    },
   );
   return CollectionSchedule;
 };

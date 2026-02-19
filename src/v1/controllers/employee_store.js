@@ -46,12 +46,12 @@ export const getEmployeeStoreById = async (req, res) => {
       },
     ],
   });
-  
+
   if (!employee) throw new createHttpError.NotFound("Utilisateur non trouvé");
 
   const stores = employee?.stores || [];
   const assignments = stores.map((s) => {
-    const values = s.dataValues
+    const values = s.dataValues;
     return { ...values, is_primary: s.EmployeeStore.is_primary };
   });
   res.json({
@@ -164,8 +164,8 @@ export const removeEmployeeStore = async (req, res) => {
     employeeId: idSchema("employee_id est requis"),
     store_id: idSchema().nullish(),
   });
-  const data = dataSchema.parse(req.params);  
-  
+  const data = dataSchema.parse(req.params);
+
   const employee = await Employee.findByPk(data.employeeId);
   if (!employee) {
     throw new createHttpError[404]("Employé non trouvé");

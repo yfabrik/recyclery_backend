@@ -5,7 +5,7 @@ import logger from "../../services/logger.js";
 import {
   deleteSchedule,
   removeEmployeeFromSchedule,
-  updateSchedule
+  updateSchedule,
 } from "./taskSchedule.js";
 
 const {

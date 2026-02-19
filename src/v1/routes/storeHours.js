@@ -33,4 +33,3 @@ router.delete("/:id", authenticateToken, asyncHandler(removeHoraires));
 
 // Route pour synchroniser les horaires d'ouverture avec le planning
 // router.post("/sync-to-planning", authenticateToken, asyncHandler(syncHoraires))
-

@@ -6,7 +6,7 @@ import { Model } from "sequelize";
  */
 export default (sequelize, DataTypes) => {
   class CollectionReceipt extends Model {
-/**
+    /**
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
@@ -17,7 +17,7 @@ export default (sequelize, DataTypes) => {
     {
       // schedule_id: DataTypes.INTEGER,//assoc
       receipt_number: DataTypes.STRING, //id ? assoc ?
-      // collection_date: DataTypes.DATE,//c'est dans collection schedule 
+      // collection_date: DataTypes.DATE,//c'est dans collection schedule
       // collector_name: DataTypes.STRING,
       // collection_point_name: DataTypes.STRING,
       // collection_point_address: DataTypes.TEXT,
@@ -30,7 +30,7 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "CollectionReceipt",
-    }
+    },
   );
   return CollectionReceipt;
 };

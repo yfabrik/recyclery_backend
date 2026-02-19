@@ -1,5 +1,5 @@
 import { Router } from "express";
-import db from  "../../models/index.js"
+import db from "../../models/index.js";
 
 import { authenticateToken } from "../middlewares/auth.js";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
@@ -12,7 +12,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const users = await User.findAll();
     res.json(users);
-  })
+  }),
 );
 
 router.get(
@@ -28,7 +28,7 @@ router.get(
       ],
     });
     res.json(user);
-  })
+  }),
 );
 
 router.post(
@@ -55,7 +55,7 @@ router.post(
     const response = await User.create(user);
     if (recyclery) response.addRecyclery(recyclery);
     res.json(response);
-  })
+  }),
 );
 
 router.delete(
@@ -65,7 +65,7 @@ router.delete(
 
     const user = await User.destroy({ where: { id: id } });
     res.json(user);
-  })
+  }),
 );
 
 router.get(
@@ -81,7 +81,7 @@ router.get(
       ],
     });
     res.json(user);
-  })
+  }),
 );
 
 router.get(
@@ -97,5 +97,5 @@ router.get(
       ],
     });
     res.json(user);
-  })
+  }),
 );

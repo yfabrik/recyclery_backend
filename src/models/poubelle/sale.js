@@ -17,7 +17,7 @@ export default (sequelize, DataTypes) => {
       customer_name: DataTypes.STRING,
       customer_email: DataTypes.STRING,
       total_amount: DataTypes.DECIMAL,
-      payment_method: { type: DataTypes.STRING, defaultValue: "cash" },//enum ?table ?
+      payment_method: { type: DataTypes.STRING, defaultValue: "cash" }, //enum ?table ?
       status: { type: DataTypes.STRING, defaultValue: "completed" },
       // sold_by: DataTypes.INTEGER, //assoc
       // recyclery_id: DataTypes.INTEGER, //assoc
@@ -25,7 +25,7 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Sale",
-    }
+    },
   );
   return Sale;
 };

@@ -1,7 +1,18 @@
 import { Op } from "sequelize";
 import db from "../../models/index.js";
 
-const { LabeledItem, SalesTransaction, Donation, CollectionSchedule, Category, User, CollectionPoint, Recyclery, CashSession, CashRegister } = db
+const {
+  LabeledItem,
+  SalesTransaction,
+  Donation,
+  CollectionSchedule,
+  Category,
+  User,
+  CollectionPoint,
+  Recyclery,
+  CashSession,
+  CashRegister,
+} = db;
 // Fonctions utilitaires
 function formatTimeAgo(dateString) {
   const date = new Date(dateString);
@@ -19,48 +30,63 @@ function formatTimeAgo(dateString) {
 
 function formatDate(dateString) {
   const date = new Date(dateString);
-  return date.toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
+  return date.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const dashboardStats = async (req, res) => {
   // Statistiques principales
   const stats = {};
 
   // 1. Nombre total d'articles
-  stats.totalItems = await LabeledItem.count()
+  stats.totalItems = await LabeledItem.count();
 
   // 2. Articles disponibles (non vendus)
-  stats.availableItems = await LabeledItem.count({ where: { status: "available" } })
+  stats.availableItems = await LabeledItem.count({
+    where: { status: "available" },
+  });
 
   // 3. Articles vendus ce mois - vérifier d'abord les transactions
   const currentMonth = new Date().toISOString().slice(0, 7); // Format YYYY-MM
-  const month_transactions = await SalesTransaction.findAll({ where: { createdAt: { [Op.gt]: currentMonth } } })
+  const month_transactions = await SalesTransaction.findAll({
+    where: { createdAt: { [Op.gt]: currentMonth } },
+  });
 
   stats.soldThisMonth = month_transactions.length;
 
-  stats.totalRevenue = month_transactions.reduce((prev, current) => prev += current.total_amount, 0);
+  stats.totalRevenue = month_transactions.reduce(
+    (prev, current) => (prev += current.total_amount),
+    0,
+  );
 
   // 5. Dons en attente
-  stats.pendingDonations = await Donation.count({ where: { status: "pending" } })
+  stats.pendingDonations = await Donation.count({
+    where: { status: "pending" },
+  });
 
   // 6. Collections programmées ce mois
   // console.log(CollectionSchedule.findAll({ where: { scheduled_date: { [Op.gt]: currentMonth } } }))
-  stats.scheduledCollections = await CollectionSchedule.count({ where: { scheduled_date: { [Op.gt]: currentMonth } } })
+  stats.scheduledCollections = await CollectionSchedule.count({
+    where: { scheduled_date: { [Op.gt]: currentMonth } },
+  });
 
   // 7. Nombre de catégories actives
-  stats.categoriesCount = await LabeledItem.count({ distinct: true, col: "category_id", where: { status: "available" } })
+  stats.categoriesCount = await LabeledItem.count({
+    distinct: true,
+    col: "category_id",
+    where: { status: "available" },
+  });
 
   // 8. Nombre d'utilisateurs actifs
-  stats.usersCount = await User.count()
+  stats.usersCount = await User.count();
 
   // 9. Chiffre d'affaires du mois dernier pour comparaison
   const lastMonth = new Date();
@@ -68,79 +94,95 @@ export const dashboardStats = async (req, res) => {
   const lastMonthStr = lastMonth.toISOString().slice(0, 7);
 
   // Utiliser les transactions de vente
-  const lastMonthRevenueResult = await SalesTransaction.findAll({ where: { createdAt: { [Op.between]: [lastMonthStr, currentMonth] } } })
-  stats.lastMonthRevenue = lastMonthRevenueResult.reduce((prev, current) => prev += current.total_amount, 0);
+  const lastMonthRevenueResult = await SalesTransaction.findAll({
+    where: { createdAt: { [Op.between]: [lastMonthStr, currentMonth] } },
+  });
+  stats.lastMonthRevenue = lastMonthRevenueResult.reduce(
+    (prev, current) => (prev += current.total_amount),
+    0,
+  );
 
-  stats.lastMonthSales = lastMonthRevenueResult.length
+  stats.lastMonthSales = lastMonthRevenueResult.length;
 
-  stats.thisMonthRevenue = month_transactions.reduce((prev, current) => prev += current.total_amount, 0);
-  stats.thisMonthSales = month_transactions.length
+  stats.thisMonthRevenue = month_transactions.reduce(
+    (prev, current) => (prev += current.total_amount),
+    0,
+  );
+  stats.thisMonthSales = month_transactions.length;
 
   res.json({
     success: true,
-    data: stats
+    data: stats,
   });
-
-
-}
+};
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const dashboardActivities = async (req, res) => {
-
   const activities = [];
 
   // 1. Ventes récentes
-  const recentSales = await LabeledItem.findAll({ where: { status: "sold" }, include: [{ model: Category, as: "category" }], limit: 5, order: [["updatedAt", "DESC"]] })
+  const recentSales = await LabeledItem.findAll({
+    where: { status: "sold" },
+    include: [{ model: Category, as: "category" }],
+    limit: 5,
+    order: [["updatedAt", "DESC"]],
+  });
 
-  recentSales.forEach(sale => {
+  recentSales.forEach((sale) => {
     activities.push({
       id: `sale_${sale.id}`,
-      type: 'sale',
+      type: "sale",
       description: `Vente: ${sale.name}`,
       amount: `${sale.selling_price}€`,
       time: formatTimeAgo(sale.updated_at),
-      icon: 'ShoppingCart',
-      color: 'success',
-      status: 'Complété',
-      statusColor: 'success'
+      icon: "ShoppingCart",
+      color: "success",
+      status: "Complété",
+      statusColor: "success",
     });
   });
 
   // 2. Dons récents
-  const recentDonations = await Donation.findAll({ order: [["createdAt", "DESC"]], limit: 5 })
+  const recentDonations = await Donation.findAll({
+    order: [["createdAt", "DESC"]],
+    limit: 5,
+  });
 
-
-  recentDonations.forEach(donation => {
+  recentDonations.forEach((donation) => {
     activities.push({
       id: `donation_${donation.id}`,
-      type: 'donation',
+      type: "donation",
       description: `Don de ${donation.donor_name}`,
       amount: `${donation.items_count} articles`,
       time: formatTimeAgo(donation.created_at),
-      icon: 'VolunteerActivism',
-      color: 'info',
-      status: donation.status === 'pending' ? 'En attente' : 'Traité',
-      statusColor: donation.status === 'pending' ? 'warning' : 'success'
+      icon: "VolunteerActivism",
+      color: "info",
+      status: donation.status === "pending" ? "En attente" : "Traité",
+      statusColor: donation.status === "pending" ? "warning" : "success",
     });
   });
 
   // 3. Collections récentes
-  const recentCollections = await CollectionSchedule.findAll({ include: [{ model: CollectionPoint }], order: [["scheduled_date", "DESC"]], limit: 5 })
+  const recentCollections = await CollectionSchedule.findAll({
+    include: [{ model: CollectionPoint }],
+    order: [["scheduled_date", "DESC"]],
+    limit: 5,
+  });
 
-  recentCollections.forEach(collection => {
+  recentCollections.forEach((collection) => {
     activities.push({
       id: `collection_${collection.id}`,
-      type: 'collection',
+      type: "collection",
       description: `Collecte: ${collection.point_name}`,
       amount: formatDate(collection.scheduled_date),
       time: formatTimeAgo(collection.scheduled_date),
-      icon: 'LocalShipping',
-      color: 'warning',
-      status: collection.status === 'scheduled' ? 'Programmé' : 'Effectué',
-      statusColor: collection.status === 'scheduled' ? 'info' : 'success'
+      icon: "LocalShipping",
+      color: "warning",
+      status: collection.status === "scheduled" ? "Programmé" : "Effectué",
+      statusColor: collection.status === "scheduled" ? "info" : "success",
     });
   });
 
@@ -149,17 +191,15 @@ export const dashboardActivities = async (req, res) => {
 
   res.json({
     success: true,
-    data: activities.slice(0, 10)
+    data: activities.slice(0, 10),
   });
-
-}
+};
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const dashboardCharts = async (req, res) => {
-
   // Ventes des 7 derniers jours
   const salesData = [];
   const revenueData = [];
@@ -171,39 +211,45 @@ export const dashboardCharts = async (req, res) => {
     const dateStr = date.toISOString().slice(0, 10);
 
     // Vérifier d'abord si on a des transactions de vente
-    const hasTransactions = await SalesTransaction.findAll({ where: { createdAt: dateStr } })
-
+    const hasTransactions = await SalesTransaction.findAll({
+      where: { createdAt: dateStr },
+    });
 
     // Utiliser les transactions de vente si elles existent
-    const daySales = hasTransactions.length
-    const dayRevenue = hasTransactions.reduce((prev, current) => prev += current.total_amount, 0);
-
+    const daySales = hasTransactions.length;
+    const dayRevenue = hasTransactions.reduce(
+      (prev, current) => (prev += current.total_amount),
+      0,
+    );
 
     salesData.push(daySales);
     revenueData.push(dayRevenue);
-    labels.push(date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }));
+    labels.push(
+      date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
+    );
   }
-
 
   res.json({
     success: true,
     data: {
       sales: salesData,
       revenue: revenueData,
-      labels: labels
-    }
+      labels: labels,
+    },
   });
-
-}
+};
 /**
- * 
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const dashboardStoreStats = async (req, res) => {
-
   // Récupérer tous les magasins actifs
-  const stores = await Recyclery.findAll({ where: { is_active: true }, include: [{ model: CashRegister, as: "caisses", }], order: [["name"]] })
+  const stores = await Recyclery.findAll({
+    where: { is_active: true },
+    include: [{ model: CashRegister, as: "caisses" }],
+    order: [["name"]],
+  });
 
   const storesStats = [];
 
@@ -213,49 +259,61 @@ export const dashboardStoreStats = async (req, res) => {
   lastMonth.setMonth(lastMonth.getMonth() - 1);
   const lastMonthStr = lastMonth.toISOString().slice(0, 7);
 
-
   for (const store of stores) {
     // Statistiques des ventes du mois en cours
-    const caissesId = store.caisses.map(caisse => caisse.id)
+    const caissesId = store.caisses.map((caisse) => caisse.id);
     const month_transactions = await SalesTransaction.findAll({
       where: {
-        createdAt: { [Op.gt]: currentMonth }
+        createdAt: { [Op.gt]: currentMonth },
       },
       include: [
         {
           model: CashSession,
           where: {
-            cash_register_id: { [Op.in]: caissesId }
+            cash_register_id: { [Op.in]: caissesId },
           },
-          required: true
-        }
-      ]
-    })
+          required: true,
+        },
+      ],
+    });
 
     const currentMonthSales = month_transactions.length;
 
-    const currentRevenue = month_transactions.reduce((prev, current) => prev += current.total_amount, 0);
+    const currentRevenue = month_transactions.reduce(
+      (prev, current) => (prev += current.total_amount),
+      0,
+    );
 
     // Utiliser les transactions de vente
-    const lastMonthRevenueResult = await SalesTransaction.findAll({ where: { createdAt: { [Op.between]: [lastMonthStr, currentMonth] } } })
-    const lastMonthRevenue = lastMonthRevenueResult.reduce((prev, current) => prev += current.total_amount, 0);
+    const lastMonthRevenueResult = await SalesTransaction.findAll({
+      where: { createdAt: { [Op.between]: [lastMonthStr, currentMonth] } },
+    });
+    const lastMonthRevenue = lastMonthRevenueResult.reduce(
+      (prev, current) => (prev += current.total_amount),
+      0,
+    );
 
     const sessions = await CashSession.count({
       where: {
-        createdAt: { [Op.between]: [lastMonthStr, currentMonth] }
+        createdAt: { [Op.between]: [lastMonthStr, currentMonth] },
       },
-      include: [{ model: CashRegister, where: { recyclery_id: store.id }, required: true }]
-    })
-
+      include: [
+        {
+          model: CashRegister,
+          where: { recyclery_id: store.id },
+          required: true,
+        },
+      ],
+    });
 
     // Ventes des 7 derniers jours
     // const weeklySales = await database.query(`
-    //       SELECT 
+    //       SELECT
     //         DATE(created_at) as date,
     //         COUNT(*) as sales_count,
     //         COALESCE(SUM(total_amount), 0) as revenue
-    //       FROM sales_transactions 
-    //       WHERE store_id = ? 
+    //       FROM sales_transactions
+    //       WHERE store_id = ?
     //       AND DATE(created_at) >= DATE('now', '-7 days')
     //       GROUP BY DATE(created_at)
     //       ORDER BY date
@@ -263,9 +321,10 @@ export const dashboardStoreStats = async (req, res) => {
 
     // Calculer l'évolution par rapport au mois dernier
 
-    const revenueGrowth = lastMonthRevenue > 0
-      ? ((currentRevenue - lastMonthRevenue) / lastMonthRevenue * 100)
-      : 0;
+    const revenueGrowth =
+      lastMonthRevenue > 0
+        ? ((currentRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+        : 0;
 
     storesStats.push({
       id: store.id,
@@ -278,32 +337,29 @@ export const dashboardStoreStats = async (req, res) => {
           transactions: currentMonthSales,
           revenue: currentRevenue,
           averageTransaction: 0,
-          sessions: sessions
+          sessions: sessions,
         },
         lastMonth: {
           transactions: lastMonthRevenueResult.length,
-          revenue: lastMonthRevenue
+          revenue: lastMonthRevenue,
         },
         items: {
-          available: 0 // Temporairement fixé à 0
+          available: 0, // Temporairement fixé à 0
         },
         growth: {
-          revenue: revenueGrowth
+          revenue: revenueGrowth,
         },
         // weeklyData: weeklySales.map(day => ({
         //   date: day.date,
         //   sales: day.sales_count,
         //   revenue: parseFloat(day.revenue || 0)
         // }))
-      }
+      },
     });
-
-
   }
 
   res.json({
     success: true,
-    stores: storesStats
+    stores: storesStats,
   });
-
-}
+};

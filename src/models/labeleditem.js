@@ -13,7 +13,6 @@ export default (sequelize, DataTypes) => {
       this.belongsTo(models.Category, {
         as: "category",
         foreignKey: "category_id",
-
       });
 
       this.belongsTo(models.Category, {
@@ -40,25 +39,43 @@ export default (sequelize, DataTypes) => {
         as: "createdBy",
         foreignKey: "created_by",
       });
-      this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" });//belong to many for historic and refund ?
+      this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" }); //belong to many for historic and refund ?
     }
   }
   LabeledItem.init(
     {
-      barcode: {type:DataTypes.VIRTUAL,get(){return String(this.id).padStart(12, "0");}},
+      barcode: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          return String(this.id).padStart(12, "0");
+        },
+      },
       description: DataTypes.TEXT,
-      weight: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0, validate: { min: 0 } },
-      price: { type: DataTypes.DECIMAL(10, 2), allowNull: false, validate: { min: 0 } },
+      weight: {
+        type: DataTypes.DECIMAL(10, 2),
+        defaultValue: 0,
+        validate: { min: 0 },
+      },
+      price: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        validate: { min: 0 },
+      },
       cost: { type: DataTypes.DECIMAL(10, 2) },
-      condition_state: { type: DataTypes.ENUM("excellent", "good", "fair", "poor"), defaultValue: "good" },
-      status: { type: DataTypes.ENUM("available", "sold"), defaultValue: "available" },
+      condition_state: {
+        type: DataTypes.ENUM("excellent", "good", "fair", "poor"),
+        defaultValue: "good",
+      },
+      status: {
+        type: DataTypes.ENUM("available", "sold"),
+        defaultValue: "available",
+      },
       // sold_at: DataTypes.DATE,//trouvable dans transaction
     },
     {
       sequelize,
       modelName: "LabeledItem",
       indexes: [
-
         { fields: ["status"] },
         { fields: ["recyclery_id"] },
         { fields: ["category_id"] },
@@ -74,7 +91,7 @@ export default (sequelize, DataTypes) => {
         //   }
         // },
       },
-    }
+    },
   );
   return LabeledItem;
 };

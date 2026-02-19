@@ -23,7 +23,7 @@ router.post(
   "/",
   authenticateToken,
   // requireRole(["admin", "manager"]),
-  asyncHandler(createCollectionPoint)
+  asyncHandler(createCollectionPoint),
 );
 
 // Mettre à jour un point de collecte
@@ -31,7 +31,7 @@ router.put(
   "/:id",
   authenticateToken,
   // requireRole(["admin", "manager"]),
-  asyncHandler(updateCollectionPoint)
+  asyncHandler(updateCollectionPoint),
 );
 
 // Supprimer un point de collecte
@@ -39,7 +39,7 @@ router.delete(
   "/:id",
   authenticateToken,
   //  requireRole(["admin"]),
-  asyncHandler(deleteCollectionPoint)
+  asyncHandler(deleteCollectionPoint),
 );
 
 // Obtenir les statistiques d'un point de collecte

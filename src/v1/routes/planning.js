@@ -1,31 +1,34 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
-import { addEmployeeToSchedule, createSchedule, deleteSchedule, findAvailableEMployee, findSchedule, getEmployeeSchedule, listSchedules, planningStats, removeEmployeeFromSchedule, updateSchedule } from "../controllers/taskSchedule.js";
+import {
+  addEmployeeToSchedule,
+  createSchedule,
+  deleteSchedule,
+  findAvailableEMployee,
+  findSchedule,
+  getEmployeeSchedule,
+  listSchedules,
+  planningStats,
+  removeEmployeeFromSchedule,
+  updateSchedule,
+} from "../controllers/taskSchedule.js";
 import logger from "../../services/logger.js";
 
 export const router = Router();
 
 // Récupérer tous les plannings
-router.get(
-  "/",
-  authenticateToken,
-  asyncHandler(listSchedules)
-);
+router.get("/", authenticateToken, asyncHandler(listSchedules));
 
 // Récupérer un planning par ID
-router.get(
-  "/:id",
-  authenticateToken,
-  asyncHandler(findSchedule)
-);
+router.get("/:id", authenticateToken, asyncHandler(findSchedule));
 
 // Créer un nouveau planning
 router.post(
   "/",
   authenticateToken,
   //  requireRole(['admin', 'manager']),
-  asyncHandler(createSchedule)
+  asyncHandler(createSchedule),
 );
 
 // Mettre à jour un planning
@@ -33,7 +36,7 @@ router.put(
   "/:id",
   authenticateToken,
   //   requireRole(["admin", "manager"]),
-  asyncHandler(updateSchedule)
+  asyncHandler(updateSchedule),
 );
 
 // Supprimer un planning
@@ -41,22 +44,18 @@ router.delete(
   "/:id",
   authenticateToken,
   //   requireRole(["admin", "manager"]),
-  asyncHandler(deleteSchedule)
+  asyncHandler(deleteSchedule),
 );
 
 // Récupérer le planning d'un employé
 router.get(
   "/employee/:employee_id",
   authenticateToken,
-  asyncHandler(getEmployeeSchedule)
+  asyncHandler(getEmployeeSchedule),
 );
 
 // Récupérer les statistiques du planning
-router.get(
-  "/stats/overview",
-  authenticateToken,
-  asyncHandler(planningStats)
-);
+router.get("/stats/overview", authenticateToken, asyncHandler(planningStats));
 
 // Récupérer les employés assignés à une tâche spécifique du planning
 router.get(
@@ -64,8 +63,7 @@ router.get(
   authenticateToken,
   asyncHandler(async (req, res) => {
     const { scheduleId } = req.params;
-  logger.error("called useless fn in the router")
-
+    logger.error("called useless fn in the router");
 
     // const query = `
     //   SELECT u.id, u.username, u.role, u.email
@@ -80,26 +78,26 @@ router.get(
       success: true,
       employees: [],
     });
-  })
+  }),
 );
 
 // Assigner un employé à une tâche spécifique du planning
 router.post(
   "/:scheduleId/employees",
   authenticateToken,
-  asyncHandler(addEmployeeToSchedule)
+  asyncHandler(addEmployeeToSchedule),
 );
 
 // Récupérer les employés disponibles pour une tâche spécifique (en tenant compte des conflits d'horaires)
 router.get(
   "/:scheduleId/available-employees",
   authenticateToken,
-  asyncHandler(findAvailableEMployee)
+  asyncHandler(findAvailableEMployee),
 );
 
 // Retirer un employé d'une tâche spécifique du planning
 router.delete(
   "/:scheduleId/employees/:employeeId",
   authenticateToken,
-  asyncHandler(removeEmployeeFromSchedule)
+  asyncHandler(removeEmployeeFromSchedule),
 );

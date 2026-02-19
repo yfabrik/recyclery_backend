@@ -6,12 +6,12 @@ import { Model } from "sequelize";
  */
 export default (sequelize, DataTypes) => {
   class Refund extends Model {
-/**
+    /**
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
-      this.belongsTo(models.User, { foreignKey: "created_by" })
-      this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" })
+      this.belongsTo(models.User, { foreignKey: "created_by" });
+      this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" });
     }
   }
   Refund.init(
@@ -31,11 +31,8 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Refund",
-      indexes: [
-        { fields: ["transaction_id"] },
-        { fields: ["status"] },
-      ],
-    }
+      indexes: [{ fields: ["transaction_id"] }, { fields: ["status"] }],
+    },
   );
   return Refund;
 };

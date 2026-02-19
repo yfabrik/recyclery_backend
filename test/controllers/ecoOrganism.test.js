@@ -14,10 +14,10 @@ const { User, CollectionPoint, Recyclery } = db;
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });
 
-  await User.create({ 
+  await User.create({
     email: "employee@test.com",
     username: "testemployee",
-    role: "employee" 
+    role: "employee",
   });
   await Recyclery.create({
     name: "Recyclerie Test Orgelet",
@@ -43,7 +43,8 @@ describe("collection schedule controller functions", () => {
   it("should create an eco organism", async () => {
     const body = {
       name: "Eco-Organisme Recyclage Électronique",
-      description: "Organisme agréé pour la collecte et le recyclage des déchets électroniques",
+      description:
+        "Organisme agréé pour la collecte et le recyclage des déchets électroniques",
       contact_email: "contact@eco-org-recyclage.fr",
       contact_phone: "+33 1 23 45 67 89",
       address: "123 Rue de l'Environnement, 75001 Paris",
@@ -67,7 +68,7 @@ describe("collection schedule controller functions", () => {
       expect.objectContaining({
         eco_organism_id: expect.any(Number),
         message: expect.any(String),
-      })
+      }),
     );
   });
 
@@ -87,7 +88,7 @@ describe("collection schedule controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         eco_organisms: expect.any(Array),
-      })
+      }),
     );
   });
   it("should list active eco organism", async () => {
@@ -106,7 +107,7 @@ describe("collection schedule controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         eco_organisms: expect.any(Array),
-      })
+      }),
     );
   });
 
@@ -127,7 +128,7 @@ describe("collection schedule controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         eco_organism: expect.any(Object),
-      })
+      }),
     );
   });
   it("should update eco organism 1", async () => {
@@ -150,7 +151,7 @@ describe("collection schedule controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         eco_organism: expect.objectContaining({ name: "updated" }),
-      })
+      }),
     );
   });
   it("should remove eco organism 1", async () => {
@@ -170,7 +171,7 @@ describe("collection schedule controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         message: "Éco-organisme supprimé avec succès",
-      })
+      }),
     );
   });
 });

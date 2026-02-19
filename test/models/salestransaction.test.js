@@ -8,7 +8,10 @@ describe("SalesTransaction Model", () => {
     it("should create a sales transaction", async () => {
       const recyclery = await createRecyclery();
       const user = await createUser();
-      const cr = await CashRegister.create({ name: "Caisse", recyclery_id: recyclery.id });
+      const cr = await CashRegister.create({
+        name: "Caisse",
+        recyclery_id: recyclery.id,
+      });
       const session = await CashSession.create({
         cash_register_id: cr.id,
         user_id: user.id,
@@ -31,7 +34,10 @@ describe("SalesTransaction Model", () => {
     it("should read a sales transaction by primary key", async () => {
       const recyclery = await createRecyclery();
       const user = await createUser();
-      const cr = await CashRegister.create({ name: "Caisse2", recyclery_id: recyclery.id });
+      const cr = await CashRegister.create({
+        name: "Caisse2",
+        recyclery_id: recyclery.id,
+      });
       const session = await CashSession.create({
         cash_register_id: cr.id,
         user_id: user.id,
@@ -51,7 +57,10 @@ describe("SalesTransaction Model", () => {
     it("should update a sales transaction", async () => {
       const recyclery = await createRecyclery();
       const user = await createUser();
-      const cr = await CashRegister.create({ name: "Caisse3", recyclery_id: recyclery.id });
+      const cr = await CashRegister.create({
+        name: "Caisse3",
+        recyclery_id: recyclery.id,
+      });
       const session = await CashSession.create({
         cash_register_id: cr.id,
         user_id: user.id,
@@ -71,7 +80,10 @@ describe("SalesTransaction Model", () => {
     it("should delete a sales transaction", async () => {
       const recyclery = await createRecyclery();
       const user = await createUser();
-      const cr = await CashRegister.create({ name: "Caisse4", recyclery_id: recyclery.id });
+      const cr = await CashRegister.create({
+        name: "Caisse4",
+        recyclery_id: recyclery.id,
+      });
       const session = await CashSession.create({
         cash_register_id: cr.id,
         user_id: user.id,

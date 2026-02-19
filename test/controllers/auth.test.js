@@ -42,7 +42,7 @@ describe("auth controller functions", () => {
           email: "newuser@test.com",
           role: "employee",
         }),
-      })
+      }),
     );
   });
 
@@ -109,7 +109,7 @@ describe("auth controller functions", () => {
           email: "newuser@test.com",
           role: "employee",
         }),
-      })
+      }),
     );
   });
 
@@ -172,7 +172,7 @@ describe("auth controller functions", () => {
           dashboard: expect.arrayContaining(["read", "write"]),
           inventory: expect.arrayContaining(["read", "write", "delete"]),
         }),
-      })
+      }),
     );
   });
 
@@ -202,7 +202,7 @@ describe("auth controller functions", () => {
         permissionsByModule: expect.objectContaining({
           dashboard: expect.arrayContaining(["read", "write"]),
         }),
-      })
+      }),
     );
   });
 
@@ -233,7 +233,7 @@ describe("auth controller functions", () => {
           dashboard: expect.arrayContaining(["read"]),
           sales: expect.arrayContaining(["read", "write"]),
         }),
-      })
+      }),
     );
   });
 });

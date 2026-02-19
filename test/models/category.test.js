@@ -36,7 +36,10 @@ describe("Category Model", () => {
         name: "BeforeUpdate",
         IO: 0,
       });
-      await created.update({ name: "AfterUpdate", description: "Updated desc" });
+      await created.update({
+        name: "AfterUpdate",
+        description: "Updated desc",
+      });
       const reloaded = await Category.findByPk(created.id);
       expect(reloaded.name).toBe("AfterUpdate");
       expect(reloaded.description).toBe("Updated desc");

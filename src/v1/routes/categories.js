@@ -2,8 +2,14 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 
-import { createCategorie, deleteCategorie, listCategories, listSubcategories, patchCategory, updateCategorie } from "../controllers/categories.js";
-
+import {
+  createCategorie,
+  deleteCategorie,
+  listCategories,
+  listSubcategories,
+  patchCategory,
+  updateCategorie,
+} from "../controllers/categories.js";
 
 export const router = Router();
 router.use(authenticateToken);
@@ -12,7 +18,7 @@ router.use(authenticateToken);
 router.get(
   "/",
 
-  asyncHandler(listCategories)
+  asyncHandler(listCategories),
 );
 
 // Créer une nouvelle catégorie ou sous-catégorie
@@ -20,21 +26,21 @@ router.post(
   "/",
 
   //  requireRole(["admin"]),
-  asyncHandler(createCategorie)
+  asyncHandler(createCategorie),
 );
 
 // Mettre à jour une catégorie
 router.put(
   "/:id",
   //  requireRole(["admin"]),
-  asyncHandler(updateCategorie)
+  asyncHandler(updateCategorie),
 );
 
 // Supprimer une catégorie
 router.delete(
   "/:id",
   //   requireRole(["admin"]),
-  asyncHandler(deleteCategorie)
+  asyncHandler(deleteCategorie),
 );
 
 // Obtenir la liste des icônes disponibles
@@ -87,9 +93,6 @@ router.get("/icons", (req, res) => {
 });
 
 // Obtenir toutes les sous-catégories
-router.get(
-  "/subcategories",
-  asyncHandler(listSubcategories)
-);
+router.get("/subcategories", asyncHandler(listSubcategories));
 
-router.patch("/:id" ,asyncHandler(patchCategory))
+router.patch("/:id", asyncHandler(patchCategory));

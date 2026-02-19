@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
-import db from  "../../models/index.js"
+import db from "../../models/index.js";
 
 const { Arrival } = db;
 
@@ -11,7 +11,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const arrivals = await Arrival.findAll();
     res.json(arrivals);
-  })
+  }),
 );
 router.post(
   "/",
@@ -21,7 +21,7 @@ router.post(
       // subcategory_id,
       weight: 10,
       arrival_date: () => Date.now(),
-    //   arrival_time,
+      //   arrival_time,
       source_type,
       source_details,
       collection_point_id,
@@ -31,5 +31,5 @@ router.post(
       house_clearance,
       notes,
     });
-  })
+  }),
 );

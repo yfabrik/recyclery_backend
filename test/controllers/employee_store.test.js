@@ -64,7 +64,7 @@ describe("employee_store controller functions", () => {
       expect.objectContaining({
         success: true,
         assignments: expect.any(Array),
-      })
+      }),
     );
   });
 
@@ -85,7 +85,7 @@ describe("employee_store controller functions", () => {
         success: true,
         assignments: expect.any(Array),
         stores: expect.any(Array),
-      })
+      }),
     );
   });
 
@@ -104,7 +104,7 @@ describe("employee_store controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         users: expect.any(Array),
-      })
+      }),
     );
   });
 
@@ -132,7 +132,7 @@ describe("employee_store controller functions", () => {
         success: true,
         message: "Affectation créée avec succès",
         employee: expect.any(Object),
-      })
+      }),
     );
   });
 
@@ -159,7 +159,7 @@ describe("employee_store controller functions", () => {
       expect.objectContaining({
         success: true,
         message: "Affectation créée avec succès",
-      })
+      }),
     );
   });
 
@@ -217,7 +217,7 @@ describe("employee_store controller functions", () => {
       expect.objectContaining({
         success: true,
         message: expect.stringContaining("supprimée"),
-      })
+      }),
     );
   });
 
@@ -237,7 +237,7 @@ describe("employee_store controller functions", () => {
       expect.objectContaining({
         success: true,
         message: expect.stringContaining("supprimée"),
-      })
+      }),
     );
   });
 
