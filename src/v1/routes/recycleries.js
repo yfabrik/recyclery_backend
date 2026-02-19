@@ -11,9 +11,11 @@ import {
   updateRecyclerie,
 } from "../controllers/recycleries.js";
 import { createCaisse } from "../controllers/cashRegister.js";
+import { hasPermissions } from "../../middlewares/hasPermissions.js";
 
 export const router = Router();
 router.use(authenticateToken);
+router.use(hasPermissions)
 
 // Obtenir toutes les recycleries
 router.get("/", asyncHandler(listRecycleries));
