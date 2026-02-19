@@ -91,6 +91,8 @@ export const listCategories = async (req, res) => {
       insideWhere.IO = literal(`parent.IO & ${IOValues.IN} != 0`);
     if (typeof filters.out == "boolean" && filters.out)
       insideWhere.IO = literal(`parent.IO & ${IOValues.OUT} != 0`);
+    if (typeof filters.sell == "boolean" && filters.sell)
+      insideWhere.IO = literal(`subcategories.IO & ${IOValues.SELL} != 0`);
     include.push({
       model: Category,
       as: "parent",
