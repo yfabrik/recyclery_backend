@@ -1,7 +1,6 @@
 "use strict";
 import createHttpError from "http-errors";
 import { Model } from "sequelize";
-import { required } from "zod/mini";
 /**
  * @param {import("sequelize").Sequelize} sequelize
  * @param {import("sequelize").DataTypes} DataTypes
@@ -75,8 +74,12 @@ export default (sequelize, DataTypes) => {
       indexes: [{ fields: ["is_active"] }, { fields: ["manager_id"] }],
       hooks: {
         afterUpdate: async (instance, options) => {
-          if (options.fields?.includes("name") ||options.fields?.includes("is_active")) {
-            for (const schedule of instance.TaskSchedules || []) {//TODO faudrait getTaskShcedule pour etre sur de les avoirs et where cat==vente
+          if (
+            options.fields?.includes("name") ||
+            options.fields?.includes("is_active")
+          ) {
+            for (const schedule of instance.TaskSchedules || []) {
+              //TODO faudrait getTaskShcedule pour etre sur de les avoirs et where cat==vente
               await schedule.update({
                 is_recurring: instance.is_active,
                 name: "vente-" + instance.name,

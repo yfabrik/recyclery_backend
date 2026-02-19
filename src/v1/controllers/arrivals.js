@@ -10,8 +10,11 @@ const dataSchema = z.object({
   subcategory_id: idSchema().nullish(),
   weight: z.coerce.number().positive("poids requis"),
   arrival_date: z.coerce.date("date d'arrivage requis"),
-  arrival_time: z.coerce.date(" date d'arrivage requis")
-    .transform((val) => val.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })),
+  arrival_time: z.coerce
+    .date(" date d'arrivage requis")
+    .transform((val) =>
+      val.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+    ),
   source_type: z.enum(["point", "apport", "house_clearance"]),
   source_details: z.string().nullish(),
   collection_point_id: idSchema().nullish(),
@@ -19,7 +22,6 @@ const dataSchema = z.object({
   collection_point_address: z.string().nullish(),
   notes: z.string().nullish(),
 });
-
 
 /**
  *
@@ -98,11 +100,10 @@ export const detailArrival = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const createArrival = async (req, res) => {
-
   const data = dataSchema.parse(req.body);
   const category = await Category.findByPk(
     data.subcategory_id ?? data.category_id,
-  );
+  ); //TODO filter par type de category need only IO.in ?
   // Vérifier si la catégorie existe
   if (!category) throw new createHttpError[404]("Catégorie non trouvée");
 
@@ -124,7 +125,6 @@ export const createArrival = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const updateArrival = async (req, res) => {
-
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
 
@@ -188,7 +188,6 @@ export const statsSummary = async (req, res) => {
       where.arrival_date[Op.lte] = dateTo;
     }
   }
-
 
   const stats = await Arrival.findOne({
     attributes: [
