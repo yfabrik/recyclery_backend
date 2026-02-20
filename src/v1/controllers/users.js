@@ -13,6 +13,7 @@ const { User, Recyclery, EmployeeWorkdays } = db;
  * @param {import("express").Response} res
  */
 export const listUsers = async (req, res) => {
+  const ALLOWED_INCLUDES = ["EmployeeWorkdays", "managedStores"];
   const filterSchema = z.object({
     store_id: z.coerce.number().optional(),
     role: z
@@ -23,7 +24,8 @@ export const listUsers = async (req, res) => {
     include: z
       .string()
       .optional()
-      .transform((val) => (val ? val.split(",") : [])),
+      .transform((val) => (val ? val.split(",") : []))
+      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
   });
   const filter = filterSchema.parse(req.query);
 
@@ -89,11 +91,12 @@ export const createUser = async (req, res) => {
     username: z.string("Nom d'utilisateur obligatoire"),
     email: z.email(" email obligatoire"),
     password: z.string(" mot de passe  obligatoire"),
-    role: z.string().optional().default("employee"),
-    recyclery_id: idSchema().nullish(),
+    role: z.enum(["employee", "manager", "admin"]).optional().default("employee"),
+    managedStores: z.array(idSchema()).nullish(),
     phone: phoneSchema().nullish(),
     contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
     isActive: z.coerce.boolean().nullish().default(true),
+
   });
 
   const data = dataSchema.parse(req.body);
@@ -107,6 +110,8 @@ export const createUser = async (req, res) => {
     ...data,
     isActive: true,
   });
+
+  await user.addManagedStores(data.managedStores)
 
   res.json({
     success: true,
@@ -124,10 +129,10 @@ export const updateUser = async (req, res) => {
   const dataSchema = z.object({
     username: z.string("Nom d'utilisateur obligatoire"),
     email: z.email(" email obligatoire"),
-    role: z.string().nullish().default("employee"),
-    recyclery_id: idSchema().nullish(),
+    role: z.enum(["employee", "manager", "admin"]).optional().default("employee"),
+    managedStores: z.array(idSchema()).nullish(),
     phone: phoneSchema().nullish(),
-    contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
+    // contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
     isActive: z.coerce.boolean().optional().default(true),
   });
 
@@ -138,6 +143,7 @@ export const updateUser = async (req, res) => {
   await user.update({
     ...data,
   });
+  await user.setManagedStores(data.managedStores)
 
   res.json({
     success: true,
