@@ -119,6 +119,18 @@ export const updateDon = async (req, res) => {
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
+export const deleteDon = async (req, res) => {
+  const id = idSchema().parse(req.params.id);
+  const don = await Donation.findByPk(id);
+  if (!don) throw new createHttpError.NotFound("don non trouvé");
+  await don.destroy();
+  return res.json({ success: true, message: "Don supprimé avec succès" });
+};
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
 export const donStats = async (req, res) => {
   const stats = await Donation.findOne({
     attributes: [

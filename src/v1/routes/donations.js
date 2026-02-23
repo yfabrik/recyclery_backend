@@ -4,6 +4,7 @@ import { authenticateToken } from "../../middlewares/auth.js";
 
 import {
   createDon,
+  deleteDon,
   donStats,
   listDons,
   updateDon,
@@ -18,6 +19,8 @@ router.post("/", authenticateToken, asyncHandler(createDon));
 
 // PUT update donation
 router.put("/:id", authenticateToken, asyncHandler(updateDon));
+
+router.delete("/:id", authenticateToken, asyncHandler(deleteDon));
 
 // GET donation statistics
 router.get("/stats", authenticateToken, asyncHandler(donStats));
