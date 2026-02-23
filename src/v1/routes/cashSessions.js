@@ -1,7 +1,6 @@
 import express from "express";
 
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
-import { authenticateToken } from "../../middlewares/auth.js";
 import {
   closeCashSession,
   getActiveSession,
@@ -13,7 +12,6 @@ import {
 
 export const router = express.Router();
 
-router.use(authenticateToken);
 
 router.get("/", asyncHandler(listCashSessions));
 router.get("/active", asyncHandler(getActiveSession));

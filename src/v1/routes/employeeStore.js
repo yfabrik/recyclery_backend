@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
-import { authenticateToken } from "../../middlewares/auth.js";
-import db from "../../models/index.js";
+import logger from "../../services/logger.js";
 import {
   assignUserToStore,
   getEmployeeStoreById,
@@ -9,36 +8,31 @@ import {
   listStoreEmployee,
   removeEmployeeStore,
 } from "../controllers/employee_store.js";
-import logger from "../../services/logger.js";
-const { User, Recyclery } = db;
 
 export const router = Router();
-// router.use(authenticateToken);
 // Obtenir toutes les affectations employés-magasins
-router.get("/", authenticateToken, asyncHandler(listEmployeeStore));
+router.get("/",  asyncHandler(listEmployeeStore));
 
 // Obtenir les affectations d'un employé
 router.get(
   "/employee/:employeeId",
-  authenticateToken,
   asyncHandler(getEmployeeStoreById),
 );
 
 // Obtenir les employés d'un magasin
 router.get(
   "/store/:storeId",
-  authenticateToken,
   asyncHandler(listStoreEmployee),
 );
 
 // Créer une nouvelle affectation
-router.post("/", authenticateToken, asyncHandler(assignUserToStore));
+router.post("/",  asyncHandler(assignUserToStore));
 
 // Mettre à jour une affectation
-router.put("/:id", authenticateToken, async (req, res) => {
+router.put("/:id",  async (req, res) => {
   const { id } = req.params;
   const { is_primary } = req.body;
-  logger.error("called useless fn in the router");
+  logger.error("called useless fn in the router FIXME", { params: req.params, body: req.body, referer: req?.headers?.referer, });
 
   // Si c'est une affectation principale, retirer le statut principal des autres affectations de cet employé
   //   if (is_primary) {
@@ -77,9 +71,9 @@ router.put("/:id", authenticateToken, async (req, res) => {
 });
 
 // Supprimer une affectation
-router.delete("/:id", authenticateToken, async (req, res) => {
+router.delete("/:id",  async (req, res) => {
   const { id } = req.params;
-  logger.error("called useless fn in the router");
+  logger.error("called useless fn in the router FIXME", { params: req.params, body: req.body, referer: req?.headers?.referer, });
 
   //   const result = await database.run(
   //     "DELETE FROM employee_stores WHERE id = ?",
@@ -102,6 +96,5 @@ router.delete("/:id", authenticateToken, async (req, res) => {
 // Supprimer toutes les affectations d'un employé
 router.delete(
   "/employee/:employeeId",
-  authenticateToken,
   asyncHandler(removeEmployeeStore),
 );

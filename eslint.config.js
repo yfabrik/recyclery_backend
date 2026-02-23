@@ -10,13 +10,10 @@ export default defineConfig([
     plugins: { js },
     extends: ["js/recommended"],
     languageOptions: { globals: globals.node },
-    ignores:[
-      "**/migrations/**",
-      "**/seeders/**"
-    ],
-    rules:{
-      "no-unused-vars": "off"
-    }
+    ignores: ["**/migrations/**", "**/seeders/**"],
+    rules: {
+      "no-unused-vars": "off",
+    },
   },
   {
     files: ["**/*.json"],

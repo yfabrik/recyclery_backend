@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
-import { authenticateToken } from "../../middlewares/auth.js";
 
 import {
   createLabeledItem,
@@ -12,7 +11,6 @@ import {
 } from "../controllers/items.js";
 
 export const router = Router();
-router.use(authenticateToken);
 
 // GET - Récupérer tous les articles étiquetés
 router.get("/", asyncHandler(listLabeledItem));

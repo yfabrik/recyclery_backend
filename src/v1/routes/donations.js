@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
-import { authenticateToken } from "../../middlewares/auth.js";
 
 import {
   createDon,
@@ -12,15 +11,15 @@ import {
 
 export const router = Router();
 // Obtenir tous les dons/apports
-router.get("/", authenticateToken, asyncHandler(listDons));
+router.get("/",  asyncHandler(listDons));
 
 // Créer un nouveau don
-router.post("/", authenticateToken, asyncHandler(createDon));
+router.post("/",  asyncHandler(createDon));
 
 // PUT update donation
-router.put("/:id", authenticateToken, asyncHandler(updateDon));
+router.put("/:id",  asyncHandler(updateDon));
 
-router.delete("/:id", authenticateToken, asyncHandler(deleteDon));
+router.delete("/:id",  asyncHandler(deleteDon));
 
 // GET donation statistics
-router.get("/stats", authenticateToken, asyncHandler(donStats));
+router.get("/stats",  asyncHandler(donStats));

@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
-import { authenticateToken } from "../../middlewares/auth.js";
 import {
   createCaisse,
   deleteCaisse,
@@ -11,7 +10,6 @@ import {
 } from "../controllers/cashRegister.js";
 
 export const router = Router();
-router.use(authenticateToken);
 
 // GET - Récupérer toutes les caisses
 router.get("/", asyncHandler(listCaisses));

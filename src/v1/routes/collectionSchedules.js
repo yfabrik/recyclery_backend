@@ -1,6 +1,6 @@
 import { Router } from "express";
+import { col, fn, Op, QueryTypes } from "sequelize";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
-import { authenticateToken } from "../../middlewares/auth.js";
 import db from "../../models/index.js";
 import {
   addUserToSchedule,
@@ -12,7 +12,7 @@ import {
   removeUserFromSchedule,
   updateCollectionSchedule,
 } from "../controllers/CollectionSchedule.js";
-import { col, fn, Op, QueryTypes } from "sequelize";
+import logger from "../../services/logger.js";
 
 const {
   CollectionSchedule,
@@ -25,12 +25,12 @@ const {
 export const router = Router();
 
 // Obtenir tous les plannings de collecte
-router.get("/", authenticateToken, asyncHandler(listcollectionSchedule));
+router.get("/", asyncHandler(listcollectionSchedule));
 // Obtenir les plannings pour le calendrier
 router.get(
   "/calendar",
-  authenticateToken,
   asyncHandler(async (req, res) => {
+    logger.warn("called collection schedule calendar route FIXME", { query: req.query, referer: req?.headers?.referer, });
     const { month, year } = req.query;
     /**
      * @type {import("sequelize").WhereOptions}
@@ -51,17 +51,16 @@ router.get(
     // Transformer les données pour le calendrier
     const calendarEvents = events.map((event) => ({
       id: event.id,
-      title: `${event.collection_point_name} - ${
-        event.employee_name || "Non assigné"
-      }`,
+      title: `${event.collection_point_name} - ${event.employee_name || "Non assigné"
+        }`,
       start: `${event.scheduled_date}T${event.scheduled_time}`,
       end: event.estimated_duration
         ? new Date(
-            new Date(
-              `${event.scheduled_date}T${event.scheduled_time}`,
-            ).getTime() +
-              event.estimated_duration * 60000,
-          ).toISOString()
+          new Date(
+            `${event.scheduled_date}T${event.scheduled_time}`,
+          ).getTime() +
+          event.estimated_duration * 60000,
+        ).toISOString()
         : `${event.scheduled_date}T${event.scheduled_time}`,
       backgroundColor:
         event.status === "completed"
@@ -88,38 +87,32 @@ router.get(
 // Créer un nouveau planning de collecte
 router.post(
   "/",
-  authenticateToken,
-  // requireRole(["admin", "manager"]),
   asyncHandler(createCollectionSchedule),
 );
 
 // Mettre à jour un planning de collecte
 router.put(
   "/:id",
-  authenticateToken,
-  // requireRole(["admin", "manager"]),
   asyncHandler(updateCollectionSchedule),
 );
 
 // Supprimer un planning de collecte
 router.delete(
   "/:id",
-  authenticateToken,
-  // requireRole(["admin", "manager"]),
   asyncHandler(deleteCollectionSchedule),
 );
 
 // Générer un bordereau de collecte
-router.post("/:id/receipt", authenticateToken, asyncHandler(generateBSD));
+router.post("/:id/receipt", asyncHandler(generateBSD));
 
 // Obtenir un bordereau de collecte
-router.get("/:id/receipt", authenticateToken, asyncHandler(detailBSD));
+router.get("/:id/receipt", asyncHandler(detailBSD));
 
 // Récupérer les employés disponibles pour une collecte spécifique (en tenant compte des conflits d'horaires et de la présence)
 router.get(
   "/:scheduleId/available-employees",
-  authenticateToken,
   asyncHandler(async (req, res) => {
+    logger.warn("called collection schedule available employees route FIXME", { params: req.params, referer: req?.headers?.referer, });
     const { scheduleId } = req.params;
 
     // Récupérer les détails de la collecte
@@ -263,13 +256,11 @@ router.get(
 // Assigner un employé à une collecte spécifique
 router.post(
   "/:scheduleId/employees",
-  authenticateToken,
   asyncHandler(addUserToSchedule),
 );
 
 // Retirer un employé d'une collecte spécifique
 router.delete(
   "/:scheduleId/employees/:employeeId",
-  authenticateToken,
   asyncHandler(removeUserFromSchedule),
 );

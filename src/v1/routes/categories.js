@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
-import { authenticateToken } from "../../middlewares/auth.js";
 
 import {
   createCategorie,
@@ -12,34 +11,28 @@ import {
 } from "../controllers/categories.js";
 
 export const router = Router();
-router.use(authenticateToken);
 
 // Obtenir toutes les catégories (principales et sous-catégories) en liste plate
 router.get(
   "/",
-
   asyncHandler(listCategories),
 );
 
 // Créer une nouvelle catégorie ou sous-catégorie
 router.post(
   "/",
-
-  //  requireRole(["admin"]),
   asyncHandler(createCategorie),
 );
 
 // Mettre à jour une catégorie
 router.put(
   "/:id",
-  //  requireRole(["admin"]),
   asyncHandler(updateCategorie),
 );
 
 // Supprimer une catégorie
 router.delete(
   "/:id",
-  //   requireRole(["admin"]),
   asyncHandler(deleteCategorie),
 );
 
@@ -69,7 +62,7 @@ router.get("/icons", (req, res) => {
     "TableRestaurant",
     "LocalDining",
     "Coffee",
-    "Wine",
+    "WineBar",
     "Cake",
     "LocalFlorist",
     "Palette",

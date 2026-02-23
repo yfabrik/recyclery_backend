@@ -1,7 +1,5 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
-import { authenticateToken } from "../../middlewares/auth.js";
-
 import {
   detailRecyclerie,
   listRecycleries,
@@ -14,9 +12,6 @@ import {
 } from "../controllers/storeLocation.js";
 
 export const router = Router();
-
-// Appliquer l'authentification à toutes les routes
-router.use(authenticateToken);
 
 // GET /api/store-locations - Récupérer tous les lieux
 router.get("/", asyncHandler(listRecycleries));

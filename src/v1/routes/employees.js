@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
-import { authenticateToken } from "../../middlewares/auth.js";
 import {
   createEmployee,
   deleteEmployee,
@@ -10,10 +9,10 @@ import {
 
 export const router = Router();
 
-router.get("/", authenticateToken, asyncHandler(listEmployees));
+router.get("/",  asyncHandler(listEmployees));
 
-router.post("/", authenticateToken, asyncHandler(createEmployee));
+router.post("/",  asyncHandler(createEmployee));
 
-router.put("/:id", authenticateToken, asyncHandler(updateEmployee));
+router.put("/:id",  asyncHandler(updateEmployee));
 
-router.delete("/:id", authenticateToken, asyncHandler(deleteEmployee));
+router.delete("/:id",  asyncHandler(deleteEmployee));

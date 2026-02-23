@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import {
   createUser,
   deleteUser,
@@ -8,21 +9,10 @@ import {
   updateUser,
   userStats,
 } from "../controllers/users.js";
-import { authenticateToken } from "../../middlewares/auth.js";
-import { asyncHandler } from "../../middlewares/asyncHandler.js";
 
 export const router = Router();
-router.use(authenticateToken);
-// Obtenir tous les utilisateurs
 router.get("/", asyncHandler(listUsers));
-
-// router.get("/all",asyncHandler(listAllUsersInfolist))
-// Obtenir tous les employés (utilisateurs avec rôles employee, admin, manager)
-// router.get("/employees", asyncHandler(listEmployees));
-
 router.get("/stats", asyncHandler(userStats));
-
-// Obtenir les rôles disponibles
 router.get("/roles", (req, res) => {
   const roles = [
     { name: "admin", display_name: "Administrateur" },
@@ -48,5 +38,4 @@ router.put("/:id", asyncHandler(updateUser));
 router.delete("/:id", asyncHandler(deleteUser));
 
 // Obtenir les statistiques des utilisateurs
-
 router.patch("/:id/password", asyncHandler(updatePassword));

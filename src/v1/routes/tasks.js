@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { authenticateToken } from "../../middlewares/auth.js";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 
 import {
@@ -15,37 +14,34 @@ import {
 
 export const router = Router();
 // Récupérer toutes les tâches
-router.get("/", authenticateToken, asyncHandler(listTasks));
+router.get("/",  asyncHandler(listTasks));
 
 // Récupérer une tâche par ID
-router.get("/:id", authenticateToken, asyncHandler(detailTask));
+router.get("/:id",  asyncHandler(detailTask));
 
 // Créer une nouvelle tâche
-router.post("/", authenticateToken, asyncHandler(createTask));
+router.post("/",  asyncHandler(createTask));
 
 // Mettre à jour une tâche
-router.put("/:id", authenticateToken, asyncHandler(updateTask));
+router.put("/:id",  asyncHandler(updateTask));
 
 // Supprimer une tâche
-router.delete("/:id", authenticateToken, asyncHandler(deleteTask));
+router.delete("/:id",  asyncHandler(deleteTask));
 
 // Récupérer les employés assignés à une tâche
 router.get(
   "/:taskId/employees",
-  authenticateToken,
   asyncHandler(getUsersFromTask),
 );
 
 // Assigner un employé à une tâche
 router.post(
   "/:taskId/employees",
-  authenticateToken,
   asyncHandler(addUserToTask),
 );
 
 // Retirer un employé d'une tâche
 router.delete(
   "/:taskId/employees/:employeeId",
-  authenticateToken,
   asyncHandler(removeUserFromTask),
 );

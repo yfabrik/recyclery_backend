@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
-import { authenticateToken } from "../../middlewares/auth.js";
-import db from "../../models/index.js";
+import logger from "../../services/logger.js";
+import { createCaisse, listCaisses } from "../controllers/cashRegister.js";
 import {
   createRecyclerie,
   deleteRecyclerie,
@@ -9,54 +9,43 @@ import {
   listRecycleries,
   updateRecyclerie,
 } from "../controllers/recycleries.js";
-import { createCaisse, listCaisses } from "../controllers/cashRegister.js";
-import logger from "../../services/logger.js";
 
 export const router = Router();
 
-const { LabeledItem, CashSession, Recyclery, CashRegister } = db;
-
 // GET - Récupérer tous les magasins
-router.get("/", authenticateToken, asyncHandler(listRecycleries));
-// router.get("/all",authenticateToken, asyncHandler(listStoreWIthEmployee))
+router.get("/",  asyncHandler(listRecycleries));
 
 // GET - Récupérer un magasin par ID
-router.get("/:id", authenticateToken, asyncHandler(detailRecyclerie));
+router.get("/:id",  asyncHandler(detailRecyclerie));
 
 // POST - Créer un nouveau magasin
 router.post(
   "/",
-  authenticateToken,
-  // requireRole(["admin"]),
   asyncHandler(createRecyclerie),
 );
 
 // PUT - Mettre à jour un magasin
 router.put(
   "/:id",
-  authenticateToken,
-  //  requireRole(["admin"]),
   asyncHandler(updateRecyclerie),
 );
 
 // DELETE - Supprimer un magasin
 router.delete(
   "/:id",
-  authenticateToken,
-  // requireRole(["admin"]),
   asyncHandler(deleteRecyclerie),
 );
 
 // GET - Récupérer les caisses d'un magasin
-router.get("/:id/cash-registers", authenticateToken, asyncHandler(listCaisses));
+router.get("/:id/cash-registers",  asyncHandler(listCaisses));
 
 // POST - Créer une nouvelle caisse pour un magasin
 router.post(
   "/:id/cash-registers",
-  authenticateToken,
+  
   // requireRole(["admin", "manager"]),
   asyncHandler(async (req, res) => {
-    logger.error("called useless fn in the router");
+    logger.error("called useless fn in store route FIXME", { params: req.params, body: req.body, referer: req?.headers?.referer, });
 
     const { id } = req.params;
     const { name } = req.body;
