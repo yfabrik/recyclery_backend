@@ -264,7 +264,7 @@ export default (sequelize, DataTypes) => {
           );
         },
         beforeUpdate: async (data, options) => {
-          logger.info("check for conflict before update schedule", data);
+          logger.info("check for conflict before update schedule");
           await conflictCheck(data, options);
           logger.info("no conflict");
         },
