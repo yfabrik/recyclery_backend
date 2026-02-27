@@ -94,7 +94,7 @@ export const createUser = async (req, res) => {
     role: z.enum(["employee", "manager", "admin"]).optional().default("employee"),
     managedStores: z.array(idSchema()).nullish(),
     phone: phoneSchema().nullish(),
-    contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
+    // contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
     isActive: z.coerce.boolean().nullish().default(true),
 
   });
@@ -108,10 +108,11 @@ export const createUser = async (req, res) => {
 
   const user = await User.create({
     ...data,
-    isActive: true,
+    // password: data.password
   });
 
-  await user.addManagedStores(data.managedStores)
+  if (data.managedStores)
+    await user.addManagedStores(data.managedStores) //TODO setmanagerStores ?
 
   res.json({
     success: true,
@@ -143,7 +144,8 @@ export const updateUser = async (req, res) => {
   await user.update({
     ...data,
   });
-  await user.setManagedStores(data.managedStores)
+  if (data.managedStores)
+    await user.setManagedStores(data.managedStores)
 
   res.json({
     success: true,
@@ -157,8 +159,10 @@ export const updateUser = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const deleteUser = async (req, res) => {
-  const { id } = req.params;
-  await User.destroy({ where: { id } });
+  const id = idSchema().parse(req.params.id)
+  const user = await User.findByPk(id)
+  if (!user) throw new createHttpError.NotFound("utilisateur non trouvé")
+  await user.destroy()
   res.json({
     success: true,
     message: "user removed",

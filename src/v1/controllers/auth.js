@@ -17,7 +17,7 @@ export const register = async (req, res, next) => {
     username: z.string("Nom d'utilisateur requis"),
     email: z.email("email requis"),
     password: z.string("password requis"),
-    role: z.string().default("employee"),
+    role: z.enum(["employee", "manager", "admin"]).optional().default("employee"),
     recyclery_id: idSchema().optional(),
   });
 
@@ -78,9 +78,9 @@ export const login = async (req, res, next) => {
   const user = await User.scope("withPassword").findOne({
     where: { email: data.email },
   });
+
   if (!user)
     throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
-
   // Use password_hash field for comparison (password is virtual and returns undefined)
   const isValidPassword = await bcrypt.compare(
     data.password,
