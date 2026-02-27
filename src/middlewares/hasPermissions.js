@@ -117,7 +117,7 @@ const PERMISSIONS = {
  */
 export const hasPermissions = async (req, res, next) => {
   const user = req.user;
-  const module = req.baseUrl.split("/")[2];
+  const module = req.originalUrl.split("/")[2].split("?")[0];
 
   if (!user) throw new createHttpError.Unauthorized("user not found");
   let method;
