@@ -104,10 +104,11 @@ export const createTransaction = async (req, res) => {
   const itemSchema = z.object({
     price: z.coerce.number("prix requis").positive(),
     quantity: z.coerce.number().positive().default(1),
-    labeled_item_id: idSchema().nullish(),
+    // labeled_item_id: idSchema().nullish(),
     category_id: idSchema(),
     subcategory_id: idSchema().nullish(),
     weight: z.coerce.number().nullish(),
+    barcode: z.string()
   });
   const dataSchema = z.object({
     cash_session_id: idSchema("sesions requis"),
@@ -116,56 +117,70 @@ export const createTransaction = async (req, res) => {
     payment_method: z.enum(["cash", "card", "check"]).default("cash"),
     payment_amount: z.coerce.number("argent requis"),
     // change_amount = 0,
-    customer_name: z.string().nullish(),
-    customer_email: z.string().nullish(),
+    // customer_name: z.string().nullish(),
+    // customer_email: z.string().nullish(),
     customer_postal_code: postalSchema().nullish(),
     items: z.array(itemSchema),
   });
   const data = dataSchema.parse(req.body);
-  const t = await db.sequelize.transaction();
   const session = await CashSession.findByPk(data.cash_session_id);
   if (!session) throw new createHttpError[404]("session non trouvé");
+  const t = await db.sequelize.transaction();
   try {
     const sale = await session.createSalesTransaction(
       {
         total_amount: data.total_amount,
         payment_method: data.payment_method,
         payment_amount: data.payment_amount,
-        customer_email: data?.customer_email || null,
-        customer_name: data?.customer_name || null,
+        // customer_email: data?.customer_email || null,
+        // customer_name: data?.customer_name || null,
         customer_postal_code: data?.customer_postal_code || null,
       },
       { transaction: t },
     );
     for await (const item of data.items) {
-      if (item?.labeled_item_id) {
-        const i = await LabeledItem.findByPk(item.labeled_item_id);
+      if (isNaN(+item.barcode)) {
+        let newItems = []
+        for (let index = 0; index < item.quantity; index++) {
+          newItems.push({
+            category_id: item.category_id,
+            subcategory_id: item.subcategory_id,
+            price: item.price || 0,
+            weight: item.weight,
+            transaction_id: sale.id,
+            status: "sold",
+            sold_at: new Date(),
+          })
+        }
+        if (newItems.length > 0)
+          await LabeledItem.bulkCreate(newItems, { transaction: t })
+        // const newItem = await LabeledItem.create(
+        //   {
+        //     category_id: item.category_id,
+        //     subcategory_id: item.subcategory_id,
+
+        //     price: item.price || 0,
+        //     weight: item.weight,
+        //     transaction_id: sale.id,
+        //     status: "sold",
+        //     sold_at: new Date(),
+        //     // sold_by: req.user.id,
+        //   },
+        //   { transaction: t },
+        // );
+        // }
+      }
+      else {
+        const i = await LabeledItem.findByPk(+item.barcode);
         if (!i) throw new createHttpError.NotFound("item not found");
+        if (item.quantity!==1) throw new createHttpError.NotImplemented("quantité pour les item existant pas géré")
         i.transaction_id = sale.id;
         i.status = "sold";
-        // i.sold_by = req.user.id;
         i.sold_at = new Date();
         await i.save({ transaction: t });
-      } else {
-        for (let index = 0; index < item.quantity; index++) {
-          const newItem = await LabeledItem.create(
-            {
-              category_id: item.category_id,
-              subcategory_id: item.subcategory_id,
-
-              price: item.price || 0,
-              weight: item.weight,
-              transaction_id: sale.id,
-              status: "sold",
-              sold_at: new Date(),
-              // sold_by: req.user.id,
-            },
-            { transaction: t },
-          );
-        }
       }
-    }
 
+    }
     await t.commit();
 
     res.json({
