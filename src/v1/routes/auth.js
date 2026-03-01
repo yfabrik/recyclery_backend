@@ -3,13 +3,29 @@ import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import { login, register, userProfile } from "../controllers/auth.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import rateLimit from "express-rate-limit";
+import logger from "../../services/logger.js";
 
 export const router = Router();
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // limite chaque IP à 1000 requêtes par windowMs (plus permissif)
-  message: {
-    error: "Trop de requêtes depuis cette IP, veuillez réessayer plus tard.",
+  max: 10, // limite chaque IP à 1000 requêtes par windowMs (plus permissif)
+  message: "Trop de requêtes depuis cette IP, veuillez réessayer plus tard.",
+  handler: (req, res, next, options) => {
+    logger.error("too many request", {
+      method: req?.method,
+      url: req?.originalUrl,
+      status: options.statusCode,
+      ip: req?.ip,
+      userId: req?.user?.id,
+      headers: {
+        // Only log non-sensitive headers
+        "user-agent": req?.headers?.["user-agent"],
+        referer: req?.headers?.referer,
+        "X_FORWARDED_FOR": req.headers["X_FORWARDED_FOR"],
+        "all": req.headers
+      }
+    })
+    res.status(options.statusCode).send({ success: false, error: options.message, message: options.message, status: options.statusCode })
   },
   skip: (req) => {
     // Skip rate limiting en développement pour localhost

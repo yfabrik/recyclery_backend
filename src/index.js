@@ -8,6 +8,7 @@ import rateLimit from "express-rate-limit";
 import logger from "./services/logger.js";
 
 export const app = express();
+// app.set('trust proxy', 1 /* number of proxies between user and server */)
 app.use(helmet());
 app.use(express.json());
 
@@ -17,7 +18,24 @@ const limiter = rateLimit({
   message: {
     error: "Trop de requêtes depuis cette IP, veuillez réessayer plus tard.",
   },
-  skip: (req) => {
+  handler: (req, res, next, options) => {
+    logger.error("too many request", {
+      method: req?.method,
+      url: req?.originalUrl,
+      status: options.statusCode,
+      ip: req?.ip,
+      userId: req?.user?.id,
+      headers: {
+        // Only log non-sensitive headers
+        "user-agent": req?.headers?.["user-agent"],
+        referer: req?.headers?.referer,
+        "X_FORWARDED_FOR": req.headers["X_FORWARDED_FOR"],
+        "all": req.headers
+      }
+    })
+    res.status(options.statusCode).send(options.message)
+  },
+  skip: (req, res) => {
     // Skip rate limiting en développement pour localhost
     return (
       req.ip === "127.0.0.1" ||

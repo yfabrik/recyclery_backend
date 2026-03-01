@@ -78,7 +78,6 @@ export const errorHandler = (err, req, res, next) => {
   }
 
   if (err instanceof ZodError) {
-    console.log(err.issues);
     return res.status(400).json({
       success: false,
       error: err.issues.map((e) => e.message).toString(),
