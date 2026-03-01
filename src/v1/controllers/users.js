@@ -111,7 +111,7 @@ export const createUser = async (req, res) => {
     // password: data.password
   });
 
-  if (data.managedStores)
+  if (data.managedStores)//TODO check role ?
     await user.addManagedStores(data.managedStores) //TODO setmanagerStores ?
 
   res.json({
