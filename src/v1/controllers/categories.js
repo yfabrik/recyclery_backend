@@ -13,6 +13,7 @@ const dataSchema = z.object({
   parent_id: idSchema().nullish().default(null),
   defaultWeight: z.number().nonnegative().default(0),
   defaultPrice: z.number().nonnegative().default(0),
+  priceBasedOnWeight:z.boolean().default(false)
 });
 
 const IOValues = {
