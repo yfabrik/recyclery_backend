@@ -30,7 +30,7 @@ const PERMISSIONS = {
     collections: modulePerms(),
     sales: modulePerms(),
     categories: readOnlyPerms(),
-    "collection-points": noPerms(),
+    "collection-points": readOnlyPerms(),
     "collection-schedules": noPerms(),
     arrivals: modulePerms(),
     "labeled-items": modulePerms(),
