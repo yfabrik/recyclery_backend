@@ -41,6 +41,12 @@ export default (sequelize, DataTypes) => {
           return this.donor_email || this.donor_phone || null;
         },
       },
+      weight: {
+        type: DataTypes.DECIMAL(10, 2),
+        validate: {
+          min: 0
+        }
+      }
     },
     {
       sequelize,
