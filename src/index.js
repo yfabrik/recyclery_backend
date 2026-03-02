@@ -8,7 +8,7 @@ import rateLimit from "express-rate-limit";
 import logger from "./services/logger.js";
 
 export const app = express();
-// app.set('trust proxy', 1 /* number of proxies between user and server */)
+app.set("trust proxy", 1 /* number of proxies between user and server */);
 app.use(helmet());
 app.use(express.json());
 
@@ -24,16 +24,17 @@ const limiter = rateLimit({
       url: req?.originalUrl,
       status: options.statusCode,
       ip: req?.ip,
+      "x-forwarded-for": req.headers["x-forwarded-for"],
       userId: req?.user?.id,
       headers: {
         // Only log non-sensitive headers
         "user-agent": req?.headers?.["user-agent"],
         referer: req?.headers?.referer,
-        "X_FORWARDED_FOR": req.headers["X_FORWARDED_FOR"],
-        "all": req.headers
-      }
-    })
-    res.status(options.statusCode).send(options.message)
+        "x-forwarded-for": req.headers["x-forwarded-for"],
+        all: req.headers,
+      },
+    });
+    res.status(options.statusCode).send(options.message);
   },
   skip: (req, res) => {
     // Skip rate limiting en développement pour localhost
