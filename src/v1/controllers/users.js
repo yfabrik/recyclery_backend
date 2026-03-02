@@ -216,7 +216,7 @@ export const userStats = async (req, res) => {
 export const updatePassword = async (req, res) => {
   const id = idSchema().parse(req.params.id);
   const dataSchema = z.object({
-    currentPassword: z.string("mot de passe actuel requis"),
+    // currentPassword: z.string("mot de passe actuel requis"),
     newPassword: z
       .string("nouveau mot de passe requis")
       .min(6, "mot de passe tros court"),
@@ -225,13 +225,13 @@ export const updatePassword = async (req, res) => {
   const data = dataSchema.parse(req.body);
   const user = await User.scope("withPassword").findByPk(id);
   if (!user) throw new createHttpError.NotFound("utilisateur non trouvé");
-  const isValidPassword = await bcrypt.compare(
-    data.currentPassword,
-    user.password_hash,
-  );
-  if (!isValidPassword) {
-    throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
-  }
+  // const isValidPassword = await bcrypt.compare(
+  //   data.currentPassword,
+  //   user.password_hash,
+  // );
+  // if (!isValidPassword) {
+  //   throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
+  // }
   await user.update({
     password: data.newPassword,
   });

@@ -37,5 +37,5 @@ router.put("/:id", asyncHandler(updateUser));
 // Supprimer un utilisateur
 router.delete("/:id", asyncHandler(deleteUser));
 
-// Obtenir les statistiques des utilisateurs
+// changer password
 router.patch("/:id/password", asyncHandler(updatePassword));
