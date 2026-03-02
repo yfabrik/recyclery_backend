@@ -22,13 +22,14 @@ export const errorHandler = (err, req, res, next) => {
     url: req?.originalUrl,
     status: err?.status || err?.statusCode || 500,
     ip: req?.ip,
+    "x-forwarded-for": req.headers["x-forwarded-for"],
     userId: req?.user?.id,
     headers: {
       // Only log non-sensitive headers
       "user-agent": req?.headers?.["user-agent"],
       referer: req?.headers?.referer,
     },
-    error: err,
+    err_stack: err,
   });
 
   if (err instanceof JsonWebTokenError) {
