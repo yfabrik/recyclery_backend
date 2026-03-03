@@ -29,7 +29,7 @@ export const errorHandler = (err, req, res, next) => {
       "user-agent": req?.headers?.["user-agent"],
       referer: req?.headers?.referer,
     },
-    err_stack: err,
+    error: err,
   });
 
   if (err instanceof JsonWebTokenError) {

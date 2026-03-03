@@ -7,8 +7,8 @@ import logger from "../../services/logger.js";
 
 export const router = Router();
 const limiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 15 minutes
-  max: 10, // limite chaque IP à 1000 requêtes par windowMs (plus permissif)
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limite chaque IP à 1000 requêtes par windowMs (plus permissif)
   message: "Trop de requêtes depuis cette IP, veuillez réessayer plus tard.",
   handler: (req, res, next, options) => {
     logger.error("too many request", {
@@ -16,23 +16,21 @@ const limiter = rateLimit({
       url: req?.originalUrl,
       status: options.statusCode,
       ip: req?.ip,
+      "x-forwarded-for": req.headers["x-forwarded-for"],
       userId: req?.user?.id,
       headers: {
         // Only log non-sensitive headers
         "user-agent": req?.headers?.["user-agent"],
         referer: req?.headers?.referer,
-        X_FORWARDED_FOR: req.headers["X_FORWARDED_FOR"],
-        all: req.headers,
+        "x-forwarded-for": req.headers["x-forwarded-for"],
       },
     });
-    res
-      .status(options.statusCode)
-      .send({
-        success: false,
-        error: options.message,
-        message: options.message,
-        status: options.statusCode,
-      });
+    res.status(options.statusCode).send({
+      success: false,
+      error: options.message,
+      message: options.message,
+      status: options.statusCode,
+    });
   },
   skip: (req) => {
     // Skip rate limiting en développement pour localhost
