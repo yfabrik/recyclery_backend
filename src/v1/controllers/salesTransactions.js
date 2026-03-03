@@ -125,8 +125,8 @@ export const createTransaction = async (req, res) => {
   const data = dataSchema.parse(req.body);
   const session = await CashSession.findByPk(data.cash_session_id);
   if (!session) throw new createHttpError[404]("session non trouvé");
-  const t = await db.sequelize.transaction();
   try {
+    const t = await db.sequelize.transaction();
     const sale = await session.createSalesTransaction(
       {
         total_amount: data.total_amount,

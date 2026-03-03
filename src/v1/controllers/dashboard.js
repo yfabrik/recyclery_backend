@@ -12,6 +12,7 @@ const {
   Recyclery,
   CashSession,
   CashRegister,
+  Task,
 } = db;
 // Fonctions utilitaires
 function formatTimeAgo(dateString) {
@@ -74,8 +75,8 @@ export const dashboardStats = async (req, res) => {
 
   // 6. Collections programmées ce mois
   // console.log(CollectionSchedule.findAll({ where: { scheduled_date: { [Op.gt]: currentMonth } } }))
-  stats.scheduledCollections = await CollectionSchedule.count({
-    where: { scheduled_date: { [Op.gt]: currentMonth } },
+  stats.scheduledCollections = await Task.count({
+    where: {category:"collection", scheduled_date: { [Op.gt]: currentMonth } },
   });
 
   // 7. Nombre de catégories actives
@@ -166,8 +167,12 @@ export const dashboardActivities = async (req, res) => {
   });
 
   // 3. Collections récentes
-  const recentCollections = await CollectionSchedule.findAll({
-    include: [{ model: CollectionPoint }],
+  const recentCollections = await Task.findAll({
+    where: { category: "collection" },
+    include: [
+      { model: CollectionPoint, required: false },
+      { model: Recyclery, required: false },
+    ],
     order: [["scheduled_date", "DESC"]],
     limit: 5,
   });
@@ -176,7 +181,7 @@ export const dashboardActivities = async (req, res) => {
     activities.push({
       id: `collection_${collection.id}`,
       type: "collection",
-      description: `Collecte: ${collection.point_name}`,
+      description: `Collecte: ${collection.location}`,
       amount: formatDate(collection.scheduled_date),
       time: formatTimeAgo(collection.scheduled_date),
       icon: "LocalShipping",
