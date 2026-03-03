@@ -1,11 +1,10 @@
-import { col, fn, literal, Op } from "sequelize";
-import db from "../../models/index.js";
-import z from "zod";
 import createHttpError from "http-errors";
+import { col, fn, literal, Op } from "sequelize";
+import z from "zod";
+import db from "../../models/index.js";
 import {
-  asOptionalStringWithoutEmpty,
   idSchema,
-  postalSchema,
+  postalSchema
 } from "../../services/zod.js";
 
 const {
@@ -31,8 +30,12 @@ export const listTransactions = async (req, res) => {
     period: z.string().optional(),
     date_from: z.coerce.date().nullish(),
     date_to: z.coerce.date().nullish(),
-    limit: z.coerce.number().positive().default(50),
+    limit: z.coerce.number().positive().optional(),
     offset: z.coerce.number().nonnegative().default(0),
+    session: idSchema().optional(),
+    payment_method: z
+      .enum(["cash", "check", "card"], "methode de payment inconnue")
+      .optional(),
   });
   const filter = filterSchema.parse(req.query);
 
@@ -56,6 +59,8 @@ export const listTransactions = async (req, res) => {
       where.createdAt[Op.lte] = dateTo;
     }
   }
+  if (filter.session) where.cash_session_id = filter.session;
+  if (filter.payment_method) where.payment_method = filter.payment_method;
   const include = [
     {
       model: CashSession,
@@ -108,7 +113,7 @@ export const createTransaction = async (req, res) => {
     category_id: idSchema(),
     subcategory_id: idSchema().nullish(),
     weight: z.coerce.number().nullish(),
-    barcode: z.string()
+    barcode: z.string(),
   });
   const dataSchema = z.object({
     cash_session_id: idSchema("sesions requis"),
@@ -140,7 +145,7 @@ export const createTransaction = async (req, res) => {
     );
     for await (const item of data.items) {
       if (isNaN(+item.barcode)) {
-        let newItems = []
+        let newItems = [];
         for (let index = 0; index < item.quantity; index++) {
           newItems.push({
             category_id: item.category_id,
@@ -150,10 +155,10 @@ export const createTransaction = async (req, res) => {
             transaction_id: sale.id,
             status: "sold",
             sold_at: new Date(),
-          })
+          });
         }
         if (newItems.length > 0)
-          await LabeledItem.bulkCreate(newItems, { transaction: t })
+          await LabeledItem.bulkCreate(newItems, { transaction: t });
         // const newItem = await LabeledItem.create(
         //   {
         //     category_id: item.category_id,
@@ -169,17 +174,18 @@ export const createTransaction = async (req, res) => {
         //   { transaction: t },
         // );
         // }
-      }
-      else {
+      } else {
         const i = await LabeledItem.findByPk(+item.barcode);
         if (!i) throw new createHttpError.NotFound("item not found");
-        if (item.quantity!==1) throw new createHttpError.NotImplemented("quantité pour les item existant pas géré")
+        if (item.quantity !== 1)
+          throw new createHttpError.NotImplemented(
+            "quantité pour les item existant pas géré",
+          );
         i.transaction_id = sale.id;
         i.status = "sold";
         i.sold_at = new Date();
         await i.save({ transaction: t });
       }
-
     }
     await t.commit();
 
