@@ -13,7 +13,9 @@ const dataSchema = z.object({
   parent_id: idSchema().nullish().default(null),
   defaultWeight: z.number().nonnegative().default(0),
   defaultPrice: z.number().nonnegative().default(0),
-  priceBasedOnWeight:z.boolean().default(false)
+  priceBasedOnWeight: z.boolean().default(false),
+  isInPromotion: z.boolean().default(false).nullish(),
+  promotionValue: z.coerce.number().min(0).max(100).nullish(),
 });
 
 const IOValues = {

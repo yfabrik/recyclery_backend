@@ -44,13 +44,37 @@ export default (sequelize, DataTypes) => {
       },
       priceBasedOnWeight: {
         type: DataTypes.BOOLEAN,
-        defaultValue: false
-      }
+        defaultValue: false,
+      },
+      isInPromotion: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+      promotionValue: {
+        type: DataTypes.DECIMAL(10, 2),
+        validate: { min: 0, max: 100 },
+        defaultValue: 0,
+      },
     },
     {
       sequelize,
       modelName: "Category",
       indexes: [{ fields: ["parent_id"] }],
+      hooks: {
+        afterUpdate: async (instance, options) => {
+          if (
+            instance.changed("isInPromotion") ||
+            instance.changed("promotionValue")
+          ) {
+            const subCategories = await instance.getSubcategories();
+            subCategories.forEach(async (sub) => {
+              sub.isInPromotion = instance.isInPromotion;
+              sub.promotionValue = instance.promotionValue;
+              await sub.save();
+            });
+          }
+        },
+      },
     },
   );
   return Category;
