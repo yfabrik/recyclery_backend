@@ -10,7 +10,7 @@ export default (sequelize, DataTypes) => {
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
-      this.belongsTo(models.CollectionSchedule, { foreignKey: "schedule_id" });
+      // this.belongsTo(models.CollectionSchedule, { foreignKey: "schedule_id" });
     }
   }
   CollectionReceipt.init(
