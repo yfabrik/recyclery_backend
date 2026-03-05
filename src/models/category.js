@@ -19,7 +19,8 @@ export default (sequelize, DataTypes) => {
         as: "parent",
         foreignKey: "parent_id",
       });
-      this.hasMany(models.LabeledItem, { foreignKey: "category_id" }); //TODO item et labeleditem c'est des doublons ?
+      this.hasMany(models.LabeledItem, { foreignKey: "category_id" });
+      this.hasMany(models.Promotion, { foreignKey: "category_id" });
     }
   }
   Category.init(
@@ -46,35 +47,19 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-      isInPromotion: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
+      bundleQuantity: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
-      promotionValue: {
+      bundlePrice: {
         type: DataTypes.DECIMAL(10, 2),
-        validate: { min: 0, max: 100 },
-        defaultValue: 0,
+        allowNull: true,
       },
     },
     {
       sequelize,
       modelName: "Category",
       indexes: [{ fields: ["parent_id"] }],
-      hooks: {
-        afterUpdate: async (instance, options) => {
-          if (
-            instance.changed("isInPromotion") ||
-            instance.changed("promotionValue")
-          ) {
-            const subCategories = await instance.getSubcategories();
-            subCategories.forEach(async (sub) => {
-              sub.isInPromotion = instance.isInPromotion;
-              sub.promotionValue = instance.promotionValue;
-              await sub.save();
-            });
-          }
-        },
-      },
     },
   );
   return Category;
