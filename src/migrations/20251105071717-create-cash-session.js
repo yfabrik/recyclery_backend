@@ -1,6 +1,5 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("CashSessions", {
       id: {
@@ -9,35 +8,31 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      session_number: {
-        type: Sequelize.STRING,
-      },
       cash_register_id: {
         type: Sequelize.INTEGER,
       },
       user_id: {
         type: Sequelize.INTEGER,
       },
-      store_id: {
-        type: Sequelize.INTEGER,
-      },
       opening_amount: {
-        type: Sequelize.DECIMAL,
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
       },
       closing_amount: {
-        type: Sequelize.DECIMAL,
+        type: Sequelize.DECIMAL(10, 2),
       },
       expected_amount: {
-        type: Sequelize.DECIMAL,
-      },
-      difference_amount: {
-        type: Sequelize.DECIMAL,
+        type: Sequelize.DECIMAL(10, 2),
       },
       status: {
-        type: Sequelize.STRING,
+        type: Sequelize.ENUM("open", "close"),
+        defaultValue: "open",
       },
       notes: {
         type: Sequelize.TEXT,
+      },
+      closed_at: {
+        type: Sequelize.DATE,
       },
       createdAt: {
         allowNull: false,

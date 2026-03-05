@@ -1,6 +1,5 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("CashRegisters", {
       id: {
@@ -11,12 +10,14 @@ module.exports = {
       },
       name: {
         type: Sequelize.STRING,
-      },
-      store_id: {
-        type: Sequelize.INTEGER,
+        allowNull: false,
       },
       is_active: {
         type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      },
+      recyclery_id: {
+        type: Sequelize.INTEGER,
       },
       createdAt: {
         allowNull: false,

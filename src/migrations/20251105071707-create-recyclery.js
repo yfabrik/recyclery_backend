@@ -1,6 +1,5 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("Recycleries", {
       id: {
@@ -11,6 +10,7 @@ module.exports = {
       },
       name: {
         type: Sequelize.STRING,
+        allowNull: false,
       },
       address: {
         type: Sequelize.TEXT,
@@ -23,6 +23,16 @@ module.exports = {
       },
       manager_id: {
         type: Sequelize.INTEGER,
+      },
+      city: {
+        type: Sequelize.STRING,
+      },
+      postal_code: {
+        type: Sequelize.STRING,
+      },
+      is_active: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
       },
       createdAt: {
         allowNull: false,

@@ -1,6 +1,5 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("EmployeeWorkdays", {
       id: {
@@ -24,8 +23,14 @@ module.exports = {
       end_time: {
         type: Sequelize.STRING,
       },
+      week: {
+        type: Sequelize.STRING,
+      },
       notes: {
         type: Sequelize.TEXT,
+      },
+      employee_id: {
+        type: Sequelize.INTEGER,
       },
       createdAt: {
         allowNull: false,

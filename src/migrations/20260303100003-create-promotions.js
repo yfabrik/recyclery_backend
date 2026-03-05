@@ -1,34 +1,32 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("StoreHours", {
+    await queryInterface.createTable("Promotions", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      day_of_week: {
-        type: Sequelize.STRING,
+      startDate: {
+        type: Sequelize.DATEONLY,
+        allowNull: false,
       },
-      time_slot_name: {
-        type: Sequelize.STRING,
+      endDate: {
+        type: Sequelize.DATEONLY,
+        allowNull: false,
       },
-      is_open: {
+      isActive: {
         type: Sequelize.BOOLEAN,
+        defaultValue: true,
       },
-      open_time: {
-        type: Sequelize.TIME,
+      promotionValue: {
+        type: Sequelize.DECIMAL(5, 2),
+        allowNull: false,
+        defaultValue: 0,
       },
-      close_time: {
-        type: Sequelize.TIME,
-      },
-      is_24h: {
-        type: Sequelize.BOOLEAN,
-      },
-      notes: {
-        type: Sequelize.TEXT,
+      category_id: {
+        type: Sequelize.INTEGER,
       },
       createdAt: {
         allowNull: false,
@@ -41,6 +39,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("StoreHours");
+    await queryInterface.dropTable("Promotions");
   },
 };

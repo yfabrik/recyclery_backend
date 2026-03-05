@@ -1,6 +1,5 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("CollectionPoints", {
       id: {
@@ -11,6 +10,7 @@ module.exports = {
       },
       name: {
         type: Sequelize.STRING,
+        unique: true,
       },
       address: {
         type: Sequelize.TEXT,
@@ -31,13 +31,22 @@ module.exports = {
         type: Sequelize.STRING,
       },
       type: {
-        type: Sequelize.STRING,
+        type: Sequelize.ENUM(
+          "standard",
+          "entreprise",
+          "association",
+          "school",
+          "hospital",
+          "other",
+        ),
+        defaultValue: "standard",
       },
       notes: {
         type: Sequelize.TEXT,
       },
       is_active: {
         type: Sequelize.BOOLEAN,
+        defaultValue: true,
       },
       recyclery_id: {
         type: Sequelize.INTEGER,

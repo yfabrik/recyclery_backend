@@ -1,6 +1,5 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("Categories", {
       id: {
@@ -11,6 +10,7 @@ module.exports = {
       },
       name: {
         type: Sequelize.STRING,
+        allowNull: false,
       },
       description: {
         type: Sequelize.TEXT,
@@ -20,6 +20,29 @@ module.exports = {
       },
       parent_id: {
         type: Sequelize.INTEGER,
+      },
+      defaultWeight: {
+        type: Sequelize.FLOAT,
+        defaultValue: 0,
+      },
+      defaultPrice: {
+        type: Sequelize.DECIMAL(10, 2),
+        defaultValue: 0,
+      },
+      IO: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      priceBasedOnWeight: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
+      bundleQuantity: {
+        type: Sequelize.INTEGER,
+      },
+      bundlePrice: {
+        type: Sequelize.DECIMAL(10, 2),
       },
       createdAt: {
         allowNull: false,

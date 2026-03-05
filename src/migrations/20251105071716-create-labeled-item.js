@@ -1,6 +1,5 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("LabeledItems", {
       id: {
@@ -9,14 +8,27 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      barcode: {
-        type: Sequelize.STRING,
-      },
-      name: {
-        type: Sequelize.STRING,
-      },
       description: {
         type: Sequelize.TEXT,
+      },
+      weight: {
+        type: Sequelize.DECIMAL(10, 2),
+        defaultValue: 0,
+      },
+      price: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+      },
+      cost: {
+        type: Sequelize.DECIMAL(10, 2),
+      },
+      condition_state: {
+        type: Sequelize.ENUM("excellent", "good", "fair", "poor"),
+        defaultValue: "good",
+      },
+      status: {
+        type: Sequelize.ENUM("available", "sold"),
+        defaultValue: "available",
       },
       category_id: {
         type: Sequelize.INTEGER,
@@ -24,37 +36,10 @@ module.exports = {
       subcategory_id: {
         type: Sequelize.INTEGER,
       },
-      weight: {
-        type: Sequelize.DECIMAL,
-      },
-      price: {
-        type: Sequelize.DECIMAL,
-      },
-      cost: {
-        type: Sequelize.DECIMAL,
-      },
-      condition_state: {
-        type: Sequelize.STRING,
-      },
-      location: {
-        type: Sequelize.STRING,
-      },
-      store_id: {
+      recyclery_id: {
         type: Sequelize.INTEGER,
-      },
-      arrival_id: {
-        type: Sequelize.INTEGER,
-      },
-      status: {
-        type: Sequelize.STRING,
       },
       created_by: {
-        type: Sequelize.INTEGER,
-      },
-      sold_at: {
-        type: Sequelize.DATE,
-      },
-      sold_by: {
         type: Sequelize.INTEGER,
       },
       createdAt: {

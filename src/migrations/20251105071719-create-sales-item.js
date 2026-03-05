@@ -1,8 +1,7 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("SalesItems", {
+    await queryInterface.createTable("transaction_items", {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -14,9 +13,6 @@ module.exports = {
       },
       labeled_item_id: {
         type: Sequelize.INTEGER,
-      },
-      barcode: {
-        type: Sequelize.STRING,
       },
       name: {
         type: Sequelize.STRING,
@@ -30,6 +26,17 @@ module.exports = {
       total_price: {
         type: Sequelize.DECIMAL,
       },
+      promotionValue: {
+        type: Sequelize.DECIMAL(5, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
+      bundleQuantity: {
+        type: Sequelize.INTEGER,
+      },
+      bundlePrice: {
+        type: Sequelize.DECIMAL(10, 2),
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -41,6 +48,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("SalesItems");
+    await queryInterface.dropTable("transaction_items");
   },
 };

@@ -1,12 +1,20 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("Tasks", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
+        type: Sequelize.INTEGER,
+      },
+      schedule_id: {
+        type: Sequelize.INTEGER,
+      },
+      store_id: {
+        type: Sequelize.INTEGER,
+      },
+      collection_point_id: {
         type: Sequelize.INTEGER,
       },
       name: {
@@ -16,13 +24,11 @@ module.exports = {
         type: Sequelize.TEXT,
       },
       category: {
-        type: Sequelize.STRING,
+        type: Sequelize.ENUM("vente", "point", "collection", "custom"),
+        allowNull: false,
       },
       priority: {
         type: Sequelize.STRING,
-      },
-      estimated_duration: {
-        type: Sequelize.INTEGER,
       },
       required_skills: {
         type: Sequelize.TEXT,
@@ -36,14 +42,14 @@ module.exports = {
       hourly_rate: {
         type: Sequelize.DECIMAL,
       },
-      is_recurring: {
-        type: Sequelize.BOOLEAN,
+      scheduled_date: {
+        type: Sequelize.DATE,
       },
-      recurrence_pattern: {
-        type: Sequelize.STRING,
+      start_time: {
+        type: Sequelize.DATE,
       },
-      assigned_to: {
-        type: Sequelize.INTEGER,
+      end_time: {
+        type: Sequelize.DATE,
       },
       notes: {
         type: Sequelize.TEXT,

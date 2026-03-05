@@ -1,22 +1,22 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("EmployeeStores", {
+    await queryInterface.createTable("employee_store", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      employee_id: {
+      employeeId: {
         type: Sequelize.INTEGER,
       },
-      store_id: {
+      recycleryId: {
         type: Sequelize.INTEGER,
       },
       is_primary: {
         type: Sequelize.BOOLEAN,
+        defaultValue: false,
       },
       createdAt: {
         allowNull: false,
@@ -29,6 +29,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("EmployeeStores");
+    await queryInterface.dropTable("employee_store");
   },
 };

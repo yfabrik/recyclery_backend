@@ -1,8 +1,7 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("Items", {
+    await queryInterface.createTable("TaskTemplates", {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -15,23 +14,39 @@ module.exports = {
       description: {
         type: Sequelize.TEXT,
       },
-      category_id: {
-        type: Sequelize.INTEGER,
+      category: {
+        type: Sequelize.ENUM("vente", "point", "collection", "custom"),
+        allowNull: false,
       },
-      barcode: {
+      scheduled_date: {
+        type: Sequelize.DATE,
+      },
+      start_time: {
+        type: Sequelize.TIME,
+      },
+      end_time: {
+        type: Sequelize.TIME,
+      },
+      priority: {
         type: Sequelize.STRING,
-      },
-      purchase_price: {
-        type: Sequelize.DECIMAL,
-      },
-      selling_price: {
-        type: Sequelize.DECIMAL,
       },
       status: {
         type: Sequelize.STRING,
       },
-      recyclery_id: {
-        type: Sequelize.INTEGER,
+      notes: {
+        type: Sequelize.TEXT,
+      },
+      hourly_rate: {
+        type: Sequelize.DECIMAL,
+      },
+      required_skills: {
+        type: Sequelize.TEXT,
+      },
+      location: {
+        type: Sequelize.STRING,
+      },
+      equipment_needed: {
+        type: Sequelize.TEXT,
       },
       createdAt: {
         allowNull: false,
@@ -44,6 +59,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("Items");
+    await queryInterface.dropTable("TaskTemplates");
   },
 };

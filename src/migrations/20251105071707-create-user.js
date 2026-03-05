@@ -1,6 +1,5 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("Users", {
       id: {
@@ -11,24 +10,29 @@ module.exports = {
       },
       username: {
         type: Sequelize.STRING,
+        unique: true,
       },
       email: {
         type: Sequelize.STRING,
+        unique: true,
       },
       password: {
         type: Sequelize.STRING,
+        allowNull: true,
       },
       role: {
         type: Sequelize.STRING,
-      },
-      recyclery_id: {
-        type: Sequelize.INTEGER,
+        defaultValue: "employee",
       },
       phone: {
         type: Sequelize.STRING,
       },
-      contract_hours: {
-        type: Sequelize.INTEGER,
+      isActive: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      },
+      last_login: {
+        type: Sequelize.DATE,
       },
       createdAt: {
         allowNull: false,

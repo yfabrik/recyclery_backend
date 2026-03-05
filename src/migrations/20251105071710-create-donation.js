@@ -1,6 +1,5 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("Donations", {
       id: {
@@ -22,10 +21,14 @@ module.exports = {
         type: Sequelize.TEXT,
       },
       estimated_value: {
-        type: Sequelize.DECIMAL,
+        type: Sequelize.DECIMAL(10, 2),
+      },
+      weight: {
+        type: Sequelize.DECIMAL(10, 2),
       },
       status: {
-        type: Sequelize.STRING,
+        type: Sequelize.ENUM("pending", "accepted", "rejected"),
+        defaultValue: "pending",
       },
       recyclery_id: {
         type: Sequelize.INTEGER,

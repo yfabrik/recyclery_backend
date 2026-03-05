@@ -1,6 +1,5 @@
-"use strict";
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
+export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("SalesTransactions", {
       id: {
@@ -9,26 +8,18 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      transaction_number: {
-        type: Sequelize.STRING,
-      },
-      cash_session_id: {
-        type: Sequelize.INTEGER,
-      },
-      store_id: {
-        type: Sequelize.INTEGER,
-      },
       total_amount: {
-        type: Sequelize.DECIMAL,
+        type: Sequelize.DECIMAL(10, 2),
       },
       payment_method: {
-        type: Sequelize.STRING,
+        type: Sequelize.ENUM("cash", "card", "check"),
+      },
+      transactionType: {
+        type: Sequelize.ENUM("sell", "refund"),
+        defaultValue: "sell",
       },
       payment_amount: {
-        type: Sequelize.DECIMAL,
-      },
-      change_amount: {
-        type: Sequelize.DECIMAL,
+        type: Sequelize.DECIMAL(10, 2),
       },
       customer_name: {
         type: Sequelize.STRING,
@@ -40,10 +31,11 @@ module.exports = {
         type: Sequelize.STRING,
       },
       status: {
-        type: Sequelize.STRING,
+        type: Sequelize.ENUM("pending", "completed", "cancelled"),
+        defaultValue: "completed",
       },
-      refunded_amount: {
-        type: Sequelize.DECIMAL,
+      cash_session_id: {
+        type: Sequelize.INTEGER,
       },
       created_by: {
         type: Sequelize.INTEGER,
