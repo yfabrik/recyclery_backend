@@ -10,11 +10,15 @@ export default (sequelize, DataTypes) => {
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
-      this.hasMany(models.SalesItem, { foreignKey: "transaction_id" });
+      // this.hasMany(models.TransactionItem, { foreignKey: "transaction_id" });
       this.belongsTo(models.User, { foreignKey: "created_by" });
-      // this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
       this.belongsTo(models.CashSession, { foreignKey: "cash_session_id" });
-      this.hasMany(models.LabeledItem, { foreignKey: "transaction_id" });
+      this.belongsToMany(models.LabeledItem, {
+        through: models.TransactionItem,
+        foreignKey: "transaction_id",
+        otherKey: "labeled_item_id",
+        as: "transactionLines",
+      });
     }
   }
   SalesTransaction.init(

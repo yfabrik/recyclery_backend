@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 import db from "../../models/index.js";
 import logger from "../../services/logger.js";
-const { SalesTransaction, SalesItem, LabeledItem, User } = db;
+const { SalesTransaction, TransactionItem, LabeledItem, User } = db;
 
 export const router = Router();
 
@@ -70,12 +70,13 @@ router.post(
       // 2️⃣ Insert sale items
       const saleItems = await Promise.all(
         items.map(async (item) => {
-          const saleItem = await SalesItem.create(
+          const saleItem = await TransactionItem.create(
             {
-              sale_id: sale.id,
-              item_id: item.item_id,
+              transaction_id: sale.id,
+              labeled_item_id: item.item_id,
               quantity: item.quantity,
-              unit_price: item.unit_price,
+              price: item.unit_price,
+              total_price: item.quantity * item.unit_price,
             },
             { transaction },
           );

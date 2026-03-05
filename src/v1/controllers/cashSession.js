@@ -12,7 +12,7 @@ const {
   Recyclery,
   User,
   SalesTransaction,
-  SalesItem,
+  TransactionItem,
   Sequelize,
 } = db;
 /**
@@ -106,7 +106,7 @@ export const getActiveSession = async (req, res) => {
     t = {
       ...tmp,
       CashRegister: session.CashRegister,
-      Recyclery: session.CashRegister?.Recyclery,
+      Recyclery:session.CashRegister?.Recyclery,
     };
   }
 
@@ -218,13 +218,12 @@ export const getSessionById = async (req, res) => {
 
   if (!session) return res.status(404).json({ success: false });
 
-  // transactions with joined sales_items info
+  // transactions with joined transaction_lines (transaction_items) info
   const transactions = await SalesTransaction.findAll({
     where: { cash_session_id: id },
     include: [
       {
-        model: SalesItem,
-        // attributes: ["name", "barcode"],
+        model: TransactionItem,
       },
     ],
     order: [["createdAt", "DESC"]],

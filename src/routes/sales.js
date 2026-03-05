@@ -2,7 +2,7 @@ import { Router } from "express";
 import db from "../../models/index.js";
 
 import { asyncHandler } from "../middlewares/asyncHandler.js";
-const { SalesTransaction, SalesItem, CashSession, LabeledItem } = db;
+const { SalesTransaction, TransactionItem, CashSession, LabeledItem } = db;
 
 export const router = Router();
 router.get(
@@ -45,7 +45,7 @@ router.post(
     });
 
     for (const { labeled_item_id, quantity, price } of items) {
-      await SalesItem.create({
+      await TransactionItem.create({
         transaction_id: transaction.id,
         labeled_item_id,
         price,
@@ -62,7 +62,7 @@ router.post(
 
     const fullSale = await SalesTransaction.findByPk(transaction.id, {
       include: [
-        { model: SalesItem },
+        { model: TransactionItem },
         // { model: User, as: "cashier", attributes: ["id", "username"] },
       ],
     });

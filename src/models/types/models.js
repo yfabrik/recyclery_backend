@@ -43,7 +43,8 @@
  * @property { import("sequelize").ModelStatic<import("./recycleryModel.js").RecycleryInstance>} Recyclery
  * @property { import("sequelize").ModelStatic<any>} Refund
  * @property { import("sequelize").ModelStatic<any>} Role
- * @property { import("sequelize").ModelStatic<any>} SalesItem
+ * @property { import("sequelize").ModelStatic<any>} Promotion
+ * @property { import("sequelize").ModelStatic<any>} TransactionItem
  * @property { import("sequelize").ModelStatic<import("./salesTransactionModel.js").SalesTransactionInstance>} SalesTransaction
  * @property { import("sequelize").ModelStatic<any>} StoreLocation
  * @property { import("sequelize").ModelStatic<any>} StoreHours

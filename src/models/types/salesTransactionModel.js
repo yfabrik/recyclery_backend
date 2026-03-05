@@ -33,34 +33,32 @@
 /**
  * Optional association properties present when the instance is loaded with include().
  * @typedef {Object} SalesTransactionInstanceAssociations
- * @property {Array<any>} [SalesItems] - Sales items when loaded with include
- * @property {Array<import("./labeledItemModel.js").LabeledItemInstance>} [LabeledItems] - Labeled items when loaded with include
+ * @property {Array<any>} [TransactionItems] - Transaction line items when loaded with include (table: transaction_items)
+ * @property {Array<import("./labeledItemModel.js").LabeledItemInstance>} [transactionLines] - Labeled items when loaded with include (alias for belongsToMany through TransactionItem)
  * @property {import("./userModel.js").UserInstance} [User] - User who created the transaction when loaded with include (created_by)
  * @property {import("./cashSessionModel.js").CashSessionInstance} [CashSession] - Cash session when loaded with include
  *
- * @property {() => Promise<Array<any>>} getSalesItems - Get all sales items associated with this transaction (has-many relationship through transaction_id foreign key).
+ * @property {() => Promise<Array<any>>} getTransactionItems - Get all transaction line items (has-many TransactionItem through transaction_id).
  *
- * @property {(items: Array<any|number>) => Promise<void>} setSalesItems - Replace all sales items associated with this transaction. Takes an array of SalesItem instances or item IDs.
+ * @property {(items: Array<any|number>) => Promise<void>} setTransactionItems - Replace all transaction line items. Takes an array of TransactionItem instances or item IDs.
  *
- * @property {(items: Array<any|number>) => Promise<void>} addSalesItems - Add one or more sales items to this transaction. Takes an array of SalesItem instances or item IDs.
+ * @property {(items: Array<any|number>) => Promise<void>} addTransactionItems - Add one or more transaction line items. Takes an array of TransactionItem instances or item IDs.
  *
- * @property {(items: Array<any|number>) => Promise<void>} removeSalesItems - Remove one or more sales items from this transaction. Takes an array of SalesItem instances or item IDs.
+ * @property {(items: Array<any|number>) => Promise<void>} removeTransactionItems - Remove one or more transaction line items. Takes an array of TransactionItem instances or item IDs.
  *
- * @property {(values?: object) => Promise<any>} createSalesItem - Create a new sales item for this transaction (has-many).
+ * @property {(values?: object) => Promise<any>} createTransactionItem - Create a new transaction line item for this transaction (has-many).
+ *
+ * @property {() => Promise<Array<import("./labeledItemModel.js").LabeledItemInstance>>} getTransactionLines - Get labeled items in this transaction (belongsToMany through TransactionItem, alias transactionLines).
  *
  * @property {() => Promise<import("./cashSessionModel.js").CashSessionInstance|null>} getCashSession - Get the associated CashSession (belongs-to relationship). Returns null if not set.
  *
  * @property {(cashSession: import("./cashSessionModel.js").CashSessionInstance|number|null) => Promise<void>} setCashSession - Set or unset the CashSession for this transaction. Takes a CashSession instance, session ID, or null to remove the association.
  *
- * @property {() => Promise<Array<import("./labeledItemModel.js").LabeledItemInstance>>} getLabeledItems - Get all labeled items associated with this transaction (has-many relationship through transaction_id foreign key).
+ * @property {(items: Array<import("./labeledItemModel.js").LabeledItemInstance|number>) => Promise<void>} setTransactionLines - Replace labeled items in this transaction (through TransactionItem).
  *
- * @property {(items: Array<import("./labeledItemModel.js").LabeledItemInstance|number>) => Promise<void>} setLabeledItems - Replace all labeled items associated with this transaction. Takes an array of LabeledItem instances or item IDs.
+ * @property {(items: Array<import("./labeledItemModel.js").LabeledItemInstance|number>) => Promise<void>} addTransactionLines - Add one or more labeled items to this transaction.
  *
- * @property {(items: Array<import("./labeledItemModel.js").LabeledItemInstance|number>) => Promise<void>} addLabeledItems - Add one or more labeled items to this transaction. Takes an array of LabeledItem instances or item IDs.
- *
- * @property {(items: Array<import("./labeledItemModel.js").LabeledItemInstance|number>) => Promise<void>} removeLabeledItems - Remove one or more labeled items from this transaction. Takes an array of LabeledItem instances or item IDs.
- *
- * @property {(values?: import("./labeledItemModel.js").LabeledItemCreateAttributes) => Promise<import("./labeledItemModel.js").LabeledItemInstance>} createLabeledItem - Create a new labeled item for this transaction (has-many).
+ * @property {(items: Array<import("./labeledItemModel.js").LabeledItemInstance|number>) => Promise<void>} removeTransactionLines - Remove one or more labeled items from this transaction.
  *
  * @property {() => Promise<import("./userModel.js").UserInstance|null>} getCreatedBy - Get the User who created this transaction (belongs-to relationship). Returns null if not set.
  *

@@ -3,6 +3,8 @@ import { Model } from "sequelize";
 /**
  * @param {import("sequelize").Sequelize} sequelize
  * @param {import("sequelize").DataTypes} DataTypes
+ * @deprecated
+ * 
  */
 export default (sequelize, DataTypes) => {
   class Refund extends Model {

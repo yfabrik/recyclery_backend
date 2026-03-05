@@ -39,7 +39,12 @@ export default (sequelize, DataTypes) => {
         as: "createdBy",
         foreignKey: "created_by",
       });
-      this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" }); //belong to many for historic and refund ?
+      this.belongsToMany(models.SalesTransaction, {
+        through: models.TransactionItem,
+        foreignKey: "labeled_item_id",
+        otherKey: "transaction_id",
+        as: "transactions",
+      });
     }
   }
   LabeledItem.init(
@@ -79,7 +84,6 @@ export default (sequelize, DataTypes) => {
         { fields: ["status"] },
         { fields: ["recyclery_id"] },
         { fields: ["category_id"] },
-        { fields: ["transaction_id"] },
       ],
       hooks: {
         // beforeCreate(instance) {
