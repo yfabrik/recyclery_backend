@@ -72,13 +72,13 @@ export const listCategories = async (req, res) => {
   const includePromo = {
     model: Promotion,
     where: {
-      startDate: { [Op.lte]: new Date() },
-      endDate: { [Op.gte]: new Date() }
+        startDate: { [Op.lte]: new Date() },
+        endDate: { [Op.gte]: new Date() }
     },
     required: false
   }
   if (filters.include.includes("promo")) {
-    include.push(includePromo)
+    include.push({ ...includePromo })
   }
 
   if (filters.in) where.IO = literal(`Category.IO & ${IOValues.IN} != 0`);
@@ -94,8 +94,8 @@ export const listCategories = async (req, res) => {
     if (typeof filters.sell == "boolean" && filters.sell)
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.SELL} != 0`);
     const insideInclude = []
-    // if (filters.include.includes("promo"))//TODO PK ça marche pas ?
-    //   insideInclude.push(includePromo)
+    if (filters.include.includes("promo"))//TODO PK ça marche pas ?
+      insideInclude.push({ ...includePromo })
     include.push({
       model: Category,
       as: "subcategories",
@@ -113,8 +113,8 @@ export const listCategories = async (req, res) => {
     if (typeof filters.sell == "boolean" && filters.sell)
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.SELL} != 0`);
     const insideInclude = []
-    // if (filters.include.includes("promo"))
-    //   insideInclude.push(includePromo)
+    if (filters.include.includes("promo"))
+      insideInclude.push({ ...includePromo })
     include.push({
       model: Category,
       as: "parent",

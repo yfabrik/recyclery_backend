@@ -3,7 +3,7 @@ import db from "../../models/index.js"
 import { idSchema } from "../../services/zod.js"
 import createHttpError from "http-errors"
 
-const { Promotion } = db
+const { Promotion, Category } = db
 
 const dataSchema = z.object({
     startDate: z.coerce.date(),
@@ -11,7 +11,7 @@ const dataSchema = z.object({
     isActive: z.coerce.boolean().default(true),
     promotionValue: z.coerce.number("promotion requise").min(0, "promo min 0").max(100, "promo max 100"),
     category_id: idSchema("categorie requise"),
-    subcategory_id: idSchema().nullable()
+    // subcategory_id: idSchema().nullable()
 })
 /**
  *
@@ -20,7 +20,21 @@ const dataSchema = z.object({
  */
 export const listPromotions = async (req, res) => {
 
-    const promotions = await Promotion.findAll()
+    const promotions = await Promotion.findAll({
+        include: [{
+            model: Category,
+            include: [{
+                model: Category,
+                as: "parent",
+                required: false
+            }, {
+                model: Category,
+                as: "subcategories",
+                required: false
+            }
+            ]
+        }]
+    })
     return res.json({ success: true, message: "promotions", data: promotions })
 }
 

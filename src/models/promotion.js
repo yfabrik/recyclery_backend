@@ -12,12 +12,7 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.belongsTo(models.Category, {
-        as: "subcategory",
         foreignKey: "category_id",
-      });
-      this.belongsTo(models.Category, {
-        as: "category",
-        foreignKey: "subcategory_id",
       });
     }
   }
