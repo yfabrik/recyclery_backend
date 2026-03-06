@@ -50,6 +50,7 @@ const PERMISSIONS = {
     "employee-stores": noPerms(),
     "employee-workdays": noPerms(),
     employees: noPerms(),
+    promotions:readOnlyPerms()
   },
   manager: {
     recycleries: modulePerms(),
@@ -78,6 +79,7 @@ const PERMISSIONS = {
     "employee-stores": modulePerms(),
     "employee-workdays": modulePerms(),
     employees: modulePerms(),
+    promotions:modulePerms()
   },
   admin: {
     recycleries: modulePerms(),
@@ -106,6 +108,8 @@ const PERMISSIONS = {
     "employee-stores": modulePerms(),
     "employee-workdays": modulePerms(),
     employees: modulePerms(),
+    promotions:modulePerms()
+
   },
 };
 

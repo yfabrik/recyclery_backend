@@ -4,7 +4,7 @@ import * as z from "zod";
 import db from "../../models/index.js";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
-const { Category } = db;
+const { Category, Promotion } = db;
 
 const dataSchema = z.object({
   name: z.string("Le nom est requis"),
@@ -40,7 +40,7 @@ const findExistingCategory = async (name, parent_id = null) => {
  * @param {import("express").Response} res
  */
 export const listCategories = async (req, res) => {
-  const ALLOWED_INCLUDES = ["category", "parent"];
+  const ALLOWED_INCLUDES = ["category", "parent", "promo"];
   const filtersSchema = z.object({
     include: z
       .string()
@@ -69,6 +69,18 @@ export const listCategories = async (req, res) => {
     where.parent_id = { [Op.not]: null };
   }
 
+  const includePromo = {
+    model: Promotion,
+    where: {
+      startDate: { [Op.lte]: new Date() },
+      endDate: { [Op.gte]: new Date() }
+    },
+    required: false
+  }
+  if (filters.include.includes("promo")) {
+    include.push(includePromo)
+  }
+
   if (filters.in) where.IO = literal(`Category.IO & ${IOValues.IN} != 0`);
   if (filters.out) where.IO = literal(`Category.IO & ${IOValues.OUT} != 0`);
   if (filters.sell) where.IO = literal(`Category.IO & ${IOValues.SELL} != 0`);
@@ -81,10 +93,14 @@ export const listCategories = async (req, res) => {
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.OUT} != 0`);
     if (typeof filters.sell == "boolean" && filters.sell)
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.SELL} != 0`);
+    const insideInclude = []
+    // if (filters.include.includes("promo"))//TODO PK ça marche pas ?
+    //   insideInclude.push(includePromo)
     include.push({
       model: Category,
       as: "subcategories",
       where: { ...insideWhere },
+      include: insideInclude,
       required: false,
     });
   }
@@ -96,13 +112,18 @@ export const listCategories = async (req, res) => {
       insideWhere.IO = literal(`parent.IO & ${IOValues.OUT} != 0`);
     if (typeof filters.sell == "boolean" && filters.sell)
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.SELL} != 0`);
+    const insideInclude = []
+    // if (filters.include.includes("promo"))
+    //   insideInclude.push(includePromo)
     include.push({
       model: Category,
       as: "parent",
       required: false,
       where: { ...insideWhere },
+      include: insideInclude,
     });
   }
+
   const categories = await Category.findAll({ where, include });
 
   res.json({

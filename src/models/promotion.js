@@ -11,7 +11,14 @@ export default (sequelize, DataTypes) => {
      * @param {import('./types/models.js').models} models
      */
     static associate(models) {
-      this.belongsTo(models.Category, { foreignKey: "category_id" });
+      this.belongsTo(models.Category, {
+        as: "subcategory",
+        foreignKey: "category_id",
+      });
+      this.belongsTo(models.Category, {
+        as: "category",
+        foreignKey: "subcategory_id",
+      });
     }
   }
   Promotion.init(
