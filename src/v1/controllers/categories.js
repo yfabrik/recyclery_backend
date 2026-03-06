@@ -72,8 +72,9 @@ export const listCategories = async (req, res) => {
   const includePromo = {
     model: Promotion,
     where: {
-        startDate: { [Op.lte]: new Date() },
-        endDate: { [Op.gte]: new Date() }
+      startDate: { [Op.lte]: new Date() },
+      endDate: { [Op.gte]: new Date() },
+      isActive: true
     },
     required: false
   }
