@@ -79,6 +79,10 @@ export const listTransactions = async (req, res) => {
         },
       ],
     },
+    {
+      model: LabeledItem,
+      as: "items"
+    }
   ];
 
   const transactions = await SalesTransaction.findAll({
@@ -107,101 +111,93 @@ export const listTransactions = async (req, res) => {
  */
 export const createTransaction = async (req, res) => {
   const itemSchema = z.object({
+    name: z.string(),
     price: z.coerce.number("prix requis").positive(),
     quantity: z.coerce.number().positive().default(1),
-    // labeled_item_id: idSchema().nullish(),
     category_id: idSchema(),
     subcategory_id: idSchema().nullish(),
-    weight: z.coerce.number().nullish(),
+    weight: z.coerce.number("poid requis").nonnegative(),
     barcode: z.string(),
+    promotion: z.coerce.number().min(0).max(100).nullish(),
+    bundlePrice: z.coerce.number().nullish(),
+    bundleQuantity: z.coerce.number().nullish()
   });
   const dataSchema = z.object({
     cash_session_id: idSchema("sesions requis"),
-    // store_id: idSchema("magasin requis"),
     total_amount: z.coerce.number("argent requis"),
     payment_method: z.enum(["cash", "card", "check"]).default("cash"),
     payment_amount: z.coerce.number("argent requis"),
-    // change_amount = 0,
-    // customer_name: z.string().nullish(),
-    // customer_email: z.string().nullish(),
     customer_postal_code: postalSchema().nullish(),
     items: z.array(itemSchema),
   });
   const data = dataSchema.parse(req.body);
   const session = await CashSession.findByPk(data.cash_session_id);
   if (!session) throw new createHttpError[404]("session non trouvé");
-  try {
-    const t = await db.sequelize.transaction();
+
+  const result = await db.sequelize.transaction(async t => {
     const sale = await session.createSalesTransaction(
       {
         total_amount: data.total_amount,
         payment_method: data.payment_method,
         payment_amount: data.payment_amount,
-        // customer_email: data?.customer_email || null,
-        // customer_name: data?.customer_name || null,
         customer_postal_code: data?.customer_postal_code || null,
       },
-      { transaction: t },
-    );
+      { transaction: t })
     for await (const item of data.items) {
       if (isNaN(+item.barcode)) {
-        let newItems = [];
-        for (let index = 0; index < item.quantity; index++) {
-          newItems.push({
-            category_id: item.category_id,
-            subcategory_id: item.subcategory_id,
-            price: item.price || 0,
-            weight: item.weight,
-            transaction_id: sale.id,
-            status: "sold",
-            sold_at: new Date(),
-          });
-        }
-        if (newItems.length > 0)
-          await LabeledItem.bulkCreate(newItems, { transaction: t });
-        // const newItem = await LabeledItem.create(
-        //   {
-        //     category_id: item.category_id,
-        //     subcategory_id: item.subcategory_id,
-
-        //     price: item.price || 0,
-        //     weight: item.weight,
-        //     transaction_id: sale.id,
-        //     status: "sold",
-        //     sold_at: new Date(),
-        //     // sold_by: req.user.id,
-        //   },
-        //   { transaction: t },
-        // );
-        // }
-      } else {
+        await sale.createItem({
+          category_id: item.category_id,
+          subcategory_id: item.subcategory_id,
+          price: item.price,
+          weight: item.weight,
+          status: "sold",
+          sold_at: new Date(),
+          created_by: req.user.id
+        }, {
+          through: {
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            promotionValue: item.promotion,
+            bundleQuantity: item.bundleQuantity,
+            bundlePrice: item.bundlePrice
+          },
+          transaction: t,
+        })
+      }
+      else {
         const i = await LabeledItem.findByPk(+item.barcode);
         if (!i) throw new createHttpError.NotFound("item not found");
-        if (item.quantity !== 1)
-          throw new createHttpError.NotImplemented(
-            "quantité pour les item existant pas géré",
-          );
-        i.transaction_id = sale.id;
-        i.status = "sold";
-        i.sold_at = new Date();
-        await i.save({ transaction: t });
+        await i.update({
+          sold_at: new Date(),
+          status: "sold"
+        }, { transaction: t })
+        await sale.addItem(i, {
+          through: {
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            promotionValue: item.promotion,
+            bundleQuantity: item.bundleQuantity,
+            bundlePrice: item.bundlePrice
+          },
+          transaction: t,
+        })
       }
     }
-    await t.commit();
+    return sale
 
-    res.json({
-      success: true,
-      data: {
-        id: sale.id,
+  });
 
-        message: "Transaction créée avec succès",
-        sale,
-      },
-    });
-  } catch (err) {
-    await t.rollback();
-    throw err;
-  }
+  res.json({
+    success: true,
+    data: {
+      id: result.id,
+
+      message: "Transaction créée avec succès",
+      sale: result,
+    },
+  });
 };
 /**
  *
@@ -467,6 +463,7 @@ export const transactionStatsPostalCode = async (req, res) => {
    */
   const where = {};
   const include = [];
+  // include.push({ model: LabeledItem, as: "items" })
   where.customer_postal_code = { [Op.ne]: null };
   if (store_id) //where.store_id = store_id;
   {
@@ -496,25 +493,23 @@ export const transactionStatsPostalCode = async (req, res) => {
     where,
     include,
     attributes: [
-      [fn("COUNT", col("SalesTransaction.id")), "total_transactions"],
+      [fn("COUNT", col("SalesTransaction.id")), "transaction_count"],
       [
         fn("COALESCE", fn("AVG", col("total_amount")), 0),
         "average_transaction",
       ],
       [fn("COALESCE", fn("SUM", col("total_amount")), 0), "total_sales"],
+      "customer_postal_code"
     ],
     group: ["customer_postal_code"],
     order: [["total_sales", "DESC"]],
   });
 
+  console.log(postalStats)
+
   res.json({
     success: true,
-    postal_codes: postalStats.map((row) => ({
-      customer_postal_code: row.customer_postal_code,
-      transaction_count: row.transaction_count,
-      total_sales: parseFloat(row.total_sales || 0),
-      average_transaction: parseFloat(row.average_transaction || 0),
-    })),
+    postal_codes: postalStats,
   });
 };
 

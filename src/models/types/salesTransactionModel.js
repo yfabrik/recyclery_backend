@@ -33,22 +33,21 @@
 /**
  * Optional association properties present when the instance is loaded with include().
  * @typedef {Object} SalesTransactionInstanceAssociations
- * @property {Array<any>} [TransactionItems] - Transaction line items when loaded with include (table: transaction_items)
- * @property {Array<import("./labeledItemModel.js").LabeledItemInstance>} [transactionLines] - Labeled items when loaded with include (alias for belongsToMany through TransactionItem)
+ * @property {Array<any>} [items] - Transaction line items when loaded with include (table: transaction_items)
+ * @property {Array<import("./labeledItemModel.js").LabeledItemInstance>} [items] - Labeled items when loaded with include (alias for belongsToMany through TransactionItem)
  * @property {import("./userModel.js").UserInstance} [User] - User who created the transaction when loaded with include (created_by)
  * @property {import("./cashSessionModel.js").CashSessionInstance} [CashSession] - Cash session when loaded with include
  *
- * @property {() => Promise<Array<any>>} getTransactionItems - Get all transaction line items (has-many TransactionItem through transaction_id).
+ * @property {(items: Array<any|number>) => Promise<void>} setItems - Replace all transaction line items. Takes an array of TransactionItem instances or item IDs.
  *
- * @property {(items: Array<any|number>) => Promise<void>} setTransactionItems - Replace all transaction line items. Takes an array of TransactionItem instances or item IDs.
+ * @property {(items: Array<import("./labeledItemModel.js").LabeledItemInstance|number>,options?:import("sequelize").HasManyAddAssociationsMixinOptions) => Promise<void>} addItems - Add one or more transaction line items. Takes an array of TransactionItem instances or item IDs.
+ * @property {(items: import("sequelize").ModelStatic<import("./labeledItemModel.js").LabeledItemInstance>|number,options?:import("sequelize").HasManyAddAssociationsMixinOptions) => Promise<void>} addItem - Add one or more transaction line items. Takes an array of TransactionItem instances or item IDs.
+ * 
+ * @property {(items: Array<any|number>) => Promise<void>} removeItems - Remove one or more transaction line items. Takes an array of TransactionItem instances or item IDs.
  *
- * @property {(items: Array<any|number>) => Promise<void>} addTransactionItems - Add one or more transaction line items. Takes an array of TransactionItem instances or item IDs.
+ * @property {(values?: object,options?:import("sequelize").HasManyCreateAssociationMixinOptions) => Promise<any>} createItem - Create a new transaction line item for this transaction (has-many).
  *
- * @property {(items: Array<any|number>) => Promise<void>} removeTransactionItems - Remove one or more transaction line items. Takes an array of TransactionItem instances or item IDs.
- *
- * @property {(values?: object) => Promise<any>} createTransactionItem - Create a new transaction line item for this transaction (has-many).
- *
- * @property {() => Promise<Array<import("./labeledItemModel.js").LabeledItemInstance>>} getTransactionLines - Get labeled items in this transaction (belongsToMany through TransactionItem, alias transactionLines).
+ * @property {() => Promise<Array<import("./labeledItemModel.js").LabeledItemInstance>>} getItems - Get labeled items in this transaction (belongsToMany through TransactionItem, alias transactionLines).
  *
  * @property {() => Promise<import("./cashSessionModel.js").CashSessionInstance|null>} getCashSession - Get the associated CashSession (belongs-to relationship). Returns null if not set.
  *

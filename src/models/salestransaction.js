@@ -17,7 +17,7 @@ export default (sequelize, DataTypes) => {
         through: models.TransactionItem,
         foreignKey: "transaction_id",
         otherKey: "labeled_item_id",
-        as: "transactionLines",
+        as: "items",
       });
     }
   }
