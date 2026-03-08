@@ -13,6 +13,8 @@ const {
   User,
   SalesTransaction,
   TransactionItem,
+  LabeledItem,
+  Category,
   Sequelize,
 } = db;
 /**
@@ -106,7 +108,7 @@ export const getActiveSession = async (req, res) => {
     t = {
       ...tmp,
       CashRegister: session.CashRegister,
-      Recyclery:session.CashRegister?.Recyclery,
+      Recyclery: session.CashRegister?.Recyclery,
     };
   }
 
@@ -262,3 +264,84 @@ export const getRegistersByStore = async (req, res) => {
 
   // res.json({ success: true, registers });
 };
+
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const sessionsStats = async (req, res) => {
+  const filtersSchema = z.object({
+    date_from: z.coerce.date().nullish(),
+    date_to: z.coerce.date().nullish(),
+    store_id: idSchema().nullish(),
+  })
+
+  const filters = filtersSchema.parse(req.params)
+
+
+  const where = {}
+  if (filters.store_id) where.recyclery_id = filters.store_id
+  const include = [
+    {
+      model: SalesTransaction,
+      include: [{
+        model: LabeledItem,
+        as: "items",
+        include: [{
+          model: Category,
+          as: "category"
+        },
+        {
+          model: Category,
+          as: "subcategory"
+        }]
+      }]
+    }, {
+      model: CashRegister,
+      where
+    }
+  ]
+  const stats = await CashSession.findAll({
+    include
+  })
+
+  return res.json({
+    success: true,
+    data:
+      stats.map(session => {
+        return {
+          transactions: session.SalesTransactions?.length ?? 0,
+          cash: session.SalesTransactions?.reduce((prev, current) => {
+            if (current.payment_method == "cash") {
+              prev.count++
+              prev.value += +(current.total_amount || 0)
+            }
+            return prev
+          }, { count: 0, value: 0 }),
+          card: session.SalesTransactions?.reduce((prev, current) => {
+            if (current.payment_method == "card") {
+              prev.count++
+              prev.value += +(current.total_amount || 0)
+            }
+            return prev
+
+          }, { count: 0, value: 0 }),
+          categories: session.SalesTransactions?.reduce((prev, current) => {
+            current.items?.forEach(item => {
+              const categorie = item.category
+              const sub = item.subcategory
+              const val = { category: categorie.name, sub: sub?.name || "", value: item.total_amount }
+              const exist = prev.find(p => p.category == val.category && p.sub == val.sub)
+              if (exist) exist.value += val.value
+              else prev.push(val)
+            }
+            )
+            return prev
+          }, [])
+
+        }
+      })
+
+  })
+}
