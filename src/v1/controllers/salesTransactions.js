@@ -2,10 +2,7 @@ import createHttpError from "http-errors";
 import { col, fn, literal, Op } from "sequelize";
 import z from "zod";
 import db from "../../models/index.js";
-import {
-  idSchema,
-  postalSchema
-} from "../../services/zod.js";
+import { idSchema, postalSchema } from "../../services/zod.js";
 
 const {
   SalesTransaction,
@@ -63,16 +60,21 @@ export const listTransactions = async (req, res) => {
   }
   if (filter.session) where.cash_session_id = filter.session;
   if (filter.payment_method) where.payment_method = filter.payment_method;
+
+  const whereStore = {};
+  if (filter.store_id) whereStore.recyclery_id = filter.store_id;
   const include = [
     {
       model: CashSession,
       include: [
         {
           model: CashRegister,
+          where: whereStore,
           // ...(filter.store_id ? { where: { recyclery_id: filter.store_id } } : {}),
           include: [
             {
               model: Recyclery,
+              // required: true,
             },
           ],
         },
@@ -80,6 +82,7 @@ export const listTransactions = async (req, res) => {
           model: User,
         },
       ],
+      required: true,
     },
     {
       model: LabeledItem,
@@ -89,7 +92,6 @@ export const listTransactions = async (req, res) => {
 
   const transactions = await SalesTransaction.findAll({
     where,
-    // include: [{ model: Recyclery ,}, { model: User }],
     include,
     order: [["createdAt", "DESC"]],
     limit: filter.limit,
@@ -432,7 +434,7 @@ export const transactionsStats = async (req, res) => {
         "total_price_sum",
       ],
       [col("LabeledItem.category_id"), "category_id"],
-      [col("category.name"), "category_name"],
+      [col("LabeledItem.category.name"), "category_name"],
     ],
     include: [
       {
@@ -456,7 +458,7 @@ export const transactionsStats = async (req, res) => {
         ],
       },
     ],
-    group: [col("LabeledItem.category_id"), col("category.name")],
+    group: [col("LabeledItem.category_id"), col("LabeledItem.category.name")],
     raw: true,
   });
 
