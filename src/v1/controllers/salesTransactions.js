@@ -15,6 +15,8 @@ const {
   LabeledItem,
   CashSession,
   CashRegister,
+  TransactionItem,
+  Category,
 } = db;
 /**
  *
@@ -320,7 +322,14 @@ export const transactionsStats = async (req, res) => {
    * @type {import("sequelize").WhereOptions}
    */
   const where = {};
-  if (filter.store_id) where.store_id = filter.store_id;
+  const include = [];
+  if (filter.store_id) {
+    include.push({
+      model: CashSession,
+      include: [{ model: CashRegister, where: { recyclery_id: filter.store_id } }],
+    });
+  }
+    // where.store_id = filter.store_id;
 
   const { date_from, date_to } = filter;
   if (date_from || date_to) {
@@ -340,13 +349,13 @@ export const transactionsStats = async (req, res) => {
   }
 
   // Subquery for total refunded amounts per transaction
-  const refundSubquery = literal(`(
-      SELECT 
-        SUM(CASE WHEN refund_type IN ('full', 'partial') THEN refund_amount ELSE 0 END)
-      FROM refunds AS r
-      WHERE r.transaction_id = SalesTransaction.id
-        AND r.status = 'completed'
-    )`);
+  // const refundSubquery = literal(`(
+  //     SELECT 
+  //       SUM(CASE WHEN refund_type IN ('full', 'partial') THEN refund_amount ELSE 0 END)
+  //     FROM refunds AS r
+  //     WHERE r.transaction_id = SalesTransaction.id
+  //       AND r.status = 'completed'
+  //   )`);
 
   // Fetch global stats
   const { count, rows } = await SalesTransaction.findAndCountAll({
@@ -375,6 +384,8 @@ export const transactionsStats = async (req, res) => {
       //   "card",
       // ],
     ],
+    where,
+    include,
     raw: true,
   });
   // const stats = rows[0].get({ plain: true });
@@ -389,7 +400,63 @@ export const transactionsStats = async (req, res) => {
       [fn("SUM", col("total_amount")), "total"],
       [fn("COUNT", col("payment_method")), "count"],
     ],
+    where,
+    include,
     group: [["payment_method"]],
+    raw: true,
+  });
+
+  // Stats grouped per day: transaction count and total amount
+  const byDay = await SalesTransaction.findAll({
+    attributes: [
+      [fn("DATE", col("SalesTransaction.createdAt")), "date"],
+      [fn("COUNT", col("SalesTransaction.id")), "transaction_count"],
+      [
+        fn("COALESCE", fn("SUM", col("SalesTransaction.total_amount")), 0),
+        "total_amount",
+      ],
+    ],
+    where,
+    include,
+    group: [fn("DATE", col("SalesTransaction.createdAt"))],
+    order: [[col("date"), "ASC"]],
+    raw: true,
+  });
+
+  // Stats grouped by category: sum of quantity and sum of total_price from transaction items
+  const byCategory = await TransactionItem.findAll({
+    attributes: [
+      [fn("SUM", col("TransactionItem.quantity")), "total_quantity"],
+      [
+        fn("COALESCE", fn("SUM", col("TransactionItem.total_price")), 0),
+        "total_price_sum",
+      ],
+      [col("LabeledItem.category_id"), "category_id"],
+      [col("category.name"), "category_name"],
+    ],
+    include: [
+      {
+        model: SalesTransaction,
+        where,
+        include,
+        required: true,
+        attributes: [],
+      },
+      {
+        model: LabeledItem,
+        required: true,
+        attributes: [],
+        include: [
+          {
+            model: Category,
+            as: "category",
+            required: false,
+            attributes: [],
+          },
+        ],
+      },
+    ],
+    group: [col("LabeledItem.category_id"), col("category.name")],
     raw: true,
   });
 
@@ -429,6 +496,17 @@ export const transactionsStats = async (req, res) => {
       ...statsRow,
       total_refunded: 0,
       payment_methods: methods ?? [],
+      by_day: /** @type {Array<{ date?: string; transaction_count?: number; total_amount?: string | number }>} */ (byDay).map((row) => ({
+        date: row.date,
+        transaction_count: Number(row.transaction_count ?? 0),
+        total_amount: parseFloat(String(row.total_amount ?? 0)),
+      })),
+      by_category: /** @type {Array<{ category_id?: number; category_name?: string | null; total_quantity?: number; total_price_sum?: string | number }>} */ (byCategory).map((row) => ({
+        category_id: row.category_id,
+        category_name: row.category_name ?? null,
+        total_quantity: Number(row.total_quantity ?? 0),
+        total_price_sum: parseFloat(String(row.total_price_sum ?? 0)),
+      })),
       // total_sales_before_refunds: parseFloat(
       //   stats[0].total_sales_before_refunds || 0,
       // ),
