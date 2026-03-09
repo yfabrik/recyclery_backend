@@ -23,19 +23,21 @@ export default (sequelize, DataTypes) => {
       price: DataTypes.DECIMAL,
       quantity: DataTypes.INTEGER,
       total_price: {
-        type:DataTypes.VIRTUAL,
-        get(){
-        let bundles = 0
-            let extraItems = this.quantity
-            if (this.bundleQuantity && this.bundleQuantity !== 0) {
-              bundles = Math.trunc(this.quantity / this.bundleQuantity)
-              extraItems = this.quantity % this.bundleQuantity
-            }
-            const sum = (price: number, quantity: number) => price * quantity * (1 - this.promotionValue / 100)
-            return (
-              sum(this.price, extraItems) + sum(this.bundlePrice || this.price, bundles)
-            )
-                }
+        type: DataTypes.VIRTUAL,
+        get() {
+          let bundles = 0;
+          let extraItems = this.quantity;
+          if (this.bundleQuantity && this.bundleQuantity !== 0) {
+            bundles = Math.trunc(this.quantity / this.bundleQuantity);
+            extraItems = this.quantity % this.bundleQuantity;
+          }
+          const sum = (price, quantity) =>
+            price * quantity * (1 - this.promotionValue / 100);
+          return (
+            sum(this.price, extraItems) +
+            sum(this.bundlePrice || this.price, bundles)
+          );
+        },
       },
       promotionValue: {
         type: DataTypes.DECIMAL(5, 2),
