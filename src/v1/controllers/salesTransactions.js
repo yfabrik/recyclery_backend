@@ -426,13 +426,15 @@ export const transactionsStats = async (req, res) => {
   });
 
   // Stats grouped by category: sum of quantity and sum of total_price from transaction items
+  // total_price is virtual in TransactionItem (price*extraItems*(1-promo) + (bundlePrice|price)*bundles*(1-promo))
+  const totalPriceExpr = literal(`(
+    (TransactionItem.price * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN TransactionItem.quantity % TransactionItem.bundleQuantity ELSE TransactionItem.quantity END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100))
+    + (COALESCE(TransactionItem.bundlePrice, TransactionItem.price) * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN CAST(TransactionItem.quantity / TransactionItem.bundleQuantity AS INTEGER) ELSE 0 END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100))
+  )`);
   const byCategory = await TransactionItem.findAll({
     attributes: [
       [fn("SUM", col("TransactionItem.quantity")), "total_quantity"],
-      [
-        fn("COALESCE", fn("SUM", col("TransactionItem.total_price")), 0),
-        "total_price_sum",
-      ],
+      [fn("COALESCE", fn("SUM", totalPriceExpr), 0), "total_price_sum"],
       [col("LabeledItem.category_id"), "category_id"],
       [col("LabeledItem.category.name"), "category_name"],
     ],
