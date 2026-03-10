@@ -86,8 +86,8 @@ export const listTransactions = async (req, res) => {
     },
     {
       model: LabeledItem,
-      as: "items"
-    }
+      as: "items",
+    },
   ];
 
   const transactions = await SalesTransaction.findAll({
@@ -124,7 +124,7 @@ export const createTransaction = async (req, res) => {
     barcode: z.string(),
     promotion: z.coerce.number().min(0).max(100).nullish(),
     bundlePrice: z.coerce.number().nullish(),
-    bundleQuantity: z.coerce.number().nullish()
+    bundleQuantity: z.coerce.number().nullish(),
   });
   const dataSchema = z.object({
     cash_session_id: idSchema("sesions requis"),
@@ -138,7 +138,7 @@ export const createTransaction = async (req, res) => {
   const session = await CashSession.findByPk(data.cash_session_id);
   if (!session) throw new createHttpError[404]("session non trouvé");
 
-  const result = await db.sequelize.transaction(async t => {
+  const result = await db.sequelize.transaction(async (t) => {
     const sale = await session.createSalesTransaction(
       {
         total_amount: data.total_amount,
@@ -146,36 +146,42 @@ export const createTransaction = async (req, res) => {
         payment_amount: data.payment_amount,
         customer_postal_code: data?.customer_postal_code || null,
       },
-      { transaction: t })
+      { transaction: t },
+    );
     for await (const item of data.items) {
       if (isNaN(+item.barcode)) {
-        await sale.createItem({
-          category_id: item.category_id,
-          subcategory_id: item.subcategory_id,
-          price: item.price,
-          weight: item.weight,
-          status: "sold",
-          sold_at: new Date(),
-          created_by: req.user.id
-        }, {
-          through: {
-            name: item.name,
+        await sale.createItem(
+          {
+            category_id: item.category_id,
+            subcategory_id: item.subcategory_id,
             price: item.price,
-            quantity: item.quantity,
-            promotionValue: item.promotion,
-            bundleQuantity: item.bundleQuantity,
-            bundlePrice: item.bundlePrice
+            weight: item.weight,
+            status: "sold",
+            sold_at: new Date(),
+            created_by: req.user.id,
           },
-          transaction: t,
-        })
-      }
-      else {
+          {
+            through: {
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              promotionValue: item.promotion,
+              bundleQuantity: item.bundleQuantity,
+              bundlePrice: item.bundlePrice,
+            },
+            transaction: t,
+          },
+        );
+      } else {
         const i = await LabeledItem.findByPk(+item.barcode);
         if (!i) throw new createHttpError.NotFound("item not found");
-        await i.update({
-          sold_at: new Date(),
-          status: "sold"
-        }, { transaction: t })
+        await i.update(
+          {
+            sold_at: new Date(),
+            status: "sold",
+          },
+          { transaction: t },
+        );
         await sale.addItem(i, {
           through: {
             name: item.name,
@@ -183,14 +189,13 @@ export const createTransaction = async (req, res) => {
             quantity: item.quantity,
             promotionValue: item.promotion,
             bundleQuantity: item.bundleQuantity,
-            bundlePrice: item.bundlePrice
+            bundlePrice: item.bundlePrice,
           },
           transaction: t,
-        })
+        });
       }
     }
-    return sale
-
+    return sale;
   });
 
   res.json({
@@ -328,10 +333,19 @@ export const transactionsStats = async (req, res) => {
   if (filter.store_id) {
     include.push({
       model: CashSession,
-      include: [{ model: CashRegister, where: { recyclery_id: filter.store_id } }],
+      required: true,
+      attributes: [],
+      include: [
+        {
+          model: CashRegister,
+          where: { recyclery_id: filter.store_id },
+          required: true,
+          attributes: [],
+        },
+      ],
     });
   }
-    // where.store_id = filter.store_id;
+  // where.store_id = filter.store_id;
 
   const { date_from, date_to } = filter;
   if (date_from || date_to) {
@@ -352,7 +366,7 @@ export const transactionsStats = async (req, res) => {
 
   // Subquery for total refunded amounts per transaction
   // const refundSubquery = literal(`(
-  //     SELECT 
+  //     SELECT
   //       SUM(CASE WHEN refund_type IN ('full', 'partial') THEN refund_amount ELSE 0 END)
   //     FROM refunds AS r
   //     WHERE r.transaction_id = SalesTransaction.id
@@ -500,17 +514,23 @@ export const transactionsStats = async (req, res) => {
       ...statsRow,
       total_refunded: 0,
       payment_methods: methods ?? [],
-      by_day: /** @type {Array<{ date?: string; transaction_count?: number; total_amount?: string | number }>} */ (byDay).map((row) => ({
-        date: row.date,
-        transaction_count: Number(row.transaction_count ?? 0),
-        total_amount: parseFloat(String(row.total_amount ?? 0)),
-      })),
-      by_category: /** @type {Array<{ category_id?: number; category_name?: string | null; total_quantity?: number; total_price_sum?: string | number }>} */ (byCategory).map((row) => ({
-        category_id: row.category_id,
-        category_name: row.category_name ?? null,
-        total_quantity: Number(row.total_quantity ?? 0),
-        total_price_sum: parseFloat(String(row.total_price_sum ?? 0)),
-      })),
+      by_day:
+        /** @type {Array<{ date?: string; transaction_count?: number; total_amount?: string | number }>} */ (
+          byDay
+        ).map((row) => ({
+          date: row.date,
+          transaction_count: Number(row.transaction_count ?? 0),
+          total_amount: parseFloat(String(row.total_amount ?? 0)),
+        })),
+      by_category:
+        /** @type {Array<{ category_id?: number; category_name?: string | null; total_quantity?: number; total_price_sum?: string | number }>} */ (
+          byCategory
+        ).map((row) => ({
+          category_id: row.category_id,
+          category_name: row.category_name ?? null,
+          total_quantity: Number(row.total_quantity ?? 0),
+          total_price_sum: parseFloat(String(row.total_price_sum ?? 0)),
+        })),
       // total_sales_before_refunds: parseFloat(
       //   stats[0].total_sales_before_refunds || 0,
       // ),
@@ -581,13 +601,12 @@ export const transactionStatsPostalCode = async (req, res) => {
         "average_transaction",
       ],
       [fn("COALESCE", fn("SUM", col("total_amount")), 0), "total_sales"],
-      "customer_postal_code"
+      "customer_postal_code",
     ],
     group: ["customer_postal_code"],
     order: [["total_sales", "DESC"]],
   });
 
-  console.log(postalStats)
 
   res.json({
     success: true,
