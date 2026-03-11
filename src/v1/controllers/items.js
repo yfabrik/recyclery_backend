@@ -36,8 +36,9 @@ export const listLabeledItem = async (req, res) => {
     search: z.string().optional(),
     recyclery_id: idSchema().optional(),
     barcode: idSchema().optional(), //TODO verifier
+    page: z.coerce.number().positive().optional(),
   });
-  const { search, ...filter } = filterSchema.parse(req.query);
+  const { search, page, ...filter } = filterSchema.parse(req.query);
   const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
   /** @type {import("sequelize").WhereOptions<import("../../models/types/labeledItemModel.js").LabeledItemAttributes>} */
   const where = likeQuery
@@ -50,8 +51,10 @@ export const listLabeledItem = async (req, res) => {
         ],
       }
     : { ...filter };
+  const pagination = {};
+  if (page) ((pagination.limit = 50), (pagination.offset = (page - 1) * 50));
 
-  const labeledItems = await LabeledItem.findAll({
+  const labeledItems = await LabeledItem.findAndCountAll({
     where,
     include: [
       {
@@ -71,9 +74,14 @@ export const listLabeledItem = async (req, res) => {
       },
     ],
     order: [["createdAt", "DESC"]],
+    ...pagination,
   });
 
-  res.json({ success: true, items: labeledItems });
+  res.json({
+    success: true,
+    items: labeledItems.rows,
+    total: labeledItems.count,
+  });
 };
 /**
  *

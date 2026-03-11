@@ -35,6 +35,7 @@ export const listTransactions = async (req, res) => {
     payment_method: z
       .enum(["cash", "check", "card"], "methode de payment inconnue")
       .optional(),
+    page: z.coerce.number().positive().optional(),
   });
   const filter = filterSchema.parse(req.query);
 
@@ -63,6 +64,10 @@ export const listTransactions = async (req, res) => {
 
   const whereStore = {};
   if (filter.store_id) whereStore.recyclery_id = filter.store_id;
+  if (filter.page) {
+    ((filter.limit = filter.limit || 50),
+      (filter.offset = filter.offset || (filter.page - 1) * filter.limit));
+  }
   const include = [
     {
       model: CashSession,
@@ -90,7 +95,7 @@ export const listTransactions = async (req, res) => {
     },
   ];
 
-  const transactions = await SalesTransaction.findAll({
+  const transactions = await SalesTransaction.findAndCountAll({
     where,
     include,
     order: [["createdAt", "DESC"]],
@@ -100,11 +105,11 @@ export const listTransactions = async (req, res) => {
 
   res.json({
     success: true,
-    transactions: transactions,
+    transactions: transactions.rows,
     pagination: {
       limit: filter.limit,
       offset: filter.offset,
-      total: transactions.length,
+      total: transactions.count,
     },
   });
 };
@@ -606,7 +611,6 @@ export const transactionStatsPostalCode = async (req, res) => {
     group: ["customer_postal_code"],
     order: [["total_sales", "DESC"]],
   });
-
 
   res.json({
     success: true,
