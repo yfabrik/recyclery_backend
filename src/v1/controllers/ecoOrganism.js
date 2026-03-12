@@ -168,11 +168,12 @@ export const ecoOrgaStats = async (req, res) => {
  */
 export const ecoOrgQuarterStats = async (req, res) => {
   const quartersMonth = [0, 3, 6, 9];
-  var today = new Date();
-  var quarter = Math.floor((today.getMonth() + 3) / 3);
-
+  const today = new Date();
+  const currentMonth = today.getMonth(); // 0-11
+  const currentYear = today.getFullYear();
+  const quarterIndex = Math.floor(currentMonth / 3); // 0=Q1, 1=Q2, 2=Q3, 3=Q4
   const startQuarter = new Date(
-    new Date().setMonth(quartersMonth[quarter - 1], 1),
+    new Date().setMonth(quartersMonth[quarterIndex], 1),
   );
 
   const dates = [today, new Date(startQuarter)];
@@ -180,57 +181,92 @@ export const ecoOrgQuarterStats = async (req, res) => {
     const tmp = new Date(startQuarter);
     tmp.setMonth(tmp.getMonth() - index * 3);
     dates.push(tmp);
-  }
-
-  const quarterCurrent = await EcoOrganism.findAll({
-    include: [
-      {
-        model: WasteDisposal,
-        where: { createdAt: { [Op.between]: [dates[1], dates[0]] } },
-        required:true
-      },
-    ],
-  });
-
-  const quarter1 = await EcoOrganism.findAll({
-    include: [
-      {
-        model: WasteDisposal,
-        where: { createdAt: { [Op.between]: [dates[2], dates[1]] } },
-        required: true,
-      },
-    ],
-  });
-
-  const quarter2 = await EcoOrganism.findAll({
-    include: [
-      {
-        model: WasteDisposal,
-        where: { createdAt: { [Op.between]: [dates[3], dates[2]] } },
-        required: true,
-      },
-    ],
-  });
-
-  const quarter3 = await EcoOrganism.findAll({
-    include: [
-      {
-        model: WasteDisposal,
-        where: { createdAt: { [Op.between]: [dates[4], dates[3]] } },
-        required: true,
-      },
-    ],
-  });
-  const a= [quarterCurrent,quarter1,quarter2,quarter3].reduce((prev,current)=>{
-    const weight = current.WasteDisposals?.reduce((p,c)=>p+=c.weight_kg,0)
-    if(prev[current.name])
-      prev[current.name].weight+=weight
-    else{
-      prev[current.name]={...current,weight:weight}
+  /** @type {{ start: Date; end: Date; label: string; labelMMYYYY: string }[]} */
+  const quarterRanges = dates.map((d,index,array)=>{
+    if(array.length ===index+1) return;
+    const y= d.getFullYear();
+    const q = Math.floor(d.getMonth() / 3)
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const endMonth = d.getMonth() + 3; // first month of next quarter, so last month of quarter is endMonth - 1
+    const mmEnd = String(endMonth).padStart(2, "0"); // 3, 6, 9, 12
+    return {
+      start:new Date(array[index+1]).setHours(0,0,0,0),
+      end:new Date(d).setHours(23,59,59,999),
+      label: `${y}-Q${q + 1}`,
+      labelMMYYYY: `${mm}-${y}--${mmEnd}-${y}`,
     }
-    return prev
-  },{})
+  });
+  console.log(quarterRanges)
+  // for (let i = 0; i < 4; i++) {
+  //   const q = (quarterIndex - i + 4) % 4;
+  //   const y = currentYear - (quarterIndex - i < 0 ? 1 : 0);
+  //   const startMonth = q * 3;
+  //   const start = new Date(y, startMonth, 1);
+  //   const end = new Date(y, startMonth + 3, 0, 23, 59, 59, 999); // last day of quarter
+  //   if (i === 0) end.setTime(today.getTime()); // current quarter only up to today
+  //   const mm = String(startMonth + 1).padStart(2, "0");
+  //   const endMonth = startMonth + 3; // first month of next quarter, so last month of quarter is endMonth - 1
+  //   const mmEnd = String(endMonth).padStart(2, "0"); // 3, 6, 9, 12
+  //   quarterRanges.push({
+  //     start,
+  //     end,
+  //     label: `${y}-Q${q + 1}`,
+  //     labelMMYYYY: `${mm}-${y}--${mmEnd}-${y}`,
+  //   });
+  // }
 
-  res.status(200).json(a);
+  // Fetch all eco organisms (we want the full list with quarters, including those with 0 waste)
+  const ecoOrganisms = await EcoOrganism.findAll({
+    where: { is_active: true },
+    attributes: ["id", "name", "description", "is_active"],
+  });
 
+  // For each quarter, get total weight per eco_organism_id
+  const weightByEcoOrgByQuarter = await Promise.all(
+    quarterRanges.map(async (range) => {
+      const rows = /** @type {{ eco_organism_id: number; total_weight_kg: string | number }[]} */ (
+        /** @type {unknown} */ (
+          await WasteDisposal.findAll({
+          attributes: [
+            "eco_organism_id",
+            [fn("SUM", col("weight_kg")), "total_weight_kg"],
+          ],
+          where: {
+            eco_organism_id: { [Op.ne]: null },
+            disposal_date: { [Op.between]: [range.start, range.end] },
+          },
+          group: ["eco_organism_id"],
+          raw: true,
+        })
+        )
+      );
+      return { label: range.label, rows };
+    })
+  );
+
+  // Build a map: eco_organism_id -> { "2025-Q1": weight, ... }
+  const quarterSums = new Map();
+  weightByEcoOrgByQuarter.forEach(({ label, rows }) => {
+    rows.forEach((r) => {
+      const id = r.eco_organism_id;
+      if (!quarterSums.has(id)) quarterSums.set(id, {});
+      quarterSums.get(id)[label] = Number(r.total_weight_kg ?? 0);
+    });
+  });
+
+  // Ensure every eco organism has 4 quarters (0 for quarters with no waste)
+  const eco_organisms = ecoOrganisms.map((eo) => {
+    const id = eo.id;
+    const quarters = quarterRanges.map((range) => ({
+      quarter: range.label,
+      label: range.labelMMYYYY,
+      weight_kg: quarterSums.get(id)?.[range.label] ?? 0,
+    }));
+    return {
+      ...eo.toJSON(),
+      quarters,
+    };
+  });
+
+  res.json({ eco_organisms });
 };
