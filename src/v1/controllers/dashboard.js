@@ -131,14 +131,15 @@ export const dashboardActivities = async (req, res) => {
     limit: 5,
     order: [["updatedAt", "DESC"]],
   });
+  console.log(recentSales)
 
   recentSales.forEach((sale) => {
     activities.push({
       id: `sale_${sale.id}`,
       type: "sale",
-      description: `Vente: ${sale.name}`,
-      amount: `${sale.selling_price}€`,
-      time: formatTimeAgo(sale.updated_at),
+      description: `Vente: ${sale.id}`,
+      amount: `${sale.price}€`,
+      time: formatTimeAgo(sale.updatedAt),
       icon: "ShoppingCart",
       color: "success",
       status: "Complété",
@@ -157,8 +158,8 @@ export const dashboardActivities = async (req, res) => {
       id: `donation_${donation.id}`,
       type: "donation",
       description: `Don de ${donation.donor_name}`,
-      amount: `${donation.items_count} articles`,
-      time: formatTimeAgo(donation.created_at),
+      amount: `${1} articles`,
+      time: formatTimeAgo(donation.createdAt),
       icon: "VolunteerActivism",
       color: "info",
       status: donation.status === "pending" ? "En attente" : "Traité",
