@@ -107,8 +107,13 @@ export const createLabeledItem = async (req, res) => {
   const data = dataSchema.parse(req.body);
 
   const category = await Category.findByPk(data.category_id);
-  if (!data.name) data.name = category ? category.name : "Article";
-
+  const sub = data.subcategory_id!=null
+    ? await Category.findByPk(data.subcategory_id)
+    : data.subcategory_id;
+  if (!data.name) {
+    data.name = category ? category.name : "Article";
+    if (sub) data.name += `> ${sub.name}`;
+  }
   const item = await LabeledItem.create({
     ...data,
     created_by: req.user.id,

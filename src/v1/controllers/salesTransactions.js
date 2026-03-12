@@ -161,6 +161,7 @@ export const createTransaction = async (req, res) => {
             subcategory_id: item.subcategory_id,
             price: item.price,
             weight: item.weight,
+            name:item.name,
             status: "sold",
             sold_at: new Date(),
             created_by: req.user.id,
