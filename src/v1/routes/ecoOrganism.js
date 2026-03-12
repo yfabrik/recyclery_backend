@@ -53,6 +53,6 @@ router.get(
 );
 
 router.get(
-  "/stats/quarter",
+  "/stats/quarters",
   asyncHandler(ecoOrgQuarterStats),
 );

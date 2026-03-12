@@ -181,22 +181,24 @@ export const ecoOrgQuarterStats = async (req, res) => {
     const tmp = new Date(startQuarter);
     tmp.setMonth(tmp.getMonth() - index * 3);
     dates.push(tmp);
+  }
   /** @type {{ start: Date; end: Date; label: string; labelMMYYYY: string }[]} */
-  const quarterRanges = dates.map((d,index,array)=>{
-    if(array.length ===index+1) return;
-    const y= d.getFullYear();
-    const q = Math.floor(d.getMonth() / 3)
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const endMonth = d.getMonth() + 3; // first month of next quarter, so last month of quarter is endMonth - 1
-    const mmEnd = String(endMonth).padStart(2, "0"); // 3, 6, 9, 12
-    return {
-      start:new Date(array[index+1]).setHours(0,0,0,0),
-      end:new Date(d).setHours(23,59,59,999),
-      label: `${y}-Q${q + 1}`,
-      labelMMYYYY: `${mm}-${y}--${mmEnd}-${y}`,
+  const quarterRanges = dates.map((d, index, array) => {
+    if (array.length !== index + 1) {
+      const y = d.getFullYear();
+      const q = Math.floor(d.getMonth() / 3);
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const endMonth = d.getMonth() + 3; // first month of next quarter, so last month of quarter is endMonth - 1
+      const mmEnd = String(endMonth).padStart(2, "0"); // 3, 6, 9, 12
+      return {
+        start: new Date(new Date(array[index + 1]).setHours(0, 0, 0, 0)),
+        end: new Date(new Date(d).setHours(23, 59, 59, 999)),
+        label: `${y}-Q${q + 1}`,
+        labelMMYYYY: `${mm}-${y}--${mmEnd}-${y}`,
+      };
     }
-  });
-  console.log(quarterRanges)
+  }).filter(f=>f!==undefined);
+
   // for (let i = 0; i < 4; i++) {
   //   const q = (quarterIndex - i + 4) % 4;
   //   const y = currentYear - (quarterIndex - i < 0 ? 1 : 0);
@@ -224,24 +226,25 @@ export const ecoOrgQuarterStats = async (req, res) => {
   // For each quarter, get total weight per eco_organism_id
   const weightByEcoOrgByQuarter = await Promise.all(
     quarterRanges.map(async (range) => {
-      const rows = /** @type {{ eco_organism_id: number; total_weight_kg: string | number }[]} */ (
-        /** @type {unknown} */ (
-          await WasteDisposal.findAll({
-          attributes: [
-            "eco_organism_id",
-            [fn("SUM", col("weight_kg")), "total_weight_kg"],
-          ],
-          where: {
-            eco_organism_id: { [Op.ne]: null },
-            disposal_date: { [Op.between]: [range.start, range.end] },
-          },
-          group: ["eco_organism_id"],
-          raw: true,
-        })
-        )
-      );
+      const rows =
+        /** @type {{ eco_organism_id: number; total_weight_kg: string | number }[]} */ (
+          /** @type {unknown} */ (
+            await WasteDisposal.findAll({
+              attributes: [
+                "eco_organism_id",
+                [fn("SUM", col("weight_kg")), "total_weight_kg"],
+              ],
+              where: {
+                eco_organism_id: { [Op.ne]: null },
+                disposal_date: { [Op.between]: [range.start, range.end] },
+              },
+              group: ["eco_organism_id"],
+              raw: true,
+            })
+          )
+        );
       return { label: range.label, rows };
-    })
+    }),
   );
 
   // Build a map: eco_organism_id -> { "2025-Q1": weight, ... }
@@ -268,5 +271,5 @@ export const ecoOrgQuarterStats = async (req, res) => {
     };
   });
 
-  res.json({ eco_organisms });
+  res.json({ stats:eco_organisms });
 };
