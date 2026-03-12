@@ -5,6 +5,7 @@ import {
   deleteEcoOrganism,
   detailEcoOrganism,
   ecoOrgaStats,
+  ecoOrgQuarterStats,
   listActiveEcoOrganism,
   listEcoOrganism,
   updateEcoOrganism,
@@ -49,4 +50,9 @@ router.delete(
 router.get(
   "/stats/summary",
   asyncHandler(ecoOrgaStats),
+);
+
+router.get(
+  "/stats/quarter",
+  asyncHandler(ecoOrgQuarterStats),
 );

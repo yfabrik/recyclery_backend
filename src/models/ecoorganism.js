@@ -10,7 +10,7 @@ export default (sequelize, DataTypes) => {
      *@param {import ('./types/models.js').models} models
      */
     static associate(models) {
-      this.hasMany(models.WasteDisposal);
+      this.hasMany(models.WasteDisposal,{foreignKey:"eco_organism_id"});
     }
   }
   EcoOrganism.init(

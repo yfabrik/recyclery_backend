@@ -154,6 +154,7 @@ export const createWaste = async (req, res) => {
   res.status(201).json({
     message: "Sortie de déchets créée avec succès",
     disposal_id: waste.id,
+    waste,
     // disposal_number: disposal_number,
   });
 };
