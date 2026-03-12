@@ -190,28 +190,36 @@ export const createTask = async (req, res) => {
     if (!store) throw new createHttpError.NotFound("magasin non trouvé");
     name = store.name + "-" + name;
   }
+
   let schedule = null;
   if (data.recurrence_pattern) {
     schedule = await TaskSchedule.create({
       ...data,
       name,
     });
-  }
-  const { is_recurring, recurrence_pattern, ...rest } = data;
-  const task = await Task.create({
-    ...rest,
-    start_time: data.start_time ? new Date(data.start_time) : undefined,
-    end_time: data.end_time ? new Date(data.end_time) : undefined,
-    status: "a",
-    schedule_id: schedule?.id || null,
-    name,
-  });
+    const task = await schedule.getTasks();
 
-  res.json({
-    success: true,
-    message: "Tâche créée avec succès",
-    task,
-  });
+    res.json({
+      success: true,
+      message: "Tâche créée avec succès",
+      task: task[0],
+    });
+  } else {
+    const { is_recurring, recurrence_pattern, ...rest } = data;
+    const task = await Task.create({
+      ...rest,
+      start_time: data.start_time ? new Date(data.start_time) : undefined,
+      end_time: data.end_time ? new Date(data.end_time) : undefined,
+      status: "pending",
+      name,
+    });
+
+    res.json({
+      success: true,
+      message: "Tâche créée avec succès",
+      task,
+    });
+  }
 };
 /**
  *
