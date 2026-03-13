@@ -225,7 +225,8 @@ export const getSessionById = async (req, res) => {
     where: { cash_session_id: id },
     include: [
       {
-        model: TransactionItem,
+        model: LabeledItem,
+        as: "items",
       },
     ],
     order: [["createdAt", "DESC"]],
