@@ -167,13 +167,13 @@ export const ecoOrgaStats = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const ecoOrgQuarterStats = async (req, res) => {
-  const quartersMonth = [0, 3, 6, 9];
+  // const quartersMonth = [0, 3, 6, 9];
   const today = new Date();
-  const currentMonth = today.getMonth(); // 0-11
-  const currentYear = today.getFullYear();
-  const quarterIndex = Math.floor(currentMonth / 3); // 0=Q1, 1=Q2, 2=Q3, 3=Q4
+  // const currentMonth = today.getMonth(); // 0-11
+  // const currentYear = today.getFullYear();
+  const quarterIndex = Math.floor(today.getMonth() / 3); // 0=Q1, 1=Q2, 2=Q3, 3=Q4
   const startQuarter = new Date(
-    new Date().setMonth(quartersMonth[quarterIndex], 1),
+    new Date().setMonth(quarterIndex*3, 1),
   );
 
   const dates = [today, new Date(startQuarter)];
@@ -192,7 +192,7 @@ export const ecoOrgQuarterStats = async (req, res) => {
       const mmEnd = String(endMonth).padStart(2, "0"); // 3, 6, 9, 12
       return {
         start: new Date(new Date(array[index + 1]).setHours(0, 0, 0, 0)),
-        end: new Date(new Date(d).setHours(23, 59, 59, 999)),
+        end: new Date(new Date(d).setHours(23, 59, 59, 999)),//faut enelever 1!jour ?
         label: `${y}-Q${q + 1}`,
         labelMMYYYY: `${mm}-${y}--${mmEnd}-${y}`,
       };
