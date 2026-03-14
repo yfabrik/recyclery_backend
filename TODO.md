@@ -30,3 +30,13 @@ added bundleQuantity and bundlePrice in categorie
 
 table through transactionitem between salestransaction and labeleditem
 removed FK for labeleditem in saletransaction
+
+# 2026-03-14
+table migrations orders
+
+1 categories,employees,users,ecoOrganisms
+2 recycleries,employeeWorkdays,promo,waste
+3 cashRegisters, donations,employeeStores,collectionPoints,labeledItems
+4 cashSessions,taskSchedules,arrival
+5 salesTransactions, tasks
+6 transactionItems
