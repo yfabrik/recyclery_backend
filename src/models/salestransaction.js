@@ -19,6 +19,7 @@ export default (sequelize, DataTypes) => {
         otherKey: "labeled_item_id",
         as: "items",
       });
+      this.hasMany(models.SalesTransaction, { foreignKey: "transactionId", as: "refunds" })
     }
   }
   SalesTransaction.init(

@@ -40,3 +40,5 @@ table migrations orders
 4 cashSessions,taskSchedules,arrival
 5 salesTransactions, tasks
 6 transactionItems
+
+table saleTransaction FK to itself

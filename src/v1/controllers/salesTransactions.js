@@ -161,7 +161,7 @@ export const createTransaction = async (req, res) => {
             subcategory_id: item.subcategory_id,
             price: item.price,
             weight: item.weight,
-            name:item.name,
+            name: item.name,
             status: "sold",
             sold_at: new Date(),
             created_by: req.user.id,
@@ -300,22 +300,27 @@ export const createRefund = async (req, res) => {
  */
 //FIXME y'a le meme truc dans refunds
 export const listRefunds = async (req, res) => {
-  const { id } = req.params;
+  const id = idSchema().parse(req.params.id)
+  const refunds = await SalesTransaction.findByPk(id, {
+    include: [
+      { model: SalesTransaction, as: "refunds", required: false }
+    ]
+  })
 
-  const refunds = await Refund.findAll({
-    where: { transaction_id: id },
-    include: [{ model: SalesTransaction }],
-  });
-  if (!refunds[0]) {
-    return res.status(404).json({
-      success: false,
-      message: "Transaction non trouvée",
-    });
-  }
+  // const refunds = await Refund.findAll({
+  //   where: { transaction_id: id },
+  //   include: [{ model: SalesTransaction }],
+  // });
+  // if (!refunds[0]) {
+  //   return res.status(404).json({
+  //     success: false,
+  //     message: "Transaction non trouvée",
+  //   });
+  // }
 
   res.json({
     success: true,
-    refunds: refunds,
+    refunds: refunds.refunds,
   });
 };
 
