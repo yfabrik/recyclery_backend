@@ -3,7 +3,7 @@ import z from "zod";
 import db from "../../models/index.js";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 
-const { Employee, Recyclery, EmployeeWorkdays } = db;
+const { Employee, Recyclery, EmployeeWorkdays, Skill } = db;
 
 const dataSchema = z.object({
   nom: z.string("nom requis").trim().nonempty("nom requis"),
@@ -28,6 +28,38 @@ export const listEmployees = async (req, res) => {
       {
         model: EmployeeWorkdays,
         // as:"horaires"
+      },
+    ],
+  });
+
+  res.json({
+    success: true,
+    data,
+  });
+};
+
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const detailEmployee = async (req, res) => {
+  const id = idSchema().parse(req.params.id);
+  const data = await Employee.findByPk(id, {
+    include: [
+      {
+        model: Recyclery,
+        as: "stores",
+        required: false,
+      },
+      {
+        model: EmployeeWorkdays,
+        required: false,
+      },
+      {
+        model: Skill,
+        as: "skills",
+        required: false,
       },
     ],
   });
@@ -89,5 +121,23 @@ export const deleteEmployee = async (req, res) => {
   res.json({
     success: true,
     message: "employee supprimé",
+  });
+};
+
+/**
+ *
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const updateEmployeeSkills = async (req, res) => {
+  const id = idSchema().parse(req.params.id);
+  const employee = await Employee.findByPk(id);
+  const dataSchema = z.object({ skills: z.array(idSchema()) });
+  if (!employee) throw new createHttpError.NotFound("employée pas trouvé");
+  const data = dataSchema.parse(req.body);
+  await employee.setSkills(data.skills);
+  res.json({
+    success: true,
+    message: "skills mis a jour",
   });
 };

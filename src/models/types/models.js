@@ -52,5 +52,7 @@
  * @property { import("sequelize").ModelStatic<import("./taskScheduleModel.js").TaskScheduleInstance>} TaskSchedule
  * @property { import("sequelize").ModelStatic<import("./userModel.js").UserInstance>} User
  * @property { import("sequelize").ModelStatic<import("./wasteDisposalModel.js").WasteDisposalInstance>} WasteDisposal
+ * @property { import("sequelize").ModelStatic<import("./skillModel.js").SkillInstance>} Skill
+ *
  *
  */

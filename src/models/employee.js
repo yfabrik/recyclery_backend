@@ -20,6 +20,11 @@ export default (sequelize, DataTypes) => {
         foreignKey: "employee_id",
         // as: "horaires"
       });
+      this.belongsToMany(models.Skill, {
+        foreignKey: "employeeId",
+        through: "employee_skill",
+        as: "skills",
+      });
     }
   }
   Employee.init(
