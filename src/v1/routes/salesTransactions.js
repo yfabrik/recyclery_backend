@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
 
 import {
-  createAvoir,
+  // createAvoir,
   createRefund,
   createTransaction,
   listRefunds,
@@ -32,4 +32,4 @@ router.post("/:id/refunds", asyncHandler(createRefund));
 router.get("/:id/refunds", asyncHandler(listRefunds));
 
 // POST - Créer un avoir (credit note)
-router.post("/credit-note", asyncHandler(createAvoir));
+// router.post("/credit-note", asyncHandler(createAvoir));

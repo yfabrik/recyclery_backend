@@ -64,7 +64,7 @@ const dataSchema = z.object({
   is_present: z.coerce.boolean().default(true),
 });
 
-const { CollectionPointPresence, CollectionPoint, TaskSchedule, Task } = db;
+const {  CollectionPoint, TaskSchedule } = db;
 /**
  *
  * @param {import("express").Request} req

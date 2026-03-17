@@ -8,7 +8,6 @@ const {
   SalesTransaction,
   Recyclery,
   User,
-  Refund,
   LabeledItem,
   CashSession,
   CashRegister,
@@ -797,49 +796,49 @@ export const transactionStatsPostalCode = async (req, res) => {
  * @param {import("../../middlewares/auth.js").RequestWithUser} req
  * @param {import("express").Response} res
  */
-export const createAvoir = async (req, res) => {
-  const { transaction_id, reason, credit_amount, notes } = req.body;
+// export const createAvoir = async (req, res) => {
+//   const { transaction_id, reason, credit_amount, notes } = req.body;
 
-  if (!transaction_id || !reason || !credit_amount) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Les champs transaction_id, reason et credit_amount sont obligatoires",
-    });
-  }
+//   if (!transaction_id || !reason || !credit_amount) {
+//     return res.status(400).json({
+//       success: false,
+//       message:
+//         "Les champs transaction_id, reason et credit_amount sont obligatoires",
+//     });
+//   }
 
-  const transaction = await SalesTransaction.findByPk(transaction_id);
+//   const transaction = await SalesTransaction.findByPk(transaction_id);
 
-  if (!transaction) {
-    return res.status(404).json({
-      success: false,
-      message: "Transaction non trouvée",
-    });
-  }
+//   if (!transaction) {
+//     return res.status(404).json({
+//       success: false,
+//       message: "Transaction non trouvée",
+//     });
+//   }
 
-  if (parseFloat(credit_amount) > transaction.total_amount) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Le montant de l'avoir ne peut pas dépasser le montant de la transaction",
-    });
-  }
+//   if (parseFloat(credit_amount) > transaction.total_amount) {
+//     return res.status(400).json({
+//       success: false,
+//       message:
+//         "Le montant de l'avoir ne peut pas dépasser le montant de la transaction",
+//     });
+//   }
 
-  // Créer l'avoir dans la table refunds (réutilisation de la même table)
-  const creditNote = await Refund.create({
-    transaction_id,
-    refund_type: "credit_note",
-    refund_amount: credit_amount,
-    refund_reason: reason,
-    refund_method: "credit_note",
-    notes,
-    created_by: req.user.id,
-    status: "completed",
-  });
+//   // Créer l'avoir dans la table refunds (réutilisation de la même table)
+//   const creditNote = await Refund.create({
+//     transaction_id,
+//     refund_type: "credit_note",
+//     refund_amount: credit_amount,
+//     refund_reason: reason,
+//     refund_method: "credit_note",
+//     notes,
+//     created_by: req.user.id,
+//     status: "completed",
+//   });
 
-  res.status(201).json({
-    success: true,
-    message: "Avoir créé avec succès",
-    credit_note: creditNote,
-  });
-};
+//   res.status(201).json({
+//     success: true,
+//     message: "Avoir créé avec succès",
+//     credit_note: creditNote,
+//   });
+// };

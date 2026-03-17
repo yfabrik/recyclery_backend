@@ -3,7 +3,7 @@ import * as z from "zod";
 import { createTask, listTasks } from "./tasks.js";
 import logger from "../../services/logger.js";
 
-const { CollectionSchedule, Employee, Task } = db;
+const { Employee, Task } = db;
 
 /**
  *

@@ -5,7 +5,6 @@ const {
   LabeledItem,
   SalesTransaction,
   Donation,
-  CollectionSchedule,
   Category,
   User,
   CollectionPoint,

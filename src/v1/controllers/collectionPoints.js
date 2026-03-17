@@ -4,7 +4,7 @@ import z from "zod";
 import db from "../../models/index.js";
 import { idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
 
-const { CollectionPoint, Recyclery, CollectionSchedule, TaskSchedule } = db;
+const { CollectionPoint, Recyclery,  TaskSchedule } = db;
 
 const dataSchema = z.object({
   name: z.string().trim().nonempty("nom requis"),
@@ -188,27 +188,27 @@ export const deleteCollectionPoint = async (req, res) => {
 export const stats = async (req, res) => {
   const { id } = req.params;
 
-  const stats = await CollectionSchedule.findOne({
-    attributes: [
-      [
-        fn("COUNT", where(col("status"), "=", "completed")),
-        "completed_collections",
-      ],
-      [
-        fn("COUNT", where(col("status"), "=", "planned")),
-        "planned_collections",
-      ],
-      [
-        fn("COUNT", where(col("status"), "=", "cancelled")),
-        "cancelled_collections",
-      ],
-      [fn("COUNT", col("*")), "total_collections"],
-    ],
-    where: {
-      collection_point_id: id,
-    },
-    raw: true,
-  });
+  // const stats = await CollectionSchedule.findOne({
+  //   attributes: [
+  //     [
+  //       fn("COUNT", where(col("status"), "=", "completed")),
+  //       "completed_collections",
+  //     ],
+  //     [
+  //       fn("COUNT", where(col("status"), "=", "planned")),
+  //       "planned_collections",
+  //     ],
+  //     [
+  //       fn("COUNT", where(col("status"), "=", "cancelled")),
+  //       "cancelled_collections",
+  //     ],
+  //     [fn("COUNT", col("*")), "total_collections"],
+  //   ],
+  //   where: {
+  //     collection_point_id: id,
+  //   },
+  //   raw: true,
+  // });
 
   res.json({
     success: true,

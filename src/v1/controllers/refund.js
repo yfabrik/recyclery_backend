@@ -7,6 +7,7 @@ const { Refund, Recyclery, User, SalesTransaction } = db;
  *
  * @param {import("express").Request} req
  * @param {import("express").Response} res
+ * @deprecated
  */
 export const listRefunds = async (req, res) => {
   const { status, store_id, date_from, date_to } = req.query;
@@ -50,6 +51,7 @@ export const listRefunds = async (req, res) => {
  *
  * @param {import("express").Request} req
  * @param {import("express").Response} res
+ * @deprecated
  */
 export const updateRefund = async (req, res) => {
   const { id } = req.params;
@@ -75,6 +77,7 @@ export const updateRefund = async (req, res) => {
  *
  * @param {import("express").Request} req
  * @param {import("express").Response} res
+ * @deprecated
  */
 export const detailRefund = async (req, res) => {
   const { id } = req.params;
@@ -118,6 +121,7 @@ export const detailRefund = async (req, res) => {
  *
  * @param {import("express").Request} req
  * @param {import("express").Response} res
+ * @deprecated
  */
 export const refundStats = async (req, res) => {
   const { store_id, date_from, date_to } = req.query;
