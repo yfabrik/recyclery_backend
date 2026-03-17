@@ -10,7 +10,7 @@ import {
   phoneSchema,
 } from "../../services/zod.js";
 
-const { EcoOrganism, WasteDisposal } = db;
+const { EcoOrganism, WasteDisposal, Category } = db;
 
 const dataSchema = z.object({
   name: z.string().trim().nonempty("Le nom est requis"),
@@ -223,48 +223,96 @@ export const ecoOrgQuarterStats = async (req, res) => {
     attributes: ["id", "name", "description", "is_active"],
   });
 
-  // For each quarter, get total weight per eco_organism_id
+  // For each quarter, get weight per eco_organism_id and per category (category only, no subcategory)
   const weightByEcoOrgByQuarter = await Promise.all(
     quarterRanges.map(async (range) => {
       const rows =
-        /** @type {{ eco_organism_id: number; total_weight_kg: string | number }[]} */ (
+        /** @type {{ eco_organism_id: number; category_id: number | null; weight_kg: string | number }[]} */ (
           /** @type {unknown} */ (
             await WasteDisposal.findAll({
               attributes: [
                 "eco_organism_id",
-                [fn("SUM", col("weight_kg")), "total_weight_kg"],
+                "category_id",
+                [fn("SUM", col("weight_kg")), "weight_kg"],
               ],
               where: {
                 eco_organism_id: { [Op.ne]: null },
                 disposal_date: { [Op.between]: [range.start, range.end] },
               },
-              group: ["eco_organism_id"],
+              group: ["eco_organism_id", "category_id"],
               raw: true,
             })
           )
         );
-      return { label: range.label, rows };
+      return {
+        label: range.label,
+        labelMMYYYY: range.labelMMYYYY,
+        rows,
+      };
     }),
   );
 
-  // Build a map: eco_organism_id -> { "2025-Q1": weight, ... }
-  const quarterSums = new Map();
-  weightByEcoOrgByQuarter.forEach(({ label, rows }) => {
+  // Resolve category id -> { id, name } for all category_ids present in the results
+  const categoryIds = [
+    ...new Set(
+      weightByEcoOrgByQuarter.flatMap(({ rows }) =>
+        rows.map((r) => r.category_id).filter((id) => id != null),
+      ),
+    ),
+  ];
+  const categoryMap = new Map();
+  if (categoryIds.length > 0) {
+    const categories = await Category.findAll({
+      where: { id: { [Op.in]: categoryIds } },
+      attributes: ["id", "name"],
+      raw: true,
+    });
+    categories.forEach((c) => categoryMap.set(c.id, { id: c.id, name: c.name }));
+  }
+
+  // Build a map: eco_organism_id -> { "2025-Q1": { total_weight_kg, categories: [{ id, name, weight_kg }] } }
+  const quarterDataByEcoOrg = new Map();
+  weightByEcoOrgByQuarter.forEach(({ label, labelMMYYYY, rows }) => {
+    const byEcoOrg = new Map();
     rows.forEach((r) => {
       const id = r.eco_organism_id;
-      if (!quarterSums.has(id)) quarterSums.set(id, {});
-      quarterSums.get(id)[label] = Number(r.total_weight_kg ?? 0);
+      if (!byEcoOrg.has(id)) {
+        byEcoOrg.set(id, { total_weight_kg: 0, categories: [] });
+      }
+      const rec = byEcoOrg.get(id);
+      const weight = Number(r.weight_kg ?? 0);
+      rec.total_weight_kg += weight;
+      const catId = r.category_id;
+      if (catId != null) {
+        const cat = categoryMap.get(catId);
+        rec.categories.push({
+          id: catId,
+          name: cat?.name ?? null,
+          weight_kg: weight,
+        });
+      }
+    });
+    byEcoOrg.forEach((data, id) => {
+      if (!quarterDataByEcoOrg.has(id)) quarterDataByEcoOrg.set(id, {});
+      quarterDataByEcoOrg.get(id)[label] = {
+        ...data,
+        labelMMYYYY,
+      };
     });
   });
 
-  // Ensure every eco organism has 4 quarters (0 for quarters with no waste)
+  // Ensure every eco organism has 4 quarters (0 / [] for quarters with no waste)
   const eco_organisms = ecoOrganisms.map((eo) => {
     const id = eo.id;
-    const quarters = quarterRanges.map((range) => ({
-      quarter: range.label,
-      label: range.labelMMYYYY,
-      weight_kg: quarterSums.get(id)?.[range.label] ?? 0,
-    }));
+    const quarters = quarterRanges.map((range) => {
+      const data = quarterDataByEcoOrg.get(id)?.[range.label];
+      return {
+        quarter: range.label,
+        label: range.labelMMYYYY,
+        total_weight_kg: data?.total_weight_kg ?? 0,
+        categories: data?.categories ?? [],
+      };
+    });
     return {
       ...eo.toJSON(),
       quarters,
