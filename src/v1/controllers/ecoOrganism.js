@@ -1,14 +1,9 @@
-import { col, fn, literal, Op } from "sequelize";
-import db from "../../models/index.js";
 import createHttpError from "http-errors";
-import z, { optional } from "zod";
+import { col, fn, literal, Op } from "sequelize";
+import z from "zod";
+import db from "../../models/index.js";
 import logger from "../../services/logger.js";
-import {
-  asOptionalStringWithoutEmpty,
-  idSchema,
-  nullishToNull,
-  phoneSchema,
-} from "../../services/zod.js";
+import { idSchema, phoneSchema } from "../../services/zod.js";
 
 const { EcoOrganism, WasteDisposal, Category } = db;
 
@@ -167,37 +162,47 @@ export const ecoOrgaStats = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const ecoOrgQuarterStats = async (req, res) => {
+  /**
+   * TODO
+   * 1 get current time
+   * 2 get start of the quarter
+   * 3 set to midnight
+   * 4 get end of the previous ( remove 1s)
+   * 5 loop( take date => find end of quarter, find start of quarter , find end of previous quarter)
+   */
+
   // const quartersMonth = [0, 3, 6, 9];
   const today = new Date();
   // const currentMonth = today.getMonth(); // 0-11
   // const currentYear = today.getFullYear();
   const quarterIndex = Math.floor(today.getMonth() / 3); // 0=Q1, 1=Q2, 2=Q3, 3=Q4
-  const startQuarter = new Date(
-    new Date().setMonth(quarterIndex*3, 1),
-  );
-
+  const startQuarter = new Date(new Date().setMonth(quarterIndex * 3, 1));
   const dates = [today, new Date(startQuarter)];
   for (let index = 1; index < 4; index++) {
     const tmp = new Date(startQuarter);
     tmp.setMonth(tmp.getMonth() - index * 3);
+    tmp.setHours(0, 0, 0, 0);
     dates.push(tmp);
   }
   /** @type {{ start: Date; end: Date; label: string; labelMMYYYY: string }[]} */
-  const quarterRanges = dates.map((d, index, array) => {
-    if (array.length !== index + 1) {
-      const y = d.getFullYear();
-      const q = Math.floor(d.getMonth() / 3);
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const endMonth = d.getMonth() + 3; // first month of next quarter, so last month of quarter is endMonth - 1
-      const mmEnd = String(endMonth).padStart(2, "0"); // 3, 6, 9, 12
-      return {
-        start: new Date(new Date(array[index + 1]).setHours(0, 0, 0, 0)),
-        end: new Date(new Date(d).setHours(23, 59, 59, 999)),//faut enelever 1!jour ?
-        label: `${y}-Q${q + 1}`,
-        labelMMYYYY: `${mm}-${y}--${mmEnd}-${y}`,
-      };
-    }
-  }).filter(f=>f!==undefined);
+  const quarterRanges = dates
+    .map((d, index, array) => {
+      if (array.length !== index + 1) {
+        const p = new Date(new Date(d).setDate(d.getDate() - 1));
+        const y = p.getFullYear();
+        const q = Math.floor(p.getMonth() / 3);
+        const mm = String(p.getMonth() - 1).padStart(2, "0");
+        const endMonth = p.getMonth() + 1; // first month of next quarter, so last month of quarter is endMonth - 1
+        const mmEnd = String(endMonth).padStart(2, "0"); // 3, 6, 9, 12
+        return {
+          start: new Date(new Date(array[index + 1]).setHours(0, 0, 0, 0)),
+          end: new Date(new Date(p).setHours(23, 59, 59, 999)), //faut enelever 1!jour ?
+          label: `${y}-Q${q + 1}`,
+          labelMMYYYY: `${mm}-${y}--${mmEnd}-${y}`,
+        };
+      }
+    })
+    .filter((f) => f !== undefined);
 
   // for (let i = 0; i < 4; i++) {
   //   const q = (quarterIndex - i + 4) % 4;
@@ -267,7 +272,9 @@ export const ecoOrgQuarterStats = async (req, res) => {
       attributes: ["id", "name"],
       raw: true,
     });
-    categories.forEach((c) => categoryMap.set(c.id, { id: c.id, name: c.name }));
+    categories.forEach((c) =>
+      categoryMap.set(c.id, { id: c.id, name: c.name }),
+    );
   }
 
   // Build a map: eco_organism_id -> { "2025-Q1": { total_weight_kg, categories: [{ id, name, weight_kg }] } }
@@ -319,5 +326,5 @@ export const ecoOrgQuarterStats = async (req, res) => {
     };
   });
 
-  res.json({ stats:eco_organisms });
+  res.json({ stats: eco_organisms });
 };
