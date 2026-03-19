@@ -6,6 +6,7 @@ import { idSchema, postalSchema } from "../../services/zod.js";
 import {
   chargeGiftCard,
   findGiftCardByCode,
+  issueGiftCard,
   recreditGiftCard,
 } from "../../services/giftCards.js";
 
@@ -83,7 +84,7 @@ const normalizePayments = (data) => {
       : [{ method: data.payment_method, amount: data.payment_amount }];
 
   const totalPayments = payments.reduce((acc, p) => acc + toAmount(p.amount), 0);
-  if (!amountsEqual(totalPayments, data.total_amount)) {
+  if (!amountsEqual(totalPayments, data.total_amount)) {//TODO FIXME for cash with extra money
     throw new createHttpError.BadRequest(
       "la somme des paiements doit etre egale au total",
     );
@@ -415,11 +416,6 @@ export const createRefund = async (req, res) => {
   //FIXME on se fait baiser quand les object sont en lot et qu'on rembourse qu'une partie
 
   const data = refundDataSchema.parse(req.body);
-  if (data.payment_method === "giftcard" && !data.gift_card_code) {
-    throw new createHttpError.BadRequest(
-      "gift_card_code est requis pour un remboursement giftcard",
-    );
-  }
 
   const refunded = data.items
     .map((item) => {
@@ -500,39 +496,68 @@ export const createRefund = async (req, res) => {
     }
     if (data.payment_method === "giftcard") {
       const giftCardCode = data.gift_card_code;
-      if (!giftCardCode) {
-        throw new createHttpError.BadRequest(
-          "gift_card_code est requis pour un remboursement giftcard",
+      const refundAmount = Number(refund.total_amount || 0);
+
+      if (giftCardCode) {
+        const giftCard = await findGiftCardByCode(giftCardCode, {
+          transaction: t,
+        });
+        if (!giftCard) {
+          throw new createHttpError.NotFound("gift card introuvable");
+        }
+
+        await recreditGiftCard({
+          giftCardId: giftCard.id,
+          salesTransactionId: refund.id,
+          amount: refundAmount,
+          createdBy: req.user.id,
+          metadata: { source: "refund_recredit", parentTransactionId: id },
+          transaction: t,
+        });
+
+        await TransactionPayment.create(
+          {
+            sales_transaction_id: refund.id,
+            method: "giftcard",
+            amount: refundAmount,
+            gift_card_id: giftCard.id,
+            metadata: {
+              source: "refund_recredit",
+              gift_card_code: giftCardCode,
+              parentTransactionId: id,
+            },
+          },
+          { transaction: t },
+        );
+      } else {
+        // Refund -> Gift card (create a new card when no code is provided)
+        const generatedCode = `GC-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        const giftCard = await issueGiftCard(
+          {
+            code: generatedCode,
+            initialValue: refundAmount,
+            issuedRefundTransactionId: refund.id,
+            createdBy: req.user.id,
+            metadata: { source: "refund_issue", parentTransactionId: id },
+            transaction: t,
+          },
+        );
+
+        await TransactionPayment.create(
+          {
+            sales_transaction_id: refund.id,
+            method: "giftcard",
+            amount: refundAmount,
+            gift_card_id: giftCard.id,
+            metadata: {
+              source: "refund_issue",
+              gift_card_code: generatedCode,
+              parentTransactionId: id,
+            },
+          },
+          { transaction: t },
         );
       }
-      const giftCard = await findGiftCardByCode(giftCardCode, {
-        transaction: t,
-      });
-      if (!giftCard) {
-        throw new createHttpError.NotFound("gift card introuvable");
-      }
-      await recreditGiftCard({
-        giftCardId: giftCard.id,
-        salesTransactionId: refund.id,
-        amount: Number(refund.total_amount || 0),
-        createdBy: req.user.id,
-        metadata: { source: "refund_recredit", parentTransactionId: id },
-        transaction: t,
-      });
-      await TransactionPayment.create(
-        {
-          sales_transaction_id: refund.id,
-          method: "giftcard",
-          amount: Number(refund.total_amount || 0),
-          gift_card_id: giftCard.id,
-          metadata: {
-            source: "refund_recredit",
-            gift_card_code: giftCardCode,
-            parentTransactionId: id,
-          },
-        },
-        { transaction: t },
-      );
     } else {
       await TransactionPayment.create(
         {
