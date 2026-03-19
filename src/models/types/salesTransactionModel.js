@@ -35,6 +35,9 @@
  * @typedef {Object} SalesTransactionInstanceAssociations
  * @property {Array<any>} [items] - Transaction line items when loaded with include (table: transaction_items)
  * @property {Array<import("./labeledItemModel.js").LabeledItemInstance>} [items] - Labeled items when loaded with include (alias for belongsToMany through TransactionItem)
+ * @property {Array<import("./giftCardModel.js").GiftCardInstance>} [giftCards] - Gift cards linked to this transaction through GiftCardTransaction
+ * @property {Array<import("./giftCardModel.js").GiftCardInstance>} [issuedGiftCards] - Gift cards issued by this sale transaction
+ * @property {Array<import("./giftCardModel.js").GiftCardInstance>} [refundIssuedGiftCards] - Gift cards issued from a refund transaction
  * @property {import("./userModel.js").UserInstance} [User] - User who created the transaction when loaded with include (created_by)
  * @property {import("./cashSessionModel.js").CashSessionInstance} [CashSession] - Cash session when loaded with include
  *

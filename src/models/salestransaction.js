@@ -19,7 +19,28 @@ export default (sequelize, DataTypes) => {
         otherKey: "labeled_item_id",
         as: "items",
       });
-      this.hasMany(models.SalesTransaction, { foreignKey: "transactionId", as: "refunds" })
+      this.hasMany(models.SalesTransaction, {
+        foreignKey: "transactionId",
+        as: "refunds",
+      });
+      this.belongsToMany(models.GiftCard, {
+        through: models.GiftCardTransaction,
+        foreignKey: "sales_transaction_id",
+        otherKey: "gift_card_id",
+        as: "giftCards",
+      });
+      this.hasMany(models.GiftCardTransaction, {
+        foreignKey: "sales_transaction_id",
+        as: "giftCardMovements",
+      });
+      this.hasMany(models.GiftCard, {
+        as: "issuedGiftCards",
+        foreignKey: "issued_transaction_id",
+      });
+      this.hasMany(models.GiftCard, {
+        as: "refundIssuedGiftCards",
+        foreignKey: "issued_refund_transaction_id",
+      });
     }
   }
   SalesTransaction.init(
