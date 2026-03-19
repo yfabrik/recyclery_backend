@@ -57,8 +57,20 @@ export const listPromotions = async (req, res) => {
  */
 export const createPromotion = async (req, res) => {
   const data = dataSchema.parse(req.body);
-  console.log(data)
-  const promo = await Promotion.create(data);
+  const { stores, ...promotionData } = data;
+  const promo = await Promotion.create(promotionData);
+  if (Array.isArray(stores)) {
+    await promo.setStores(stores);
+  }
+  await promo.reload({
+    include: [
+      {
+        model: Recyclery,
+        as: "stores",
+        required: false,
+      },
+    ],
+  });
   return res.json({ success: true, message: "promo cree", data: promo });
 };
 
@@ -72,8 +84,20 @@ export const updatePromotion = async (req, res) => {
   const id = idSchema().parse(req.params.id);
   const promo = await Promotion.findByPk(id);
   if (!promo) throw new createHttpError.NotFound("promo pas trouvé");
-  await promo.update(data);
-  await promo.reload();
+  const { stores, ...promotionData } = data;
+  await promo.update(promotionData);
+  if (Array.isArray(stores)) {
+    await promo.setStores(stores);
+  }
+  await promo.reload({
+    include: [
+      {
+        model: Recyclery,
+        as: "stores",
+        required: false,
+      },
+    ],
+  });
   return res.json({ success: true, message: "promo mis a jour", data: promo });
 };
 
