@@ -4,7 +4,7 @@ import * as z from "zod";
 import db from "../../models/index.js";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
-const { Category, Promotion } = db;
+const { Category, Promotion, Recyclery } = db;
 
 const dataSchema = z.object({
   name: z.string("Le nom est requis"),
@@ -34,6 +34,52 @@ const findExistingCategory = async (name, parent_id = null) => {
     where: { [Op.and]: [{ name: name }, { parent_id: parent_id }] },
   });
 };
+
+/**
+ * Keep promotions that are either:
+ * - global (no linked stores), or
+ * - linked to the requested store.
+ * Also removes the internal `stores` include from response payload.
+ *
+ * @param {any} category
+ * @param {number} storeId
+ */
+const filterPromotionsForStore = (category, storeId) => {
+  if (!category || typeof category !== "object") return;
+
+  if (Array.isArray(category.Promotions)) {
+    category.Promotions = category.Promotions.filter(
+      /** @param {{ stores?: Array<{ id: number }> }} promotion */
+      (promotion) => {
+      const stores = Array.isArray(promotion?.stores) ? promotion.stores : [];
+      return (
+        stores.length === 0 ||
+        stores.some(
+          /** @param {{ id: number }} store */ (store) => store.id === storeId,
+        )
+      );
+    },
+    ).map(
+      /** @param {{ stores?: Array<{ id: number }> }} promotion */ (promotion) => {
+        if (promotion && typeof promotion === "object") {
+          delete promotion.stores;
+        }
+        return promotion;
+      },
+    );
+  }
+
+  if (Array.isArray(category.subcategories)) {
+    category.subcategories.forEach(
+      /** @param {any} subcat */ (subcat) =>
+      filterPromotionsForStore(subcat, storeId),
+    );
+  }
+
+  if (category.parent && typeof category.parent === "object") {
+    filterPromotionsForStore(category.parent, storeId);
+  }
+};
 /**
  *
  * @param {import("express").Request} req
@@ -53,6 +99,7 @@ export const listCategories = async (req, res) => {
     out: z.coerce.boolean().optional(),
     in: z.coerce.boolean().optional(),
     sell: z.coerce.boolean().optional(),
+    store_id: idSchema().optional(),
   });
   const filters = filtersSchema.parse(req.query);
 
@@ -74,12 +121,23 @@ export const listCategories = async (req, res) => {
     where: {
       startDate: { [Op.lte]: new Date() },
       endDate: { [Op.gte]: new Date() },
-      isActive: true
+      isActive: true,
     },
-    required: false
-  }
+    required: false,
+    include: filters.store_id
+      ? [
+          {
+            model: Recyclery,
+            as: "stores",
+            attributes: ["id"],
+            through: { attributes: [] },
+            required: false,
+          },
+        ]
+      : [],
+  };
   if (filters.include.includes("promo")) {
-    include.push({ ...includePromo })
+    include.push({ ...includePromo });
   }
 
   if (filters.in) where.IO = literal(`Category.IO & ${IOValues.IN} != 0`);
@@ -94,9 +152,9 @@ export const listCategories = async (req, res) => {
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.OUT} != 0`);
     if (typeof filters.sell == "boolean" && filters.sell)
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.SELL} != 0`);
-    const insideInclude = []
-    if (filters.include.includes("promo"))//TODO PK ça marche pas ?
-      insideInclude.push({ ...includePromo })
+    const insideInclude = [];
+    if (filters.include.includes("promo")) //TODO PK ça marche pas ?
+      insideInclude.push({ ...includePromo });
     include.push({
       model: Category,
       as: "subcategories",
@@ -113,9 +171,9 @@ export const listCategories = async (req, res) => {
       insideWhere.IO = literal(`parent.IO & ${IOValues.OUT} != 0`);
     if (typeof filters.sell == "boolean" && filters.sell)
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.SELL} != 0`);
-    const insideInclude = []
+    const insideInclude = [];
     if (filters.include.includes("promo"))
-      insideInclude.push({ ...includePromo })
+      insideInclude.push({ ...includePromo });
     include.push({
       model: Category,
       as: "parent",
@@ -125,7 +183,14 @@ export const listCategories = async (req, res) => {
     });
   }
 
-  const categories = await Category.findAll({ where, include });
+  let categories = await Category.findAll({ where, include });
+  const storeId = filters.store_id;
+  if (typeof storeId === "number" && filters.include.includes("promo")) {
+    categories = categories.map((category) => category.toJSON());
+    categories.forEach((category) =>
+      filterPromotionsForStore(category, storeId),
+    );
+  }
 
   res.json({
     success: true,
