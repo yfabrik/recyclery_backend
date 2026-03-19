@@ -14,6 +14,12 @@ export default (sequelize, DataTypes) => {
       this.belongsTo(models.Category, {
         foreignKey: "category_id",
       });
+      this.belongsToMany(models.Recyclery, {
+        through: "promotion_store",
+        foreignKey: "promotionId",
+        otherKey: "storeId",
+        as: "stores",
+      });
     }
   }
   Promotion.init(

@@ -49,6 +49,12 @@ export default (sequelize, DataTypes) => {
         onDelete: "CASCADE", //TODO le cash register est censé refuser de se delete si ya une caisse ouverte, estce que le cascade empeche le delete du store aussi ou faut un truc en +
       });
       this.hasMany(models.CollectionPoint, { foreignKey: "recyclery_id" });
+      this.belongsToMany(models.Promotion, {
+        through: "promotion_store",
+        foreignKey: "storeId",
+        otherKey: "promotionId",
+        as: "promotions",
+      });
     }
   }
 
