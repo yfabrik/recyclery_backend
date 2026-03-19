@@ -33,6 +33,10 @@ export default (sequelize, DataTypes) => {
         foreignKey: "gift_card_id",
         as: "movements",
       });
+      this.hasMany(models.TransactionPayment, {
+        foreignKey: "gift_card_id",
+        as: "paymentUsages",
+      });
     }
   }
 

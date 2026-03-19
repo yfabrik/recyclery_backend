@@ -52,6 +52,7 @@ const PERMISSIONS = {
     employees: noPerms(),
     promotions: readOnlyPerms(),
     skills: modulePerms(),
+    "gift-cards": modulePerms(),
   },
   manager: {
     recycleries: modulePerms(),
@@ -82,6 +83,7 @@ const PERMISSIONS = {
     employees: modulePerms(),
     promotions: modulePerms(),
     skills: modulePerms(),
+    "gift-cards": modulePerms(),
   },
   admin: {
     recycleries: modulePerms(),
@@ -112,6 +114,7 @@ const PERMISSIONS = {
     employees: modulePerms(),
     promotions: modulePerms(),
     skills: modulePerms(),
+    "gift-cards": modulePerms(),
   },
 };
 
