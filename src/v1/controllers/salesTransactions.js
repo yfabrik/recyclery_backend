@@ -56,7 +56,7 @@ const paymentLineSchema = z.object({
 const dataSchema = z.object({
   cash_session_id: idSchema("sesions requis"),
   total_amount: z.coerce.number("argent requis"),
-  payment_method: z.enum(["cash", "card", "check"]).default("cash"),
+  // payment_method: z.enum(["cash", "card", "check"]).default("cash"),
   payment_amount: z.coerce.number("argent requis"),
   payments: z.array(paymentLineSchema).optional(),
   customer_postal_code: postalSchema().nullish(),
@@ -80,8 +80,8 @@ const normalizePayments = (data) => {
   const explicitPayments = Array.isArray(data.payments) ? data.payments : [];
   const payments =
     explicitPayments.length > 0
-      ? explicitPayments
-      : [{ method: data.payment_method, amount: data.payment_amount }];
+      ? explicitPayments : []
+  // : [{ method: data.payment_method??0, amount: data.payment_amount }];
 
   const totalPayments = payments.reduce((acc, p) => acc + toAmount(p.amount), 0);
   if (data.total_amount > totalPayments) {

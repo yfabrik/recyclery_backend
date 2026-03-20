@@ -53,6 +53,12 @@ export default (sequelize, DataTypes) => {
         defaultValue: 0,
         validate: { min: 0 },
       },
+      current_value: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          return this?.movements?.reduce((prev, current) => prev += current.amount, 0) ?? this.initial_value
+        }
+      },
       expires_at: {
         type: DataTypes.DATE,
         allowNull: true,
@@ -117,6 +123,10 @@ export default (sequelize, DataTypes) => {
             );
           }
         },
+      },
+      hooks: {
+        //TODO here or in giftcard trnasaction
+        //update status at each transaction
       },
       indexes: [
         { unique: true, fields: ["code"] },

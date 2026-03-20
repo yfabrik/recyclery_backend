@@ -243,5 +243,6 @@ export const findGiftCardByCode = async (code, options = {}) =>
     where: {
       code: { [Op.eq]: code },
     },
+    include: [{ model: GiftCardTransaction, as: "movements", required: false }],
     ...(options.transaction ? { transaction: options.transaction } : {}),
   });
