@@ -84,7 +84,8 @@ const normalizePayments = (data) => {
       : [{ method: data.payment_method, amount: data.payment_amount }];
 
   const totalPayments = payments.reduce((acc, p) => acc + toAmount(p.amount), 0);
-  if (!amountsEqual(totalPayments, data.total_amount)) {//TODO FIXME for cash with extra money
+  if (data.total_amount > totalPayments) {
+    // if (!amountsEqual(totalPayments, data.total_amount)) {//TODO FIXME for cash with extra money
     throw new createHttpError.BadRequest(
       "la somme des paiements doit etre egale au total",
     );
@@ -134,7 +135,6 @@ export const listTransactions = async (req, res) => {
       .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
   });
   const filter = filterSchema.parse(req.query);
-
   /**
    * @type {import("sequelize").WhereOptions}
    */
@@ -394,6 +394,7 @@ export const createRefund = async (req, res) => {
     cash_session_id: idSchema().nullish(),
     total_amount: z.coerce.number("argent requis"),
     payment_method: z.enum(["cash", "card", "check", "giftcard"]).default("cash"),
+    refund_method: z.enum(["cash", "card", "check", "giftcard"]).default("cash"),
     gift_card_code: z.string().trim().min(1).nullish(),
     refund_reason: z.string("refund raison requis"),
     items: z.array(refundItemSchema),
@@ -416,7 +417,7 @@ export const createRefund = async (req, res) => {
   //FIXME on se fait baiser quand les object sont en lot et qu'on rembourse qu'une partie
 
   const data = refundDataSchema.parse(req.body);
-
+  data.payment_method = data.refund_method
   const refunded = data.items
     .map((item) => {
       const alreadyRefunded = parent.refunds?.reduce((prev, current) => {
