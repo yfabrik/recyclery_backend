@@ -417,7 +417,8 @@ export const createRefund = async (req, res) => {
   //FIXME on se fait baiser quand les object sont en lot et qu'on rembourse qu'une partie
 
   const data = refundDataSchema.parse(req.body);
-  data.payment_method = data.refund_method
+  data.refund_method = data.payment_method
+  console.log(data.payment_method)
   const refunded = data.items
     .map((item) => {
       const alreadyRefunded = parent.refunds?.reduce((prev, current) => {
@@ -462,6 +463,8 @@ export const createRefund = async (req, res) => {
   // });
 
   const result = await db.sequelize.transaction(async (t) => {
+    /** @type {null | { id: number; code: string; status: string; current_balance?: number; type: "recredit_existing" | "issued_new" }} */
+    let refundGiftCard = null;
     const refund = await SalesTransaction.create(
       {
         transactionType: "refund",
@@ -529,6 +532,13 @@ export const createRefund = async (req, res) => {
           },
           { transaction: t },
         );
+
+        refundGiftCard = {
+          id: giftCard.id,
+          code: giftCard.code,
+          status: giftCard.status,
+          type: "recredit_existing",
+        };
       } else {
         // Refund -> Gift card (create a new card when no code is provided)
         const generatedCode = `GC-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -557,6 +567,13 @@ export const createRefund = async (req, res) => {
           },
           { transaction: t },
         );
+
+        refundGiftCard = {
+          id: giftCard.id,
+          code: giftCard.code,
+          status: giftCard.status,
+          type: "issued_new",
+        };
       }
     } else {
       await TransactionPayment.create(
@@ -569,74 +586,9 @@ export const createRefund = async (req, res) => {
         { transaction: t },
       );
     }
-    return refund;
+    return { refund, giftCard: refundGiftCard };
   });
 
-  // const {
-  //   transaction_id,
-  //   refund_type,
-  //   refund_amount,
-  //   refund_reason,
-  //   refund_method,
-  //   notes,
-  // } = req.body;
-
-  // Validation des champs requis
-  // if (!transaction_id || !refund_type || !refund_amount || !refund_reason) {
-  //   return res.status(400).json({
-  //     success: false,
-  //     message:
-  //       "Les champs transaction_id, refund_type, refund_amount et refund_reason sont obligatoires",
-  //   });
-  // }
-
-  // Vérifier que la transaction existe
-  // const transaction = await SalesTransaction.findByPk(transaction_id);
-
-  // if (!transaction) {
-  //   return res.status(404).json({
-  //     success: false,
-  //     message: "Transaction non trouvée",
-  //   });
-  // }
-
-  // // Vérifier que le montant de remboursement ne dépasse pas le montant de la transaction
-  // if (refund_amount > (transaction.total_amount || 0)) {
-  //   return res.status(400).json({
-  //     success: false,
-  //     message:
-  //       "Le montant de remboursement ne peut pas dépasser le montant de la transaction",
-  //   });
-  // }
-
-  // // Créer le remboursement dans la table refunds
-
-  // const refund = await Refund.create({
-  //   transaction_id,
-  //   refund_type,
-  //   refund_amount,
-  //   refund_reason,
-  //   refund_method,
-  //   notes,
-  //   created_by: req.user.id,
-  //   status: "completed",
-  // });
-
-  // // Mettre à jour le statut de la transaction si c'est un remboursement total
-  // if (refund_type === "full") {
-  //   // Note: La table sales_transactions pourrait ne pas avoir de colonne status
-  //   // On peut ajouter une colonne refunded_at pour marquer les transactions remboursées
-  //   await SalesTransaction.update(
-  //     { refundedAt: new Date() },
-  //     { where: { id: transaction_id } },
-  //   );
-  // }
-
-  // // Récupérer les informations du remboursement créé
-  // const refundInfo = await Refund.findOne({
-  //   where: { id: refund.id },
-  //   include: [{ model: SalesTransaction }, { model: User }],
-  // });
 
   // Example response:
   // {
@@ -647,7 +599,8 @@ export const createRefund = async (req, res) => {
   res.status(201).json({
     success: true,
     message: "Remboursement créé avec succès",
-    refund: result,
+    refund: result.refund,
+    ...(result.giftCard ? { giftCard: result.giftCard } : {}),
     // refund,
   });
 };
