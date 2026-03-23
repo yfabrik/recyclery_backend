@@ -391,7 +391,7 @@ export const createRefund = async (req, res) => {
     // refundPrice: z.coerce.number(),
   });
   const refundDataSchema = z.object({
-    cash_session_id: idSchema().nullish(),
+    cash_session_id: idSchema(),
     total_amount: z.coerce.number("argent requis"),
     payment_method: z.enum(["cash", "card", "check", "giftcard"]).default("cash"),
     refund_method: z.enum(["cash", "card", "check", "giftcard"]).default("cash"),
@@ -466,7 +466,7 @@ export const createRefund = async (req, res) => {
       {
         transactionType: "refund",
         created_by: req.user.id,
-        cash_session_id: data.cash_session_id || null,
+        cash_session_id: data.cash_session_id,
         total_amount: refunded.reduce(
           (prev, current) => (prev += current.toRefundNow),
           0,
