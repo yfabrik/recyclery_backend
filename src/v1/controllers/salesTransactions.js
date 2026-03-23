@@ -244,7 +244,7 @@ export const createTransaction = async (req, res) => {
       {
         total_amount: data.total_amount,
         payment_method: storedMethod,
-        payment_amount: data.total_amount,
+        payment_amount: data.payment_amount,
         customer_postal_code: data?.customer_postal_code || null,
       },
       { transaction: t },
@@ -427,7 +427,6 @@ export const createRefund = async (req, res) => {
         return prev;
       }, 0);
       //test que le compte d'object deborde pas
-      console.log(parent.items);
       const c = parent.items?.find((i) => i.barcode === item.barcode);
       if (alreadyRefunded + item.quantity > c.quantity)
         throw new createHttpError.BadRequest(
@@ -498,8 +497,8 @@ export const createRefund = async (req, res) => {
     if (data.payment_method === "giftcard") {
       const giftCardCode = data.gift_card_code;
       const refundAmount = Number(refund.total_amount || 0);
-
       if (giftCardCode) {
+
         const giftCard = await findGiftCardByCode(giftCardCode, {
           transaction: t,
         });

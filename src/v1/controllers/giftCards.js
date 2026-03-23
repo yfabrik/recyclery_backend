@@ -10,7 +10,7 @@ import {
   recreditGiftCard,
 } from "../../services/giftCards.js";
 
-const { GiftCard } = db;
+const { GiftCard, GiftCardTransaction } = db;
 
 const issueSchema = z.object({
   code: z.string().trim().min(1, "code requis"),
@@ -55,6 +55,13 @@ export const listGiftCards = async (req, res) => {
 
   const result = await GiftCard.findAndCountAll({
     where,
+    include: [
+      {
+        model: GiftCardTransaction,
+        as: "movements",
+        order: [["createdAt", "DESC"]],
+      },
+    ],
     order: [["createdAt", "DESC"]],
     limit: filter.limit,
     offset: filter.offset,

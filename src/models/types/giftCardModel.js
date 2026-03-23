@@ -1,6 +1,6 @@
 /**
  * @typedef {Object} GiftCardCreateAttributes
- * @property {string} code
+ * @property {string} [code]
  * @property {number|string} initial_value
  * @property {Date|string|null} [expires_at]
  * @property {"active"|"partially_used"|"redeemed"|"expired"|"cancelled"} [status]

@@ -69,6 +69,7 @@ export default (sequelize, DataTypes) => {
       expires_at: {
         type: DataTypes.DATE,
         allowNull: true,
+        // defaultValue: sequelize.literal('NOW() + INTERVAL 1 YEAR'),
       },
       status: {
         type: DataTypes.ENUM(

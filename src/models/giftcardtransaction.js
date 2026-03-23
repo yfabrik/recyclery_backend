@@ -46,6 +46,7 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         validate: {
+          /** @param {number|string} value */
           notZero(value) {
             if (Number(value) === 0) {
               throw new Error("amount must be non-zero");
@@ -75,8 +76,44 @@ export default (sequelize, DataTypes) => {
         { fields: ["gift_card_id", "occurred_at"] },
         { fields: ["sales_transaction_id"] },
       ],
-    },
-  );
+      hooks: {
+        beforeCreate: async (movement, options) => {
+          /** @type {any} */
+          const m = movement;
+          const GiftCard = movement.sequelize.models.GiftCard;
+          const giftCard = await GiftCard.findByPk(m.gift_card_id, {
+            // Critical for refund->new card flow: read inside same SQL transaction.
+            transaction: options.transaction,
+            include: [
+              {
+                model: GiftCardTransaction,
+                as: "movements",
+              },
+            ],
+          });
+          if (!giftCard) { throw new Error("Gift card not found"); }
+          /** @type {any} */
+          const gc = giftCard;
+          let newStatus = gc.status;
+          const amount = Math.abs(m.amount);
+          const currentValue = gc.current_value;
+          if (m.type === "charge") {
+            console.log(amount, currentValue)
+            if (amount - currentValue < 0) {
+              newStatus = "partially_used";
+            }
+            if (amount - currentValue >= 0) {
+              newStatus = "redeemed";
+            }
+
+            await giftCard.update({
+              status: newStatus,
+            }, { transaction: options.transaction });
+          }
+        },
+      },
+    });
+
 
   return GiftCardTransaction;
 };
