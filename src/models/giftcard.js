@@ -11,28 +11,34 @@ export default (sequelize, DataTypes) => {
      * @param {import("./types/models.js").models} models
      */
     static associate(models) {
+      // Source sale transaction when a gift card is sold/issued as a product.
       this.belongsTo(models.SalesTransaction, {
         as: "issuedTransaction",
         foreignKey: "issued_transaction_id",
       });
+      // Source refund transaction when a refund is converted into a new gift card.
       this.belongsTo(models.SalesTransaction, {
         as: "issuedRefundTransaction",
         foreignKey: "issued_refund_transaction_id",
       });
+      // User who created/issued the gift card record.
       this.belongsTo(models.User, {
         as: "createdBy",
         foreignKey: "created_by",
       });
+      // All sales transactions linked to this card through ledger entries.
       this.belongsToMany(models.SalesTransaction, {
         through: models.GiftCardTransaction,
         foreignKey: "gift_card_id",
         otherKey: "sales_transaction_id",
         as: "transactions",
       });
+      // Ledger movements (issue, charge, recredit, etc.) for balance computation.
       this.hasMany(models.GiftCardTransaction, {
         foreignKey: "gift_card_id",
         as: "movements",
       });
+      // Payment split lines where this gift card was used as payment.
       this.hasMany(models.TransactionPayment, {
         foreignKey: "gift_card_id",
         as: "paymentUsages",
@@ -46,6 +52,7 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
+        defaultValue: () => {`GC-${Date.now().toString(36).toUpperCase()}`}
       },
       initial_value: {
         type: DataTypes.DECIMAL(10, 2),
