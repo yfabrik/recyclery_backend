@@ -108,7 +108,7 @@ const normalizePayments = (data) => {
  * @param {import("express").Response} res
  */
 export const listTransactions = async (req, res) => {
-  const ALLOWED_INCLUDES = ["refund", "items"];
+  const ALLOWED_INCLUDES = ["refund", "items","payments"];
   const filterSchema = z.object({
     store_id: z.preprocess(
       (val) => (val === "" ? undefined : val),
@@ -187,6 +187,11 @@ export const listTransactions = async (req, res) => {
       required: true,
     },
   ];
+  if (filter.include.includes("payments"))
+    include.push({
+      model: TransactionPayment,
+      as: "payments",
+    });
   if (filter.include.includes("refund")) {
     const insideInclude = [];
     if (filter.include.includes("items"))
@@ -463,7 +468,7 @@ export const createRefund = async (req, res) => {
   // });
 
   const result = await db.sequelize.transaction(async (t) => {
-    /** @type {null | { id: number; code: string; status: string; current_balance?: number; type: "recredit_existing" | "issued_new" }} */
+    /** @type {null | { id: number; code: string; status: string; initial_value?: number; current_balance?: number; type: "recredit_existing" | "issued_new" }} */
     let refundGiftCard = null;
     const refund = await SalesTransaction.create(
       {
@@ -572,6 +577,7 @@ export const createRefund = async (req, res) => {
           id: giftCard.id,
           code: giftCard.code,
           status: giftCard.status,
+          initial_value: +giftCard.initial_value,
           type: "issued_new",
         };
       }
