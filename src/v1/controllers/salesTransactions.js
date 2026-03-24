@@ -3,6 +3,12 @@ import { col, fn, literal, Op } from "sequelize";
 import z from "zod";
 import db from "../../models/index.js";
 import { idSchema, postalSchema } from "../../services/zod.js";
+import {
+  chargeGiftCard,
+  findGiftCardByCode,
+  issueGiftCard,
+  recreditGiftCard,
+} from "../../services/giftCards.js";
 
 const {
   SalesTransaction,
@@ -12,6 +18,7 @@ const {
   CashSession,
   CashRegister,
   TransactionItem,
+  TransactionPayment,
   Category,
 } = db;
 
@@ -41,14 +48,59 @@ const itemSchema = z.object({
   bundlePrice: z.coerce.number().nullish(),
   bundleQuantity: z.coerce.number().nullish(),
 });
+const paymentLineSchema = z.object({
+  method: z.enum(["cash", "card", "check", "giftcard"]),
+  amount: z.coerce.number("montant requis").positive(),
+  gift_card_code: z.string().trim().min(1).nullish(),
+});
 const dataSchema = z.object({
   cash_session_id: idSchema("sesions requis"),
   total_amount: z.coerce.number("argent requis"),
-  payment_method: z.enum(["cash", "card", "check"]).default("cash"),
+  // payment_method: z.enum(["cash", "card", "check"]).default("cash"),
   payment_amount: z.coerce.number("argent requis"),
+  payments: z.array(paymentLineSchema).optional(),
   customer_postal_code: postalSchema().nullish(),
   items: z.array(itemSchema),
 });
+
+/**
+ * @param {number|string|null|undefined} value
+ */
+const toAmount = (value) => Number.parseFloat(String(value ?? 0));
+/**
+ * @param {number|string} a
+ * @param {number|string} b
+ */
+const amountsEqual = (a, b) => Math.abs(toAmount(a) - toAmount(b)) < 0.001;
+
+/**
+ * @param {z.infer<typeof dataSchema>} data
+ */
+const normalizePayments = (data) => {
+  const explicitPayments = Array.isArray(data.payments) ? data.payments : [];
+  const payments =
+    explicitPayments.length > 0
+      ? explicitPayments : []
+  // : [{ method: data.payment_method??0, amount: data.payment_amount }];
+
+  const totalPayments = payments.reduce((acc, p) => acc + toAmount(p.amount), 0);
+  if (data.total_amount > totalPayments) {
+    // if (!amountsEqual(totalPayments, data.total_amount)) {//TODO FIXME for cash with extra money
+    throw new createHttpError.BadRequest(
+      "la somme des paiements doit etre egale au total",
+    );
+  }
+
+  for (const payment of payments) {
+    if (payment.method === "giftcard" && !payment.gift_card_code) {
+      throw new createHttpError.BadRequest(
+        "gift_card_code est requis pour un paiement giftcard",
+      );
+    }
+  }
+
+  return payments;
+};
 
 /**
  *
@@ -56,7 +108,7 @@ const dataSchema = z.object({
  * @param {import("express").Response} res
  */
 export const listTransactions = async (req, res) => {
-  const ALLOWED_INCLUDES = ["refund", "items"];
+  const ALLOWED_INCLUDES = ["refund", "items","payments"];
   const filterSchema = z.object({
     store_id: z.preprocess(
       (val) => (val === "" ? undefined : val),
@@ -70,7 +122,10 @@ export const listTransactions = async (req, res) => {
     offset: z.coerce.number().nonnegative().default(0),
     session: idSchema().optional(),
     payment_method: z
-      .enum(["cash", "check", "card"], "methode de payment inconnue")
+      .enum(
+        ["cash", "check", "card", "giftcard", "mixed"],
+        "methode de payment inconnue",
+      )
       .optional(),
     page: z.coerce.number().positive().optional(),
     include: z
@@ -80,7 +135,6 @@ export const listTransactions = async (req, res) => {
       .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
   });
   const filter = filterSchema.parse(req.query);
-
   /**
    * @type {import("sequelize").WhereOptions}
    */
@@ -133,6 +187,11 @@ export const listTransactions = async (req, res) => {
       required: true,
     },
   ];
+  if (filter.include.includes("payments"))
+    include.push({
+      model: TransactionPayment,
+      as: "payments",
+    });
   if (filter.include.includes("refund")) {
     const insideInclude = [];
     if (filter.include.includes("items"))
@@ -178,14 +237,18 @@ export const listTransactions = async (req, res) => {
  */
 export const createTransaction = async (req, res) => {
   const data = dataSchema.parse(req.body);
+  const payments = normalizePayments(data);
   const session = await CashSession.findByPk(data.cash_session_id);
   if (!session) throw new createHttpError[404]("session non trouvé");
 
   const result = await db.sequelize.transaction(async (t) => {
+    const uniqueMethods = [...new Set(payments.map((p) => p.method))];
+    const storedMethod = uniqueMethods.length === 1 ? uniqueMethods[0] : "mixed";
+
     const sale = await session.createSalesTransaction(
       {
         total_amount: data.total_amount,
-        payment_method: data.payment_method,
+        payment_method: storedMethod,
         payment_amount: data.payment_amount,
         customer_postal_code: data?.customer_postal_code || null,
       },
@@ -239,9 +302,67 @@ export const createTransaction = async (req, res) => {
         });
       }
     }
+
+    for await (const payment of payments.filter((p) => p.method === "giftcard")) {
+      const giftCardCode = payment.gift_card_code;
+      if (!giftCardCode) {
+        throw new createHttpError.BadRequest(
+          "gift_card_code est requis pour un paiement giftcard",
+        );
+      }
+      const giftCard = await findGiftCardByCode(giftCardCode, {
+        transaction: t,
+      });
+      if (!giftCard) {
+        throw new createHttpError.NotFound("gift card introuvable");
+      }
+      await chargeGiftCard({
+        giftCardId: giftCard.id,
+        salesTransactionId: sale.id,
+        amount: payment.amount,
+        createdBy: req.user.id,
+        metadata: { source: "sale_payment" },
+        transaction: t,
+      });
+      await TransactionPayment.create(
+        {
+          sales_transaction_id: sale.id,
+          method: "giftcard",
+          amount: payment.amount,
+          gift_card_id: giftCard.id,
+          metadata: { gift_card_code: giftCardCode },
+        },
+        { transaction: t },
+      );
+    }
+
+    for await (const payment of payments.filter((p) => p.method !== "giftcard")) {
+      await TransactionPayment.create(
+        {
+          sales_transaction_id: sale.id,
+          method: payment.method,
+          amount: payment.amount,
+        },
+        { transaction: t },
+      );
+    }
+
     return sale;
   });
 
+  // Example response:
+  // {
+  //   "success": true,
+  //   "data": {
+  //     "id": 123,
+  //     "message": "Transaction creee avec succes",
+  //     "sale": { "...": "..." },
+  //     "payments": [
+  //       { "method": "giftcard", "amount": 20, "gift_card_code": "GC00000001" },
+  //       { "method": "card", "amount": 5 }
+  //     ]
+  //   }
+  // }
   res.json({
     success: true,
     data: {
@@ -249,6 +370,7 @@ export const createTransaction = async (req, res) => {
 
       message: "Transaction créée avec succès",
       sale: result,
+      payments,
     },
   });
 };
@@ -274,9 +396,11 @@ export const createRefund = async (req, res) => {
     // refundPrice: z.coerce.number(),
   });
   const refundDataSchema = z.object({
-    cash_session_id: idSchema().nullish(),
+    cash_session_id: idSchema(),
     total_amount: z.coerce.number("argent requis"),
-    payment_method: z.enum(["cash", "card", "check"]).default("cash"),
+    payment_method: z.enum(["cash", "card", "check", "giftcard"]).default("cash"),
+    refund_method: z.enum(["cash", "card", "check", "giftcard"]).default("cash"),
+    gift_card_code: z.string().trim().min(1).nullish(),
     refund_reason: z.string("refund raison requis"),
     items: z.array(refundItemSchema),
   });
@@ -298,7 +422,8 @@ export const createRefund = async (req, res) => {
   //FIXME on se fait baiser quand les object sont en lot et qu'on rembourse qu'une partie
 
   const data = refundDataSchema.parse(req.body);
-
+  data.refund_method = data.payment_method
+  console.log(data.payment_method)
   const refunded = data.items
     .map((item) => {
       const alreadyRefunded = parent.refunds?.reduce((prev, current) => {
@@ -308,7 +433,6 @@ export const createRefund = async (req, res) => {
         return prev;
       }, 0);
       //test que le compte d'object deborde pas
-      console.log(parent.items);
       const c = parent.items?.find((i) => i.barcode === item.barcode);
       if (alreadyRefunded + item.quantity > c.quantity)
         throw new createHttpError.BadRequest(
@@ -344,11 +468,13 @@ export const createRefund = async (req, res) => {
   // });
 
   const result = await db.sequelize.transaction(async (t) => {
+    /** @type {null | { id: number; code: string; status: string; initial_value?: number; current_balance?: number; type: "recredit_existing" | "issued_new" }} */
+    let refundGiftCard = null;
     const refund = await SalesTransaction.create(
       {
         transactionType: "refund",
         created_by: req.user.id,
-        cash_session_id: data.cash_session_id || null,
+        cash_session_id: data.cash_session_id,
         total_amount: refunded.reduce(
           (prev, current) => (prev += current.toRefundNow),
           0,
@@ -376,79 +502,111 @@ export const createRefund = async (req, res) => {
         transaction: t,
       });
     }
-    return refund;
+    if (data.payment_method === "giftcard") {
+      const giftCardCode = data.gift_card_code;
+      const refundAmount = Number(refund.total_amount || 0);
+      if (giftCardCode) {
+
+        const giftCard = await findGiftCardByCode(giftCardCode, {
+          transaction: t,
+        });
+        if (!giftCard) {
+          throw new createHttpError.NotFound("gift card introuvable");
+        }
+
+        await recreditGiftCard({
+          giftCardId: giftCard.id,
+          salesTransactionId: refund.id,
+          amount: refundAmount,
+          createdBy: req.user.id,
+          metadata: { source: "refund_recredit", parentTransactionId: id },
+          transaction: t,
+        });
+
+        await TransactionPayment.create(
+          {
+            sales_transaction_id: refund.id,
+            method: "giftcard",
+            amount: refundAmount,
+            gift_card_id: giftCard.id,
+            metadata: {
+              source: "refund_recredit",
+              gift_card_code: giftCardCode,
+              parentTransactionId: id,
+            },
+          },
+          { transaction: t },
+        );
+
+        refundGiftCard = {
+          id: giftCard.id,
+          code: giftCard.code,
+          status: giftCard.status,
+          type: "recredit_existing",
+        };
+      } else {
+        // Refund -> Gift card (create a new card when no code is provided)
+        const generatedCode = `GC-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        const giftCard = await issueGiftCard(
+          {
+            code: generatedCode,
+            initialValue: refundAmount,
+            issuedRefundTransactionId: refund.id,
+            createdBy: req.user.id,
+            metadata: { source: "refund_issue", parentTransactionId: id },
+            transaction: t,
+          },
+        );
+
+        await TransactionPayment.create(
+          {
+            sales_transaction_id: refund.id,
+            method: "giftcard",
+            amount: refundAmount,
+            gift_card_id: giftCard.id,
+            metadata: {
+              source: "refund_issue",
+              gift_card_code: generatedCode,
+              parentTransactionId: id,
+            },
+          },
+          { transaction: t },
+        );
+
+        refundGiftCard = {
+          id: giftCard.id,
+          code: giftCard.code,
+          status: giftCard.status,
+          initial_value: +giftCard.initial_value,
+          type: "issued_new",
+        };
+      }
+    } else {
+      await TransactionPayment.create(
+        {
+          sales_transaction_id: refund.id,
+          method: data.payment_method,
+          amount: Number(refund.total_amount || 0),
+          metadata: { source: "refund_payment" },
+        },
+        { transaction: t },
+      );
+    }
+    return { refund, giftCard: refundGiftCard };
   });
 
-  // const {
-  //   transaction_id,
-  //   refund_type,
-  //   refund_amount,
-  //   refund_reason,
-  //   refund_method,
-  //   notes,
-  // } = req.body;
 
-  // Validation des champs requis
-  // if (!transaction_id || !refund_type || !refund_amount || !refund_reason) {
-  //   return res.status(400).json({
-  //     success: false,
-  //     message:
-  //       "Les champs transaction_id, refund_type, refund_amount et refund_reason sont obligatoires",
-  //   });
+  // Example response:
+  // {
+  //   "success": true,
+  //   "message": "Remboursement cree avec succes",
+  //   "refund": { "...": "..." }
   // }
-
-  // Vérifier que la transaction existe
-  // const transaction = await SalesTransaction.findByPk(transaction_id);
-
-  // if (!transaction) {
-  //   return res.status(404).json({
-  //     success: false,
-  //     message: "Transaction non trouvée",
-  //   });
-  // }
-
-  // // Vérifier que le montant de remboursement ne dépasse pas le montant de la transaction
-  // if (refund_amount > (transaction.total_amount || 0)) {
-  //   return res.status(400).json({
-  //     success: false,
-  //     message:
-  //       "Le montant de remboursement ne peut pas dépasser le montant de la transaction",
-  //   });
-  // }
-
-  // // Créer le remboursement dans la table refunds
-
-  // const refund = await Refund.create({
-  //   transaction_id,
-  //   refund_type,
-  //   refund_amount,
-  //   refund_reason,
-  //   refund_method,
-  //   notes,
-  //   created_by: req.user.id,
-  //   status: "completed",
-  // });
-
-  // // Mettre à jour le statut de la transaction si c'est un remboursement total
-  // if (refund_type === "full") {
-  //   // Note: La table sales_transactions pourrait ne pas avoir de colonne status
-  //   // On peut ajouter une colonne refunded_at pour marquer les transactions remboursées
-  //   await SalesTransaction.update(
-  //     { refundedAt: new Date() },
-  //     { where: { id: transaction_id } },
-  //   );
-  // }
-
-  // // Récupérer les informations du remboursement créé
-  // const refundInfo = await Refund.findOne({
-  //   where: { id: refund.id },
-  //   include: [{ model: SalesTransaction }, { model: User }],
-  // });
-
   res.status(201).json({
     success: true,
     message: "Remboursement créé avec succès",
-    refund: result,
+    refund: result.refund,
+    ...(result.giftCard ? { giftCard: result.giftCard } : {}),
     // refund,
   });
 };

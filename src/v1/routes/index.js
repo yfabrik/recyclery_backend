@@ -34,6 +34,7 @@ router.use(
   "/sales-transactions",
   (await import("./salesTransactions.js")).router,
 );
+router.use("/gift-cards", (await import("./giftCards.js")).router);
 // router.use("/refunds", (await import("./refunds.js")).router);
 router.use("/eco-organisms", (await import("./ecoOrganism.js")).router);
 router.use("/waste-disposals", (await import("./wasteDisposals.js")).router);

@@ -1,7 +1,7 @@
 /**
  * @typedef {Object} SalesTransactionCreateAttributes
  * @property {number|string} [total_amount] - Total amount of the transaction in decimal format
- * @property {"cash"|"card"|"check"} [payment_method] - Payment method used for the transaction
+ * @property {"cash"|"card"|"check"|"giftcard"|"mixed"} [payment_method] - Payment method used for the transaction
  * @property {"sell"|"refund"} [transactionType] - Type of transaction (default: "sell")
  * @property {number|string} [payment_amount] - Amount paid by the customer in decimal format
  * @property {string|null} [customer_name] - Name of the customer
@@ -16,7 +16,7 @@
  * Fetched row: all attributes present (no undefined). Use for instance returned from findOne/findByPk/findAll.
  * @typedef {Object} SalesTransactionRow
  * @property {number|string|null} total_amount
- * @property {"cash"|"card"|"check"} payment_method
+ * @property {"cash"|"card"|"check"|"giftcard"|"mixed"} payment_method
  * @property {"sell"|"refund"} transactionType
  * @property {number|string|null} payment_amount
  * @property {string|null} customer_name
@@ -35,6 +35,10 @@
  * @typedef {Object} SalesTransactionInstanceAssociations
  * @property {Array<any>} [items] - Transaction line items when loaded with include (table: transaction_items)
  * @property {Array<import("./labeledItemModel.js").LabeledItemInstance>} [items] - Labeled items when loaded with include (alias for belongsToMany through TransactionItem)
+ * @property {Array<import("./giftCardModel.js").GiftCardInstance>} [giftCards] - Gift cards linked to this transaction through GiftCardTransaction
+ * @property {Array<import("./transactionPaymentModel.js").TransactionPaymentInstance>} [payments] - Payment allocations linked to this transaction
+ * @property {Array<import("./giftCardModel.js").GiftCardInstance>} [issuedGiftCards] - Gift cards issued by this sale transaction
+ * @property {Array<import("./giftCardModel.js").GiftCardInstance>} [refundIssuedGiftCards] - Gift cards issued from a refund transaction
  * @property {import("./userModel.js").UserInstance} [User] - User who created the transaction when loaded with include (created_by)
  * @property {import("./cashSessionModel.js").CashSessionInstance} [CashSession] - Cash session when loaded with include
  *

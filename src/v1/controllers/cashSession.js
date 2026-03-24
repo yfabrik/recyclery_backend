@@ -96,7 +96,7 @@ export const getActiveSession = async (req, res) => {
       {
         model: CashRegister,
         attributes: ["name","recyclery_id"],
-        include: [{ model: Recyclery, attributes: ["name", ] }],
+        include: [{ model: Recyclery, attributes: ["name"] }],
       },
     ],
     order: [["createdAt", "DESC"]],

@@ -1,6 +1,7 @@
 "use strict";
 import { readdirSync } from "fs";
 import { basename as _basename, join } from "path";
+import { pathToFileURL } from "url";
 import Sequelize, { DataTypes } from "sequelize";
 import { env as _env } from "process";
 
@@ -50,7 +51,8 @@ const files = readdirSync(__dirname).filter((file) => {
 });
 
 for (const file of files) {
-  const { default: modelInit } = await import(join(__dirname, file));
+  const modelUrl = pathToFileURL(join(__dirname, file)).href;
+  const { default: modelInit } = await import(modelUrl);
   const model = modelInit(sequelize, DataTypes);
   db[model.name] = model;
 }
