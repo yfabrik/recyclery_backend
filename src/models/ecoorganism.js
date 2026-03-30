@@ -11,6 +11,14 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.hasMany(models.WasteDisposal,{foreignKey:"eco_organism_id"});
+      this.belongsToMany(models.Category, {
+        through: "ecoOrg_categoryIn",
+        as: "inCategories",
+      });
+      this.belongsToMany(models.Category, {
+        through: "ecoOrg_categorySell",
+        as: "sellCategories",
+      });
     }
   }
   EcoOrganism.init(

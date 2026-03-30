@@ -57,6 +57,14 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
     });
     this.hasMany(models.LabeledItem, { foreignKey: "category_id" });
     this.hasMany(models.Promotion, { foreignKey: "category_id" });
+    this.belongsToMany(models.EcoOrganism, {
+      through: "ecoOrg_categoryIn",
+      as: "inEcoOrganisms",
+    });
+    this.belongsToMany(models.EcoOrganism, {
+      through: "ecoOrg_categorySell",
+      as: "sellEcoOrganisms",
+    });
   }
 
   static initModel(sequelize: Sequelize) {

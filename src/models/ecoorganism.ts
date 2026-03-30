@@ -31,6 +31,15 @@ export default class EcoOrganism extends Model<InferAttributes<EcoOrganism>, Inf
 
   static associate(models: Models) {
     this.hasMany(models.WasteDisposal, { foreignKey: "eco_organism_id" });
+    this.belongsToMany(models.Category, {
+      through: "ecoOrg_categoryIn",
+      as: "inCategories",
+    });
+    this.belongsToMany(models.Category, {
+      through: "ecoOrg_categorySell",
+      as: "sellCategories",
+    });
+  
   }
 
   static initModel(sequelize: Sequelize) {
