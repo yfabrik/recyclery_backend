@@ -5,7 +5,7 @@ import db from "../../models/index.js";
 import logger from "../../services/logger.js";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 
-const { EcoOrganism, WasteDisposal, Category } = db;
+const { EcoOrganism, WasteDisposal, Category, Arrival } = db;
 
 const dataSchema = z.object({
   name: z.string().trim().nonempty("Le nom est requis"),
@@ -319,6 +319,34 @@ export const ecoOrgQuarterStats = async (req, res) => {
     }),
   );
 
+  // For each quarter, get arrivals split by source_type and grouped by category/subcategory
+  const arrivalBySourceByQuarter = await Promise.all(
+    quarterRanges.map(async (range) => {
+      const rows =
+        /** @type {{ source_type: "point" | "apport" | "house_clearance" | null; category_id: number | null; subcategory_id: number | null; weight_kg: string | number }[]} */ (
+          /** @type {unknown} */ (
+            await Arrival.findAll({
+              attributes: [
+                "source_type",
+                "category_id",
+                "subcategory_id",
+                [fn("SUM", col("weight")), "weight_kg"],
+              ],
+              where: {
+                arrival_date: { [Op.between]: [range.start, range.end] },
+              },
+              group: ["source_type", "category_id", "subcategory_id"],
+              raw: true,
+            })
+          )
+        );
+      return {
+        label: range.label,
+        rows,
+      };
+    }),
+  );
+
   // Resolve category/subcategory id -> { id, name } for all ids present in the results
   const categoryIds = [
     ...new Set(
@@ -334,7 +362,28 @@ export const ecoOrgQuarterStats = async (req, res) => {
       ),
     ),
   ];
-  const allCategoryIds = [...new Set([...categoryIds, ...subcategoryIds])];
+  const arrivalCategoryIds = [
+    ...new Set(
+      arrivalBySourceByQuarter.flatMap(({ rows }) =>
+        rows.map((r) => r.category_id).filter((id) => id != null),
+      ),
+    ),
+  ];
+  const arrivalSubcategoryIds = [
+    ...new Set(
+      arrivalBySourceByQuarter.flatMap(({ rows }) =>
+        rows.map((r) => r.subcategory_id).filter((id) => id != null),
+      ),
+    ),
+  ];
+  const allCategoryIds = [
+    ...new Set([
+      ...categoryIds,
+      ...subcategoryIds,
+      ...arrivalCategoryIds,
+      ...arrivalSubcategoryIds,
+    ]),
+  ];
   const categoryMap = new Map();
   if (allCategoryIds.length > 0) {
     const categories = await Category.findAll({
@@ -395,18 +444,31 @@ export const ecoOrgQuarterStats = async (req, res) => {
     });
   });
 
+  const arrivalRowsByQuarterLabel = new Map(
+    arrivalBySourceByQuarter.map((q) => [q.label, q.rows]),
+  );
+
   // Ensure every eco organism has 4 quarters (0 / [] for quarters with no waste)
   const eco_organisms = ecoOrganisms.map((eo) => {
     const inCategoryIds = inCategoryIdsByEcoOrg.get(eo.id) ?? new Set();
     const sellCategoryIds = sellCategoryIdsByEcoOrg.get(eo.id) ?? new Set();
 
     /**
+     * @param {{ id: number; name: string | null; weight_kg: number; subcategories: { id: number; name: string | null; weight_kg: number }[] }[]} categories
+     * @param {Set<number>} allowedCategoryIds
+     */
+    const filterCategoriesByAllowedIds = (categories, allowedCategoryIds) => {
+      return categories.filter((c) => allowedCategoryIds.has(c.id));
+    };
+
+    /**
      * @param {{ total_weight_kg: number; categories: { id: number; name: string | null; weight_kg: number; subcategories: { id: number; name: string | null; weight_kg: number }[] }[] } | undefined} data
      * @param {Set<number>} allowedCategoryIds
      */
     const buildFilteredQuarter = (data, allowedCategoryIds) => {
-      const filteredCategories = (data?.categories ?? []).filter((c) =>
-        allowedCategoryIds.has(c.id),
+      const filteredCategories = filterCategoriesByAllowedIds(
+        data?.categories ?? [],
+        allowedCategoryIds,
       );
       return {
         total_weight_kg: filteredCategories.reduce(
@@ -417,10 +479,68 @@ export const ecoOrgQuarterStats = async (req, res) => {
       };
     };
 
+    /**
+     * @param {{ source_type: "point" | "apport" | "house_clearance" | null; category_id: number | null; subcategory_id: number | null; weight_kg: string | number }[]} rows
+     * @param {Set<number>} allowedCategoryIds
+     */
+    const buildQuarterFromArrivalRows = (rows, allowedCategoryIds) => {
+      /** @type {{ id: number; name: string | null; weight_kg: number; subcategories: { id: number; name: string | null; weight_kg: number }[] }[]} */
+      const categories = [];
+      rows.forEach((r) => {
+        const catId = r.category_id;
+        if (catId == null || !allowedCategoryIds.has(catId)) return;
+        const weight = Number(r.weight_kg ?? 0);
+        let category = categories.find((c) => c.id === catId);
+        if (!category) {
+          const cat = categoryMap.get(catId);
+          category = {
+            id: catId,
+            name: cat?.name ?? null,
+            weight_kg: 0,
+            subcategories: [],
+          };
+          categories.push(category);
+        }
+        category.weight_kg += weight;
+        const subcatId = r.subcategory_id;
+        if (subcatId != null) {
+          const subcat = categoryMap.get(subcatId);
+          category.subcategories.push({
+            id: subcatId,
+            name: subcat?.name ?? null,
+            weight_kg: weight,
+          });
+        }
+      });
+      return {
+        total_weight_kg: categories.reduce(
+          (sum, category) => sum + Number(category.weight_kg ?? 0),
+          0,
+        ),
+        categories,
+      };
+    };
+
+    const splitQuarterInBySourceType = (rows, allowedCategoryIds) => {
+      const sourceTypes = ["point", "apport", "house_clearance"];
+      return sourceTypes.reduce((acc, sourceType) => {
+        acc[sourceType] = buildQuarterFromArrivalRows(
+          rows.filter((r) => r.source_type === sourceType),
+          allowedCategoryIds,
+        );
+        return acc;
+      }, {});
+    };
+
     const id = eo.id;
     const quarters = quarterRanges.map((range) => {
       const data = quarterDataByEcoOrg.get(id)?.[range.label];
-      const quarterInData = buildFilteredQuarter(data, inCategoryIds);
+      const arrivalRows = arrivalRowsByQuarterLabel.get(range.label) ?? [];
+      const quarterInData = buildQuarterFromArrivalRows(arrivalRows, inCategoryIds);
+      const quarterInBySourceType = splitQuarterInBySourceType(
+        arrivalRows,
+        inCategoryIds,
+      );
       const quarterSellData = buildFilteredQuarter(data, sellCategoryIds);
       return {
         quarter: range.label,
@@ -430,6 +550,7 @@ export const ecoOrgQuarterStats = async (req, res) => {
         quarterIn: {
           total_weight_kg: quarterInData.total_weight_kg,
           categories: quarterInData.categories,
+          by_source_type: quarterInBySourceType,
         },
         quarterSell: {
           total_weight_kg: quarterSellData.total_weight_kg,
