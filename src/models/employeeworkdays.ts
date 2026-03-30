@@ -1,19 +1,17 @@
 import {
   DataTypes,
   Model,
-  type BelongsToGetAssociationMixin,
-  type BelongsToSetAssociationMixin,
   type CreationOptional,
-  type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
-  type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.js";
-import type Employee from "./employee.js";
+import type { Models } from "./db-types.ts";
 
-export default class EmployeeWorkdays extends Model<InferAttributes<EmployeeWorkdays>, InferCreationAttributes<EmployeeWorkdays>> {
+export default class EmployeeWorkdays extends Model<
+  InferAttributes<EmployeeWorkdays>,
+  InferCreationAttributes<EmployeeWorkdays>
+> {
   declare id: CreationOptional<number>;
   declare day_of_week: string | null;
   declare time_slot: string | null;
@@ -22,14 +20,8 @@ export default class EmployeeWorkdays extends Model<InferAttributes<EmployeeWork
   declare end_time: string | null;
   declare notes: string | null;
   declare week: string | null;
-  declare employee_id: ForeignKey<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
-
-  declare Employee?: NonAttribute<Employee>;
-
-  declare getEmployee: BelongsToGetAssociationMixin<Employee>;
-  declare setEmployee: BelongsToSetAssociationMixin<Employee, number | null>;
 
   static associate(models: Models) {
     this.belongsTo(models.Employee, { foreignKey: "employee_id" });
@@ -50,17 +42,13 @@ export default class EmployeeWorkdays extends Model<InferAttributes<EmployeeWork
         end_time: DataTypes.STRING,
         notes: DataTypes.TEXT,
         week: DataTypes.STRING,
-        employee_id: DataTypes.INTEGER,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },
       {
         sequelize,
         modelName: "EmployeeWorkdays",
-        indexes: [
-          { fields: ["employee_id"] },
-          { fields: ["employee_id", "day_of_week"] },
-        ],
+        indexes: [{ fields: ["employee_id"] }, { fields: ["employee_id", "day_of_week"] }],
       },
     );
   }

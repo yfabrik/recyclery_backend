@@ -2,39 +2,22 @@ import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
-  type BelongsToGetAssociationMixin,
-  type BelongsToSetAssociationMixin,
   type CreationOptional,
-  type ForeignKey,
-  type HasManyCountAssociationsMixin,
-  type HasManyCreateAssociationMixin,
-  type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
-  type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.js";
-import type Recyclery from "./recyclery.js";
-import type CashSession from "./cashsession.js";
+import type { Models } from "./db-types.ts";
 
-export default class CashRegister extends Model<InferAttributes<CashRegister>, InferCreationAttributes<CashRegister>> {
+export default class CashRegister extends Model<
+  InferAttributes<CashRegister>,
+  InferCreationAttributes<CashRegister>
+> {
   declare id: CreationOptional<number>;
   declare name: string;
   declare is_active: boolean;
-  declare recyclery_id: ForeignKey<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
-
-  declare Recyclery?: NonAttribute<Recyclery>;
-  declare sessions?: NonAttribute<CashSession[]>;
-
-  declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
-  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number | null>;
-
-  declare getSessions: HasManyGetAssociationsMixin<CashSession>;
-  declare createSession: HasManyCreateAssociationMixin<CashSession, "cash_register_id">;
-  declare countSessions: HasManyCountAssociationsMixin;
 
   static associate(models: Models) {
     this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
@@ -55,7 +38,6 @@ export default class CashRegister extends Model<InferAttributes<CashRegister>, I
         },
         name: { type: DataTypes.STRING, allowNull: false },
         is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
-        recyclery_id: DataTypes.INTEGER,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },
@@ -68,13 +50,12 @@ export default class CashRegister extends Model<InferAttributes<CashRegister>, I
         ],
         hooks: {
           beforeDestroy: async (caisse) => {
-            const sessions = await caisse.countSessions({
+            const sessions = await (caisse as unknown as { countSessions: (o: { where: { status: string } }) => Promise<number> }).countSessions({
               where: { status: "open" },
             });
-            if (sessions > 0)
-              throw new createHttpError.Conflict(
-                "Impossible de supprimer une caisse avec des sessions ouvertes",
-              );
+            if (sessions) {
+              throw new createHttpError[424]("Impossible de supprimer une caisse avec des sessions ouvertes");
+            }
           },
         },
       },

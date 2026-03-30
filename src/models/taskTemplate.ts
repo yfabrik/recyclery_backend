@@ -6,7 +6,7 @@ import {
   type InferCreationAttributes,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.js";
+import type { Models } from "./db-types.ts";
 
 export default class TaskTemplate extends Model<InferAttributes<TaskTemplate>, InferCreationAttributes<TaskTemplate>> {
   declare id: CreationOptional<number>;
@@ -55,10 +55,7 @@ export default class TaskTemplate extends Model<InferAttributes<TaskTemplate>, I
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },
-      {
-        sequelize,
-        modelName: "TaskTemplate",
-      },
+      { sequelize, modelName: "TaskTemplate" },
     );
   }
 }

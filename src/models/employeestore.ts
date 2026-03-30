@@ -1,61 +1,51 @@
+import { Op } from "sequelize";
 import {
   DataTypes,
   Model,
-  type BelongsToGetAssociationMixin,
-  type BelongsToSetAssociationMixin,
   type CreationOptional,
-  type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
-  type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import { Op } from "sequelize";
-import type { Models } from "./db-types.js";
-import type Recyclery from "./recyclery.js";
-import type Employee from "./employee.js";
+import type { Models } from "./db-types.ts";
 
-
-async function unsetOtherPrimaries(
-  ModelRef: typeof EmployeeStore,
-  params: { employeeIds: number[]; excludeId?: number | null },
-  options?: { transaction?: import("sequelize").Transaction },
-) {
-  const { employeeIds, excludeId } = params;
-  if (!employeeIds?.length) return;
-  const where: Record<string, unknown> = {
-    employeeId: { [Op.in]: employeeIds },
-    is_primary: true,
-  };
-  if (excludeId != null) where.id = { [Op.ne]: excludeId };
-  const updateOpts: { where: typeof where; transaction?: import("sequelize").Transaction } = { where };
-  if (options?.transaction) updateOpts.transaction = options.transaction;
-  await ModelRef.update({ is_primary: false }, updateOpts);
-}
-
-export default class EmployeeStore extends Model<InferAttributes<EmployeeStore>, InferCreationAttributes<EmployeeStore>> {
+export default class EmployeeStore extends Model<
+  InferAttributes<EmployeeStore>,
+  InferCreationAttributes<EmployeeStore>
+> {
   declare id: CreationOptional<number>;
   declare is_primary: boolean;
-  declare employeeId: ForeignKey<number | null>;
-  declare recycleryId: ForeignKey<number | null>;
+  declare employeeId: CreationOptional<number | null>;
+  declare recycleryId: CreationOptional<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  declare Recyclery?: NonAttribute<Recyclery>;
-  declare Employee?: NonAttribute<Employee>;
-
-  declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
-  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number>;
-
-  declare getEmployee: BelongsToGetAssociationMixin<Employee>;
-  declare setEmployee: BelongsToSetAssociationMixin<Employee, number>;
-
-  static associate(models: Models) {
-    this.belongsTo(models.Recyclery, { foreignKey: "recycleryId" });
-    this.belongsTo(models.Employee, { foreignKey: "employeeId" });
-  }
+  static associate(_models: Models) {}
 
   static initModel(sequelize: Sequelize) {
+    async function unsetOtherPrimaries(
+      ModelRef: typeof EmployeeStore,
+      {
+        employeeIds,
+        excludeId,
+      }: { employeeIds: number[]; excludeId?: number | null },
+      options?: { transaction?: unknown },
+    ) {
+      if (!employeeIds?.length) return;
+      const where: Record<string, unknown> = {
+        employeeId: { [Op.in]: employeeIds },
+        is_primary: true,
+        ...(excludeId != null && { id: { [Op.ne]: excludeId } }),
+      };
+      await ModelRef.update(
+        { is_primary: false },
+        {
+          where,
+          ...(options?.transaction ? { transaction: options.transaction as never } : {}),
+        },
+      );
+    }
+
     EmployeeStore.init(
       {
         id: {
@@ -86,47 +76,62 @@ export default class EmployeeStore extends Model<InferAttributes<EmployeeStore>,
         ],
         hooks: {
           async afterCreate(instance, options) {
-            if (!instance.is_primary || instance.employeeId == null) return;
-            const opts = options?.transaction ? { transaction: options.transaction } : {};
-            await unsetOtherPrimaries(EmployeeStore, { employeeIds: [instance.employeeId], excludeId: instance.id }, opts);
+            const inst = instance as EmployeeStore;
+            if (!inst.is_primary || inst.employeeId == null) return;
+            const opts = options.transaction ? { transaction: options.transaction } : {};
+            await unsetOtherPrimaries(
+              EmployeeStore,
+              { employeeIds: [inst.employeeId], excludeId: inst.id },
+              opts,
+            );
           },
+
           async beforeBulkCreate(records, options) {
-            const withPrimary = records.filter((r) => r.is_primary && r.employeeId != null);
-            const employeeIds = [...new Set(withPrimary.map((r) => r.employeeId).filter((id): id is number => id != null))];
-            const opts = options?.transaction ? { transaction: options.transaction } : {};
+            const recs = records as EmployeeStore[];
+            const withPrimary = recs.filter((r) => r.is_primary && r.employeeId != null);
+            const employeeIds = [...new Set(withPrimary.map((r) => r.employeeId!).filter((id) => id != null))];
+            const opts = options.transaction ? { transaction: options.transaction } : {};
             if (employeeIds.length) {
               await unsetOtherPrimaries(EmployeeStore, { employeeIds, excludeId: null }, opts);
             }
             for (const eid of employeeIds) {
               let first = true;
-              for (const r of records) {
+              for (const r of recs) {
                 if (r.employeeId !== eid) continue;
                 if (!r.is_primary) continue;
-                if (!first) (r as { is_primary: boolean }).is_primary = false;
+                if (!first) r.is_primary = false;
                 first = false;
               }
             }
           },
+
           async beforeUpdate(instance, options) {
-            if (!instance.changed("is_primary") || !instance.is_primary || instance.employeeId == null) return;
-            const opts = options?.transaction ? { transaction: options.transaction } : {};
-            await unsetOtherPrimaries(EmployeeStore, { employeeIds: [instance.employeeId], excludeId: instance.id }, opts);
+            const inst = instance as EmployeeStore;
+            if (!inst.changed("is_primary") || !inst.is_primary || inst.employeeId == null) return;
+            const opts = options.transaction ? { transaction: options.transaction } : {};
+            await unsetOtherPrimaries(EmployeeStore, { employeeIds: [inst.employeeId], excludeId: inst.id }, opts);
           },
-          async beforeBulkUpdate(options: {
-            attributes?: { is_primary?: boolean };
-            where?: unknown;
-            transaction?: import("sequelize").Transaction | null | undefined;
-          }) {
-            const attrs = options?.attributes;
+
+          async beforeBulkUpdate(options) {
+            const attrs = (options as { attributes?: { is_primary?: boolean } }).attributes;
             if (!attrs || attrs.is_primary !== true) return;
-            const txnOpts = options?.transaction ? { transaction: options.transaction } : {};
-            const rows = (await EmployeeStore.findAll({
-              where: options.where as import("sequelize").WhereOptions<EmployeeStore>,
+            const txnOpts = (options as { transaction?: unknown }).transaction
+              ? { transaction: (options as { transaction: unknown }).transaction }
+              : {};
+            const whereOpt = (options as { where?: unknown }).where;
+            const rows = await EmployeeStore.findAll({
+              where: whereOpt,
               attributes: ["employeeId"],
               raw: true,
               ...txnOpts,
-            })) as Array<{ employeeId?: number | null }>;
-            const employeeIds = [...new Set(rows.map((r) => r.employeeId).filter((id): id is number => id != null))];
+            } as never);
+            const employeeIds = [
+              ...new Set(
+                (rows as { employeeId: number | null }[])
+                  .map((r) => r.employeeId)
+                  .filter((id): id is number => id != null),
+              ),
+            ];
             if (employeeIds.length) {
               await unsetOtherPrimaries(EmployeeStore, { employeeIds, excludeId: null }, txnOpts);
             }

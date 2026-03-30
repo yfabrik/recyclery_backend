@@ -6,7 +6,7 @@ import {
   type InferCreationAttributes,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.js";
+import type { Models } from "./db-types.ts";
 
 export default class Role extends Model<InferAttributes<Role>, InferCreationAttributes<Role>> {
   declare id: CreationOptional<number>;
@@ -32,10 +32,7 @@ export default class Role extends Model<InferAttributes<Role>, InferCreationAttr
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },
-      {
-        sequelize,
-        modelName: "Role",
-      },
+      { sequelize, modelName: "Role" },
     );
   }
 }

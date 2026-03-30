@@ -1,0 +1,127 @@
+import {
+  DataTypes,
+  Model,
+  type CreationOptional,
+  type ForeignKey,
+  type InferAttributes,
+  type InferCreationAttributes,
+  type NonAttribute,
+  type Sequelize,
+} from "sequelize";
+import type { Models } from "./db-types.ts";
+
+export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCreationAttributes<GiftCard>> {
+  declare id: CreationOptional<number>;
+  declare code: string;
+  declare initial_value: string;
+  declare current_value: string | number;
+  declare expires_at: Date | null;
+  declare status: "active" | "partially_used" | "redeemed" | "expired" | "cancelled";
+  declare currency: string;
+  declare issued_at: Date;
+  declare issued_transaction_id: ForeignKey<number | null>;
+  declare issued_refund_transaction_id: ForeignKey<number | null>;
+  declare created_by: ForeignKey<number | null>;
+  declare note: string | null;
+  declare recipient_name: string | null;
+  declare recipient_email: string | null;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+
+  declare movements?: NonAttribute<Array<{ amount: string | number }>>;
+
+  static associate(models: Models) {
+    this.belongsTo(models.SalesTransaction, {
+      as: "issuedTransaction",
+      foreignKey: "issued_transaction_id",
+    });
+    this.belongsTo(models.SalesTransaction, {
+      as: "issuedRefundTransaction",
+      foreignKey: "issued_refund_transaction_id",
+    });
+    this.belongsTo(models.User, { as: "createdBy", foreignKey: "created_by" });
+    this.belongsToMany(models.SalesTransaction, {
+      through: models.GiftCardTransaction,
+      foreignKey: "gift_card_id",
+      otherKey: "sales_transaction_id",
+      as: "transactions",
+    });
+    this.hasMany(models.GiftCardTransaction, { foreignKey: "gift_card_id", as: "movements" });
+    this.hasMany(models.TransactionPayment, { foreignKey: "gift_card_id", as: "paymentUsages" });
+  }
+
+  static initModel(sequelize: Sequelize) {
+    GiftCard.init(
+      {
+        id: {
+          type: DataTypes.INTEGER.UNSIGNED,
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        code: {
+          type: DataTypes.STRING,
+          allowNull: false,
+          unique: true,
+          defaultValue: () => `GC-${Date.now().toString(36).toUpperCase()}`,
+        },
+        initial_value: {
+          type: DataTypes.DECIMAL(10, 2),
+          allowNull: false,
+          defaultValue: 0,
+          validate: { min: 0 },
+        },
+        current_value: {
+          type: DataTypes.VIRTUAL,
+          get(this: GiftCard) {
+            const fromMovements = this.movements?.reduce(
+              (prev, current) => prev + Number(current.amount),
+              0,
+            );
+            return fromMovements ?? Number(this.initial_value ?? 0);
+          },
+        },
+        expires_at: { type: DataTypes.DATE, allowNull: true },
+        status: {
+          type: DataTypes.ENUM("active", "partially_used", "redeemed", "expired", "cancelled"),
+          allowNull: false,
+          defaultValue: "active",
+        },
+        currency: {
+          type: DataTypes.STRING(3),
+          allowNull: false,
+          defaultValue: "EUR",
+        },
+        issued_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+        issued_transaction_id: { type: DataTypes.INTEGER, allowNull: true },
+        issued_refund_transaction_id: { type: DataTypes.INTEGER, allowNull: true },
+        created_by: { type: DataTypes.INTEGER, allowNull: true },
+        note: { type: DataTypes.TEXT, allowNull: true },
+        recipient_name: { type: DataTypes.STRING, allowNull: true },
+        recipient_email: { type: DataTypes.STRING, allowNull: true },
+        createdAt: DataTypes.DATE,
+        updatedAt: DataTypes.DATE,
+      },
+      {
+        sequelize,
+        modelName: "GiftCard",
+        validate: {
+          singleIssuanceOrigin() {
+            const self = this as unknown as GiftCard;
+            if (
+              self.issued_transaction_id != null &&
+              self.issued_refund_transaction_id != null
+            ) {
+              throw new Error("A gift card can only have one issuance origin transaction");
+            }
+          },
+        },
+        hooks: {},
+        indexes: [
+          { unique: true, fields: ["code"] },
+          { fields: ["status"] },
+          { fields: ["expires_at"] },
+        ],
+      },
+    );
+  }
+}

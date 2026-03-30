@@ -1,26 +1,12 @@
 import {
   DataTypes,
   Model,
-  type BelongsToGetAssociationMixin,
-  type BelongsToManyAddAssociationMixin,
-  type BelongsToManyAddAssociationsMixin,
-  type BelongsToManyGetAssociationsMixin,
-  type BelongsToManyRemoveAssociationMixin,
-  type BelongsToManyRemoveAssociationsMixin,
-  type BelongsToManySetAssociationsMixin,
-  type BelongsToSetAssociationMixin,
   type CreationOptional,
-  type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
-  type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.js";
-import type TaskSchedule from "./taskschedule.js";
-import type Recyclery from "./recyclery.js";
-import type CollectionPoint from "./collectionpoint.js";
-import type Employee from "./employee.js";
+import type { Models } from "./db-types.ts";
 
 export default class Task extends Model<InferAttributes<Task>, InferCreationAttributes<Task>> {
   declare id: CreationOptional<number>;
@@ -38,32 +24,8 @@ export default class Task extends Model<InferAttributes<Task>, InferCreationAttr
   declare end_time: Date | null;
   declare notes: string | null;
   declare status: string | null;
-  declare schedule_id: ForeignKey<number | null>;
-  declare store_id: ForeignKey<number | null>;
-  declare collection_point_id: ForeignKey<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
-
-  declare TaskSchedule?: NonAttribute<TaskSchedule | null>;
-  declare Recyclery?: NonAttribute<Recyclery | null>;
-  declare CollectionPoint?: NonAttribute<CollectionPoint | null>;
-  declare Employees?: NonAttribute<Employee[]>;
-
-  declare getTaskSchedule: BelongsToGetAssociationMixin<TaskSchedule>;
-  declare setTaskSchedule: BelongsToSetAssociationMixin<TaskSchedule, number | null>;
-
-  declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
-  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number | null>;
-
-  declare getCollectionPoint: BelongsToGetAssociationMixin<CollectionPoint>;
-  declare setCollectionPoint: BelongsToSetAssociationMixin<CollectionPoint, number | null>;
-
-  declare getEmployees: BelongsToManyGetAssociationsMixin<Employee>;
-  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, number>;
-  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, number>;
-  declare addEmployees: BelongsToManyAddAssociationsMixin<Employee, number>;
-  declare removeEmployee: BelongsToManyRemoveAssociationMixin<Employee, number>;
-  declare removeEmployees: BelongsToManyRemoveAssociationsMixin<Employee, number>; 
 
   static associate(models: Models) {
     this.belongsTo(models.TaskSchedule, { foreignKey: "schedule_id" });
@@ -104,20 +66,13 @@ export default class Task extends Model<InferAttributes<Task>, InferCreationAttr
         end_time: DataTypes.DATE,
         notes: DataTypes.TEXT,
         status: DataTypes.STRING,
-        schedule_id: DataTypes.INTEGER,
-        store_id: DataTypes.INTEGER,
-        collection_point_id: DataTypes.INTEGER,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },
       {
         sequelize,
         modelName: "Task",
-        indexes: [
-          { fields: ["schedule_id"] },
-          { fields: ["scheduled_date"] },
-          { fields: ["status"] },
-        ],
+        indexes: [{ fields: ["schedule_id"] }, { fields: ["scheduled_date"] }, { fields: ["status"] }],
       },
     );
   }
