@@ -1,0 +1,850 @@
+[
+  {
+    "category": "Accessoires ",
+    "subcategory": "Sac \u00e0 main, sacoche",
+    "price": "3,30 \u20ac",
+    "weight": "0,32 kg",
+    "quantity": "4,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Accessoires ",
+    "subcategory": "Divers",
+    "price": "0,50 \u20ac",
+    "weight": "0,02 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Accessoires ",
+    "subcategory": "Tissu/draps ",
+    "price": "10,00 \u20ac",
+    "weight": "0,40 kg",
+    "quantity": "2,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Accessoires ",
+    "subcategory": "Bien \u00eatre manuel",
+    "price": "4,00 \u20ac",
+    "weight": "0,90 kg",
+    "quantity": "2,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Accessoires ",
+    "subcategory": "Bijoux",
+    "price": "41,00 \u20ac",
+    "weight": "4,32 kg",
+    "quantity": "41,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Accessoires ",
+    "subcategory": "Bijoux",
+    "price": "14,00 \u20ac",
+    "weight": "0,01 kg",
+    "quantity": "22,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Accessoires ",
+    "subcategory": "Sac \u00e0 main, sacoche",
+    "price": "71,50 \u20ac",
+    "weight": "8,33 kg",
+    "quantity": "31,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Accessoires ",
+    "subcategory": "Tissu/draps ",
+    "price": "26,50 \u20ac",
+    "weight": "3,80 kg",
+    "quantity": "25,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Accessoires ",
+    "subcategory": "Bien \u00eatre manuel",
+    "price": "37,70 \u20ac",
+    "weight": "6,45 kg",
+    "quantity": "26,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Animaux (chats, chiens, poissons, rongeurs)",
+    "subcategory": "accessoires pour chat",
+    "price": "0,40 \u20ac",
+    "weight": "0,10 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "Bois",
+    "price": "11,00 \u20ac",
+    "weight": "1,81 kg",
+    "quantity": "4,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "boisson",
+    "subcategory": "Grand Caf\u00e9",
+    "price": "3,00 \u20ac",
+    "weight": "0,00 kg",
+    "quantity": "2,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "boisson",
+    "subcategory": "Petit caf\u00e9",
+    "price": "24,00 \u20ac",
+    "weight": "0,00 kg",
+    "quantity": "21,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "boisson",
+    "subcategory": "Sirop  eau 25 cl",
+    "price": "5,00 \u20ac",
+    "weight": "0,00 kg",
+    "quantity": "5,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Mobilier",
+    "subcategory": "Mobilier",
+    "price": "0,00 \u20ac",
+    "weight": "106,00 kg",
+    "quantity": "3,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "D3E",
+    "subcategory": "D3E",
+    "price": "0,00 \u20ac",
+    "weight": "8,00 kg",
+    "quantity": "2,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Compost",
+    "subcategory": null,
+    "price": "100,00 \u20ac",
+    "weight": "999,00 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "D3E",
+    "subcategory": "petit electromenag\u00e9 / divers",
+    "price": "91,20 \u20ac",
+    "weight": "9,65 kg",
+    "quantity": "11,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "D3E",
+    "subcategory": "Gros \u00e9lectro froid",
+    "price": "50,00 \u20ac",
+    "weight": "100,00 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "D3E",
+    "subcategory": " Gros \u00e9lectro hors froid",
+    "price": "60,00 \u20ac",
+    "weight": "60,00 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "D3E",
+    "subcategory": "petit electromenag\u00e9 / divers",
+    "price": "368,00 \u20ac",
+    "weight": "211,22 kg",
+    "quantity": "86,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Numérique",
+    "subcategory": "Unit\u00e9 centrale",
+    "price": "100,00 \u20ac",
+    "weight": "5,00 kg",
+    "quantity": "1,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Numérique",
+    "subcategory": "Tablette",
+    "price": "30,00 \u20ac",
+    "weight": "0,00 kg",
+    "quantity": "1,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Numérique",
+    "subcategory": "cables",
+    "price": "1,00 \u20ac",
+    "weight": "0,00 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Numérique",
+    "subcategory": "cables",
+    "price": "3,00 \u20ac",
+    "weight": "0,01 kg",
+    "quantity": "3,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Numérique",
+    "subcategory": "petit \u00e9lectronique",
+    "price": "28,00 \u20ac",
+    "weight": "7,10 kg",
+    "quantity": "3,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Numérique",
+    "subcategory": "PC portable",
+    "price": "315,00 \u20ac",
+    "weight": "8,70 kg",
+    "quantity": "5,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Numérique",
+    "subcategory": "Hifi",
+    "price": "15,50 \u20ac",
+    "weight": "7,30 kg",
+    "quantity": "3,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "décoration",
+    "subcategory": "Divers",
+    "price": "9,50 \u20ac",
+    "weight": "4,62 kg",
+    "quantity": "4,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "cuisine",
+    "subcategory": "Casseroles",
+    "price": "24,50 \u20ac",
+    "weight": "7,05 kg",
+    "quantity": "7,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "décoration",
+    "subcategory": "Cr\u00e9ation",
+    "price": "5,00 \u20ac",
+    "weight": "1,82 kg",
+    "quantity": "2,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "Tasse floqu\u00e9e",
+    "price": "24,00 \u20ac",
+    "weight": "1,20 kg",
+    "quantity": "3,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "Assiettes",
+    "price": "12,00 \u20ac",
+    "weight": "10,05 kg",
+    "quantity": "12,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "r\u00e9cipient",
+    "price": "6,00 \u20ac",
+    "weight": "1,95 kg",
+    "quantity": "3,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "Tupperware",
+    "price": "3,50 \u20ac",
+    "weight": "0,70 kg",
+    "quantity": "3,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "cuisine",
+    "subcategory": "Casseroles",
+    "price": "62,00 \u20ac",
+    "weight": "22,56 kg",
+    "quantity": "29,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "Tupperware",
+    "price": "27,20 \u20ac",
+    "weight": "2,21 kg",
+    "quantity": "14,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "r\u00e9cipient",
+    "price": "83,80 \u20ac",
+    "weight": "48,61 kg",
+    "quantity": "58,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "décoration",
+    "subcategory": "d\u00e9coration maison (bibelot, cadre...)",
+    "price": "800,73 \u20ac",
+    "weight": "216,74 kg",
+    "quantity": "500,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "Ustensiles/Couverts",
+    "price": "9,40 \u20ac",
+    "weight": "1,25 kg",
+    "quantity": "36,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "Verres/ Tasses",
+    "price": "9,80 \u20ac",
+    "weight": "4,73 kg",
+    "quantity": "19,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "Verres/ Tasses",
+    "price": "123,05 \u20ac",
+    "weight": "70,77 kg",
+    "quantity": "233,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "décoration",
+    "subcategory": "d\u00e9coration maison (bibelot, cadre...)",
+    "price": "167,50 \u20ac",
+    "weight": "45,56 kg",
+    "quantity": "75,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "Plat",
+    "price": "24,00 \u20ac",
+    "weight": "9,25 kg",
+    "quantity": "9,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "Ustensiles/Couverts",
+    "price": "80,30 \u20ac",
+    "weight": "14,30 kg",
+    "quantity": "135,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "Assiettes",
+    "price": "40,80 \u20ac",
+    "weight": "47,47 kg",
+    "quantity": "60,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "vaisselle",
+    "subcategory": "Plat",
+    "price": "75,50 \u20ac",
+    "weight": "32,83 kg",
+    "quantity": "26,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "livres",
+    "subcategory": "MAGAZINE",
+    "price": "11,00 \u20ac",
+    "weight": "0,12 kg",
+    "quantity": "2,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Mobilier",
+    "subcategory": "Mobilier",
+    "price": "0,30 \u20ac",
+    "weight": "0,80 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Jeux Jouets",
+    "subcategory": "Jeux/jouets DEEE",
+    "price": "16,50 \u20ac",
+    "weight": "1,64 kg",
+    "quantity": "3,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Jeux Jouets",
+    "subcategory": "Jeux/jouets DEEE",
+    "price": "6,60 \u20ac",
+    "weight": "1,30 kg",
+    "quantity": "7,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Jeux Jouets",
+    "subcategory": "Jouets Autres",
+    "price": "5,50 \u20ac",
+    "weight": "1,53 kg",
+    "quantity": "5,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Jeux Jouets",
+    "subcategory": "Jeux de plein air",
+    "price": "3,00 \u20ac",
+    "weight": "2,00 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Jeux Jouets",
+    "subcategory": "Jeux de soci\u00e9t\u00e9/Puzzle",
+    "price": "4,00 \u20ac",
+    "weight": "1,85 kg",
+    "quantity": "5,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Jeux Jouets",
+    "subcategory": "Jouets Autres",
+    "price": "403,30 \u20ac",
+    "weight": "138,97 kg",
+    "quantity": "225,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Jeux Jouets",
+    "subcategory": "Jeux de plein air",
+    "price": "2,20 \u20ac",
+    "weight": "0,62 kg",
+    "quantity": "3,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Jeux Jouets",
+    "subcategory": "Jeux de soci\u00e9t\u00e9/Puzzle",
+    "price": "47,50 \u20ac",
+    "weight": "11,40 kg",
+    "quantity": "24,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Loisirs cr\u00e9atifs",
+    "subcategory": "Loisirs cr\u00e9atifs",
+    "price": "30,70 \u20ac",
+    "weight": "2,38 kg",
+    "quantity": "38,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Multimédia",
+    "subcategory": "Vinyls, CD, DVD",
+    "price": "13,00 \u20ac",
+    "weight": "3,20 kg",
+    "quantity": "13,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Multimédia",
+    "subcategory": "jeux vid\u00e9os",
+    "price": "5,50 \u20ac",
+    "weight": "0,30 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Livres",
+    "subcategory": "Livres",
+    "price": "29,50 \u20ac",
+    "weight": "11,80 kg",
+    "quantity": "18,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Multimédia",
+    "subcategory": "Vinyls, CD, DVD",
+    "price": "68,14 \u20ac",
+    "weight": "14,11 kg",
+    "quantity": "52,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Loisirs cr\u00e9atifs",
+    "subcategory": "Loisirs cr\u00e9atifs",
+    "price": "14,90 \u20ac",
+    "weight": "3,50 kg",
+    "quantity": "24,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "livres",
+    "subcategory": "Livres",
+    "price": "589,81 \u20ac",
+    "weight": "245,03 kg",
+    "quantity": "158,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "pots et jardinieres",
+    "price": "3,00 \u20ac",
+    "weight": "1,00 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "Gravats",
+    "price": "1,00 \u20ac",
+    "weight": "0,20 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "B\u00e2che",
+    "price": "100,00 \u20ac",
+    "weight": "15,00 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "M\u00e9taux",
+    "price": "12,00 \u20ac",
+    "weight": "6,00 kg",
+    "quantity": "2,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "Bois",
+    "price": "20,50 \u20ac",
+    "weight": "8,60 kg",
+    "quantity": "7,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "Porte et fenetre",
+    "price": "11,00 \u20ac",
+    "weight": "10,20 kg",
+    "quantity": "2,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "JardinMan",
+    "price": "14,00 \u20ac",
+    "weight": "3,80 kg",
+    "quantity": "5,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "Plastique dur",
+    "price": "7,00 \u20ac",
+    "weight": "2,20 kg",
+    "quantity": "4,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "BricoMan",
+    "price": "374,30 \u20ac",
+    "weight": "200,98 kg",
+    "quantity": "87,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "D3E ( visseuse etc)",
+    "price": "52,00 \u20ac",
+    "weight": "12,00 kg",
+    "quantity": "3,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "Cuivre gain\u00e9",
+    "price": "2,80 \u20ac",
+    "weight": "2,00 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "Cuivre",
+    "price": "25,00 \u20ac",
+    "weight": "3,00 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Matériauthèque",
+    "subcategory": "Ferraille",
+    "price": "29,70 \u20ac",
+    "weight": "22,43 kg",
+    "quantity": "11,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Mobilier",
+    "subcategory": "Assise",
+    "price": "30,00 \u20ac",
+    "weight": "10,00 kg",
+    "quantity": "1,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Mobilier",
+    "subcategory": "D\u00e9co Textile (tapis rideaux nappe parrure de drap)",
+    "price": "131,99 \u20ac",
+    "weight": "81,60 kg",
+    "quantity": "19,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Mobilier",
+    "subcategory": "Couchage",
+    "price": "61,00 \u20ac",
+    "weight": "23,00 kg",
+    "quantity": "4,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Mobilier",
+    "subcategory": "Rangement",
+    "price": "504,18 \u20ac",
+    "weight": "591,50 kg",
+    "quantity": "36,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Mobilier",
+    "subcategory": "Plan de pose/ Plan de travail",
+    "price": "123,50 \u20ac",
+    "weight": "196,00 kg",
+    "quantity": "13,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Mobilier",
+    "subcategory": "Assise",
+    "price": "379,40 \u20ac",
+    "weight": "277,50 kg",
+    "quantity": "31,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Mobilier",
+    "subcategory": "Livraison",
+    "price": "96,00 \u20ac",
+    "weight": "11,00 kg",
+    "quantity": "4,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Sport et loisir ",
+    "subcategory": "CAT 2",
+    "price": "132,80 \u20ac",
+    "weight": "26,10 kg",
+    "quantity": "4,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Sport et loisir ",
+    "subcategory": "V\u00e9los enfant",
+    "price": "20,00 \u20ac",
+    "weight": "6,00 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Sport et loisir ",
+    "subcategory": "V\u00e9los adulte",
+    "price": "10,00 \u20ac",
+    "weight": "16,00 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Sport et loisir ",
+    "subcategory": "CAT 1",
+    "price": "31,00 \u20ac",
+    "weight": "17,20 kg",
+    "quantity": "6,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Robe",
+    "price": "3,00 \u20ac",
+    "weight": "0,50 kg",
+    "quantity": "1,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Lot 5 pi\u00e8ces jusqu'\u00e0 14ans",
+    "price": "12,00 \u20ac",
+    "weight": "0,00 kg",
+    "quantity": "4,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Accessoires",
+    "price": "34,70 \u20ac",
+    "weight": "2,39 kg",
+    "quantity": "22,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Grand Flocage",
+    "price": "18,00 \u20ac",
+    "weight": "0,90 kg",
+    "quantity": "3,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Petit Flocage ",
+    "price": "5,00 \u20ac",
+    "weight": "0,30 kg",
+    "quantity": "1,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Enfant (-14 ans)",
+    "price": "6,00 \u20ac",
+    "weight": "0,04 kg",
+    "quantity": "1,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Bas (pantalon, short, jupe)",
+    "price": "12,00 \u20ac",
+    "weight": "2,00 kg",
+    "quantity": "4,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Marques / vintage / neuf",
+    "price": "6,00 \u20ac",
+    "weight": "0,50 kg",
+    "quantity": "1,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Linge de maison",
+    "price": "7,50 \u20ac",
+    "weight": "1,42 kg",
+    "quantity": "3,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Accessoires",
+    "price": "58,80 \u20ac",
+    "weight": "4,02 kg",
+    "quantity": "37,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Haut (pull, t-shirt, chemise)",
+    "price": "54,00 \u20ac",
+    "weight": "7,20 kg",
+    "quantity": "18,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Veste /manteau / blazer",
+    "price": "63,00 \u20ac",
+    "weight": "17,20 kg",
+    "quantity": "13,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Chaussures",
+    "subcategory": "Chaussures",
+    "price": "12,00 \u20ac",
+    "weight": "3,60 kg",
+    "quantity": "4,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Linge de maison",
+    "price": "89,10 \u20ac",
+    "weight": "30,00 kg",
+    "quantity": "55,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Lot 2 pi\u00e8ces adultes",
+    "price": "165,00 \u20ac",
+    "weight": "0,00 kg",
+    "quantity": "34,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "textile",
+    "price": "18,50 \u20ac",
+    "weight": "3,02 kg",
+    "quantity": "5,00",
+    "store": "ARINTHOD"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "Enfant (-14 ans)",
+    "price": "15,00 \u20ac",
+    "weight": "2,90 kg",
+    "quantity": "13,00",
+    "store": "ORGELET"
+  },
+  {
+    "category": "Vêtements",
+    "subcategory": "textile",
+    "price": "3,50 \u20ac",
+    "weight": "0,50 kg",
+    "quantity": "1,00",
+    "store": "ORGELET"
+  }
+]
