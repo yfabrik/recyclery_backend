@@ -287,16 +287,17 @@ module.exports = {
   async down(queryInterface, Sequelize) {
     const start = new Date('2026-02-10T00:00:00.000Z');
     const end = new Date('2026-02-11T00:00:00.000Z');
-
-    await queryInterface.bulkDelete(
-      'CashSessions',
-      {
-        createdAt: {
-          [Sequelize.Op.gte]: start,
-          [Sequelize.Op.lt]: end,
-        },
+    const whereByDay = {
+      createdAt: {
+        [Sequelize.Op.gte]: start,
+        [Sequelize.Op.lt]: end,
       },
-      {},
-    );
+    };
+
+    await queryInterface.bulkDelete('transaction_payments', whereByDay, {});
+    await queryInterface.bulkDelete('transaction_items', whereByDay, {});
+    await queryInterface.bulkDelete('SalesTransactions', whereByDay, {});
+    await queryInterface.bulkDelete('LabeledItems', whereByDay, {});
+    await queryInterface.bulkDelete('CashSessions', whereByDay, {});
   },
 };
