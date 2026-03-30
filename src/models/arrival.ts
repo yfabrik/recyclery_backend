@@ -1,12 +1,18 @@
 import {
   DataTypes,
   Model,
+  type BelongsToGetAssociationMixin,
+  type BelongsToSetAssociationMixin,
   type CreationOptional,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type Category from "./category.ts";
+import type CollectionPoint from "./collectionpoint.ts";
+import type User from "./user.ts";
 
 export default class Arrival extends Model<InferAttributes<Arrival>, InferCreationAttributes<Arrival>> {
   declare id: CreationOptional<number>;
@@ -19,6 +25,20 @@ export default class Arrival extends Model<InferAttributes<Arrival>, InferCreati
   declare status: "received";
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare categorie?: NonAttribute<Category>;
+  declare subcategorie?: NonAttribute<Category>;
+  declare CollectionPoint?: NonAttribute<CollectionPoint>;
+  declare User?: NonAttribute<User>;
+
+  declare getCategorie: BelongsToGetAssociationMixin<Category>;
+  declare setCategorie: BelongsToSetAssociationMixin<Category, number>;
+  declare getSubcategorie: BelongsToGetAssociationMixin<Category>;
+  declare setSubcategorie: BelongsToSetAssociationMixin<Category, number>;
+  declare getCollectionPoint: BelongsToGetAssociationMixin<CollectionPoint>;
+  declare setCollectionPoint: BelongsToSetAssociationMixin<CollectionPoint, number>;
+  declare getUser: BelongsToGetAssociationMixin<User>;
+  declare setUser: BelongsToSetAssociationMixin<User, number>;
 
   static associate(models: Models) {
     this.belongsTo(models.Category, { foreignKey: "category_id", as: "categorie" });

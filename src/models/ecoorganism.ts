@@ -2,11 +2,15 @@ import {
   DataTypes,
   Model,
   type CreationOptional,
+  type HasManyAddAssociationMixin,
+  type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type WasteDisposal from "./wasteDisposal.ts";
 
 export default class EcoOrganism extends Model<InferAttributes<EcoOrganism>, InferCreationAttributes<EcoOrganism>> {
   declare id: CreationOptional<number>;
@@ -19,6 +23,11 @@ export default class EcoOrganism extends Model<InferAttributes<EcoOrganism>, Inf
   declare is_active: boolean;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare WasteDisposals?: NonAttribute<WasteDisposal[]>;
+
+  declare getWasteDisposals: HasManyGetAssociationsMixin<WasteDisposal>;
+  declare addWasteDisposal: HasManyAddAssociationMixin<WasteDisposal, number>;
 
   static associate(models: Models) {
     this.hasMany(models.WasteDisposal, { foreignKey: "eco_organism_id" });

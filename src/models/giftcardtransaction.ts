@@ -1,13 +1,19 @@
 import {
   DataTypes,
   Model,
+  type BelongsToGetAssociationMixin,
+  type BelongsToSetAssociationMixin,
   type CreationOptional,
   type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type GiftCard from "./giftcard.ts";
+import type SalesTransaction from "./salestransaction.ts";
+import type User from "./user.ts";
 
 export default class GiftCardTransaction extends Model<
   InferAttributes<GiftCardTransaction>,
@@ -23,6 +29,17 @@ export default class GiftCardTransaction extends Model<
   declare metadata: Record<string, unknown> | null;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare GiftCard?: NonAttribute<GiftCard>;
+  declare SalesTransaction?: NonAttribute<SalesTransaction>;
+  declare createdBy?: NonAttribute<User | null>;
+
+  declare getGiftCard: BelongsToGetAssociationMixin<GiftCard>;
+  declare setGiftCard: BelongsToSetAssociationMixin<GiftCard, number>;
+  declare getSalesTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
+  declare setSalesTransaction: BelongsToSetAssociationMixin<SalesTransaction, number>;
+  declare getCreatedBy: BelongsToGetAssociationMixin<User>;
+  declare setCreatedBy: BelongsToSetAssociationMixin<User, number>;
 
   static associate(models: Models) {
     this.belongsTo(models.GiftCard, { foreignKey: "gift_card_id" });

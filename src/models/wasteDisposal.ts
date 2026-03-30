@@ -1,12 +1,18 @@
 import {
   DataTypes,
   Model,
+  type BelongsToGetAssociationMixin,
+  type BelongsToSetAssociationMixin,
   type CreationOptional,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type Category from "./category.ts";
+import type EcoOrganism from "./ecoorganism.ts";
+import type User from "./user.ts";
 
 export default class WasteDisposal extends Model<
   InferAttributes<WasteDisposal>,
@@ -23,6 +29,20 @@ export default class WasteDisposal extends Model<
   declare notes: string | null;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare category?: NonAttribute<Category | null>;
+  declare subcategory?: NonAttribute<Category | null>;
+  declare eco_organism?: NonAttribute<EcoOrganism | null>;
+  declare User?: NonAttribute<User | null>;
+
+  declare getCategory: BelongsToGetAssociationMixin<Category>;
+  declare setCategory: BelongsToSetAssociationMixin<Category, number>;
+  declare getSubcategory: BelongsToGetAssociationMixin<Category>;
+  declare setSubcategory: BelongsToSetAssociationMixin<Category, number>;
+  declare getEco_organism: BelongsToGetAssociationMixin<EcoOrganism>;
+  declare setEco_organism: BelongsToSetAssociationMixin<EcoOrganism, number>;
+  declare getUser: BelongsToGetAssociationMixin<User>;
+  declare setUser: BelongsToSetAssociationMixin<User, number>;
 
   static associate(models: Models) {
     this.belongsTo(models.Category, { as: "category", foreignKey: "category_id" });

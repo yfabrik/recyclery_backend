@@ -1,13 +1,23 @@
 import {
   DataTypes,
   Model,
+  type BelongsToGetAssociationMixin,
+  type BelongsToManyAddAssociationMixin,
+  type BelongsToManyGetAssociationsMixin,
+  type BelongsToManySetAssociationsMixin,
+  type BelongsToSetAssociationMixin,
   type CreationOptional,
   type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type Category from "./category.ts";
+import type Recyclery from "./recyclery.ts";
+import type SalesTransaction from "./salestransaction.ts";
+import type User from "./user.ts";
 
 export default class LabeledItem extends Model<InferAttributes<LabeledItem>, InferCreationAttributes<LabeledItem>> {
   declare id: CreationOptional<number>;
@@ -24,6 +34,25 @@ export default class LabeledItem extends Model<InferAttributes<LabeledItem>, Inf
   declare created_by: ForeignKey<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare category?: NonAttribute<Category>;
+  declare subcategory?: NonAttribute<Category>;
+  declare recyclery?: NonAttribute<Recyclery>;
+  declare createdBy?: NonAttribute<User>;
+  declare transactions?: NonAttribute<SalesTransaction[]>;
+
+  declare getCategory: BelongsToGetAssociationMixin<Category>;
+  declare setCategory: BelongsToSetAssociationMixin<Category, number>;
+  declare getSubcategory: BelongsToGetAssociationMixin<Category>;
+  declare setSubcategory: BelongsToSetAssociationMixin<Category, number>;
+  declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
+  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number>;
+  declare getCreatedBy: BelongsToGetAssociationMixin<User>;
+  declare setCreatedBy: BelongsToSetAssociationMixin<User, number>;
+  declare getTransactions: BelongsToManyGetAssociationsMixin<SalesTransaction>;
+  declare setTransactions: BelongsToManySetAssociationsMixin<SalesTransaction, number>;
+  declare addTransaction: BelongsToManyAddAssociationMixin<SalesTransaction, number>;
+  declare addTransactions: BelongsToManyAddAssociationMixin<SalesTransaction, number>;
 
   static associate(models: Models) {
     this.belongsTo(models.Category, { as: "category", foreignKey: "category_id" });

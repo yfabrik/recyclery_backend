@@ -1,14 +1,25 @@
 import {
   DataTypes,
   Model,
+  type BelongsToGetAssociationMixin,
+  type BelongsToManyAddAssociationMixin,
+  type BelongsToManyGetAssociationsMixin,
+  type BelongsToManySetAssociationsMixin,
+  type BelongsToSetAssociationMixin,
   type CreationOptional,
   type ForeignKey,
+  type HasManyAddAssociationMixin,
+  type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type GiftCardTransaction from "./giftcardtransaction.ts";
+import type SalesTransaction from "./salestransaction.ts";
+import type TransactionPayment from "./transactionpayment.ts";
+import type User from "./user.ts";
 
 export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCreationAttributes<GiftCard>> {
   declare id: CreationOptional<number>;
@@ -28,7 +39,26 @@ export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCrea
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  declare movements?: NonAttribute<Array<{ amount: string | number }>>;
+  declare issuedTransaction?: NonAttribute<SalesTransaction | null>;
+  declare issuedRefundTransaction?: NonAttribute<SalesTransaction | null>;
+  declare createdBy?: NonAttribute<User | null>;
+  declare transactions?: NonAttribute<SalesTransaction[]>;
+  declare movements?: NonAttribute<GiftCardTransaction[]>;
+  declare paymentUsages?: NonAttribute<TransactionPayment[]>;
+
+  declare getIssuedTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
+  declare setIssuedTransaction: BelongsToSetAssociationMixin<SalesTransaction, number>;
+  declare getIssuedRefundTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
+  declare setIssuedRefundTransaction: BelongsToSetAssociationMixin<SalesTransaction, number>;
+  declare getCreatedBy: BelongsToGetAssociationMixin<User>;
+  declare setCreatedBy: BelongsToSetAssociationMixin<User, number>;
+  declare getTransactions: BelongsToManyGetAssociationsMixin<SalesTransaction>;
+  declare setTransactions: BelongsToManySetAssociationsMixin<SalesTransaction, number>;
+  declare addTransaction: BelongsToManyAddAssociationMixin<SalesTransaction, number>;
+  declare getMovements: HasManyGetAssociationsMixin<GiftCardTransaction>;
+  declare addMovement: HasManyAddAssociationMixin<GiftCardTransaction, number>;
+  declare getPaymentUsages: HasManyGetAssociationsMixin<TransactionPayment>;
+  declare addPaymentUsage: HasManyAddAssociationMixin<TransactionPayment, number>;
 
   static associate(models: Models) {
     this.belongsTo(models.SalesTransaction, {

@@ -1,12 +1,17 @@
 import {
   DataTypes,
   Model,
+  type BelongsToManyAddAssociationMixin,
+  type BelongsToManyGetAssociationsMixin,
+  type BelongsToManySetAssociationsMixin,
   type CreationOptional,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type Employee from "./employee.ts";
 
 export default class Skill extends Model<InferAttributes<Skill>, InferCreationAttributes<Skill>> {
   declare id: CreationOptional<number>;
@@ -15,6 +20,12 @@ export default class Skill extends Model<InferAttributes<Skill>, InferCreationAt
   declare description: string | null;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare employees?: NonAttribute<Employee[]>;
+
+  declare getEmployees: BelongsToManyGetAssociationsMixin<Employee>;
+  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, number>;
+  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, number>;
 
   static associate(models: Models) {
     this.belongsToMany(models.Employee, {

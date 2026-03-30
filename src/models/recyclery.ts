@@ -2,13 +2,30 @@ import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
+  type BelongsToGetAssociationMixin,
+  type BelongsToManyAddAssociationMixin,
+  type BelongsToManyGetAssociationsMixin,
+  type BelongsToManySetAssociationsMixin,
+  type BelongsToSetAssociationMixin,
   type CreationOptional,
   type ForeignKey,
+  type HasManyAddAssociationMixin,
+  type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.js";
+import type { Models } from "./db-types.ts";
+import type CashRegister from "./cashregister.ts";
+import type CollectionPoint from "./collectionpoint.ts";
+import type Donation from "./donation.ts";
+import type Employee from "./employee.ts";
+import type LabeledItem from "./labeleditem.ts";
+import type Promotion from "./promotion.ts";
+import type Task from "./task.ts";
+import type TaskSchedule from "./taskschedule.ts";
+import type User from "./user.ts";
 
 export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCreationAttributes<Recyclery>> {
   declare id: CreationOptional<number>;
@@ -22,7 +39,37 @@ export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCr
   declare manager_id: ForeignKey<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
-  declare TaskSchedules?: Array<{ update: (v: { is_recurring: boolean; name: string }) => Promise<void> }>;
+  declare TaskSchedules?: NonAttribute<TaskSchedule[]>;
+
+  declare LabeledItems?: NonAttribute<LabeledItem[]>;
+  declare Donations?: NonAttribute<Donation[]>;
+  declare Tasks?: NonAttribute<Task[]>;
+  declare employees?: NonAttribute<Employee[]>;
+  declare manager?: NonAttribute<User | null>;
+  declare caisses?: NonAttribute<CashRegister[]>;
+  declare CollectionPoints?: NonAttribute<CollectionPoint[]>;
+  declare promotions?: NonAttribute<Promotion[]>;
+
+  declare getLabeledItems: HasManyGetAssociationsMixin<LabeledItem>;
+  declare addLabeledItem: HasManyAddAssociationMixin<LabeledItem, number>;
+  declare getDonations: HasManyGetAssociationsMixin<Donation>;
+  declare addDonation: HasManyAddAssociationMixin<Donation, number>;
+  declare getTasks: HasManyGetAssociationsMixin<Task>;
+  declare addTask: HasManyAddAssociationMixin<Task, number>;
+  declare getTaskSchedules: HasManyGetAssociationsMixin<TaskSchedule>;
+  declare addTaskSchedule: HasManyAddAssociationMixin<TaskSchedule, number>;
+  declare getEmployees: BelongsToManyGetAssociationsMixin<Employee>;
+  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, number>;
+  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, number>;
+  declare getManager: BelongsToGetAssociationMixin<User>;
+  declare setManager: BelongsToSetAssociationMixin<User, number>;
+  declare getCaisses: HasManyGetAssociationsMixin<CashRegister>;
+  declare addCaisse: HasManyAddAssociationMixin<CashRegister, number>;
+  declare getCollectionPoints: HasManyGetAssociationsMixin<CollectionPoint>;
+  declare addCollectionPoint: HasManyAddAssociationMixin<CollectionPoint, number>;
+  declare getPromotions: BelongsToManyGetAssociationsMixin<Promotion>;
+  declare setPromotions: BelongsToManySetAssociationsMixin<Promotion, number>;
+  declare addPromotion: BelongsToManyAddAssociationMixin<Promotion, number>;
 
   static associate(models: Models) {
     this.hasMany(models.LabeledItem, { foreignKey: "recyclery_id" });

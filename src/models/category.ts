@@ -1,13 +1,20 @@
 import {
   DataTypes,
   Model,
+  type BelongsToGetAssociationMixin,
+  type BelongsToSetAssociationMixin,
   type CreationOptional,
   type ForeignKey,
+  type HasManyAddAssociationMixin,
+  type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type LabeledItem from "./labeleditem.ts";
+import type Promotion from "./promotion.ts";
 
 export default class Category extends Model<InferAttributes<Category>, InferCreationAttributes<Category>> {
   declare id: CreationOptional<number>;
@@ -23,6 +30,20 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
   declare parent_id: ForeignKey<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare subcategories?: NonAttribute<Category[]>;
+  declare parent?: NonAttribute<Category>;
+  declare LabeledItems?: NonAttribute<LabeledItem[]>;
+  declare Promotions?: NonAttribute<Promotion[]>;
+
+  declare getSubcategories: HasManyGetAssociationsMixin<Category>;
+  declare addSubcategory: HasManyAddAssociationMixin<Category, number>;
+  declare getParent: BelongsToGetAssociationMixin<Category>;
+  declare setParent: BelongsToSetAssociationMixin<Category, number>;
+  declare getLabeledItems: HasManyGetAssociationsMixin<LabeledItem>;
+  declare addLabeledItem: HasManyAddAssociationMixin<LabeledItem, number>;
+  declare getPromotions: HasManyGetAssociationsMixin<Promotion>;
+  declare addPromotion: HasManyAddAssociationMixin<Promotion, number>;
 
   static associate(models: Models) {
     this.hasMany(models.Category, {

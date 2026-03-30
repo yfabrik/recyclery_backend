@@ -1,13 +1,18 @@
 import {
   DataTypes,
   Model,
+  type BelongsToGetAssociationMixin,
+  type BelongsToSetAssociationMixin,
   type CreationOptional,
   type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type Recyclery from "./recyclery.ts";
+import type User from "./user.ts";
 
 export default class Donation extends Model<InferAttributes<Donation>, InferCreationAttributes<Donation>> {
   declare id: CreationOptional<number>;
@@ -24,6 +29,14 @@ export default class Donation extends Model<InferAttributes<Donation>, InferCrea
   declare received_by: ForeignKey<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare Recyclery?: NonAttribute<Recyclery | null>;
+  declare User?: NonAttribute<User | null>;
+
+  declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
+  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number>;
+  declare getUser: BelongsToGetAssociationMixin<User>;
+  declare setUser: BelongsToSetAssociationMixin<User, number>;
 
   static associate(models: Models) {
     this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });

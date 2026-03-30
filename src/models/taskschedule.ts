@@ -1,10 +1,31 @@
 import createHttpError from "http-errors";
-import { DataTypes, Model, Op, type CreationOptional, type ForeignKey, type InferAttributes, type InferCreationAttributes, type Sequelize } from "sequelize";
+import {
+  DataTypes,
+  Model,
+  Op,
+  type BelongsToGetAssociationMixin,
+  type BelongsToManyAddAssociationMixin,
+  type BelongsToManyGetAssociationsMixin,
+  type BelongsToManySetAssociationsMixin,
+  type BelongsToSetAssociationMixin,
+  type CreationOptional,
+  type ForeignKey,
+  type HasManyAddAssociationMixin,
+  type HasManyGetAssociationsMixin,
+  type InferAttributes,
+  type InferCreationAttributes,
+  type NonAttribute,
+  type Sequelize,
+} from "sequelize";
 // @ts-expect-error local JS module has no .d.ts yet
 import logger from "../services/logger.js";
 // @ts-expect-error local JS module has no .d.ts yet
 import { generateTasksFromSchedule } from "../services/taskScheduleUtils.js";
 import type { Models } from "./db-types.ts";
+import type CollectionPoint from "./collectionpoint.ts";
+import type Employee from "./employee.ts";
+import type Recyclery from "./recyclery.ts";
+import type Task from "./task.ts";
 
 export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, InferCreationAttributes<TaskSchedule>> {
   declare id: CreationOptional<number>;
@@ -28,6 +49,21 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
   declare collection_point_id: ForeignKey<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare Tasks?: NonAttribute<Task[]>;
+  declare Recyclery?: NonAttribute<Recyclery | null>;
+  declare CollectionPoint?: NonAttribute<CollectionPoint | null>;
+  declare Employees?: NonAttribute<Employee[]>;
+
+  declare getTasks: HasManyGetAssociationsMixin<Task>;
+  declare addTask: HasManyAddAssociationMixin<Task, number>;
+  declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
+  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number>;
+  declare getCollectionPoint: BelongsToGetAssociationMixin<CollectionPoint>;
+  declare setCollectionPoint: BelongsToSetAssociationMixin<CollectionPoint, number>;
+  declare getEmployees: BelongsToManyGetAssociationsMixin<Employee>;
+  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, number>;
+  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, number>;
 
   static associate(models: Models) {
     this.hasMany(models.Task, { foreignKey: "schedule_id", onDelete: "CASCADE" });

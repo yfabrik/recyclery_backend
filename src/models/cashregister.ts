@@ -2,12 +2,19 @@ import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
+  type BelongsToGetAssociationMixin,
+  type BelongsToSetAssociationMixin,
   type CreationOptional,
+  type HasManyAddAssociationMixin,
+  type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type CashSession from "./cashsession.ts";
+import type Recyclery from "./recyclery.ts";
 
 export default class CashRegister extends Model<
   InferAttributes<CashRegister>,
@@ -18,6 +25,14 @@ export default class CashRegister extends Model<
   declare is_active: boolean;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare Recyclery?: NonAttribute<Recyclery | null>;
+  declare sessions?: NonAttribute<CashSession[]>;
+
+  declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
+  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number>;
+  declare getSessions: HasManyGetAssociationsMixin<CashSession>;
+  declare addSession: HasManyAddAssociationMixin<CashSession, number>;
 
   static associate(models: Models) {
     this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });

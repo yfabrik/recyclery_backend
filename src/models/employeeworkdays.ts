@@ -1,12 +1,16 @@
 import {
   DataTypes,
   Model,
+  type BelongsToGetAssociationMixin,
+  type BelongsToSetAssociationMixin,
   type CreationOptional,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type Employee from "./employee.ts";
 
 export default class EmployeeWorkdays extends Model<
   InferAttributes<EmployeeWorkdays>,
@@ -22,6 +26,11 @@ export default class EmployeeWorkdays extends Model<
   declare week: string | null;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare Employee?: NonAttribute<Employee | null>;
+
+  declare getEmployee: BelongsToGetAssociationMixin<Employee>;
+  declare setEmployee: BelongsToSetAssociationMixin<Employee, number>;
 
   static associate(models: Models) {
     this.belongsTo(models.Employee, { foreignKey: "employee_id" });

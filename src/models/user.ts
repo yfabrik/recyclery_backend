@@ -3,11 +3,20 @@ import {
   DataTypes,
   Model,
   type CreationOptional,
+  type HasManyAddAssociationMixin,
+  type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type Arrival from "./arrival.ts";
+import type CollectionReceipt from "./collectionreceipt.ts";
+import type Donation from "./donation.ts";
+import type LabeledItem from "./labeleditem.ts";
+import type Recyclery from "./recyclery.ts";
+import type SalesTransaction from "./salestransaction.ts";
 
 export default class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare id: CreationOptional<number>;
@@ -21,6 +30,26 @@ export default class User extends Model<InferAttributes<User>, InferCreationAttr
   declare last_login: Date | null;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare Donations?: NonAttribute<Donation[]>;
+  declare SalesTransactions?: NonAttribute<SalesTransaction[]>;
+  declare CollectionReceipts?: NonAttribute<CollectionReceipt[]>;
+  declare LabeledItems?: NonAttribute<LabeledItem[]>;
+  declare Arrivals?: NonAttribute<Arrival[]>;
+  declare managedStores?: NonAttribute<Recyclery[]>;
+
+  declare getDonations: HasManyGetAssociationsMixin<Donation>;
+  declare addDonation: HasManyAddAssociationMixin<Donation, number>;
+  declare getSalesTransactions: HasManyGetAssociationsMixin<SalesTransaction>;
+  declare addSalesTransaction: HasManyAddAssociationMixin<SalesTransaction, number>;
+  declare getCollectionReceipts: HasManyGetAssociationsMixin<CollectionReceipt>;
+  declare addCollectionReceipt: HasManyAddAssociationMixin<CollectionReceipt, number>;
+  declare getLabeledItems: HasManyGetAssociationsMixin<LabeledItem>;
+  declare addLabeledItem: HasManyAddAssociationMixin<LabeledItem, number>;
+  declare getArrivals: HasManyGetAssociationsMixin<Arrival>;
+  declare addArrival: HasManyAddAssociationMixin<Arrival, number>;
+  declare getManagedStores: HasManyGetAssociationsMixin<Recyclery>;
+  declare addManagedStore: HasManyAddAssociationMixin<Recyclery, number>;
 
   static associate(models: Models) {
     this.hasMany(models.Donation, { foreignKey: "received_by" });

@@ -1,12 +1,20 @@
 import {
   DataTypes,
   Model,
+  type BelongsToGetAssociationMixin,
+  type BelongsToSetAssociationMixin,
   type CreationOptional,
+  type HasManyAddAssociationMixin,
+  type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type CashRegister from "./cashregister.ts";
+import type SalesTransaction from "./salestransaction.ts";
+import type User from "./user.ts";
 
 export default class CashSession extends Model<InferAttributes<CashSession>, InferCreationAttributes<CashSession>> {
   declare id: CreationOptional<number>;
@@ -19,6 +27,17 @@ export default class CashSession extends Model<InferAttributes<CashSession>, Inf
   declare closed_at: Date | null;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare CashRegister?: NonAttribute<CashRegister | null>;
+  declare SalesTransactions?: NonAttribute<SalesTransaction[]>;
+  declare User?: NonAttribute<User | null>;
+
+  declare getCashRegister: BelongsToGetAssociationMixin<CashRegister>;
+  declare setCashRegister: BelongsToSetAssociationMixin<CashRegister, number>;
+  declare getSalesTransactions: HasManyGetAssociationsMixin<SalesTransaction>;
+  declare addSalesTransaction: HasManyAddAssociationMixin<SalesTransaction, number>;
+  declare getUser: BelongsToGetAssociationMixin<User>;
+  declare setUser: BelongsToSetAssociationMixin<User, number>;
 
   static associate(models: Models) {
     this.belongsTo(models.CashRegister, { foreignKey: "cash_register_id" });

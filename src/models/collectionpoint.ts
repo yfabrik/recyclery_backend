@@ -1,12 +1,21 @@
 import {
   DataTypes,
   Model,
+  type BelongsToGetAssociationMixin,
+  type BelongsToSetAssociationMixin,
   type CreationOptional,
+  type HasManyAddAssociationMixin,
+  type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
+  type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type Arrival from "./arrival.ts";
+import type Recyclery from "./recyclery.ts";
+import type Task from "./task.ts";
+import type TaskSchedule from "./taskschedule.ts";
 
 export default class CollectionPoint extends Model<
   InferAttributes<CollectionPoint>,
@@ -25,6 +34,20 @@ export default class CollectionPoint extends Model<
   declare is_active: boolean;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare Recyclery?: NonAttribute<Recyclery | null>;
+  declare TaskSchedules?: NonAttribute<TaskSchedule[]>;
+  declare Tasks?: NonAttribute<Task[]>;
+  declare Arrivals?: NonAttribute<Arrival[]>;
+
+  declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
+  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number>;
+  declare getTaskSchedules: HasManyGetAssociationsMixin<TaskSchedule>;
+  declare addTaskSchedule: HasManyAddAssociationMixin<TaskSchedule, number>;
+  declare getTasks: HasManyGetAssociationsMixin<Task>;
+  declare addTask: HasManyAddAssociationMixin<Task, number>;
+  declare getArrivals: HasManyGetAssociationsMixin<Arrival>;
+  declare addArrival: HasManyAddAssociationMixin<Arrival, number>;
 
   static associate(models: Models) {
     this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
