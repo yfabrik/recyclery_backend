@@ -7,6 +7,7 @@ import {
   type BelongsToManySetAssociationsMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
+  type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
   type NonAttribute,
@@ -28,6 +29,8 @@ export default class Task extends Model<InferAttributes<Task>, InferCreationAttr
   declare location: string | null;
   declare equipment_needed: string | null;
   declare hourly_rate: string | null;
+  declare schedule_id: ForeignKey<number | null>;
+  declare store_id: ForeignKey<number | null>;
   declare scheduled_date: Date | null;
   declare day_of_week: string | null;
   declare start_time: Date | null;
@@ -91,6 +94,8 @@ export default class Task extends Model<InferAttributes<Task>, InferCreationAttr
         end_time: DataTypes.DATE,
         notes: DataTypes.TEXT,
         status: DataTypes.STRING,
+        schedule_id: DataTypes.INTEGER,
+        store_id: DataTypes.INTEGER,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },

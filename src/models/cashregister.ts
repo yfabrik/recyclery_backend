@@ -7,10 +7,11 @@ import {
   type CreationOptional,
   type HasManyAddAssociationMixin,
   type HasManyGetAssociationsMixin,
-  type InferAttributes,
+  type HasManyCountAssociationsMixin,
   type InferCreationAttributes,
   type NonAttribute,
   type Sequelize,
+  type InferAttributes,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
 import type CashSession from "./cashsession.ts";
@@ -33,6 +34,7 @@ export default class CashRegister extends Model<
   declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number>;
   declare getSessions: HasManyGetAssociationsMixin<CashSession>;
   declare addSession: HasManyAddAssociationMixin<CashSession, number>;
+  declare countSessions: HasManyCountAssociationsMixin; 
 
   static associate(models: Models) {
     this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
@@ -65,7 +67,7 @@ export default class CashRegister extends Model<
         ],
         hooks: {
           beforeDestroy: async (caisse) => {
-            const sessions = await (caisse as unknown as { countSessions: (o: { where: { status: string } }) => Promise<number> }).countSessions({
+            const sessions = await caisse.countSessions({
               where: { status: "open" },
             });
             if (sessions) {

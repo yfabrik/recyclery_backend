@@ -13,6 +13,7 @@ import {
   type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
+  type ModelStatic,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
@@ -26,6 +27,7 @@ import type Promotion from "./promotion.ts";
 import type Task from "./task.ts";
 import type TaskSchedule from "./taskschedule.ts";
 import type User from "./user.ts";
+import type CashSession from "./cashsession.js";
 
 export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCreationAttributes<Recyclery>> {
   declare id: CreationOptional<number>;
@@ -135,7 +137,7 @@ export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCr
         indexes: [{ fields: ["is_active"] }, { fields: ["manager_id"] }],
         hooks: {
           afterUpdate: async (instance, options) => {
-            if (options.fields?.includes("name") || options.fields?.includes("is_active")) {
+            if (instance.changed("name") || instance.changed("is_active")) {
               for (const schedule of instance.TaskSchedules ?? []) {
                 await schedule.update({
                   is_recurring: instance.is_active,
@@ -145,12 +147,10 @@ export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCr
             }
           },
           beforeDestroy: async (recyclery) => {
-            const cashRegister = recyclery.sequelize.models.CashRegister;
-            const sessions = recyclery.sequelize.models.CashSession;
+            const cashRegister = recyclery.sequelize.models.CashRegister as ModelStatic<CashRegister>;
+            const sessions = recyclery.sequelize.models.CashSession as ModelStatic<CashSession>;
             if (cashRegister) {
-              const caisses = await (recyclery as unknown as {
-                getCaisses: (args: unknown) => Promise<Array<{ name: string }>>;
-              }).getCaisses({
+              const caisses = await recyclery.getCaisses({
                 include: [
                   {
                     model: sessions,

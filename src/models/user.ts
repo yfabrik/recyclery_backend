@@ -111,17 +111,15 @@ export default class User extends Model<InferAttributes<User>, InferCreationAttr
         },
         hooks: {
           beforeCreate: async (user) => {
-            const u = user as User;
-            if (u.password_hash && !u.password_hash.startsWith("$2")) {
+            if (user.password_hash && !user.password_hash.startsWith("$2")) {
               const saltRounds = 10;
-              u.password_hash = await bcrypt.hash(u.password_hash, saltRounds);
+              user.password_hash = await bcrypt.hash(user.password_hash, saltRounds);
             }
           },
           beforeUpdate: async (user) => {
-            const u = user as User;
-            if (u.changed("password_hash") && u.password_hash && !u.password_hash.startsWith("$2")) {
+            if (user.changed("password_hash") && user.password_hash && !user.password_hash.startsWith("$2")) {
               const saltRounds = 10;
-              u.password_hash = await bcrypt.hash(u.password_hash, saltRounds);
+              user.password_hash = await bcrypt.hash(user.password_hash, saltRounds);
             }
           },
         },

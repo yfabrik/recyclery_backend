@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { Op, Transaction, type WhereOptions } from "sequelize";
 import {
   DataTypes,
   Model,
@@ -8,19 +8,20 @@ import {
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import type Employee from "./employee.js";
 
 export default class EmployeeStore extends Model<
   InferAttributes<EmployeeStore>,
   InferCreationAttributes<EmployeeStore>
 > {
-  declare id: CreationOptional<number>;
+  // declare id: CreationOptional<number>;
   declare is_primary: boolean;
   declare employeeId: CreationOptional<number | null>;
   declare recycleryId: CreationOptional<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  static associate(_models: Models) {}
+  static associate(_models: Models) { }
 
   static initModel(sequelize: Sequelize) {
     async function unsetOtherPrimaries(
@@ -28,11 +29,11 @@ export default class EmployeeStore extends Model<
       {
         employeeIds,
         excludeId,
-      }: { employeeIds: number[]; excludeId?: number | null },
-      options?: { transaction?: unknown },
+      }: { employeeIds: Employee["id"][]; excludeId?: Employee["id"] | null },
+      options?: { transaction?: Transaction },
     ) {
       if (!employeeIds?.length) return;
-      const where: Record<string, unknown> = {
+      const where: WhereOptions<EmployeeStore> = {
         employeeId: { [Op.in]: employeeIds },
         is_primary: true,
         ...(excludeId != null && { id: { [Op.ne]: excludeId } }),
@@ -41,18 +42,18 @@ export default class EmployeeStore extends Model<
         { is_primary: false },
         {
           where,
-          ...(options?.transaction ? { transaction: options.transaction as never } : {}),
+          ...(options?.transaction ? { transaction: options.transaction } : {}),
         },
       );
     }
 
     EmployeeStore.init(
       {
-        id: {
-          type: DataTypes.INTEGER.UNSIGNED,
-          primaryKey: true,
-          autoIncrement: true,
-        },
+        // id: {
+        //   type: DataTypes.INTEGER.UNSIGNED,
+        //   primaryKey: true,
+        //   autoIncrement: true,
+        // },
         is_primary: { type: DataTypes.BOOLEAN, defaultValue: false },
         employeeId: DataTypes.INTEGER,
         recycleryId: DataTypes.INTEGER,
@@ -76,19 +77,17 @@ export default class EmployeeStore extends Model<
         ],
         hooks: {
           async afterCreate(instance, options) {
-            const inst = instance as EmployeeStore;
-            if (!inst.is_primary || inst.employeeId == null) return;
+            if (!instance.is_primary || instance.employeeId == null) return;
             const opts = options.transaction ? { transaction: options.transaction } : {};
             await unsetOtherPrimaries(
               EmployeeStore,
-              { employeeIds: [inst.employeeId], excludeId: inst.id },
+              { employeeIds: [instance.employeeId], excludeId: instance.employeeId },//TODO revoir
               opts,
             );
           },
 
           async beforeBulkCreate(records, options) {
-            const recs = records as EmployeeStore[];
-            const withPrimary = recs.filter((r) => r.is_primary && r.employeeId != null);
+            const withPrimary = records.filter((r) => r.is_primary && r.employeeId != null);
             const employeeIds = [...new Set(withPrimary.map((r) => r.employeeId!).filter((id) => id != null))];
             const opts = options.transaction ? { transaction: options.transaction } : {};
             if (employeeIds.length) {
@@ -96,7 +95,7 @@ export default class EmployeeStore extends Model<
             }
             for (const eid of employeeIds) {
               let first = true;
-              for (const r of recs) {
+              for (const r of records) {
                 if (r.employeeId !== eid) continue;
                 if (!r.is_primary) continue;
                 if (!first) r.is_primary = false;
@@ -106,28 +105,27 @@ export default class EmployeeStore extends Model<
           },
 
           async beforeUpdate(instance, options) {
-            const inst = instance as EmployeeStore;
-            if (!inst.changed("is_primary") || !inst.is_primary || inst.employeeId == null) return;
+            if (!instance.changed("is_primary") || !instance.is_primary || instance.employeeId == null) return;
             const opts = options.transaction ? { transaction: options.transaction } : {};
-            await unsetOtherPrimaries(EmployeeStore, { employeeIds: [inst.employeeId], excludeId: inst.id }, opts);
+            await unsetOtherPrimaries(EmployeeStore, { employeeIds: [instance.employeeId], excludeId: instance.id }, opts);
           },
 
           async beforeBulkUpdate(options) {
             const attrs = (options as { attributes?: { is_primary?: boolean } }).attributes;
             if (!attrs || attrs.is_primary !== true) return;
-            const txnOpts = (options as { transaction?: unknown }).transaction
-              ? { transaction: (options as { transaction: unknown }).transaction }
+            const txnOpts = options.transaction
+              ? { transaction: options.transaction }
               : {};
-            const whereOpt = (options as { where?: unknown }).where;
+            const whereOpt: WhereOptions<EmployeeStore> = {};
             const rows = await EmployeeStore.findAll({
               where: whereOpt,
               attributes: ["employeeId"],
               raw: true,
               ...txnOpts,
-            } as never);
+            });
             const employeeIds = [
               ...new Set(
-                (rows as { employeeId: number | null }[])
+                rows
                   .map((r) => r.employeeId)
                   .filter((id): id is number => id != null),
               ),

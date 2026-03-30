@@ -25,7 +25,7 @@ export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCrea
   declare id: CreationOptional<number>;
   declare code: string;
   declare initial_value: string;
-  declare current_value: string | number;
+  declare current_value: number | null;
   declare expires_at: Date | null;
   declare status: "active" | "partially_used" | "redeemed" | "expired" | "cancelled";
   declare currency: string;

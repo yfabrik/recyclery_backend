@@ -7,6 +7,7 @@ import {
   type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
+  type ModelStatic,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
@@ -88,23 +89,17 @@ export default class GiftCardTransaction extends Model<
         ],
         hooks: {
           beforeCreate: async (movement, options) => {
-            const m = movement as unknown as {
-              gift_card_id: number;
-              amount: string | number;
-              type: string;
-            };
-            const GiftCardModel = movement.sequelize.models.GiftCard;
+            const GiftCardModel = movement.sequelize.models.GiftCard as ModelStatic<GiftCard>;
             if (!GiftCardModel) throw new Error("GiftCard model not found");
-            const giftCard = await GiftCardModel.findByPk(m.gift_card_id, {
+            const giftCard = await GiftCardModel.findByPk(movement.gift_card_id, {
               transaction: options.transaction ?? null,
               include: [{ model: GiftCardTransaction, as: "movements" }],
             });
             if (!giftCard) throw new Error("Gift card not found");
-            const gc = giftCard as unknown as { status: string; current_value: number };
-            let newStatus = gc.status;
-            const amount = Math.abs(Number(m.amount));
-            const currentValue = gc.current_value;
-            if (m.type === "charge") {
+            let newStatus = giftCard.status;
+            const amount = Math.abs(Number(movement.amount));
+            const currentValue = giftCard.current_value ?? 0;
+            if (movement.type === "charge") {
               console.log(amount, currentValue);
               if (amount - currentValue < 0) {
                 newStatus = "partially_used";
