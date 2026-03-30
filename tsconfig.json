@@ -40,8 +40,11 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+
+    "allowJs": true,
+    // "checkJs": true,
   },
   "include": ["src"],
-  "exclude": ["dist"]
+  "exclude": ["src/models/**/*.js","src/migrations"]
 }
