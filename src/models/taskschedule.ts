@@ -77,6 +77,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
   static initModel(sequelize: Sequelize) {
     const conflictCheck = async (data: TaskSchedule) => {
       const values = data.dataValues
+      if(values.category === "custom") return;
       const toMinutes = (v: Date | number) => {
         const d = v instanceof Date ? v : new Date(v);
         return d.getHours() * 60 + d.getMinutes();
@@ -162,14 +163,52 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
         "start_time",
         "end_time",
         "store_id",
-      ] satisfies (keyof Partial<InferAttributes<Task>>)[];
+      ] as const satisfies readonly (keyof InferAttributes<TaskSchedule>)[];
+
       for (const field of updatableFields) {
-        if(schedule.changed(field)) {
-          fieldsToUpdate[field] = schedule[field];
+        if (!schedule.changed(field)) continue;
+        // Avoid computed indexing to keep TS from collapsing the assignment type to `never`.
+        switch (field) {
+          case "name":
+            fieldsToUpdate.name = schedule.name;
+            break;
+          case "description":
+            fieldsToUpdate.description = schedule.description;
+            break;
+          case "category":
+            fieldsToUpdate.category = schedule.category;
+            break;
+          case "priority":
+            fieldsToUpdate.priority = schedule.priority;
+            break;
+          case "required_skills":
+            fieldsToUpdate.required_skills = schedule.required_skills;
+            break;
+          case "location":
+            fieldsToUpdate.location = schedule.location;
+            break;
+          case "equipment_needed":
+            fieldsToUpdate.equipment_needed = schedule.equipment_needed;
+            break;
+          case "hourly_rate":
+            fieldsToUpdate.hourly_rate = schedule.hourly_rate;
+            break;
+          case "notes":
+            fieldsToUpdate.notes = schedule.notes;
+            break;
+          case "status":
+            fieldsToUpdate.status = schedule.status;
+            break;
+          case "start_time":
+            fieldsToUpdate.start_time = schedule.start_time;
+            break;
+          case "end_time":
+            fieldsToUpdate.end_time = schedule.end_time;
+            break;
+          case "store_id":
+            fieldsToUpdate.store_id = schedule.store_id;
+            break;
         }
-        // if (previousValues[field] !== undefined && previousValues[field] !== currentValues[field]) {
-        //   fieldsToUpdate[field] = currentValues[field];
-        // }
       }
       if (Object.keys(fieldsToUpdate).length === 0) return;
       const result = await Task.update(fieldsToUpdate, {
