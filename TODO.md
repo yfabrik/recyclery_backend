@@ -42,3 +42,7 @@ table migrations orders
 6 transactionItems
 
 table saleTransaction FK to itself
+
+
+# 2026-03-30
+migrations with foreign key cascade delete for example for cash session to delete all sale transaction associated

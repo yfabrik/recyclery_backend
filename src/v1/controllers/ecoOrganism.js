@@ -5,7 +5,7 @@ import db from "../../models/index.js";
 import logger from "../../services/logger.js";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 
-const { EcoOrganism, WasteDisposal, Category } = db;
+const { EcoOrganism, WasteDisposal, Category, Arrival } = db;
 
 const dataSchema = z.object({
   name: z.string().trim().nonempty("Le nom est requis"),
@@ -15,6 +15,7 @@ const dataSchema = z.object({
   address: z.string().nullish(),
   website: z.url().nullish(),
   is_active: z.boolean().optional().default(true),
+  inCategories: z.array(idSchema()).optional().default([]),
 });
 
 /**
@@ -23,7 +24,7 @@ const dataSchema = z.object({
  * @param {import("express").Response} res
  */
 export const listEcoOrganism = async (req, res) => {
-  const ALLOWED_INCLUDES = ["waste"];
+  const ALLOWED_INCLUDES = ["waste", "incategories", "sellcategories"];
   const filterSchema = z.object({
     active: z.coerce.boolean().optional(),
     include: z
@@ -41,7 +42,8 @@ export const listEcoOrganism = async (req, res) => {
   if (filter.active) where.is_active = filter.active;
   const include = [];
   if (filter.include.includes("waste")) include.push({ model: WasteDisposal });
-
+  if (filter.include.includes("incategories")) include.push({ model: Category, as: "inCategories" });
+  if (filter.include.includes("sellcategories")) include.push({ model: Category, as: "sellCategories" });
   const eco_organisms = await EcoOrganism.findAll({ where, include });
 
   res.json({ eco_organisms });
@@ -83,7 +85,7 @@ export const createEcoOrganism = async (req, res) => {
   const created = await EcoOrganism.create({
     ...data,
   });
-
+  await created.setInCategories(data.inCategories);
   res.status(201).json({
     message: "Éco-organisme créé avec succès",
     eco_organism_id: created.id,
@@ -104,6 +106,7 @@ export const updateEcoOrganism = async (req, res) => {
   await eco_organism.update({
     ...data,
   });
+  await eco_organism.setInCategories(data.inCategories);
 
   res.json({ message: "Éco-organisme mis à jour avec succès", eco_organism });
 };
@@ -228,23 +231,82 @@ export const ecoOrgQuarterStats = async (req, res) => {
     attributes: ["id", "name", "description", "is_active"],
   });
 
-  // For each quarter, get weight per eco_organism_id and per category (category only, no subcategory)
+  /**
+   * Read category links from a pivot table and normalize output keys.
+   * Supports either snake_case columns or Sequelize default naming.
+   * @param {"ecoOrg_categoryIn" | "ecoOrg_categorySell"} tableName
+   */
+  const loadEcoOrgCategoryLinks = async (tableName) => {
+    const columns =
+      /** @type {{ name: string }[]} */ (
+        await db.sequelize.query(`PRAGMA table_info("${tableName}")`, {
+          type: db.Sequelize.QueryTypes.SELECT,
+        })
+      );
+    const columnNames = new Set(columns.map((c) => c.name));
+
+    const ecoOrgColumn =
+      ["eco_organism_id", "EcoOrganismId", "ecoOrganismId"].find((c) =>
+        columnNames.has(c),
+      ) ?? null;
+    const categoryColumn =
+      ["category_id", "CategoryId", "categoryId"].find((c) =>
+        columnNames.has(c),
+      ) ?? null;
+
+    if (!ecoOrgColumn || !categoryColumn) return [];
+
+    return /** @type {{ eco_organism_id: number; category_id: number }[]} */ (
+      await db.sequelize.query(
+        `SELECT "${ecoOrgColumn}" as eco_organism_id, "${categoryColumn}" as category_id FROM "${tableName}"`,
+        {
+          type: db.Sequelize.QueryTypes.SELECT,
+        },
+      )
+    );
+  };
+
+  const [inCategoryLinks, sellCategoryLinks] = await Promise.all([
+    loadEcoOrgCategoryLinks("ecoOrg_categoryIn"),
+    loadEcoOrgCategoryLinks("ecoOrg_categorySell"),
+  ]);
+
+  /** @type {Map<number, Set<number>>} */
+  const inCategoryIdsByEcoOrg = new Map();
+  inCategoryLinks.forEach((link) => {
+    if (!inCategoryIdsByEcoOrg.has(link.eco_organism_id)) {
+      inCategoryIdsByEcoOrg.set(link.eco_organism_id, new Set());
+    }
+    inCategoryIdsByEcoOrg.get(link.eco_organism_id).add(link.category_id);
+  });
+
+  /** @type {Map<number, Set<number>>} */
+  const sellCategoryIdsByEcoOrg = new Map();
+  sellCategoryLinks.forEach((link) => {
+    if (!sellCategoryIdsByEcoOrg.has(link.eco_organism_id)) {
+      sellCategoryIdsByEcoOrg.set(link.eco_organism_id, new Set());
+    }
+    sellCategoryIdsByEcoOrg.get(link.eco_organism_id).add(link.category_id);
+  });
+
+  // For each quarter, get weight per eco_organism_id, category and subcategory
   const weightByEcoOrgByQuarter = await Promise.all(
     quarterRanges.map(async (range) => {
       const rows =
-        /** @type {{ eco_organism_id: number; category_id: number | null; weight_kg: string | number }[]} */ (
+        /** @type {{ eco_organism_id: number; category_id: number | null; subcategory_id: number | null; weight_kg: string | number }[]} */ (
           /** @type {unknown} */ (
             await WasteDisposal.findAll({
               attributes: [
                 "eco_organism_id",
                 "category_id",
+                "subcategory_id",
                 [fn("SUM", col("weight_kg")), "weight_kg"],
               ],
               where: {
                 eco_organism_id: { [Op.ne]: null },
                 disposal_date: { [Op.between]: [range.start, range.end] },
               },
-              group: ["eco_organism_id", "category_id"],
+              group: ["eco_organism_id", "category_id", "subcategory_id"],
               raw: true,
             })
           )
@@ -257,7 +319,35 @@ export const ecoOrgQuarterStats = async (req, res) => {
     }),
   );
 
-  // Resolve category id -> { id, name } for all category_ids present in the results
+  // For each quarter, get arrivals split by source_type and grouped by category/subcategory
+  const arrivalBySourceByQuarter = await Promise.all(
+    quarterRanges.map(async (range) => {
+      const rows =
+        /** @type {{ source_type: "point" | "apport" | "house_clearance" | null; category_id: number | null; subcategory_id: number | null; weight_kg: string | number }[]} */ (
+          /** @type {unknown} */ (
+            await Arrival.findAll({
+              attributes: [
+                "source_type",
+                "category_id",
+                "subcategory_id",
+                [fn("SUM", col("weight")), "weight_kg"],
+              ],
+              where: {
+                arrival_date: { [Op.between]: [range.start, range.end] },
+              },
+              group: ["source_type", "category_id", "subcategory_id"],
+              raw: true,
+            })
+          )
+        );
+      return {
+        label: range.label,
+        rows,
+      };
+    }),
+  );
+
+  // Resolve category/subcategory id -> { id, name } for all ids present in the results
   const categoryIds = [
     ...new Set(
       weightByEcoOrgByQuarter.flatMap(({ rows }) =>
@@ -265,10 +355,39 @@ export const ecoOrgQuarterStats = async (req, res) => {
       ),
     ),
   ];
+  const subcategoryIds = [
+    ...new Set(
+      weightByEcoOrgByQuarter.flatMap(({ rows }) =>
+        rows.map((r) => r.subcategory_id).filter((id) => id != null),
+      ),
+    ),
+  ];
+  const arrivalCategoryIds = [
+    ...new Set(
+      arrivalBySourceByQuarter.flatMap(({ rows }) =>
+        rows.map((r) => r.category_id).filter((id) => id != null),
+      ),
+    ),
+  ];
+  const arrivalSubcategoryIds = [
+    ...new Set(
+      arrivalBySourceByQuarter.flatMap(({ rows }) =>
+        rows.map((r) => r.subcategory_id).filter((id) => id != null),
+      ),
+    ),
+  ];
+  const allCategoryIds = [
+    ...new Set([
+      ...categoryIds,
+      ...subcategoryIds,
+      ...arrivalCategoryIds,
+      ...arrivalSubcategoryIds,
+    ]),
+  ];
   const categoryMap = new Map();
-  if (categoryIds.length > 0) {
+  if (allCategoryIds.length > 0) {
     const categories = await Category.findAll({
-      where: { id: { [Op.in]: categoryIds } },
+      where: { id: { [Op.in]: allCategoryIds } },
       attributes: ["id", "name"],
       raw: true,
     });
@@ -277,7 +396,7 @@ export const ecoOrgQuarterStats = async (req, res) => {
     );
   }
 
-  // Build a map: eco_organism_id -> { "2025-Q1": { total_weight_kg, categories: [{ id, name, weight_kg }] } }
+  // Build a map: eco_organism_id -> { "2025-Q1": { total_weight_kg, categories: [{ id, name, weight_kg, subcategories }] } }
   const quarterDataByEcoOrg = new Map();
   weightByEcoOrgByQuarter.forEach(({ label, labelMMYYYY, rows }) => {
     const byEcoOrg = new Map();
@@ -291,12 +410,29 @@ export const ecoOrgQuarterStats = async (req, res) => {
       rec.total_weight_kg += weight;
       const catId = r.category_id;
       if (catId != null) {
-        const cat = categoryMap.get(catId);
-        rec.categories.push({
-          id: catId,
-          name: cat?.name ?? null,
-          weight_kg: weight,
-        });
+        let category = rec.categories.find((c) => c.id === catId);
+        if (!category) {
+          const cat = categoryMap.get(catId);
+          category = {
+            id: catId,
+            name: cat?.name ?? null,
+            weight_kg: 0,
+            subcategories: [],
+          };
+          rec.categories.push(category);
+        }
+
+        category.weight_kg += weight;
+
+        const subcatId = r.subcategory_id;
+        if (subcatId != null) {
+          const subcat = categoryMap.get(subcatId);
+          category.subcategories.push({
+            id: subcatId,
+            name: subcat?.name ?? null,
+            weight_kg: weight,
+          });
+        }
       }
     });
     byEcoOrg.forEach((data, id) => {
@@ -308,16 +444,118 @@ export const ecoOrgQuarterStats = async (req, res) => {
     });
   });
 
+  const arrivalRowsByQuarterLabel = new Map(
+    arrivalBySourceByQuarter.map((q) => [q.label, q.rows]),
+  );
+
   // Ensure every eco organism has 4 quarters (0 / [] for quarters with no waste)
   const eco_organisms = ecoOrganisms.map((eo) => {
+    const inCategoryIds = inCategoryIdsByEcoOrg.get(eo.id) ?? new Set();
+    const sellCategoryIds = sellCategoryIdsByEcoOrg.get(eo.id) ?? new Set();
+
+    /**
+     * @param {{ id: number; name: string | null; weight_kg: number; subcategories: { id: number; name: string | null; weight_kg: number }[] }[]} categories
+     * @param {Set<number>} allowedCategoryIds
+     */
+    const filterCategoriesByAllowedIds = (categories, allowedCategoryIds) => {
+      return categories.filter((c) => allowedCategoryIds.has(c.id));
+    };
+
+    /**
+     * @param {{ total_weight_kg: number; categories: { id: number; name: string | null; weight_kg: number; subcategories: { id: number; name: string | null; weight_kg: number }[] }[] } | undefined} data
+     * @param {Set<number>} allowedCategoryIds
+     */
+    const buildFilteredQuarter = (data, allowedCategoryIds) => {
+      const filteredCategories = filterCategoriesByAllowedIds(
+        data?.categories ?? [],
+        allowedCategoryIds,
+      );
+      return {
+        total_weight_kg: filteredCategories.reduce(
+          (sum, category) => sum + Number(category.weight_kg ?? 0),
+          0,
+        ),
+        categories: filteredCategories,
+      };
+    };
+
+    /**
+     * @param {{ source_type: "point" | "apport" | "house_clearance" | null; category_id: number | null; subcategory_id: number | null; weight_kg: string | number }[]} rows
+     * @param {Set<number>} allowedCategoryIds
+     */
+    const buildQuarterFromArrivalRows = (rows, allowedCategoryIds) => {
+      /** @type {{ id: number; name: string | null; weight_kg: number; subcategories: { id: number; name: string | null; weight_kg: number }[] }[]} */
+      const categories = [];
+      rows.forEach((r) => {
+        const catId = r.category_id;
+        if (catId == null || !allowedCategoryIds.has(catId)) return;
+        const weight = Number(r.weight_kg ?? 0);
+        let category = categories.find((c) => c.id === catId);
+        if (!category) {
+          const cat = categoryMap.get(catId);
+          category = {
+            id: catId,
+            name: cat?.name ?? null,
+            weight_kg: 0,
+            subcategories: [],
+          };
+          categories.push(category);
+        }
+        category.weight_kg += weight;
+        const subcatId = r.subcategory_id;
+        if (subcatId != null) {
+          const subcat = categoryMap.get(subcatId);
+          category.subcategories.push({
+            id: subcatId,
+            name: subcat?.name ?? null,
+            weight_kg: weight,
+          });
+        }
+      });
+      return {
+        total_weight_kg: categories.reduce(
+          (sum, category) => sum + Number(category.weight_kg ?? 0),
+          0,
+        ),
+        categories,
+      };
+    };
+
+    const splitQuarterInBySourceType = (rows, allowedCategoryIds) => {
+      const sourceTypes = ["point", "apport", "house_clearance"];
+      return sourceTypes.reduce((acc, sourceType) => {
+        acc[sourceType] = buildQuarterFromArrivalRows(
+          rows.filter((r) => r.source_type === sourceType),
+          allowedCategoryIds,
+        );
+        return acc;
+      }, {});
+    };
+
     const id = eo.id;
     const quarters = quarterRanges.map((range) => {
       const data = quarterDataByEcoOrg.get(id)?.[range.label];
+      const arrivalRows = arrivalRowsByQuarterLabel.get(range.label) ?? [];
+      const quarterInData = buildQuarterFromArrivalRows(arrivalRows, inCategoryIds);
+      const quarterInBySourceType = splitQuarterInBySourceType(
+        arrivalRows,
+        inCategoryIds,
+      );
+      const quarterSellData = buildFilteredQuarter(data, sellCategoryIds);
       return {
         quarter: range.label,
         label: range.labelMMYYYY,
         total_weight_kg: data?.total_weight_kg ?? 0,
         categories: data?.categories ?? [],
+        quarterIn: {
+          total_weight_kg: quarterInData.total_weight_kg,
+          categories: quarterInData.categories,
+          by_source_type: quarterInBySourceType,
+        },
+        quarterSell: {
+          total_weight_kg: quarterSellData.total_weight_kg,
+          categories: quarterSellData.categories,
+        },
       };
     });
     return {
