@@ -69,7 +69,7 @@ export const listWaste = async (req, res) => {
     ],
     order: [["disposal_date", "DESC"]],
     offset,
-    limit: 5,
+    // limit: 5,
   });
 
   // Get total count for pagination
