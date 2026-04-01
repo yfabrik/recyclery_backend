@@ -3,3 +3,4 @@ database/
 .env
 *.log
 dist/
+db-test/
