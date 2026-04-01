@@ -9,6 +9,7 @@ import {
 } from "sequelize";
 import type { Models } from "./db-types.ts";
 import type Employee from "./employee.js";
+import type Recyclery from "./recyclery.js";
 
 export default class EmployeeStore extends Model<
   InferAttributes<EmployeeStore>,
@@ -29,14 +30,14 @@ export default class EmployeeStore extends Model<
       {
         employeeIds,
         excludeId,
-      }: { employeeIds: Employee["id"][]; excludeId?: Employee["id"] | null },
+      }: { employeeIds: Employee["id"][]; excludeId?: Recyclery["id"] | null },
       options?: { transaction?: Transaction },
     ) {
       if (!employeeIds?.length) return;
       const where: WhereOptions<EmployeeStore> = {
         employeeId: { [Op.in]: employeeIds },
         is_primary: true,
-        ...(excludeId != null && { id: { [Op.ne]: excludeId } }),
+        ...(excludeId != null && { recycleryId: { [Op.ne]: excludeId } }),
       };
       await ModelRef.update(
         { is_primary: false },
@@ -107,7 +108,7 @@ export default class EmployeeStore extends Model<
           async beforeUpdate(instance, options) {
             if (!instance.changed("is_primary") || !instance.is_primary || instance.employeeId == null) return;
             const opts = options.transaction ? { transaction: options.transaction } : {};
-            await unsetOtherPrimaries(EmployeeStore, { employeeIds: [instance.employeeId], excludeId: instance.id }, opts);
+            await unsetOtherPrimaries(EmployeeStore, { employeeIds: [instance.employeeId], excludeId: instance.recycleryId }, opts);
           },
 
           async beforeBulkUpdate(options) {

@@ -19,9 +19,7 @@ import {
   type Sequelize,
   type WhereOptions,
 } from "sequelize";
-// @ts-expect-error local JS module has no .d.ts yet
 import logger from "../services/logger.js";
-// @ts-expect-error local JS module has no .d.ts yet
 import { generateTasksFromSchedule } from "../services/taskScheduleUtils.js";
 import type { Models } from "./db-types.ts";
 import type CollectionPoint from "./collectionpoint.ts";
@@ -33,7 +31,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
   declare id: CreationOptional<number>;
   declare is_recurring: boolean;
   declare recurrence_pattern: "daily" | "weekly" | "monthly" | null;
-  declare name: string | null;
+  declare name: string;
   declare description: string | null;
   declare category: "vente" | "point" | "collection" | "custom";
   declare priority: string | null;
@@ -105,7 +103,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
 
     const createTasksFrom = async (
       schedule: TaskSchedule,
-      tasksToCreate: any[],
+      tasksToCreate:any[], //Partial<TaskCreateAttributes>[],
       recurrencePattern: string | null,
       reason = "",
     ) => {
@@ -122,7 +120,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
       );
     };
 
-    const getFutureTasks = async (Task: ModelStatic<Task>, scheduleId: number, now: Date) =>
+    const getFutureTasks = async (Task: ModelStatic<Task>, scheduleId: TaskSchedule["id"], now: Date) =>
       Task.findAll({
         where: {
           schedule_id: scheduleId,
@@ -130,7 +128,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
         },
       });
 
-    const deleteFutureTasks = async (Task: ModelStatic<Task>, futureTasks: Task[], scheduleId: number, reason: string) => {
+    const deleteFutureTasks = async (Task: ModelStatic<Task>, futureTasks: Task[], scheduleId:TaskSchedule["id"], reason: string) => {
       if (futureTasks.length === 0) return;
       await Task.destroy({
         where: {
@@ -142,10 +140,10 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
 
     const updateFutureTasksFields = async (
       Task: ModelStatic<Task>,
-      scheduleId: number,
+      scheduleId: TaskSchedule["id"],
       schedule: TaskSchedule,
-      previousValues: Partial<InferAttributes<TaskSchedule>>,
-      currentValues: InferAttributes<TaskSchedule>,
+      // previousValues: Partial<InferAttributes<TaskSchedule>>,
+      // currentValues: InferAttributes<TaskSchedule>,
       now: Date,
     ) => {
       const fieldsToUpdate: Partial<InferAttributes<Task>> = {};
@@ -291,7 +289,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
             await conflictCheck(data);
             logger.info("no conflict");
           },
-          afterUpdate: async (schedule, options) => {
+          afterUpdate: async (schedule) => {
             logger.info("after update schedules");
             const Task = schedule.sequelize.models.Task as ModelStatic<Task>;
             if (!Task) {
@@ -299,15 +297,15 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
               return;
             }
             const now = new Date();
-            const previousValues = schedule.previous()
+            // const previousValues = schedule.previous()
             const currentValues = schedule.dataValues;
             const wasRecurring = schedule.previous("is_recurring");
             const isRecurring = currentValues.is_recurring;
             const recurringChanged = schedule.changed("is_recurring");
             const patternChanged = schedule.changed("recurrence_pattern");
-            const prevDate = schedule.previous("scheduled_date") !== null || schedule.previous("scheduled_date") !== undefined ? new Date(schedule.previous("scheduled_date")).getTime() : null;
-            const currDate = schedule.scheduled_date ? new Date(schedule.scheduled_date).getTime() : null;
-            const dateChanged = prevDate !== null && currDate !== null && prevDate !== currDate;
+            // const prevDate = schedule.previous("scheduled_date") !== null || schedule.previous("scheduled_date") !== undefined ? new Date(schedule.previous("scheduled_date")).getTime() : null;
+            // const currDate = schedule.scheduled_date ? new Date(schedule.scheduled_date).getTime() : null;
+            const dateChanged = schedule.changed("scheduled_date")// prevDate !== null && currDate !== null && prevDate !== currDate;
             const futureTasks = await getFutureTasks(Task, schedule.id, now);
 
             if (recurringChanged && wasRecurring === true && isRecurring === false) {
@@ -351,7 +349,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
               }
               return;
             }
-            await updateFutureTasksFields(Task, schedule.id,schedule, previousValues, currentValues, now);
+            await updateFutureTasksFields(Task, schedule.id,schedule, now);
           },
           beforeDestroy: async (schedule) => {
             const Task = schedule.sequelize.models.Task as ModelStatic<Task>;

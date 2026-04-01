@@ -136,7 +136,7 @@ export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCr
         modelName: "Recyclery",
         indexes: [{ fields: ["is_active"] }, { fields: ["manager_id"] }],
         hooks: {
-          afterUpdate: async (instance, options) => {
+          afterUpdate: async (instance) => {
             if (instance.changed("name") || instance.changed("is_active")) {
               for (const schedule of instance.TaskSchedules ?? []) {
                 await schedule.update({
