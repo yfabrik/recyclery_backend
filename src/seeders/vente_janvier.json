@@ -224,8 +224,8 @@
     "store": "ORGELET"
   },
   {
-    "category": "décoration",
-    "subcategory": "Divers",
+    "category": "mobilier",
+    "subcategory": "D\u00e9co Textile (tapis rideaux nappe parrure de drap)",
     "price": "9,50 \u20ac",
     "weight": "4,62 kg",
     "quantity": "4,00",
@@ -384,8 +384,8 @@
     "store": "ARINTHOD"
   },
   {
-    "category": "Mobilier",
-    "subcategory": "Mobilier",
+    "category": "materiauthèque",
+    "subcategory": "jardin manuel",
     "price": "0,30 \u20ac",
     "weight": "0,80 kg",
     "quantity": "1,00",
