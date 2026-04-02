@@ -14,7 +14,10 @@ import type Category from "./category.ts";
 import type CollectionPoint from "./collectionpoint.ts";
 import type User from "./user.ts";
 
-export default class Arrival extends Model<InferAttributes<Arrival>, InferCreationAttributes<Arrival>> {
+export default class Arrival extends Model<
+  InferAttributes<Arrival>,
+  InferCreationAttributes<Arrival>
+> {
   declare id: CreationOptional<number>;
   declare weight: string;
   declare arrival_date: Date;
@@ -36,14 +39,25 @@ export default class Arrival extends Model<InferAttributes<Arrival>, InferCreati
   declare getSubcategorie: BelongsToGetAssociationMixin<Category>;
   declare setSubcategorie: BelongsToSetAssociationMixin<Category, number>;
   declare getCollectionPoint: BelongsToGetAssociationMixin<CollectionPoint>;
-  declare setCollectionPoint: BelongsToSetAssociationMixin<CollectionPoint, number>;
+  declare setCollectionPoint: BelongsToSetAssociationMixin<
+    CollectionPoint,
+    number
+  >;
   declare getUser: BelongsToGetAssociationMixin<User>;
   declare setUser: BelongsToSetAssociationMixin<User, number>;
 
   static associate(models: Models) {
-    this.belongsTo(models.Category, { foreignKey: "category_id", as: "categorie" });
-    this.belongsTo(models.Category, { foreignKey: "subcategory_id", as: "subcategorie" });
-    this.belongsTo(models.CollectionPoint, { foreignKey: "collection_point_id" });
+    this.belongsTo(models.Category, {
+      foreignKey: "category_id",
+      as: "categorie",
+    });
+    this.belongsTo(models.Category, {
+      foreignKey: "subcategory_id",
+      as: "subcategorie",
+    });
+    this.belongsTo(models.CollectionPoint, {
+      foreignKey: "collection_point_id",
+    });
     this.belongsTo(models.User, { foreignKey: "processed_by" });
   }
 
@@ -58,7 +72,9 @@ export default class Arrival extends Model<InferAttributes<Arrival>, InferCreati
         weight: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
         arrival_date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
         arrival_time: DataTypes.TIME,
-        source_type: { type: DataTypes.ENUM("point", "apport", "house_clearance") },
+        source_type: {
+          type: DataTypes.ENUM("point", "apport", "house_clearance"),
+        },
         source_details: DataTypes.TEXT,
         notes: DataTypes.TEXT,
         status: { type: DataTypes.ENUM("received"), defaultValue: "received" },
@@ -68,7 +84,11 @@ export default class Arrival extends Model<InferAttributes<Arrival>, InferCreati
       {
         sequelize,
         modelName: "Arrival",
-        indexes: [{ fields: ["category_id"] }, { fields: ["status"] }, { fields: ["createdAt"] }],
+        indexes: [
+          { fields: ["category_id"] },
+          { fields: ["status"] },
+          { fields: ["createdAt"] },
+        ],
       },
     );
   }
