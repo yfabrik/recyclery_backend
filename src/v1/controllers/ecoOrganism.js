@@ -312,6 +312,8 @@ export const ecoOrgQuarterStats = async (req, res) => {
       sellCategoryIdsByEcoOrg.get(link.id).add(c.id),
     );
   });
+
+  //OUT PART
   // For each quarter, get weight per eco_organism_id, category and subcategory
   const weightByEcoOrgByQuarter = await Promise.all(
     quarterRanges.map(async (range) => {
@@ -342,6 +344,8 @@ export const ecoOrgQuarterStats = async (req, res) => {
     }),
   );
 
+
+  //IN PART
   // For each quarter, get arrivals split by source_type and grouped by category/subcategory
   const arrivalBySourceByQuarter = await Promise.all(
     quarterRanges.map(async (range) => {
@@ -370,6 +374,7 @@ export const ecoOrgQuarterStats = async (req, res) => {
     }),
   );
 
+  //SELL PART
   // For each quarter, get sold quantity grouped by category/subcategory
   const soldQuantityByQuarter = await Promise.all(
     quarterRanges.map(async (range) => {
@@ -419,6 +424,8 @@ export const ecoOrgQuarterStats = async (req, res) => {
       };
     }),
   );
+
+  //OUT PART
   // Resolve category/subcategory id -> { id, name } for all ids present in the results
   const categoryIds = [
     ...new Set(
@@ -434,6 +441,8 @@ export const ecoOrgQuarterStats = async (req, res) => {
       ),
     ),
   ];
+
+  // IN PART
   const arrivalCategoryIds = [
     ...new Set(
       arrivalBySourceByQuarter.flatMap(({ rows }) =>
@@ -448,6 +457,8 @@ export const ecoOrgQuarterStats = async (req, res) => {
       ),
     ),
   ];
+
+  // SELL PART
   const soldCategoryIds = [
     ...new Set(
       soldQuantityByQuarter.flatMap(({ rows }) =>
@@ -484,6 +495,7 @@ export const ecoOrgQuarterStats = async (req, res) => {
       categoryMap.set(c.id, { id: c.id, name: c.name }),
     );
   }
+  //OUT PART
   // Build a map: eco_organism_id -> { "2025-Q1": { total_weight_kg, categories: [{ id, name, weight_kg, subcategories }] } }
   const quarterDataByEcoOrg = new Map();
   weightByEcoOrgByQuarter.forEach(({ label, labelMMYYYY, rows }) => {
@@ -532,9 +544,11 @@ export const ecoOrgQuarterStats = async (req, res) => {
     });
   });
 
+  //IN PART
   const arrivalRowsByQuarterLabel = new Map(
     arrivalBySourceByQuarter.map((q) => [q.label, q.rows]),
   );
+  //SELL PART
   const soldQuantityRowsByQuarterLabel = new Map(
     soldQuantityByQuarter.map((q) => [q.label, q.rows]),
   );
@@ -570,6 +584,7 @@ export const ecoOrgQuarterStats = async (req, res) => {
       };
     };
 
+    //SELL PART
     /**
      * @param {{ category_id: number | null; subcategory_id: number | null; quantity: string | number; weight_kg?: string | number }[]} rows
      * @param {Set<number>} allowedCategoryIds
@@ -651,6 +666,7 @@ export const ecoOrgQuarterStats = async (req, res) => {
       };
     };
 
+    //IN PART
     /**
      * @param {{ source_type: "point" | "apport" | "house_clearance" | null; category_id: number | null; subcategory_id: number | null; weight_kg: string | number }[]} rows
      * @param {Set<number>} allowedCategoryIds
