@@ -210,7 +210,7 @@ module.exports = {
               category_id: category.id,
               subcategory_id: subId,
               recyclery_id: store.id,
-              weight: totalWeight,
+              weight: totalWeight/quantity,
               price: unitPriceForLabel,
               status: 'sold',
               createdAt: nextTimestamp(),
