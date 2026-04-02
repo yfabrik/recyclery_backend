@@ -1,8 +1,9 @@
 {
   "development": {
     "dialect": "sqlite",
-    "storage": "./database/database.sqlite",
-    "logging": false
+    "storage": "./database/database3.sqlite",
+    "logging": false,
+    "seederStorage": "json"
   },
   "test": {
     "dialect": "sqlite",
@@ -11,6 +12,7 @@
   },
   "production": {
     "use_env_variable": "DB_URL",
-    "logging": false
+    "logging": false,
+    "seederStorage": "json"
   }
 }
