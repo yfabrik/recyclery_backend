@@ -32,7 +32,7 @@ RUN npm i
 
 COPY --from=build --chown=node:node /home/node/app/dist ./src
 
-COPY ./config /home/node/app/
+COPY ./config /home/node/app/config
 
 RUN mkdir -p database/
 
