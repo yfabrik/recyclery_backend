@@ -1,7 +1,7 @@
 [
   {
     "category": "Accessoires ",
-    "subcategory": "Bijoux",
+    "subcategory": "Bijoux fantaisie",
     "price": "17,60 \u20ac",
     "weight": "1,03 kg",
     "quantity": "31,00",
@@ -16,24 +16,24 @@
     "store": "ORGELET"
   },
   {
-    "category": "Accessoires ",
-    "subcategory": "Sac \u00e0 main, sacoche",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "32,00 \u20ac",
     "weight": "3,61 kg",
     "quantity": "16,00",
     "store": "ARINTHOD"
   },
   {
-    "category": "Accessoires ",
-    "subcategory": "Sac \u00e0 main, sacoche",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "1,50 \u20ac",
     "weight": "0,50 kg",
     "quantity": "3,00",
     "store": "ORGELET"
   },
   {
-    "category": "Accessoires ",
-    "subcategory": "Tissu/draps ",
+    "category": "Mobilier",
+    "subcategory": "D\u00e9co textile (rideaux, tapis,...)", 
     "price": "27,00 \u20ac",
     "weight": "6,95 kg",
     "quantity": "19,00",
@@ -49,47 +49,47 @@
   },
   {
     "category": "Accessoires ",
-    "subcategory": "Bijoux",
+    "subcategory": "Bijoux fantaisie",
     "price": "32,06 \u20ac",
     "weight": "0,51 kg",
     "quantity": "62,00",
     "store": "ORGELET"
   },
   {
-    "category": "Animaux (chats, chiens, poissons, rongeurs)",
-    "subcategory": "accessoires autres",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "0,50 \u20ac",
     "weight": "0,02 kg",
     "quantity": "1,00",
     "store": "ORGELET"
   },
   {
-    "category": "Animaux (chats, chiens, poissons, rongeurs)",
-    "subcategory": "accessoires pour chat",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "2,00 \u20ac",
     "weight": "0,60 kg",
     "quantity": "1,00",
     "store": "ARINTHOD"
   },
   {
-    "category": "Animaux (chats, chiens, poissons, rongeurs)",
-    "subcategory": "accessoires pour chien",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "2,00 \u20ac",
     "weight": "0,10 kg",
     "quantity": "1,00",
     "store": "ORGELET"
   },
   {
-    "category": "Animaux (chats, chiens, poissons, rongeurs)",
-    "subcategory": "accessoires autres",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "1,00 \u20ac",
     "weight": "1,00 kg",
     "quantity": "1,00",
     "store": "ARINTHOD"
   },
   {
-    "category": "Animaux (chats, chiens, poissons, rongeurs)",
-    "subcategory": "accessoires pour chien",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "0,50 \u20ac",
     "weight": "1,00 kg",
     "quantity": "1,00",
@@ -97,7 +97,7 @@
   },
   {
     "category": "Matériauthèque",
-    "subcategory": "Bois",
+    "subcategory": "Pots et jardini\u00e8re",
     "price": "2,00 \u20ac",
     "weight": "1,10 kg",
     "quantity": "2,00",
@@ -105,7 +105,7 @@
   },
   {
     "category": "boisson ",
-    "subcategory": "Petit caf\u00e9",
+    "subcategory": "petit caf\u00e9",
     "price": "18,00 \u20ac",
     "weight": "0,00 kg",
     "quantity": "15,00",
@@ -113,7 +113,7 @@
   },
   {
     "category": "boisson ",
-    "subcategory": "Grand Caf\u00e9",
+    "subcategory": "grand caf\u00e9",
     "price": "3,00 \u20ac",
     "weight": "0,00 kg",
     "quantity": "2,00",
@@ -129,7 +129,7 @@
   },
   {
     "category": "D3E",
-    "subcategory": "petit electromenag\u00e9 / divers",
+    "subcategory": "Petits appareils m\u00e9nager",
     "price": "12,00 \u20ac",
     "weight": "2,93 kg",
     "quantity": "3,00",
@@ -137,7 +137,7 @@
   },
   {
     "category": "D3E",
-    "subcategory": " Gros \u00e9lectro hors froid",
+    "subcategory": "Gros hors froid",
     "price": "105,00 \u20ac",
     "weight": "85,00 kg",
     "quantity": "2,00",
@@ -145,7 +145,7 @@
   },
   {
     "category": "D3E",
-    "subcategory": "Ecran",
+    "subcategory": "Ecrans",
     "price": "60,00 \u20ac",
     "weight": "0,00 kg",
     "quantity": "1,00",
@@ -153,7 +153,7 @@
   },
   {
     "category": "D3E",
-    "subcategory": "petit electromenag\u00e9 / divers",
+    "subcategory": "Petits appareils m\u00e9nager",
     "price": "213,02 \u20ac",
     "weight": "42,39 kg",
     "quantity": "64,00",
@@ -161,7 +161,7 @@
   },
   {
     "category": "numérique",
-    "subcategory": "P\u00e9riph\u00e9riques",
+    "subcategory": "Accessoires",
     "price": "23,00 \u20ac",
     "weight": "4,83 kg",
     "quantity": "2,00",
@@ -169,7 +169,7 @@
   },
   {
     "category": "numérique",
-    "subcategory": "appareil photo",
+    "subcategory": "Autres",
     "price": "7,00 \u20ac",
     "weight": "0,50 kg",
     "quantity": "1,00",
@@ -177,7 +177,7 @@
   },
   {
     "category": "numérique",
-    "subcategory": "Unit\u00e9 centrale",
+    "subcategory": "Ordinateurs fixes",
     "price": "80,00 \u20ac",
     "weight": "1,00 kg",
     "quantity": "1,00",
@@ -185,7 +185,7 @@
   },
   {
     "category": "numérique",
-    "subcategory": "petit \u00e9lectronique",
+    "subcategory": "Autres",
     "price": "5,00 \u20ac",
     "weight": "0,50 kg",
     "quantity": "1,00",
@@ -193,7 +193,7 @@
   },
   {
     "category": "numérique",
-    "subcategory": "cables",
+    "subcategory": "Accessoires",
     "price": "2,00 \u20ac",
     "weight": "0,10 kg",
     "quantity": "2,00",
@@ -201,7 +201,7 @@
   },
   {
     "category": "numérique",
-    "subcategory": "Tablette",
+    "subcategory": "tablettes",
     "price": "60,00 \u20ac",
     "weight": "1,00 kg",
     "quantity": "2,00",
@@ -209,7 +209,7 @@
   },
   {
     "category": "numérique",
-    "subcategory": "PC portable",
+    "subcategory": "Ordinateurs portables",
     "price": "20,00 \u20ac",
     "weight": "0,00 kg",
     "quantity": "1,00",
@@ -217,7 +217,7 @@
   },
   {
     "category": "numérique",
-    "subcategory": "T\u00e9l\u00e9phonie",
+    "subcategory": "Autres",
     "price": "30,00 \u20ac",
     "weight": "0,40 kg",
     "quantity": "2,00",
@@ -225,7 +225,7 @@
   },
   {
     "category": "numérique",
-    "subcategory": "petit \u00e9lectronique",
+    "subcategory": "Autres",
     "price": "2,00 \u20ac",
     "weight": "0,12 kg",
     "quantity": "1,00",
@@ -233,7 +233,7 @@
   },
   {
     "category": "vaisselle",
-    "subcategory": "r\u00e9cipient",
+    "subcategory": "Récipients (pot à eau, carafe, Tupperware...)",
     "price": "13,00 \u20ac",
     "weight": "4,23 kg",
     "quantity": "6,00",
@@ -241,7 +241,7 @@
   },
   {
     "category": "cuisine",
-    "subcategory": "Casseroles",
+    "subcategory": "Casseroles, po\u00eales",
     "price": "66,13 \u20ac",
     "weight": "19,41 kg",
     "quantity": "14,00",
@@ -249,7 +249,7 @@
   },
   {
     "category": "cuisine",
-    "subcategory": "Casseroles",
+    "subcategory": "Casseroles, po\u00eales",
     "price": "7,00 \u20ac",
     "weight": "1,65 kg",
     "quantity": "2,00",
@@ -257,7 +257,7 @@
   },
   {
     "category": "cuisine",
-    "subcategory": "Plat",
+    "subcategory": "Plats (services, saladier...)",
     "price": "15,00 \u20ac",
     "weight": "6,50 kg",
     "quantity": "4,00",
@@ -265,7 +265,7 @@
   },
   {
     "category": "vaisselle",
-    "subcategory": "Tasse floqu\u00e9e",
+    "subcategory": "Tasses",
     "price": "1,00 \u20ac",
     "weight": "0,80 kg",
     "quantity": "2,00",
@@ -273,15 +273,15 @@
   },
   {
     "category": "vaisselle",
-    "subcategory": "Tupperware",
+    "subcategory": "Récipients (pot à eau, carafe, Tupperware...)",
     "price": "4,00 \u20ac",
     "weight": "0,30 kg",
     "quantity": "1,00",
     "store": "ORGELET"
   },
   {
-    "category": "décoration",
-    "subcategory": "Divers",
+    "category": "Mobilier",
+    "subcategory": "Déco textile (rideaux, tapis,...)",
     "price": "4,70 \u20ac",
     "weight": "2,52 kg",
     "quantity": "4,00",
@@ -296,8 +296,8 @@
     "store": "ORGELET"
   },
   {
-    "category": "décoration",
-    "subcategory": "Divers",
+    "category": "Mobilier",
+    "subcategory": "Déco textile (rideaux, tapis,...)",
     "price": "2,50 \u20ac",
     "weight": "0,80 kg",
     "quantity": "2,00",
@@ -305,7 +305,7 @@
   },
   {
     "category": "vaisselle",
-    "subcategory": "Verres/ Tasses",
+    "subcategory": "Verres",
     "price": "22,90 \u20ac",
     "weight": "8,35 kg",
     "quantity": "30,00",
@@ -313,15 +313,15 @@
   },
   {
     "category": "vaisselle",
-    "subcategory": "Verres/ Tasses",
+    "subcategory": "Verres",
     "price": "133,40 \u20ac",
     "weight": "58,16 kg",
     "quantity": "264,00",
     "store": "ARINTHOD"
   },
   {
-    "category": "décoration",
-    "subcategory": "d\u00e9coration maison (bibelot, cadre...)",
+    "category": "Mobilier",
+    "subcategory": "Déco textile (rideaux, tapis,...)",
     "price": "714,80 \u20ac",
     "weight": "124,94 kg",
     "quantity": "419,00",
@@ -329,7 +329,7 @@
   },
   {
     "category": "vaisselle",
-    "subcategory": "Ustensiles/Couverts",
+    "subcategory": "Couverts",
     "price": "70,79 \u20ac",
     "weight": "8,16 kg",
     "quantity": "135,00",
@@ -337,7 +337,7 @@
   },
   {
     "category": "vaisselle",
-    "subcategory": "Ustensiles/Couverts",
+    "subcategory": "Couverts",
     "price": "7,00 \u20ac",
     "weight": "1,95 kg",
     "quantity": "16,00",
@@ -353,7 +353,7 @@
   },
   {
     "category": "vaisselle",
-    "subcategory": "r\u00e9cipient",
+    "subcategory": "Récipients (pot à eau, carafe, Tupperware...)",
     "price": "78,80 \u20ac",
     "weight": "25,30 kg",
     "quantity": "62,00",
@@ -361,7 +361,7 @@
   },
   {
     "category": "vaisselle",
-    "subcategory": "Plat",
+    "subcategory": "Service complet",
     "price": "121,09 \u20ac",
     "weight": "49,24 kg",
     "quantity": "40,00",
@@ -369,7 +369,7 @@
   },
   {
     "category": "vaisselle",
-    "subcategory": "Tupperware",
+    "subcategory": "Récipients (pot à eau, carafe, Tupperware...)",
     "price": "10,00 \u20ac",
     "weight": "0,41 kg",
     "quantity": "6,00",
@@ -377,7 +377,7 @@
   },
   {
     "category": "mobilier",
-    "subcategory": "D\u00e9co Textile (tapis rideaux nappe parrure de drap)",
+    "subcategory": "D\u00e9co textile (rideaux, tapis,...)",
     "price": "112,93 \u20ac",
     "weight": "24,01 kg",
     "quantity": "66,00",
@@ -385,7 +385,7 @@
   },
   {
     "category": "Jeux Jouets",
-    "subcategory": "Jeux/jouets DEEE",
+    "subcategory": "Jouet D3E",
     "price": "6,00 \u20ac",
     "weight": "1,50 kg",
     "quantity": "5,00",
@@ -393,7 +393,7 @@
   },
   {
     "category": "Jeux Jouets",
-    "subcategory": "Jeux de plein air",
+    "subcategory": "jeux de plein air",
     "price": "10,00 \u20ac",
     "weight": "5,00 kg",
     "quantity": "4,00",
@@ -401,7 +401,7 @@
   },
   {
     "category": "Jeux Jouets",
-    "subcategory": "Jeux de soci\u00e9t\u00e9/Puzzle",
+    "subcategory": "Jeux de soci\u00e9t\u00e9, puzzles",
     "price": "9,00 \u20ac",
     "weight": "1,85 kg",
     "quantity": "4,00",
@@ -409,7 +409,7 @@
   },
   {
     "category": "Jeux Jouets",
-    "subcategory": "Jeux/jouets DEEE",
+    "subcategory": "Jouet D3E",
     "price": "55,50 \u20ac",
     "weight": "2,86 kg",
     "quantity": "9,00",
@@ -417,7 +417,7 @@
   },
   {
     "category": "Jeux Jouets",
-    "subcategory": "Jeux de soci\u00e9t\u00e9/Puzzle",
+    "subcategory": "Jeux de soci\u00e9t\u00e9, puzzles",
     "price": "44,38 \u20ac",
     "weight": "7,72 kg",
     "quantity": "20,00",
@@ -425,7 +425,7 @@
   },
   {
     "category": "Jeux Jouets",
-    "subcategory": "Jouets Autres",
+    "subcategory": "Autres jeux jouets",
     "price": "93,00 \u20ac",
     "weight": "20,53 kg",
     "quantity": "54,00",
@@ -433,15 +433,15 @@
   },
   {
     "category": "Jeux Jouets",
-    "subcategory": "Jouets Autres",
+    "subcategory": "Autres jeux jouets",
     "price": "637,60 \u20ac",
     "weight": "65,84 kg",
     "quantity": "206,00",
     "store": "ARINTHOD"
   },
   {
-    "category": "Loisirs cr\u00e9atifs",
-    "subcategory": "Loisirs cr\u00e9atif",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "67,80 \u20ac",
     "weight": "9,27 kg",
     "quantity": "85,00",
@@ -457,7 +457,7 @@
   },
   {
     "category": "multimédia",
-    "subcategory": "Vinyls, CD, DVD",
+    "subcategory": "vinyles",
     "price": "66,50 \u20ac",
     "weight": "12,10 kg",
     "quantity": "32,00",
@@ -465,15 +465,15 @@
   },
   {
     "category": "multimédia",
-    "subcategory": "Vinyls, CD, DVD",
+    "subcategory": "vinyles",
     "price": "18,50 \u20ac",
     "weight": "2,30 kg",
     "quantity": "23,00",
     "store": "ORGELET"
   },
   {
-    "category": "Loisirs cr\u00e9atifs",
-    "subcategory": "Loisirs cr\u00e9atif",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "113,73 \u20ac",
     "weight": "16,97 kg",
     "quantity": "96,00",
@@ -489,7 +489,7 @@
   },
   {
     "category": "Matériauthèque",
-    "subcategory": "Bois",
+    "subcategory": "Pots et jardini\u00e8re",
     "price": "0,20 \u20ac",
     "weight": "0,01 kg",
     "quantity": "1,00",
@@ -497,7 +497,7 @@
   },
   {
     "category": "Matériauthèque",
-    "subcategory": "JardinMan",
+    "subcategory": "Jardinage manuel",
     "price": "25,50 \u20ac",
     "weight": "24,40 kg",
     "quantity": "6,00",
@@ -505,7 +505,7 @@
   },
   {
     "category": "Matériauthèque",
-    "subcategory": "M\u00e9taux",
+    "subcategory": "Bricolage manuel",
     "price": "12,50 \u20ac",
     "weight": "12,00 kg",
     "quantity": "2,00",
@@ -513,7 +513,7 @@
   },
   {
     "category": "Matériauthèque",
-    "subcategory": "pots et jardinieres",
+    "subcategory": "Pots et jardini\u00e8re",
     "price": "30,50 \u20ac",
     "weight": "12,70 kg",
     "quantity": "8,00",
@@ -521,7 +521,7 @@
   },
   {
     "category": "Matériauthèque",
-    "subcategory": "D3E ( visseuse etc)",
+    "subcategory": "Bricolage manuel",
     "price": "60,27 \u20ac",
     "weight": "32,14 kg",
     "quantity": "7,00",
@@ -529,7 +529,7 @@
   },
   {
     "category": "Matériauthèque",
-    "subcategory": "Plastique dur",
+    "subcategory": "Jardinage manuel",
     "price": "24,00 \u20ac",
     "weight": "12,00 kg",
     "quantity": "5,00",
@@ -537,7 +537,7 @@
   },
   {
     "category": "Matériauthèque",
-    "subcategory": "BricoMan",
+    "subcategory": "Bricolage manuel",
     "price": "422,90 \u20ac",
     "weight": "308,20 kg",
     "quantity": "74,00",
@@ -545,7 +545,7 @@
   },
   {
     "category": "Matériauthèque",
-    "subcategory": "Ferraille",
+    "subcategory": "Bricolage manuel",
     "price": "31,50 \u20ac",
     "weight": "19,30 kg",
     "quantity": "8,00",
@@ -553,7 +553,7 @@
   },
   {
     "category": "mobilier",
-    "subcategory": "Assise",
+    "subcategory": "Assises",
     "price": "71,31 \u20ac",
     "weight": "75,00 kg",
     "quantity": "6,00",
@@ -561,7 +561,7 @@
   },
   {
     "category": "mobilier",
-    "subcategory": "Couchage",
+    "subcategory": "Couchages",
     "price": "103,00 \u20ac",
     "weight": "98,00 kg",
     "quantity": "6,00",
@@ -569,7 +569,7 @@
   },
   {
     "category": "mobilier",
-    "subcategory": "Assise",
+    "subcategory": "Assises",
     "price": "95,00 \u20ac",
     "weight": "102,30 kg",
     "quantity": "11,00",
@@ -577,7 +577,7 @@
   },
   {
     "category": "mobilier",
-    "subcategory": "D\u00e9co Textile (tapis rideaux nappe parrure de drap)",
+    "subcategory": "D\u00e9co textile (rideaux, tapis,...)",
     "price": "62,50 \u20ac",
     "weight": "21,11 kg",
     "quantity": "11,00",
@@ -585,7 +585,7 @@
   },
   {
     "category": "mobilier",
-    "subcategory": "Plan de pose/ Plan de travail",
+    "subcategory": "Plan de travail",
     "price": "266,50 \u20ac",
     "weight": "400,20 kg",
     "quantity": "18,00",
@@ -600,7 +600,7 @@
     "store": "ARINTHOD"
   },
   {
-    "category": "Mobilier",
+    "category": "Prestation",
     "subcategory": "Livraison",
     "price": "50,00 \u20ac",
     "weight": "1,00 kg",
@@ -609,7 +609,7 @@
   },
   {
     "category": "sport et loisir ",
-    "subcategory": "V\u00e9los adulte",
+    "subcategory": "Cat\u00e9gorie 1",
     "price": "80,00 \u20ac",
     "weight": "32,00 kg",
     "quantity": "2,00",
@@ -617,7 +617,7 @@
   },
   {
     "category": "sport et loisir ",
-    "subcategory": "CAT 1",
+    "subcategory": "Cat\u00e9gorie 1",
     "price": "5,00 \u20ac",
     "weight": "0,50 kg",
     "quantity": "1,00",
@@ -625,7 +625,7 @@
   },
   {
     "category": "sport et loisir ",
-    "subcategory": "CAT 2",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "124,63 \u20ac",
     "weight": "73,00 kg",
     "quantity": "21,00",
@@ -633,31 +633,31 @@
   },
   {
     "category": "sport et loisir ",
-    "subcategory": "CAT 1",
+    "subcategory": "Cat\u00e9gorie 1",
     "price": "79,20 \u20ac",
     "weight": "11,20 kg",
     "quantity": "5,00",
     "store": "ARINTHOD"
   },
   {
-    "category": "Vêtements",
-    "subcategory": "textile",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "6,00 \u20ac",
     "weight": "0,46 kg",
     "quantity": "3,00",
     "store": "ARINTHOD"
   },
   {
-    "category": "Vêtements",
-    "subcategory": "Linge de maison",
+    "category": "Mobilier",
+    "subcategory": "D\u00e9co textile (rideaux, tapis,...)",
     "price": "0,50 \u20ac",
     "weight": "0,09 kg",
     "quantity": "1,00",
     "store": "ARINTHOD"
   },
   {
-    "category": "Vêtements",
-    "subcategory": "Linge de maison",
+    "category": "Mobilier",
+    "subcategory": "D\u00e9co textile (rideaux, tapis,...)",
     "price": "38,30 \u20ac",
     "weight": "8,60 kg",
     "quantity": "13,00",
@@ -672,8 +672,8 @@
     "store": "ORGELET"
   },
   {
-    "category": "Vêtements",
-    "subcategory": "Veste /manteau / blazer",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "88,00 \u20ac",
     "weight": "24,30 kg",
     "quantity": "18,00",
@@ -681,7 +681,7 @@
   },
   {
     "category": "Vêtements",
-    "subcategory": "Enfant (-14 ans)",
+    "subcategory": "Enfant",
     "price": "17,00 \u20ac",
     "weight": "1,50 kg",
     "quantity": "15,00",
@@ -704,8 +704,8 @@
     "store": "ORGELET"
   },
   {
-    "category": "Accessoires",
-    "subcategory": "Accessoires",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "78,40 \u20ac",
     "weight": "8,21 kg",
     "quantity": "54,00",
@@ -720,8 +720,8 @@
     "store": "ORGELET"
   },
   {
-    "category": "Accessoires",
-    "subcategory": "Accessoires",
+    "category": "Sport et loisir",
+    "subcategory": "Cat\u00e9gorie 2",
     "price": "26,00 \u20ac",
     "weight": "3,37 kg",
     "quantity": "9,00",
@@ -729,7 +729,7 @@
   },
   {
     "category": "Vêtements",
-    "subcategory": "Lot 5 pi\u00e8ces jusqu'\u00e0 14ans",
+    "subcategory": "Enfant",
     "price": "18,00 \u20ac",
     "weight": "0,00 kg",
     "quantity": "6,00",
