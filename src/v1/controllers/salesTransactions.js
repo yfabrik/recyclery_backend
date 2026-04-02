@@ -247,9 +247,9 @@ export const createTransaction = async (req, res) => {
 
     const sale = await session.createSalesTransaction(
       {
-        total_amount: data.total_amount,
+        total_amount: data.total_amount,//TODO recalculer coté server mais j'ai la flemme
         payment_method: storedMethod,
-        payment_amount: data.payment_amount,
+        payment_amount: data.payment_amount,//TODO payments.reduce(...)
         customer_postal_code: data?.customer_postal_code || null,
       },
       { transaction: t },

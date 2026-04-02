@@ -95,7 +95,7 @@ export const getActiveSession = async (req, res) => {
     include: [
       {
         model: CashRegister,
-        attributes: ["name","recyclery_id"],
+        attributes: ["name", "recyclery_id"],
         include: [{ model: Recyclery, attributes: ["name"] }],
       },
     ],
@@ -172,7 +172,7 @@ export const closeCashSession = async (req, res) => {
     throw new createHttpError[404]("Session not found or already closed");
 
   const sales = await SalesTransaction.findAll({
-    where: { cash_session_id: id },
+    where: { cash_session_id: id, payment_method: "cash" },
     attributes: [
       [fn("COALESCE", fn("SUM", col("total_amount")), 0), "total_sales"],
     ],
