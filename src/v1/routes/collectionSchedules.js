@@ -21,6 +21,9 @@ const {
   sequelize,
 } = db;
 
+/**
+ * @deprecated
+ */
 export const router = Router();
 
 // Obtenir tous les plannings de collecte

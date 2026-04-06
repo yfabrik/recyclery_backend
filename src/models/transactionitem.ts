@@ -4,12 +4,13 @@ import {
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
+  type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type LabeledItem from "./labeleditem.ts";
 import type SalesTransaction from "./salestransaction.ts";
 
@@ -18,15 +19,19 @@ export default class TransactionItem extends Model<
   InferCreationAttributes<TransactionItem>
 > {
   declare id: CreationOptional<number>;
-  declare name: string | null;
-  declare price: string | null;
-  declare quantity: number | null;
-  declare total_price: number;
-  declare promotionValue: string;
-  declare bundleQuantity: number | null;
-  declare bundlePrice: string | null;
+  declare name: string;
+  declare price: number;
+  declare quantity: CreationOptional<number>;
+  declare promotionValue: CreationOptional<number>;
+  declare bundleQuantity: CreationOptional<number | null>;
+  declare bundlePrice: CreationOptional<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare total_price: NonAttribute<number>;
+
+  declare transaction_id: ForeignKey<SalesTransaction["id"]>
+  declare labeled_item_id: ForeignKey<LabeledItem["id"]>
 
   declare SalesTransaction?: NonAttribute<SalesTransaction | null>;
   declare LabeledItem?: NonAttribute<LabeledItem | null>;
@@ -36,25 +41,31 @@ export default class TransactionItem extends Model<
   declare getLabeledItem: BelongsToGetAssociationMixin<LabeledItem>;
   declare setLabeledItem: BelongsToSetAssociationMixin<LabeledItem, number>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" });
     this.belongsTo(models.LabeledItem, { foreignKey: "labeled_item_id" });
   }
 
   static initModel(sequelize: Sequelize) {
-    TransactionItem.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
           primaryKey: true,
           autoIncrement: true,
         },
-        name: DataTypes.STRING,
-        price: DataTypes.DECIMAL,
-        quantity: DataTypes.INTEGER,
+        name: { type: DataTypes.STRING, allowNull: false },
+        price: { type: DataTypes.DECIMAL, allowNull: false },
+        quantity: {
+          type: DataTypes.INTEGER, allowNull: false, defaultValue: 1,
+          validate: {
+            min: 1
+          }
+        },
+        //@ts-expect-error
         total_price: {
           type: DataTypes.VIRTUAL,
-          get(this: TransactionItem) {
+          get(this) {
             let bundles = 0;
             let extraItems = this.quantity ?? 0;
             const bq = this.bundleQuantity;

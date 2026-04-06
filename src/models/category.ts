@@ -12,24 +12,26 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type LabeledItem from "./labeleditem.ts";
 import type Promotion from "./promotion.ts";
 
 export default class Category extends Model<InferAttributes<Category>, InferCreationAttributes<Category>> {
   declare id: CreationOptional<number>;
   declare name: string;
-  declare description: string | null;
-  declare icon: string | null;
-  declare defaultWeight: number;
-  declare defaultPrice: string | null;
-  declare IO: number;
-  declare priceBasedOnWeight: boolean;
-  declare bundleQuantity: number | null;
-  declare bundlePrice: string | null;
-  declare parent_id: ForeignKey<number | null>;
+  declare description: CreationOptional<string | null>;
+  declare icon: CreationOptional<string | null>;
+  declare defaultWeight: CreationOptional<number>;
+  declare defaultPrice: CreationOptional<number>;
+  declare IO: CreationOptional<number>;
+  declare priceBasedOnWeight: CreationOptional<boolean>;
+  declare bundleQuantity: CreationOptional<number | null>;
+  declare bundlePrice: CreationOptional<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare parent_id: ForeignKey<number | null>;
+
 
   declare subcategories?: NonAttribute<Category[]>;
   declare parent?: NonAttribute<Category>;
@@ -37,15 +39,15 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
   declare Promotions?: NonAttribute<Promotion[]>;
 
   declare getSubcategories: HasManyGetAssociationsMixin<Category>;
-  declare addSubcategory: HasManyAddAssociationMixin<Category, number>;
+  declare addSubcategory: HasManyAddAssociationMixin<Category, Category['id']>;
   declare getParent: BelongsToGetAssociationMixin<Category>;
-  declare setParent: BelongsToSetAssociationMixin<Category, number>;
+  declare setParent: BelongsToSetAssociationMixin<Category, Category['id']>;
   declare getLabeledItems: HasManyGetAssociationsMixin<LabeledItem>;
-  declare addLabeledItem: HasManyAddAssociationMixin<LabeledItem, number>;
+  declare addLabeledItem: HasManyAddAssociationMixin<LabeledItem, LabeledItem['id']>;
   declare getPromotions: HasManyGetAssociationsMixin<Promotion>;
-  declare addPromotion: HasManyAddAssociationMixin<Promotion, number>;
+  declare addPromotion: HasManyAddAssociationMixin<Promotion, Promotion['id']>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.hasMany(models.Category, {
       as: "subcategories",
       foreignKey: "parent_id",
@@ -68,7 +70,7 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
   }
 
   static initModel(sequelize: Sequelize) {
-    Category.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
@@ -83,11 +85,13 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
           type: DataTypes.FLOAT(),
           validate: { min: 0 },
           defaultValue: 0,
+          allowNull: false
         },
         defaultPrice: {
           type: DataTypes.DECIMAL(10, 2),
           validate: { min: 0 },
           defaultValue: 0,
+          allowNull: false
         },
         IO: {
           type: DataTypes.INTEGER,
@@ -97,6 +101,7 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
         priceBasedOnWeight: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
+          allowNull: false
         },
         bundleQuantity: {
           type: DataTypes.INTEGER,

@@ -63,7 +63,7 @@ const getDateFromDay = (day) => {
 };
 
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
@@ -104,7 +104,7 @@ export const listHoraires = async (req, res) => {
   });
 };
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
@@ -224,7 +224,7 @@ export const updateHoraire = async (req, res) => {
   });
 };
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */

@@ -4,6 +4,7 @@ import {
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
+  type ForeignKey,
   type HasManyAddAssociationMixin,
   type HasManyGetAssociationsMixin,
   type InferAttributes,
@@ -11,7 +12,7 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type Arrival from "./arrival.ts";
 import type Recyclery from "./recyclery.ts";
 import type Task from "./task.ts";
@@ -22,18 +23,20 @@ export default class CollectionPoint extends Model<
   InferCreationAttributes<CollectionPoint>
 > {
   declare id: CreationOptional<number>;
-  declare name: string | null;
-  declare address: string | null;
-  declare city: string | null;
-  declare postal_code: string | null;
-  declare contact_person: string | null;
-  declare contact_phone: string | null;
-  declare contact_email: string | null;
-  declare type: "standard" | "entreprise" | "association" | "school" | "hospital" | "other";
-  declare notes: string | null;
-  declare is_active: boolean;
+  declare name: string;
+  declare address: CreationOptional< string | null>;
+  declare city: CreationOptional< string | null>;
+  declare postal_code: CreationOptional< string | null>;
+  declare contact_person: CreationOptional< string | null>;
+  declare contact_phone: CreationOptional< string | null>;
+  declare contact_email:CreationOptional< string | null>;
+  declare type: CreationOptional<"standard" | "entreprise" | "association" | "school" | "hospital" | "other">;
+  declare notes:CreationOptional< string | null>;
+  declare is_active: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare recyclery_id: ForeignKey<Recyclery["id"]|null>
 
   declare Recyclery?: NonAttribute<Recyclery | null>;
   declare TaskSchedules?: NonAttribute<TaskSchedule[]>;
@@ -41,15 +44,15 @@ export default class CollectionPoint extends Model<
   declare Arrivals?: NonAttribute<Arrival[]>;
 
   declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
-  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number>;
+  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, Recyclery['id']>;
   declare getTaskSchedules: HasManyGetAssociationsMixin<TaskSchedule>;
-  declare addTaskSchedule: HasManyAddAssociationMixin<TaskSchedule, number>;
+  declare addTaskSchedule: HasManyAddAssociationMixin<TaskSchedule, TaskSchedule['id']>;
   declare getTasks: HasManyGetAssociationsMixin<Task>;
-  declare addTask: HasManyAddAssociationMixin<Task, number>;
+  declare addTask: HasManyAddAssociationMixin<Task, Task['id']>;
   declare getArrivals: HasManyGetAssociationsMixin<Arrival>;
-  declare addArrival: HasManyAddAssociationMixin<Arrival, number>;
+  declare addArrival: HasManyAddAssociationMixin<Arrival, Arrival['id']>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
     this.hasMany(models.TaskSchedule, {
       onDelete: "CASCADE",
@@ -60,14 +63,14 @@ export default class CollectionPoint extends Model<
   }
 
   static initModel(sequelize: Sequelize) {
-    CollectionPoint.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
           primaryKey: true,
           autoIncrement: true,
         },
-        name: { type: DataTypes.STRING, unique: true },
+        name: { type: DataTypes.STRING, unique: true, allowNull: false },
         address: DataTypes.TEXT,
         city: DataTypes.STRING,
         postal_code: {
@@ -91,9 +94,10 @@ export default class CollectionPoint extends Model<
         type: {
           type: DataTypes.ENUM("standard", "entreprise", "association", "school", "hospital", "other"),
           defaultValue: "standard",
+          allowNull:false
         },
         notes: DataTypes.TEXT,
-        is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
+        is_active: { type: DataTypes.BOOLEAN, defaultValue: true ,allowNull:false},
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },

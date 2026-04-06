@@ -58,7 +58,7 @@ export const listEcoOrganism = async (req, res) => {
   res.json({ eco_organisms });
 };
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */

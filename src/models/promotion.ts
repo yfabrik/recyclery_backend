@@ -7,34 +7,37 @@ import {
   type BelongsToManySetAssociationsMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
+  type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type Category from "./category.ts";
 import type Recyclery from "./recyclery.ts";
 
 export default class Promotion extends Model<InferAttributes<Promotion>, InferCreationAttributes<Promotion>> {
   declare id: CreationOptional<number>;
   declare startDate: string;
-  declare endDate: string;
-  declare isActive: boolean;
-  declare promotionValue: string;
+  declare endDate: CreationOptional<string | null>;
+  declare isActive: CreationOptional<boolean>;
+  declare promotionValue: number;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  declare Category?: NonAttribute<Category | null>;
+  declare category_id: ForeignKey<Category["id"]>
+
+  declare Category?: NonAttribute<Category>;
   declare stores?: NonAttribute<Recyclery[]>;
 
   declare getCategory: BelongsToGetAssociationMixin<Category>;
-  declare setCategory: BelongsToSetAssociationMixin<Category, number>;
+  declare setCategory: BelongsToSetAssociationMixin<Category, Category["id"]>;
   declare getStores: BelongsToManyGetAssociationsMixin<Recyclery>;
-  declare setStores: BelongsToManySetAssociationsMixin<Recyclery, number>;
-  declare addStore: BelongsToManyAddAssociationMixin<Recyclery, number>;
+  declare setStores: BelongsToManySetAssociationsMixin<Recyclery, Recyclery["id"]>;
+  declare addStore: BelongsToManyAddAssociationMixin<Recyclery, Recyclery["id"]>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.belongsTo(models.Category, { foreignKey: "category_id" });
     this.belongsToMany(models.Recyclery, {
       through: "promotion_store",
@@ -45,7 +48,7 @@ export default class Promotion extends Model<InferAttributes<Promotion>, InferCr
   }
 
   static initModel(sequelize: Sequelize) {
-    Promotion.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
@@ -53,8 +56,8 @@ export default class Promotion extends Model<InferAttributes<Promotion>, InferCr
           autoIncrement: true,
         },
         startDate: { type: DataTypes.DATEONLY, allowNull: false },
-        endDate: { type: DataTypes.DATEONLY, allowNull: false },
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+        endDate: { type: DataTypes.DATEONLY, allowNull: true },
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
         promotionValue: {
           type: DataTypes.DECIMAL(5, 2),
           allowNull: false,

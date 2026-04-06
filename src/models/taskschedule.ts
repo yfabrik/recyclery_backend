@@ -21,7 +21,7 @@ import {
 } from "sequelize";
 import logger from "../services/logger.js";
 import { generateTasksFromSchedule } from "../services/taskScheduleUtils.js";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type CollectionPoint from "./collectionpoint.ts";
 import type Employee from "./employee.ts";
 import type Recyclery from "./recyclery.ts";
@@ -29,24 +29,27 @@ import type Task from "./task.ts";
 
 export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, InferCreationAttributes<TaskSchedule>> {
   declare id: CreationOptional<number>;
-  declare is_recurring: boolean;
+  declare is_recurring: CreationOptional<boolean>;
   declare recurrence_pattern: "daily" | "weekly" | "monthly" | null;
   declare name: string;
-  declare description: string | null;
+  declare description: CreationOptional<string | null>;
   declare category: "vente" | "point" | "collection" | "custom";
-  declare priority: string | null;
-  declare required_skills: string | null;
-  declare location: string | null;
-  declare equipment_needed: string | null;
-  declare hourly_rate: string | null;
-  declare notes: string | null;
-  declare status: string | null;
+  declare priority: CreationOptional<string | null>;
+  declare required_skills: CreationOptional<string | null>;
+  declare location: CreationOptional<string | null>;
+  declare equipment_needed: CreationOptional<string | null>;
+  declare hourly_rate: CreationOptional<string | null>;
+  declare notes: CreationOptional<string | null>;
+  declare status: CreationOptional<string | null>;
   declare scheduled_date: Date;
   declare start_time: Date;
   declare end_time: Date;
-  declare day_of_week: string | null;
-  declare store_id: ForeignKey<number | null>;
-  declare collection_point_id: ForeignKey<number | null>;
+
+  declare day_of_week: NonAttribute<string | null>;
+
+  declare store_id: ForeignKey<Recyclery["id"] | null>;
+  declare collection_point_id: ForeignKey<CollectionPoint["id"] | null>;
+
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -56,16 +59,16 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
   declare Employees?: NonAttribute<Employee[]>;
 
   declare getTasks: HasManyGetAssociationsMixin<Task>;
-  declare addTask: HasManyAddAssociationMixin<Task, number>;
+  declare addTask: HasManyAddAssociationMixin<Task, Task["id"]>;
   declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
-  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number>;
+  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, Recyclery["id"]>;
   declare getCollectionPoint: BelongsToGetAssociationMixin<CollectionPoint>;
-  declare setCollectionPoint: BelongsToSetAssociationMixin<CollectionPoint, number>;
+  declare setCollectionPoint: BelongsToSetAssociationMixin<CollectionPoint, CollectionPoint["id"]>;
   declare getEmployees: BelongsToManyGetAssociationsMixin<Employee>;
-  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, number>;
-  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, number>;
+  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, Employee["id"]>;
+  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, Employee["id"]>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.hasMany(models.Task, { foreignKey: "schedule_id", onDelete: "CASCADE" });
     this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
     this.belongsTo(models.CollectionPoint, { foreignKey: "collection_point_id" });
@@ -75,7 +78,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
   static initModel(sequelize: Sequelize) {
     const conflictCheck = async (data: TaskSchedule) => {
       const values = data.dataValues
-      if(values.category === "custom") return;
+      if (values.category === "custom") return;
       const toMinutes = (v: Date | number) => {
         const d = v instanceof Date ? v : new Date(v);
         return d.getHours() * 60 + d.getMinutes();
@@ -103,7 +106,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
 
     const createTasksFrom = async (
       schedule: TaskSchedule,
-      tasksToCreate:any[], //Partial<TaskCreateAttributes>[],
+      tasksToCreate: any[], //Partial<TaskCreateAttributes>[],
       recurrencePattern: string | null,
       reason = "",
     ) => {
@@ -128,7 +131,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
         },
       });
 
-    const deleteFutureTasks = async (Task: ModelStatic<Task>, futureTasks: Task[], scheduleId:TaskSchedule["id"], reason: string) => {
+    const deleteFutureTasks = async (Task: ModelStatic<Task>, futureTasks: Task[], scheduleId: TaskSchedule["id"], reason: string) => {
       if (futureTasks.length === 0) return;
       await Task.destroy({
         where: {
@@ -223,14 +226,14 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
       }
     };
 
-    TaskSchedule.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
           primaryKey: true,
           autoIncrement: true,
         },
-        is_recurring: { type: DataTypes.BOOLEAN, defaultValue: true },
+        is_recurring: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
         recurrence_pattern: DataTypes.ENUM("daily", "weekly", "monthly"),
         name: DataTypes.STRING,
         description: DataTypes.TEXT,
@@ -248,6 +251,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
         scheduled_date: { type: DataTypes.DATE, allowNull: false },
         start_time: { type: DataTypes.DATE, allowNull: false },
         end_time: { type: DataTypes.DATE, allowNull: false },
+        // @ts-expect-error
         day_of_week: {
           type: DataTypes.VIRTUAL,
           get(this: TaskSchedule) {
@@ -256,8 +260,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
             return d ? d.charAt(0).toUpperCase() + d.slice(1) : null;
           },
         },
-        store_id: DataTypes.INTEGER,
-        collection_point_id: DataTypes.INTEGER,
+
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },
@@ -349,7 +352,7 @@ export default class TaskSchedule extends Model<InferAttributes<TaskSchedule>, I
               }
               return;
             }
-            await updateFutureTasksFields(Task, schedule.id,schedule, now);
+            await updateFutureTasksFields(Task, schedule.id, schedule, now);
           },
           beforeDestroy: async (schedule) => {
             const Task = schedule.sequelize.models.Task as ModelStatic<Task>;

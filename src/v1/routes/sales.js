@@ -4,6 +4,9 @@ import db from "../../models/index.js";
 import logger from "../../services/logger.js";
 const { SalesTransaction, TransactionItem, LabeledItem, User } = db;
 
+/**
+ * @deprecated
+ */
 export const router = Router();
 
 // Obtenir toutes les ventes

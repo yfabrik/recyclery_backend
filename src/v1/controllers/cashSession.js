@@ -235,7 +235,7 @@ export const getSessionById = async (req, res) => {
   res.json({ success: true, session: { ...session.toJSON(), transactions } });
 };
 /**
- *
+ *@deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */

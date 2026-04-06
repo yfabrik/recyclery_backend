@@ -1,0 +1,888 @@
+import createHttpError from "http-errors";
+import { col, fn, literal, Op, type Attributes, type Includeable, type WhereOptions } from "sequelize";
+import z from "zod";
+
+import { idSchema, postalSchema } from "../../services/zod.js";
+import {
+  chargeGiftCard,
+  findGiftCardByCode,
+  issueGiftCard,
+  recreditGiftCard,
+} from "../../services/giftCards.js";
+import CashSession from "../../models/cashsession.js";
+import CashRegister from "../../models/cashregister.js";
+import Recyclery from "../../models/recyclery.js";
+import User from "../../models/user.js";
+import TransactionPayment from "../../models/transactionpayment.js";
+import LabeledItem from "../../models/labeleditem.js";
+import SalesTransaction from "../../models/salestransaction.js";
+import type { Request, Response } from "express";
+import db from "../../models/index.js";
+import { formatWhereDateRange } from "../../helpers.js";
+import TransactionItem from "../../models/transactionitem.js";
+import Category from "../../models/category.js";
+
+
+export const getCartLinePrice = (line:CartItem) => {
+  let bundles = 0;
+  let extraItems = line.quantity;
+  if (line.bundleQuantity && line.bundleQuantity !== 0) {
+    bundles = Math.trunc(line.quantity / line.bundleQuantity);
+    extraItems = line.quantity % line.bundleQuantity;
+  }
+  const sum = (price:number, quantity:number) =>
+    price * quantity * (1 - (line.promotion ??0) / 100);
+  return (
+    sum(line.price, extraItems) + sum(line.bundlePrice || line.price, bundles)
+  );
+};
+
+const itemSchema = z.object({
+  name: z.string(),
+  price: z.coerce.number("prix requis").positive(),
+  quantity: z.coerce.number().positive().default(1),
+  category_id: idSchema(),
+  subcategory_id: idSchema().nullish(),
+  weight: z.coerce.number("poid requis").nonnegative(),
+  barcode: z.string(),
+  promotion: z.coerce.number().min(0).max(100).nullish(),
+  bundlePrice: z.coerce.number().nullish(),
+  bundleQuantity: z.coerce.number().nullish(),
+});
+const paymentLineSchema = z.object({
+  method: z.enum(["cash", "card", "check", "giftcard"]),
+  amount: z.coerce.number("montant requis").positive(),
+  gift_card_code: z.string().trim().min(1).nullish(),
+});
+const dataSchema = z.object({
+  cash_session_id: idSchema("sesions requis"),
+  total_amount: z.coerce.number("argent requis"),
+  // payment_method: z.enum(["cash", "card", "check"]).default("cash"),
+  payment_amount: z.coerce.number("argent requis"),
+  payments: z.array(paymentLineSchema).optional(),
+  customer_postal_code: postalSchema().nullish(),
+  items: z.array(itemSchema),
+});
+type Data = z.infer<typeof dataSchema>
+type CartItem = z.infer<typeof itemSchema>
+
+/**
+ * @param {number|string|null|undefined} value
+ */
+const toAmount = (value) => Number.parseFloat(String(value ?? 0));
+/**
+ * @param {number|string} a
+ * @param {number|string} b
+ */
+const amountsEqual = (a, b) => Math.abs(toAmount(a) - toAmount(b)) < 0.001;
+
+
+const normalizePayments = (data: Data) => {
+  const explicitPayments = Array.isArray(data.payments) ? data.payments : [];
+  const payments =
+    explicitPayments.length > 0
+      ? explicitPayments : []
+  // : [{ method: data.payment_method??0, amount: data.payment_amount }];
+
+  const totalPayments = payments.reduce((acc, p) => acc + toAmount(p.amount), 0);
+  if (data.total_amount > totalPayments) {
+    // if (!amountsEqual(totalPayments, data.total_amount)) {//TODO FIXME for cash with extra money
+    throw new createHttpError.BadRequest(
+      "la somme des paiements doit etre egale au total",
+    );
+  }
+
+  for (const payment of payments) {
+    if (payment.method === "giftcard" && !payment.gift_card_code) {
+      throw new createHttpError.BadRequest(
+        "gift_card_code est requis pour un paiement giftcard",
+      );
+    }
+  }
+
+  return payments;
+};
+
+
+export const listTransactions = async (req: Request, res: Response) => {
+  const ALLOWED_INCLUDES = ["refund", "items", "payments"];
+  const filterSchema = z.object({
+    store_id: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      idSchema().optional().nullable(),
+    ),
+    period: z.string().optional(),
+    type: z.enum(["sell", "refund"], "type de transaction inconnu").optional(),
+    date_from: z.coerce.date().optional(),
+    date_to: z.coerce.date().optional(),
+    limit: z.coerce.number().positive().optional(),
+    offset: z.coerce.number().nonnegative().default(0),
+    session: idSchema().optional(),
+    payment_method: z
+      .enum(
+        ["cash", "check", "card", "giftcard", "mixed"],
+        "methode de payment inconnue",
+      )
+      .optional(),
+    page: z.coerce.number().positive().optional(),
+    include: z
+      .string()
+      .optional()
+      .transform((val) => (val ? val.split(",") : []))
+      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
+  });
+  const filter = filterSchema.parse(req.query);
+
+  const where: WhereOptions<Attributes<SalesTransaction>> = {};
+  // if (filter.store_id) where.recyclery_id = filter.store_id;
+
+  where.createdAt = formatWhereDateRange(filter.date_from, filter.date_to);
+
+  if (filter.session) where.cash_session_id = filter.session;
+  if (filter.payment_method) where.payment_method = filter.payment_method;
+  if (filter.type) where.transactionType = filter.type;
+
+  const whereStore: WhereOptions<Attributes<CashRegister>> = {};
+  if (filter.store_id) whereStore.recyclery_id = filter.store_id;
+
+  const pagination = {} as { limit: number, offset: number }
+  if (filter.page) {
+    pagination.limit = filter.limit || 50
+    pagination.offset = filter.offset || (filter.page - 1) * pagination.limit
+  }
+  const include: Includeable[] = [
+    {
+      model: CashSession,
+      include: [
+        {
+          model: CashRegister,
+          where: whereStore,
+          // ...(filter.store_id ? { where: { recyclery_id: filter.store_id } } : {}),
+          include: [
+            {
+              model: Recyclery,
+              // required: true,
+            },
+          ],
+        },
+        {
+          model: User,
+        },
+      ],
+      required: true,
+    },
+  ];
+  if (filter.include.includes("payments"))
+    include.push({
+      model: TransactionPayment,
+      as: "payments",
+    });
+  if (filter.include.includes("refund")) {
+    const insideInclude: Includeable[] = [];
+    if (filter.include.includes("items"))
+      insideInclude.push({
+        model: LabeledItem,
+        as: "items",
+      });
+
+    include.push({
+      model: SalesTransaction,
+      as: "refunds",
+      include: insideInclude,
+    });
+  }
+  if (filter.include.includes("items"))
+    include.push({
+      model: LabeledItem,
+      as: "items",
+    });
+
+  const transactions = await SalesTransaction.findAndCountAll({
+    where,
+    include,
+    order: [["createdAt", "DESC"]],
+    ...pagination
+  });
+
+  res.json({
+    success: true,
+    transactions: transactions.rows,
+    pagination: {
+      limit: filter.limit,
+      offset: filter.offset,
+      total: transactions.count,
+    },
+  });
+};
+
+export const createTransaction = async (req: Request & { user: User }, res: Response) => {
+  const data = dataSchema.parse(req.body);
+  const payments = normalizePayments(data);
+  const session = await CashSession.findByPk(data.cash_session_id);
+  if (!session) throw new createHttpError[404]("session non trouvé");
+
+  const result = await db.sequelize.transaction(async (t) => {
+    // const uniqueMethods = [...new Set(payments.map((p) => p.method))];
+    // const storedMethod = uniqueMethods.length === 1 ? uniqueMethods[0] : "mixed";
+    const storedMethod = payments && payments.length === 1 ? payments[0]?.method ?? "mixed" : "mixed"
+
+    const sale = await session.createSalesTransaction(
+      {
+        total_amount: data.total_amount,//TODO recalculer coté server mais j'ai la flemme
+        payment_method: storedMethod,
+        payment_amount: data.payment_amount,//TODO payments.reduce(...)
+        customer_postal_code: data?.customer_postal_code || null,
+        transactionType: "sell"
+      },
+      { transaction: t },
+    );
+    for await (const item of data.items) {
+      if (isNaN(+item.barcode)) {
+        await sale.createItem(
+          {
+            category_id: item.category_id,
+            subcategory_id: item.subcategory_id,
+            price: item.price,
+            weight: item.weight,
+            name: item.name,
+            status: "sold",
+            sold_at: new Date(),
+            created_by: req.user.id,
+          },
+          {
+            through: {
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              promotionValue: item.promotion,
+              bundleQuantity: item.bundleQuantity,
+              bundlePrice: item.bundlePrice,
+            },
+            transaction: t,
+          },
+        );
+      } else {
+        const i = await LabeledItem.findByPk(+item.barcode);
+        if (!i) throw new createHttpError.NotFound("item not found");
+        await i.update(
+          {
+            // sold_at: new Date(),
+            status: "sold",
+          },
+          { transaction: t },
+        );
+        await sale.addItem(i, {
+          through: {
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            promotionValue: item.promotion,
+            bundleQuantity: item.bundleQuantity,
+            bundlePrice: item.bundlePrice,
+          },
+          transaction: t,
+        });
+      }
+    }
+
+    for await (const payment of payments.filter((p) => p.method === "giftcard")) {
+      const giftCardCode = payment.gift_card_code;
+      if (!giftCardCode) {
+        throw new createHttpError.BadRequest(
+          "gift_card_code est requis pour un paiement giftcard",
+        );
+      }
+      const giftCard = await findGiftCardByCode(giftCardCode, {
+        transaction: t,
+      });
+      if (!giftCard) {
+        throw new createHttpError.NotFound("gift card introuvable");
+      }
+      await chargeGiftCard({
+        giftCardId: giftCard.id,
+        salesTransactionId: sale.id,
+        amount: payment.amount,
+        createdBy: req.user.id,
+        metadata: { source: "sale_payment" },
+        transaction: t,
+      });
+      await TransactionPayment.create(
+        {
+          sales_transaction_id: sale.id,
+          method: "giftcard",
+          amount: payment.amount,
+          gift_card_id: giftCard.id,
+          metadata: { gift_card_code: giftCardCode },
+        },
+        { transaction: t },
+      );
+    }
+
+    for await (const payment of payments.filter((p) => p.method !== "giftcard")) {
+      await TransactionPayment.create(
+        {
+          sales_transaction_id: sale.id,
+          method: payment.method,
+          amount: payment.amount,
+        },
+        { transaction: t },
+      );
+    }
+
+    return sale;
+  });
+
+  // Example response:
+  // {
+  //   "success": true,
+  //   "data": {
+  //     "id": 123,
+  //     "message": "Transaction creee avec succes",
+  //     "sale": { "...": "..." },
+  //     "payments": [
+  //       { "method": "giftcard", "amount": 20, "gift_card_code": "GC00000001" },
+  //       { "method": "card", "amount": 5 }
+  //     ]
+  //   }
+  // }
+  res.json({
+    success: true,
+    data: {
+      id: result.id,
+
+      message: "Transaction créée avec succès",
+      sale: result,
+      payments,
+    },
+  });
+};
+
+export const createRefund = async (req: Request & { user: User }, res: Response) => {
+  const id = idSchema().parse(req.params.id);
+  const refundItemSchema = z.object({
+    name: z.string(),
+    price: z.coerce.number("prix requis").positive(),
+    quantity: z.coerce.number().positive().default(1),
+    category_id: idSchema(),
+    subcategory_id: idSchema().nullish(),
+    weight: z.coerce.number("poid requis").nonnegative(),
+    barcode: z.string(),
+    promotion: z.coerce.number().min(0).max(100).nullish(),
+    bundlePrice: z.coerce.number().nullish(),
+    bundleQuantity: z.coerce.number().nullish(),
+    // refundQantity: z.coerce.number(),
+    // refundPrice: z.coerce.number(),
+  });
+  const refundDataSchema = z.object({
+    cash_session_id: idSchema(),
+    total_amount: z.coerce.number("argent requis"),
+    payment_method: z.enum(["cash", "card", "check", "giftcard"]).default("cash"),
+    refund_method: z.enum(["cash", "card", "check", "giftcard"]).default("cash"),
+    gift_card_code: z.string().trim().min(1).nullish(),
+    refund_reason: z.string("refund raison requis"),
+    items: z.array(refundItemSchema),
+  });
+
+  const parent = await SalesTransaction.findByPk(id, {
+    include: [
+      {
+        model: SalesTransaction,
+        as: "refunds",
+        required: false,
+        include: [{ model: LabeledItem, as: "items" }],
+      },
+      { model: LabeledItem, as: "items" },
+    ],
+  });
+  if (!parent)
+    throw new createHttpError.NotFound("transaction parent pas trouvé");
+
+  //FIXME on se fait baiser quand les object sont en lot et qu'on rembourse qu'une partie
+
+  const data = refundDataSchema.parse(req.body);
+  data.refund_method = data.payment_method
+
+  const refunded = data.items
+    .map((item) => {
+      const alreadyRefunded = parent.refunds?.reduce((prev, current) => {
+        const items = current.items?.filter((i) => i.barcode == item.barcode);
+        prev +=
+          items?.reduce((p, v) => (p += v.TransactionItem.quantity), 0) || 0;
+        return prev;
+      }, 0);
+      //test que le compte d'object deborde pas
+      const c = parent.items?.find((i) => i.barcode === item.barcode);
+      if (alreadyRefunded + item.quantity > c.quantity)
+        throw new createHttpError.BadRequest(
+          "peut pas rembourser plus d'objects que vendu",
+        );
+
+      const alreadyRefundedPrice = parent.refunds?.reduce((prev, current) => {
+        const items = current.items?.filter((i) => i.barcode == item.barcode);
+        prev +=
+          items?.reduce((p, v) => (p += v.TransactionItem.total_price), 0) || 0;
+        return prev;
+      }, 0);
+      const toRefundNow = getCartLinePrice(item) - alreadyRefundedPrice;
+
+      return {
+        ...item,
+        alreadyRefunded,
+        alreadyRefundedPrice,
+        toRefundNow,
+      };
+    })
+    .filter((item) => item.quantity != item.alreadyRefunded);
+
+  // const refundAmount = data.items.map((item) => {
+  //   const totalRefund =
+  //     getCartLinePrice(item) -
+  //     (refunded.find((i) => i.barcode === item.barcode)?.alreadyRefundedPrice ||
+  //       0);
+  //   return {
+  //     ...item,
+  //     totalRefund,
+  //   };
+  // });
+
+  const result = await db.sequelize.transaction(async (t) => {
+    /** @type {null | { id: number; code: string; status: string; initial_value?: number; current_balance?: number; type: "recredit_existing" | "issued_new" }} */
+    let refundGiftCard = null;
+    const refund = await SalesTransaction.create(
+      {
+        transactionType: "refund",
+        created_by: req.user.id,
+        cash_session_id: data.cash_session_id,
+        total_amount: refunded.reduce(
+          (prev, current) => (prev += current.toRefundNow),
+          0,
+        ), //data.total_amount,
+        payment_method: data.payment_method,
+        payment_amount: refunded.reduce(
+          (prev, current) => (prev += current.toRefundNow),
+          0,
+        ),
+        transactionId: id,
+      },
+      { transaction: t },
+    );
+    for await (const item of refunded) {
+      const i = await LabeledItem.findByPk(
+        +item.barcode,
+        // { transaction: t }
+      );
+      if (!i) throw new createHttpError.NotFound("item non trouvé");
+      await refund.addItem(i, {
+        through: {
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity - (item.alreadyRefunded ?? 0),
+          promotionValue: item.promotion,
+          bundleQuantity: item.bundleQuantity,
+          bundlePrice: item.bundlePrice,
+        },
+        transaction: t,
+      });
+    }
+    if (data.payment_method === "giftcard") {
+      const giftCardCode = data.gift_card_code;
+      const refundAmount = Number(refund.total_amount || 0);
+      if (giftCardCode) {
+
+        const giftCard = await findGiftCardByCode(giftCardCode, {
+          transaction: t,
+        });
+        if (!giftCard) {
+          throw new createHttpError.NotFound("gift card introuvable");
+        }
+
+        await recreditGiftCard({
+          giftCardId: giftCard.id,
+          salesTransactionId: refund.id,
+          amount: refundAmount,
+          createdBy: req.user.id,
+          metadata: { source: "refund_recredit", parentTransactionId: id },
+          transaction: t,
+        });
+
+        await TransactionPayment.create(
+          {
+            sales_transaction_id: refund.id,
+            method: "giftcard",
+            amount: refundAmount,
+            gift_card_id: giftCard.id,
+            metadata: {
+              source: "refund_recredit",
+              gift_card_code: giftCardCode,
+              parentTransactionId: id,
+            },
+          },
+          { transaction: t },
+        );
+
+        refundGiftCard = {
+          id: giftCard.id,
+          code: giftCard.code,
+          status: giftCard.status,
+          type: "recredit_existing",
+        };
+      } else {
+        // Refund -> Gift card (create a new card when no code is provided)
+        const generatedCode = `GC-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        const giftCard = await issueGiftCard(
+          {
+            code: generatedCode,
+            initialValue: refundAmount,
+            issuedRefundTransactionId: refund.id,
+            createdBy: req.user.id,
+            metadata: { source: "refund_issue", parentTransactionId: id },
+            transaction: t,
+          },
+        );
+
+        await TransactionPayment.create(
+          {
+            sales_transaction_id: refund.id,
+            method: "giftcard",
+            amount: refundAmount,
+            gift_card_id: giftCard.id,
+            metadata: {
+              source: "refund_issue",
+              gift_card_code: generatedCode,
+              parentTransactionId: id,
+            },
+          },
+          { transaction: t },
+        );
+
+        refundGiftCard = {
+          id: giftCard.id,
+          code: giftCard.code,
+          status: giftCard.status,
+          initial_value: +giftCard.initial_value,
+          type: "issued_new",
+        };
+      }
+    } else {
+      await TransactionPayment.create(
+        {
+          sales_transaction_id: refund.id,
+          method: data.payment_method,
+          amount: Number(refund.total_amount || 0),
+          metadata: { source: "refund_payment" },
+        },
+        { transaction: t },
+      );
+    }
+    return { refund, giftCard: refundGiftCard };
+  });
+
+
+  // Example response:
+  // {
+  //   "success": true,
+  //   "message": "Remboursement cree avec succes",
+  //   "refund": { "...": "..." }
+  // }
+  res.status(201).json({
+    success: true,
+    message: "Remboursement créé avec succès",
+    refund: result.refund,
+    ...(result.giftCard ? { giftCard: result.giftCard } : {}),
+    // refund,
+  });
+};
+
+
+//FIXME y'a le meme truc dans refunds
+export const listRefunds = async (req: Request, res: Response) => {
+  const id = idSchema().parse(req.params.id);
+  const refunds = await SalesTransaction.findByPk(id, {
+    include: [
+      {
+        model: SalesTransaction,
+        as: "refunds",
+        required: false,
+        include: [{ model: LabeledItem, as: "items" }],
+      },
+      { model: LabeledItem, as: "items" },
+    ],
+  });
+
+  // const refunds = await Refund.findAll({
+  //   where: { transaction_id: id },
+  //   include: [{ model: SalesTransaction }],
+  // });
+  // if (!refunds[0]) {
+  //   return res.status(404).json({
+  //     success: false,
+  //     message: "Transaction non trouvée",
+  //   });
+  // }
+
+  res.json({
+    success: true,
+    refunds: refunds?.refunds,
+    ref: refunds,
+  });
+};
+
+
+export const transactionsStats = async (req: Request, res: Response) => {
+  const filterSchema = z.object({
+    store_id: z.union([idSchema(), z.literal("")]).nullish(),
+    date_from: z.coerce.date().optional(),
+    date_to: z.coerce.date().optional(),
+  });
+  const filter = filterSchema.parse(req.query);
+
+  const where: WhereOptions<Attributes<SalesTransaction>> = {};
+  const include: Includeable[] = [];
+  if (filter.store_id) {
+    include.push({
+      model: CashSession,
+      required: true,
+      attributes: [],
+      include: [
+        {
+          model: CashRegister,
+          where: { recyclery_id: filter.store_id },
+          required: true,
+          attributes: [],
+        },
+      ],
+    });
+  }
+  // where.store_id = filter.store_id;
+
+  const { date_from, date_to } = filter;
+  where.createdAt = formatWhereDateRange(date_from, date_to)
+
+  // Subquery for total refunded amounts per transaction
+  // const refundSubquery = literal(`(
+  //     SELECT
+  //       SUM(CASE WHEN refund_type IN ('full', 'partial') THEN refund_amount ELSE 0 END)
+  //     FROM refunds AS r
+  //     WHERE r.transaction_id = SalesTransaction.id
+  //       AND r.status = 'completed'
+  //   )`);
+
+  // Fetch global stats
+  const { count, rows } = await SalesTransaction.findAndCountAll({
+    attributes: [
+      [
+        fn("COALESCE", fn("SUM", col("total_amount")), 0),
+        "total_sales_before_refunds",
+      ],
+      [
+        fn("COALESCE", fn("AVG", col("total_amount")), 0),
+        "average_transaction",
+      ],
+      [fn("COUNT", fn("DISTINCT", col("cash_session_id"))), "sessions_count"],
+      // [
+      //   fn(
+      //     "SUM",
+      //     literal(`CASE WHEN payment_method = 'cash' THEN 1 ELSE 0 END`),
+      //   ),
+      //   "cash",
+      // ],
+      // [
+      //   fn(
+      //     "SUM",
+      //     literal(`CASE WHEN payment_method = 'card' THEN 1 ELSE 0 END`),
+      //   ),
+      //   "card",
+      // ],
+    ],
+    where,
+    include,
+    raw: true,
+  });
+  // const stats = rows[0].get({ plain: true });
+  const statsRow = rows[0] ?? {
+    total_sales_before_refunds: 0,
+    average_transaction: 0,
+    sessions_count: 0,
+  };
+  const methods = await SalesTransaction.findAll({
+    attributes: [
+      "payment_method",
+      [fn("SUM", col("total_amount")), "total"],
+      [fn("COUNT", col("payment_method")), "count"],
+    ],
+    where,
+    include,
+    group: [["payment_method"]],
+    raw: true,
+  });
+
+  // Stats grouped per day: transaction count and total amount
+  const byDay = await SalesTransaction.findAll({
+    attributes: [
+      [fn("DATE", col("SalesTransaction.createdAt")), "date"],
+      [fn("COUNT", col("SalesTransaction.id")), "transaction_count"],
+      [
+        fn("COALESCE", fn("SUM", col("SalesTransaction.total_amount")), 0),
+        "total_amount",
+      ],
+    ],
+    where,
+    include,
+    group: [fn("DATE", col("SalesTransaction.createdAt"))],
+    order: [[col("date"), "ASC"]],
+    raw: true,
+  });
+
+  // Stats grouped by category: sum of quantity and sum of total_price from transaction items
+  // total_price is virtual in TransactionItem (price*extraItems*(1-promo) + (bundlePrice|price)*bundles*(1-promo))
+  const totalPriceExpr = literal(`(
+    (TransactionItem.price * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN TransactionItem.quantity % TransactionItem.bundleQuantity ELSE TransactionItem.quantity END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100))
+    + (COALESCE(TransactionItem.bundlePrice, TransactionItem.price) * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN CAST(TransactionItem.quantity / TransactionItem.bundleQuantity AS INTEGER) ELSE 0 END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100))
+  )`);
+  const byCategory = await TransactionItem.findAll({
+    attributes: [
+      [fn("SUM", col("TransactionItem.quantity")), "total_quantity"],
+      [fn("COALESCE", fn("SUM", totalPriceExpr), 0), "total_price_sum"],
+      [col("LabeledItem.category_id"), "category_id"],
+      [col("LabeledItem.category.name"), "category_name"],
+    ],
+    include: [
+      {
+        model: SalesTransaction,
+        where,
+        include,
+        required: true,
+        attributes: [],
+      },
+      {
+        model: LabeledItem,
+        required: true,
+        attributes: [],
+        include: [
+          {
+            model: Category,
+            as: "category",
+            required: false,
+            attributes: [],
+          },
+        ],
+      },
+    ],
+    group: [col("LabeledItem.category_id"), col("LabeledItem.category.name")],
+    raw: true,
+  });
+
+  // const stats = await SalesTransaction.findAll({
+  //   attributes: [
+  //     [fn("COUNT", col("id")), "total_transactions"],
+  //     [
+  //       fn("COALESCE", fn("SUM", col("total_amount")), 0),
+  //       "total_sales_before_refunds",
+  //     ],
+  //     [
+  //       literal(
+  //         "COALESCE(SUM(total_amount) - COALESCE(SUM((" +
+  //           refundSubquery.val +
+  //           ")), 0), 0)",
+  //       ),
+  //       "total_sales",
+  //     ],
+  //     [
+  //       fn("COALESCE", fn("AVG", col("total_amount")), 0),
+  //       "average_transaction",
+  //     ],
+  //     [fn("COUNT", fn("DISTINCT", col("cash_session_id"))), "sessions_count"],
+  //     [
+  //       fn("COALESCE", fn("SUM", literal(refundSubquery.val)), 0),
+  //       "total_refunded",
+  //     ],
+  //   ],
+  //   where,
+  //   raw: true,
+  // });
+  res.json({
+    success: true,
+    stats: {
+      total_transactions: count,
+      total_sales: statsRow.total_sales_before_refunds,
+      ...statsRow,
+      total_refunded: 0,
+      payment_methods: methods ?? [],
+      by_day:
+        /** @type {Array<{ date?: string; transaction_count?: number; total_amount?: string | number }>} */ (
+          byDay
+        ).map((row) => ({
+          date: row.date,
+          transaction_count: Number(row.transaction_count ?? 0),
+          total_amount: parseFloat(String(row.total_amount ?? 0)),
+        })),
+      by_category:
+        /** @type {Array<{ category_id?: number; category_name?: string | null; total_quantity?: number; total_price_sum?: string | number }>} */ (
+          byCategory
+        ).map((row) => ({
+          category_id: row.category_id,
+          category_name: row.category_name ?? null,
+          total_quantity: Number(row.total_quantity ?? 0),
+          total_price_sum: parseFloat(String(row.total_price_sum ?? 0)),
+        })),
+      // total_sales_before_refunds: parseFloat(
+      //   stats[0].total_sales_before_refunds || 0,
+      // ),
+      // total_sales: parseFloat(stats[0].total_sales || 0),
+      // total_refunded: parseFloat(stats[0].total_refunded || 0),
+      // average_transaction: parseFloat(stats[0].average_transaction || 0),
+      // sessions_count: stats[0].sessions_count || 0,
+      // payment_methods: stats.map((method) => ({
+      //   payment_method: method.payment_method,
+      //   count: method.count,
+      //   total: parseFloat(method.total || 0),
+      // })),
+    },
+  });
+};
+
+
+export const transactionStatsPostalCode = async (req: Request, res: Response) => {
+  const filterSchema = z.object({
+    store_id: z.union([idSchema(), z.literal("")]).nullish(),
+    date_from: z.coerce.date().optional(),
+    date_to: z.coerce.date().optional(),
+  });
+  const filter = filterSchema.parse(req.query);
+  const { store_id, date_from, date_to } = filter;
+
+  const where: WhereOptions<Attributes<SalesTransaction>> = {};
+  const include: Includeable[] = [];
+  // include.push({ model: LabeledItem, as: "items" })
+  where.customer_postal_code = { [Op.ne]: null };
+  if (store_id) //where.store_id = store_id;
+  {
+    include.push({
+      model: CashSession,
+      include: [{ model: CashRegister, where: { recyclery_id: store_id } }],
+    });
+  }
+
+  where.createdAt = formatWhereDateRange(date_from, date_to);
+
+  const postalStats = await SalesTransaction.findAll({
+    where,
+    include,
+    attributes: [
+      [fn("COUNT", col("SalesTransaction.id")), "transaction_count"],
+      [
+        fn("COALESCE", fn("AVG", col("total_amount")), 0),
+        "average_transaction",
+      ],
+      [fn("COALESCE", fn("SUM", col("total_amount")), 0), "total_sales"],
+      "customer_postal_code",
+    ],
+    group: ["customer_postal_code"],
+    order: [["total_sales", "DESC"]],
+  });
+
+  res.json({
+    success: true,
+    postal_codes: postalStats,
+  });
+};

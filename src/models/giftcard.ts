@@ -15,7 +15,7 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type GiftCardTransaction from "./giftcardtransaction.ts";
 import type SalesTransaction from "./salestransaction.ts";
 import type TransactionPayment from "./transactionpayment.ts";
@@ -24,20 +24,22 @@ import type User from "./user.ts";
 export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCreationAttributes<GiftCard>> {
   declare id: CreationOptional<number>;
   declare code: string;
-  declare initial_value: string;
-  declare current_value: number | null;
-  declare expires_at: Date | null;
-  declare status: "active" | "partially_used" | "redeemed" | "expired" | "cancelled";
-  declare currency: string;
-  declare issued_at: Date;
-  declare issued_transaction_id: ForeignKey<number | null>;
-  declare issued_refund_transaction_id: ForeignKey<number | null>;
-  declare created_by: ForeignKey<number | null>;
-  declare note: string | null;
-  declare recipient_name: string | null;
-  declare recipient_email: string | null;
+  declare initial_value: number;
+  declare expires_at: CreationOptional<Date | null>;
+  declare status: CreationOptional<"active" | "partially_used" | "redeemed" | "expired" | "cancelled">;
+  declare currency: CreationOptional<string>;
+  declare issued_at: CreationOptional<Date>;
+  declare note: CreationOptional<string | null>;
+  declare recipient_name: CreationOptional<string | null>;
+  declare recipient_email: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare current_value: NonAttribute<number | null>;
+
+  declare issued_transaction_id: ForeignKey<SalesTransaction["id"] | null>;
+  declare issued_refund_transaction_id: ForeignKey<SalesTransaction["id"] | null>;
+  declare created_by: ForeignKey<User["id"] | null>;
 
   declare issuedTransaction?: NonAttribute<SalesTransaction | null>;
   declare issuedRefundTransaction?: NonAttribute<SalesTransaction | null>;
@@ -47,20 +49,20 @@ export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCrea
   declare paymentUsages?: NonAttribute<TransactionPayment[]>;
 
   declare getIssuedTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
-  declare setIssuedTransaction: BelongsToSetAssociationMixin<SalesTransaction, number>;
+  declare setIssuedTransaction: BelongsToSetAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
   declare getIssuedRefundTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
-  declare setIssuedRefundTransaction: BelongsToSetAssociationMixin<SalesTransaction, number>;
+  declare setIssuedRefundTransaction: BelongsToSetAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
   declare getCreatedBy: BelongsToGetAssociationMixin<User>;
-  declare setCreatedBy: BelongsToSetAssociationMixin<User, number>;
+  declare setCreatedBy: BelongsToSetAssociationMixin<User, User["id"]>;
   declare getTransactions: BelongsToManyGetAssociationsMixin<SalesTransaction>;
-  declare setTransactions: BelongsToManySetAssociationsMixin<SalesTransaction, number>;
-  declare addTransaction: BelongsToManyAddAssociationMixin<SalesTransaction, number>;
+  declare setTransactions: BelongsToManySetAssociationsMixin<SalesTransaction, SalesTransaction["id"]>;
+  declare addTransaction: BelongsToManyAddAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
   declare getMovements: HasManyGetAssociationsMixin<GiftCardTransaction>;
-  declare addMovement: HasManyAddAssociationMixin<GiftCardTransaction, number>;
+  declare addMovement: HasManyAddAssociationMixin<GiftCardTransaction, GiftCardTransaction["id"]>;
   declare getPaymentUsages: HasManyGetAssociationsMixin<TransactionPayment>;
-  declare addPaymentUsage: HasManyAddAssociationMixin<TransactionPayment, number>;
+  declare addPaymentUsage: HasManyAddAssociationMixin<TransactionPayment, TransactionPayment["id"]>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.belongsTo(models.SalesTransaction, {
       as: "issuedTransaction",
       foreignKey: "issued_transaction_id",
@@ -81,7 +83,7 @@ export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCrea
   }
 
   static initModel(sequelize: Sequelize) {
-    GiftCard.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
@@ -100,6 +102,7 @@ export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCrea
           defaultValue: 0,
           validate: { min: 0 },
         },
+        //@ts-expect-error
         current_value: {
           type: DataTypes.VIRTUAL,
           get(this: GiftCard) {
@@ -122,9 +125,9 @@ export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCrea
           defaultValue: "EUR",
         },
         issued_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
-        issued_transaction_id: { type: DataTypes.INTEGER, allowNull: true },
-        issued_refund_transaction_id: { type: DataTypes.INTEGER, allowNull: true },
-        created_by: { type: DataTypes.INTEGER, allowNull: true },
+        // issued_transaction_id: { type: DataTypes.INTEGER, allowNull: true },
+        // issued_refund_transaction_id: { type: DataTypes.INTEGER, allowNull: true },
+        // created_by: { type: DataTypes.INTEGER, allowNull: true },
         note: { type: DataTypes.TEXT, allowNull: true },
         recipient_name: { type: DataTypes.STRING, allowNull: true },
         recipient_email: { type: DataTypes.STRING, allowNull: true },

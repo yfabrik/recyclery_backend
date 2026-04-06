@@ -4,26 +4,24 @@
     // File Layout
     "rootDir": "./src",
     "outDir": "./dist",
-
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     "module": "nodenext",
     "target": "esnext",
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
     // and npm install -D @types/node
-
     // Other Outputs
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-
+    // "sourceMap": true,
+    // "declaration": true,
+    // "declarationMap": true,
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-
     // Style Options
     "noImplicitReturns": true,
     "noImplicitOverride": true,
@@ -31,7 +29,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     // "noPropertyAccessFromIndexSignature": true,
-
     "allowUnusedLabels": false,
     // Recommended Options
     "strict": true,
@@ -42,12 +39,17 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-
     "allowJs": true,
+    "resolveJsonModule": true,
     // "checkJs": true,
-
     // "noErrorTruncation": true,
   },
   "include": ["src"],
-  "exclude": ["src/models/**/*.js","src/migrations"]
+  "exclude": [
+    "src/models/index.js",
+    "src/models/types",
+    "src/models/**/*.js",
+    "src/migrations",
+    "src/v1/controllers/*.js"
+  ],
 }

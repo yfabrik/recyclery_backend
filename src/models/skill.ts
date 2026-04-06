@@ -10,24 +10,24 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type Employee from "./employee.ts";
 
 export default class Skill extends Model<InferAttributes<Skill>, InferCreationAttributes<Skill>> {
   declare id: CreationOptional<number>;
   declare name: string;
-  declare isActive: boolean;
-  declare description: string | null;
+  declare isActive: CreationOptional<boolean>;
+  declare description: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
   declare employees?: NonAttribute<Employee[]>;
 
   declare getEmployees: BelongsToManyGetAssociationsMixin<Employee>;
-  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, number>;
-  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, number>;
+  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, Employee["id"]>;
+  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, Employee["id"]>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.belongsToMany(models.Employee, {
       foreignKey: "skillId",
       as: "employees",
@@ -36,7 +36,7 @@ export default class Skill extends Model<InferAttributes<Skill>, InferCreationAt
   }
 
   static initModel(sequelize: Sequelize) {
-    Skill.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
@@ -44,7 +44,7 @@ export default class Skill extends Model<InferAttributes<Skill>, InferCreationAt
           autoIncrement: true,
         },
         name: { type: DataTypes.STRING, allowNull: false, unique: true },
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
         description: { type: DataTypes.TEXT },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

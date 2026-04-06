@@ -10,41 +10,42 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type Recyclery from "./recyclery.ts";
 import type User from "./user.ts";
 
 export default class Donation extends Model<InferAttributes<Donation>, InferCreationAttributes<Donation>> {
   declare id: CreationOptional<number>;
-  declare donor_name: string | null;
-  declare donor_phone: string | null;
-  declare donor_email: string | null;
-  declare item_description: string | null;
-  declare estimated_value: string | null;
-  declare status: "pending" | "accepted" | "rejected";
-  declare received_at: Date | null;
-  declare donorContact: string | null;
-  declare weight: string | null;
-  declare recyclery_id: ForeignKey<number | null>;
-  declare received_by: ForeignKey<number | null>;
+  declare donor_name: CreationOptional<string | null>;
+  declare donor_phone: CreationOptional<string | null>;
+  declare donor_email: CreationOptional<string | null>;
+  declare item_description: CreationOptional<string | null>;
+  declare estimated_value: CreationOptional<string | null>;
+  declare status: CreationOptional<"pending" | "accepted" | "rejected">;
+  declare received_at: CreationOptional<Date>;
+  declare donorContact: NonAttribute<string | null>;
+  declare weight: CreationOptional<number>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare recyclery_id: ForeignKey<Recyclery["id"] | null>;
+  declare received_by: ForeignKey<User["id"] | null>;
 
   declare Recyclery?: NonAttribute<Recyclery | null>;
   declare User?: NonAttribute<User | null>;
 
   declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
-  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number>;
+  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, Recyclery["id"]>;
   declare getUser: BelongsToGetAssociationMixin<User>;
-  declare setUser: BelongsToSetAssociationMixin<User, number>;
+  declare setUser: BelongsToSetAssociationMixin<User, User["id"]>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
     this.belongsTo(models.User, { foreignKey: "received_by" });
   }
 
   static initModel(sequelize: Sequelize) {
-    Donation.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
@@ -65,8 +66,10 @@ export default class Donation extends Model<InferAttributes<Donation>, InferCrea
         status: {
           type: DataTypes.ENUM("pending", "accepted", "rejected"),
           defaultValue: "pending",
+          allowNull: false
         },
-        received_at: DataTypes.DATE,
+        received_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW, allowNull: false },
+        // @ts-expect-error
         donorContact: {
           type: DataTypes.VIRTUAL,
           get(this: Donation) {
@@ -78,9 +81,9 @@ export default class Donation extends Model<InferAttributes<Donation>, InferCrea
           validate: {
             min: 0,
           },
+          allowNull: false
         },
-        recyclery_id: DataTypes.INTEGER,
-        received_by: DataTypes.INTEGER,
+
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },

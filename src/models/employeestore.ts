@@ -17,8 +17,8 @@ export default class EmployeeStore extends Model<
 > {
   // declare id: CreationOptional<number>;
   declare is_primary: boolean;
-  declare employeeId: CreationOptional<number | null>;
-  declare recycleryId: CreationOptional<number | null>;
+  declare employeeId: CreationOptional<Employee["id"] | null>;
+  declare recycleryId: CreationOptional<Recyclery["id"] | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -48,14 +48,14 @@ export default class EmployeeStore extends Model<
       );
     }
 
-    EmployeeStore.init(
+    return this.init(
       {
         // id: {
         //   type: DataTypes.INTEGER.UNSIGNED,
         //   primaryKey: true,
         //   autoIncrement: true,
         // },
-        is_primary: { type: DataTypes.BOOLEAN, defaultValue: false },
+        is_primary: { type: DataTypes.BOOLEAN, defaultValue: false ,allowNull:false},
         employeeId: DataTypes.INTEGER,
         recycleryId: DataTypes.INTEGER,
         createdAt: DataTypes.DATE,

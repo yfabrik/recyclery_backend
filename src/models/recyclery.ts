@@ -17,7 +17,7 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type CashRegister from "./cashregister.ts";
 import type CollectionPoint from "./collectionpoint.ts";
 import type Donation from "./donation.ts";
@@ -32,17 +32,18 @@ import type CashSession from "./cashsession.js";
 export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCreationAttributes<Recyclery>> {
   declare id: CreationOptional<number>;
   declare name: string;
-  declare address: string | null;
-  declare phone: string | null;
-  declare email: string | null;
-  declare city: string | null;
-  declare postal_code: string | null;
-  declare is_active: boolean;
-  declare manager_id: ForeignKey<number | null>;
+  declare address: CreationOptional<string | null>;
+  declare phone: CreationOptional<string | null>;
+  declare email: CreationOptional<string | null>;
+  declare city: CreationOptional<string | null>;
+  declare postal_code: CreationOptional<string | null>;
+  declare is_active: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
-  declare TaskSchedules?: NonAttribute<TaskSchedule[]>;
 
+  declare manager_id: ForeignKey<User["id"] | null>;
+
+  declare TaskSchedules?: NonAttribute<TaskSchedule[]>;
   declare LabeledItems?: NonAttribute<LabeledItem[]>;
   declare Donations?: NonAttribute<Donation[]>;
   declare Tasks?: NonAttribute<Task[]>;
@@ -53,27 +54,27 @@ export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCr
   declare promotions?: NonAttribute<Promotion[]>;
 
   declare getLabeledItems: HasManyGetAssociationsMixin<LabeledItem>;
-  declare addLabeledItem: HasManyAddAssociationMixin<LabeledItem, number>;
+  declare addLabeledItem: HasManyAddAssociationMixin<LabeledItem, LabeledItem["id"]>;
   declare getDonations: HasManyGetAssociationsMixin<Donation>;
-  declare addDonation: HasManyAddAssociationMixin<Donation, number>;
+  declare addDonation: HasManyAddAssociationMixin<Donation, Donation["id"]>;
   declare getTasks: HasManyGetAssociationsMixin<Task>;
-  declare addTask: HasManyAddAssociationMixin<Task, number>;
+  declare addTask: HasManyAddAssociationMixin<Task, Task["id"]>;
   declare getTaskSchedules: HasManyGetAssociationsMixin<TaskSchedule>;
-  declare addTaskSchedule: HasManyAddAssociationMixin<TaskSchedule, number>;
+  declare addTaskSchedule: HasManyAddAssociationMixin<TaskSchedule, TaskSchedule["id"]>;
   declare getEmployees: BelongsToManyGetAssociationsMixin<Employee>;
-  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, number>;
-  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, number>;
+  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, Employee["id"]>;
+  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, Employee["id"]>;
   declare getManager: BelongsToGetAssociationMixin<User>;
-  declare setManager: BelongsToSetAssociationMixin<User, number>;
+  declare setManager: BelongsToSetAssociationMixin<User, User["id"]>;
   declare getCaisses: HasManyGetAssociationsMixin<CashRegister>;
-  declare addCaisse: HasManyAddAssociationMixin<CashRegister, number>;
+  declare addCaisse: HasManyAddAssociationMixin<CashRegister, CashRegister["id"]>;
   declare getCollectionPoints: HasManyGetAssociationsMixin<CollectionPoint>;
-  declare addCollectionPoint: HasManyAddAssociationMixin<CollectionPoint, number>;
+  declare addCollectionPoint: HasManyAddAssociationMixin<CollectionPoint, CollectionPoint["id"]>;
   declare getPromotions: BelongsToManyGetAssociationsMixin<Promotion>;
-  declare setPromotions: BelongsToManySetAssociationsMixin<Promotion, number>;
-  declare addPromotion: BelongsToManyAddAssociationMixin<Promotion, number>;
+  declare setPromotions: BelongsToManySetAssociationsMixin<Promotion, Promotion["id"]>;
+  declare addPromotion: BelongsToManyAddAssociationMixin<Promotion, Promotion["id"]>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.hasMany(models.LabeledItem, { foreignKey: "recyclery_id" });
     this.hasMany(models.Donation, { foreignKey: "recyclery_id" });
     this.hasMany(models.Task, {
@@ -107,14 +108,14 @@ export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCr
   }
 
   static initModel(sequelize: Sequelize) {
-    Recyclery.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
           primaryKey: true,
           autoIncrement: true,
         },
-        name: { type: DataTypes.STRING, allowNull: false },
+        name: { type: DataTypes.STRING, allowNull: false ,unique:true},
         address: DataTypes.TEXT,
         phone: {
           type: DataTypes.STRING,
@@ -126,8 +127,7 @@ export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCr
           type: DataTypes.STRING,
           validate: { is: /^(?:0[1-9]|[1-8]\d|9[0-8])\d{3}$/ },
         },
-        is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
-        manager_id: DataTypes.INTEGER,
+        is_active: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },

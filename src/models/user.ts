@@ -4,15 +4,16 @@ import {
   Model,
   type CreationOptional,
   type HasManyAddAssociationMixin,
+  type HasManyAddAssociationsMixin,
   type HasManyGetAssociationsMixin,
+  type HasManySetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type Arrival from "./arrival.ts";
-import type CollectionReceipt from "./collectionreceipt.ts";
 import type Donation from "./donation.ts";
 import type LabeledItem from "./labeleditem.ts";
 import type Recyclery from "./recyclery.ts";
@@ -20,56 +21,54 @@ import type SalesTransaction from "./salestransaction.ts";
 
 export default class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare id: CreationOptional<number>;
-  declare username: string | null;
-  declare email: string | null;
+  declare username: string;
+  declare email: string;
   declare password_hash: string | null;
   declare password: string | undefined;
-  declare role: string;
-  declare phone: string | null;
-  declare isActive: boolean;
-  declare last_login: Date | null;
+  declare role: CreationOptional<string>;
+  declare phone: CreationOptional<string | null>;
+  declare isActive: CreationOptional<boolean>;
+  declare last_login: CreationOptional<Date | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
   declare Donations?: NonAttribute<Donation[]>;
   declare SalesTransactions?: NonAttribute<SalesTransaction[]>;
-  declare CollectionReceipts?: NonAttribute<CollectionReceipt[]>;
   declare LabeledItems?: NonAttribute<LabeledItem[]>;
   declare Arrivals?: NonAttribute<Arrival[]>;
   declare managedStores?: NonAttribute<Recyclery[]>;
 
   declare getDonations: HasManyGetAssociationsMixin<Donation>;
-  declare addDonation: HasManyAddAssociationMixin<Donation, number>;
+  declare addDonation: HasManyAddAssociationMixin<Donation, Donation["id"]>;
   declare getSalesTransactions: HasManyGetAssociationsMixin<SalesTransaction>;
-  declare addSalesTransaction: HasManyAddAssociationMixin<SalesTransaction, number>;
-  declare getCollectionReceipts: HasManyGetAssociationsMixin<CollectionReceipt>;
-  declare addCollectionReceipt: HasManyAddAssociationMixin<CollectionReceipt, number>;
+  declare addSalesTransaction: HasManyAddAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
   declare getLabeledItems: HasManyGetAssociationsMixin<LabeledItem>;
-  declare addLabeledItem: HasManyAddAssociationMixin<LabeledItem, number>;
+  declare addLabeledItem: HasManyAddAssociationMixin<LabeledItem, LabeledItem["id"]>;
   declare getArrivals: HasManyGetAssociationsMixin<Arrival>;
-  declare addArrival: HasManyAddAssociationMixin<Arrival, number>;
+  declare addArrival: HasManyAddAssociationMixin<Arrival, Arrival["id"]>;
   declare getManagedStores: HasManyGetAssociationsMixin<Recyclery>;
-  declare addManagedStore: HasManyAddAssociationMixin<Recyclery, number>;
+  declare addManagedStore: HasManyAddAssociationMixin<Recyclery, Recyclery["id"]>;
+  declare addManagedStores: HasManyAddAssociationsMixin<Recyclery, Recyclery["id"]>
+  declare setManagedStores: HasManySetAssociationsMixin<Recyclery, Recyclery["id"]>
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.hasMany(models.Donation, { foreignKey: "received_by" });
     this.hasMany(models.SalesTransaction, { foreignKey: "created_by" });
-    this.hasMany(models.CollectionReceipt, { foreignKey: "processed_by" });
     this.hasMany(models.LabeledItem, { foreignKey: "created_by" });
     this.hasMany(models.Arrival, { foreignKey: "processed_by" });
     this.hasMany(models.Recyclery, { foreignKey: "manager_id", as: "managedStores" });
   }
 
   static initModel(sequelize: Sequelize) {
-    User.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
           primaryKey: true,
           autoIncrement: true,
         },
-        username: { type: DataTypes.STRING, unique: true },
-        email: { type: DataTypes.STRING, unique: true, validate: { isEmail: true } },
+        username: { type: DataTypes.STRING, unique: true, allowNull: false },
+        email: { type: DataTypes.STRING, unique: true, allowNull: false, validate: { isEmail: true } },
         password_hash: {
           type: DataTypes.STRING,
           allowNull: true,
@@ -88,12 +87,12 @@ export default class User extends Model<InferAttributes<User>, InferCreationAttr
             return undefined;
           },
         },
-        role: { type: DataTypes.STRING, defaultValue: "employee" },
+        role: { type: DataTypes.STRING, defaultValue: "employee", allowNull: false },
         phone: {
           type: DataTypes.STRING,
           validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ },
         },
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
         last_login: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

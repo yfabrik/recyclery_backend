@@ -6,7 +6,7 @@ import logger from "../../services/logger.js";
 const { Employee, Task } = db;
 
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
@@ -41,7 +41,7 @@ export const listCollections = async (req, res) => {
   res.json({ collections });
 };
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */

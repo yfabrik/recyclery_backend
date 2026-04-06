@@ -5,6 +5,9 @@ import {
   listCollections,
 } from "../controllers/collections.js";
 
+/**
+ * @deprecated
+ */
 export const router = Router();
 
 // Obtenir toutes les collectes

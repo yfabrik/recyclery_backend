@@ -29,7 +29,7 @@ export default class TaskTemplate extends Model<InferAttributes<TaskTemplate>, I
   static associate(_models: Models) {}
 
   static initModel(sequelize: Sequelize) {
-    TaskTemplate.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,

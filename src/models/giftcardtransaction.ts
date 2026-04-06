@@ -11,7 +11,7 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type GiftCard from "./giftcard.ts";
 import type SalesTransaction from "./salestransaction.ts";
 import type User from "./user.ts";
@@ -21,43 +21,44 @@ export default class GiftCardTransaction extends Model<
   InferCreationAttributes<GiftCardTransaction>
 > {
   declare id: CreationOptional<number>;
-  declare gift_card_id: ForeignKey<number>;
-  declare sales_transaction_id: ForeignKey<number>;
   declare type: "issue" | "charge" | "refund_recredit" | "manual_adjustment" | "expire";
   declare amount: string;
   declare occurred_at: Date;
-  declare created_by: ForeignKey<number | null>;
   declare metadata: Record<string, unknown> | null;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
+  declare created_by: ForeignKey<User["id"]>;
+  declare gift_card_id: ForeignKey<GiftCard["id"]>;
+  declare sales_transaction_id: ForeignKey<SalesTransaction["id"]>;
+
   declare GiftCard?: NonAttribute<GiftCard>;
   declare SalesTransaction?: NonAttribute<SalesTransaction>;
-  declare createdBy?: NonAttribute<User | null>;
+  declare createdBy?: NonAttribute<User>;
 
   declare getGiftCard: BelongsToGetAssociationMixin<GiftCard>;
-  declare setGiftCard: BelongsToSetAssociationMixin<GiftCard, number>;
+  declare setGiftCard: BelongsToSetAssociationMixin<GiftCard, GiftCard["id"]>;
   declare getSalesTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
-  declare setSalesTransaction: BelongsToSetAssociationMixin<SalesTransaction, number>;
+  declare setSalesTransaction: BelongsToSetAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
   declare getCreatedBy: BelongsToGetAssociationMixin<User>;
-  declare setCreatedBy: BelongsToSetAssociationMixin<User, number>;
+  declare setCreatedBy: BelongsToSetAssociationMixin<User, User["id"]>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.belongsTo(models.GiftCard, { foreignKey: "gift_card_id" });
     this.belongsTo(models.SalesTransaction, { foreignKey: "sales_transaction_id" });
     this.belongsTo(models.User, { as: "createdBy", foreignKey: "created_by" });
   }
 
   static initModel(sequelize: Sequelize) {
-    GiftCardTransaction.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
           primaryKey: true,
           autoIncrement: true,
         },
-        gift_card_id: { type: DataTypes.INTEGER, allowNull: false },
-        sales_transaction_id: { type: DataTypes.INTEGER, allowNull: false },
+        // gift_card_id: { type: DataTypes.INTEGER, allowNull: false },
+        // sales_transaction_id: { type: DataTypes.INTEGER, allowNull: false },
         type: {
           type: DataTypes.ENUM("issue", "charge", "refund_recredit", "manual_adjustment", "expire"),
           allowNull: false,
@@ -74,7 +75,7 @@ export default class GiftCardTransaction extends Model<
           },
         },
         occurred_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
-        created_by: { type: DataTypes.INTEGER, allowNull: true },
+        // created_by: { type: DataTypes.INTEGER, allowNull: true },
         metadata: { type: DataTypes.JSON, allowNull: true },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

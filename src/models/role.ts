@@ -19,7 +19,7 @@ export default class Role extends Model<InferAttributes<Role>, InferCreationAttr
   static associate(_models: Models) {}
 
   static initModel(sequelize: Sequelize) {
-    Role.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,

@@ -12,8 +12,9 @@ import {
   type NonAttribute,
   type Sequelize,
   type InferAttributes,
+  type ForeignKey,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type CashSession from "./cashsession.ts";
 import type Recyclery from "./recyclery.ts";
 
@@ -23,20 +24,22 @@ export default class CashRegister extends Model<
 > {
   declare id: CreationOptional<number>;
   declare name: string;
-  declare is_active: boolean;
+  declare is_active: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  declare Recyclery?: NonAttribute<Recyclery | null>;
+  declare recyclery_id: ForeignKey<Recyclery["id"]>
+
+  declare Recyclery?: NonAttribute<Recyclery>;
   declare sessions?: NonAttribute<CashSession[]>;
 
   declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
-  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, number>;
+  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, Recyclery['id']>;
   declare getSessions: HasManyGetAssociationsMixin<CashSession>;
-  declare addSession: HasManyAddAssociationMixin<CashSession, number>;
-  declare countSessions: HasManyCountAssociationsMixin; 
+  declare addSession: HasManyAddAssociationMixin<CashSession, CashSession["id"]>;
+  declare countSessions: HasManyCountAssociationsMixin;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
     this.hasMany(models.CashSession, {
       foreignKey: "cash_register_id",
@@ -46,7 +49,7 @@ export default class CashRegister extends Model<
   }
 
   static initModel(sequelize: Sequelize) {
-    CashRegister.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
@@ -54,7 +57,7 @@ export default class CashRegister extends Model<
           autoIncrement: true,
         },
         name: { type: DataTypes.STRING, allowNull: false },
-        is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
+        is_active: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },

@@ -4,49 +4,55 @@ import {
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
+  type ForeignKey,
   type HasManyAddAssociationMixin,
+  type HasManyCreateAssociationMixin,
   type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type CashRegister from "./cashregister.ts";
 import type SalesTransaction from "./salestransaction.ts";
 import type User from "./user.ts";
 
 export default class CashSession extends Model<InferAttributes<CashSession>, InferCreationAttributes<CashSession>> {
   declare id: CreationOptional<number>;
-  declare opening_amount: string;
-  declare closing_amount: string | null;
-  declare expected_amount: string | null;
-  declare difference_amount: number;
-  declare status: "open" | "close";
-  declare notes: string | null;
-  declare closed_at: Date | null;
+  declare opening_amount: number;
+  declare closing_amount: CreationOptional<number | null>;
+  declare expected_amount: CreationOptional<number | null>;
+  declare difference_amount: NonAttribute<number>;
+  declare status: CreationOptional<"open" | "close">;
+  declare notes: CreationOptional<string | null>;
+  declare closed_at: CreationOptional<Date | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare cash_register_id: ForeignKey<CashRegister["id"]>
+  declare user_id: ForeignKey<User["id"]>
 
   declare CashRegister?: NonAttribute<CashRegister | null>;
   declare SalesTransactions?: NonAttribute<SalesTransaction[]>;
   declare User?: NonAttribute<User | null>;
 
   declare getCashRegister: BelongsToGetAssociationMixin<CashRegister>;
-  declare setCashRegister: BelongsToSetAssociationMixin<CashRegister, number>;
+  declare setCashRegister: BelongsToSetAssociationMixin<CashRegister, CashRegister["id"]>;
   declare getSalesTransactions: HasManyGetAssociationsMixin<SalesTransaction>;
-  declare addSalesTransaction: HasManyAddAssociationMixin<SalesTransaction, number>;
+  declare addSalesTransaction: HasManyAddAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
+  declare createSalesTransaction: HasManyCreateAssociationMixin<SalesTransaction>
   declare getUser: BelongsToGetAssociationMixin<User>;
-  declare setUser: BelongsToSetAssociationMixin<User, number>;
+  declare setUser: BelongsToSetAssociationMixin<User, User["id"]>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.belongsTo(models.CashRegister, { foreignKey: "cash_register_id" });
     this.hasMany(models.SalesTransaction, { foreignKey: "cash_session_id" });
     this.belongsTo(models.User, { foreignKey: "user_id" });
   }
 
   static initModel(sequelize: Sequelize) {
-    CashSession.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
@@ -56,6 +62,7 @@ export default class CashSession extends Model<InferAttributes<CashSession>, Inf
         opening_amount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
         closing_amount: DataTypes.DECIMAL(10, 2),
         expected_amount: DataTypes.DECIMAL(10, 2),
+        // @ts-expect-error
         difference_amount: {
           type: DataTypes.VIRTUAL,
           get(this: CashSession) {
@@ -65,7 +72,7 @@ export default class CashSession extends Model<InferAttributes<CashSession>, Inf
             return closing - expected;
           },
         },
-        status: { type: DataTypes.ENUM("open", "close"), defaultValue: "open" },
+        status: { type: DataTypes.ENUM("open", "close"), defaultValue: "open", allowNull: false },
         notes: DataTypes.TEXT,
         closed_at: DataTypes.DATE,
         createdAt: DataTypes.DATE,

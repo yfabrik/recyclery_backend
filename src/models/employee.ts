@@ -3,6 +3,7 @@ import {
   Model,
   type BelongsToManyAddAssociationMixin,
   type BelongsToManyGetAssociationsMixin,
+  type BelongsToManyRemoveAssociationMixin,
   type BelongsToManySetAssociationsMixin,
   type CreationOptional,
   type HasManyAddAssociationMixin,
@@ -12,7 +13,7 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type EmployeeWorkdays from "./employeeworkdays.ts";
 import type Recyclery from "./recyclery.ts";
 import type Skill from "./skill.ts";
@@ -23,36 +24,37 @@ export default class Employee extends Model<InferAttributes<Employee>, InferCrea
   declare id: CreationOptional<number>;
   declare nom: string;
   declare prenom: string;
-  declare isActive: boolean;
-  declare fullName: string | undefined;
-  declare workTime: number | undefined;
-  declare phone: string | null;
-  declare email: string | null;
+  declare isActive: CreationOptional<boolean>;
+  declare fullName: NonAttribute<string | undefined>;
+  declare workTime: NonAttribute<number | undefined>;
+  declare phone: CreationOptional<string | null>;
+  declare email: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
-  declare EmployeeWorkdays?: NonAttribute<EmployeeWorkdays[]>;
 
+  declare EmployeeWorkdays?: NonAttribute<EmployeeWorkdays[]>;
   declare stores?: NonAttribute<Recyclery[]>;
   declare Tasks?: NonAttribute<Task[]>;
   declare TaskSchedules?: NonAttribute<TaskSchedule[]>;
   declare skills?: NonAttribute<Skill[]>;
 
   declare getStores: BelongsToManyGetAssociationsMixin<Recyclery>;
-  declare setStores: BelongsToManySetAssociationsMixin<Recyclery, number>;
-  declare addStore: BelongsToManyAddAssociationMixin<Recyclery, number>;
+  declare setStores: BelongsToManySetAssociationsMixin<Recyclery, Recyclery["id"]>;
+  declare addStore: BelongsToManyAddAssociationMixin<Recyclery, Recyclery["id"]>;
+  declare removeStore: BelongsToManyRemoveAssociationMixin<Recyclery, Recyclery["id"]>
   declare getTasks: BelongsToManyGetAssociationsMixin<Task>;
-  declare setTasks: BelongsToManySetAssociationsMixin<Task, number>;
-  declare addTask: BelongsToManyAddAssociationMixin<Task, number>;
+  declare setTasks: BelongsToManySetAssociationsMixin<Task, Task["id"]>;
+  declare addTask: BelongsToManyAddAssociationMixin<Task, Task["id"]>;
   declare getTaskSchedules: BelongsToManyGetAssociationsMixin<TaskSchedule>;
-  declare setTaskSchedules: BelongsToManySetAssociationsMixin<TaskSchedule, number>;
-  declare addTaskSchedule: BelongsToManyAddAssociationMixin<TaskSchedule, number>;
+  declare setTaskSchedules: BelongsToManySetAssociationsMixin<TaskSchedule, TaskSchedule["id"]>;
+  declare addTaskSchedule: BelongsToManyAddAssociationMixin<TaskSchedule, TaskSchedule["id"]>;
   declare getEmployeeWorkdays: HasManyGetAssociationsMixin<EmployeeWorkdays>;
-  declare addEmployeeWorkday: HasManyAddAssociationMixin<EmployeeWorkdays, number>;
+  declare addEmployeeWorkday: HasManyAddAssociationMixin<EmployeeWorkdays, EmployeeWorkdays["id"]>;
   declare getSkills: BelongsToManyGetAssociationsMixin<Skill>;
-  declare setSkills: BelongsToManySetAssociationsMixin<Skill, number>;
-  declare addSkill: BelongsToManyAddAssociationMixin<Skill, number>;
+  declare setSkills: BelongsToManySetAssociationsMixin<Skill, Skill["id"]>;
+  declare addSkill: BelongsToManyAddAssociationMixin<Skill, Skill["id"]>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.belongsToMany(models.Recyclery, {
       through: models.EmployeeStore,
       as: "stores",
@@ -70,7 +72,7 @@ export default class Employee extends Model<InferAttributes<Employee>, InferCrea
   }
 
   static initModel(sequelize: Sequelize) {
-    Employee.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
@@ -79,13 +81,16 @@ export default class Employee extends Model<InferAttributes<Employee>, InferCrea
         },
         nom: { type: DataTypes.STRING, allowNull: false },
         prenom: { type: DataTypes.STRING, allowNull: false },
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
+
+        //@ts-expect-error
         fullName: {
           type: DataTypes.VIRTUAL,
           get(this: Employee) {
             return `${this.nom} ${this.prenom}`;
           },
         },
+        //@ts-expect-error
         workTime: {
           type: DataTypes.VIRTUAL,
           get(this: Employee) {

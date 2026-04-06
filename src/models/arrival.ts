@@ -4,12 +4,13 @@ import {
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
+  type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { Models, ModelStatics } from "./db-types.ts";
 import type Category from "./category.ts";
 import type CollectionPoint from "./collectionpoint.ts";
 import type User from "./user.ts";
@@ -19,15 +20,20 @@ export default class Arrival extends Model<
   InferCreationAttributes<Arrival>
 > {
   declare id: CreationOptional<number>;
-  declare weight: string;
+  declare weight: number;
   declare arrival_date: Date;
   declare arrival_time: string | null;
-  declare source_type: "point" | "apport" | "house_clearance" | null;
-  declare source_details: string | null;
-  declare notes: string | null;
-  declare status: "received";
+  declare source_type: "point" | "apport" | "house_clearance";
+  declare source_details: CreationOptional<string | null>;
+  declare notes: CreationOptional<string | null>;
+  declare status: CreationOptional<"received">;;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  declare processed_by: ForeignKey<User["id"]>
+  declare category_id: ForeignKey<Category["id"]>
+  declare subcategory_id: ForeignKey<Category["id"] | null>
+  declare collection_point_id: ForeignKey<CollectionPoint["id"] | null>
 
   declare categorie?: NonAttribute<Category>;
   declare subcategorie?: NonAttribute<Category>;
@@ -35,18 +41,18 @@ export default class Arrival extends Model<
   declare User?: NonAttribute<User>;
 
   declare getCategorie: BelongsToGetAssociationMixin<Category>;
-  declare setCategorie: BelongsToSetAssociationMixin<Category, number>;
+  declare setCategorie: BelongsToSetAssociationMixin<Category, Category["id"]>;
   declare getSubcategorie: BelongsToGetAssociationMixin<Category>;
-  declare setSubcategorie: BelongsToSetAssociationMixin<Category, number>;
+  declare setSubcategorie: BelongsToSetAssociationMixin<Category, Category["id"]>;
   declare getCollectionPoint: BelongsToGetAssociationMixin<CollectionPoint>;
   declare setCollectionPoint: BelongsToSetAssociationMixin<
     CollectionPoint,
-    number
+    CollectionPoint['id']
   >;
   declare getUser: BelongsToGetAssociationMixin<User>;
-  declare setUser: BelongsToSetAssociationMixin<User, number>;
+  declare setUser: BelongsToSetAssociationMixin<User, User["id"]>;
 
-  static associate(models: Models) {
+  static associate(models: ModelStatics) {
     this.belongsTo(models.Category, {
       foreignKey: "category_id",
       as: "categorie",
@@ -61,8 +67,9 @@ export default class Arrival extends Model<
     this.belongsTo(models.User, { foreignKey: "processed_by" });
   }
 
+
   static initModel(sequelize: Sequelize) {
-    Arrival.init(
+    return this.init(
       {
         id: {
           type: DataTypes.INTEGER.UNSIGNED,
@@ -70,14 +77,15 @@ export default class Arrival extends Model<
           autoIncrement: true,
         },
         weight: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
-        arrival_date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+        arrival_date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW, allowNull: false },
         arrival_time: DataTypes.TIME,
         source_type: {
           type: DataTypes.ENUM("point", "apport", "house_clearance"),
+          allowNull: false
         },
         source_details: DataTypes.TEXT,
         notes: DataTypes.TEXT,
-        status: { type: DataTypes.ENUM("received"), defaultValue: "received" },
+        status: { type: DataTypes.ENUM("received"), defaultValue: "received", allowNull: false },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },
@@ -93,3 +101,8 @@ export default class Arrival extends Model<
     );
   }
 }
+
+
+type a = typeof Arrival
+const b:a
+b.name

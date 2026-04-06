@@ -26,7 +26,7 @@ const generateReceiptNumber = () => {
 };
 
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
@@ -65,6 +65,7 @@ export const listcollectionSchedule = async (req, res) => {
 };
 /**
  *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
@@ -142,7 +143,7 @@ export const createCollectionSchedule = async (req, res) => {
   // }
 };
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
@@ -195,7 +196,7 @@ export const updateCollectionSchedule = async (req, res) => {
   // });
 };
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
@@ -213,7 +214,7 @@ export const deleteCollectionSchedule = async (req, res) => {
   // });
 };
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
@@ -258,7 +259,7 @@ export const generateBSD = async (req, res) => {
   });
 };
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
@@ -291,7 +292,7 @@ export const detailBSD = async (req, res) => {
   });
 };
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
@@ -436,7 +437,7 @@ export const addUserToSchedule = async (req, res) => {
   // });
 };
 /**
- *
+ * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */

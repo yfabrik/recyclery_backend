@@ -1,9 +1,10 @@
 import { readdirSync } from "fs";
 import { basename as _basename, dirname, join } from "path";
 import { env as _env } from "process";
-import { Model, Sequelize, type Options } from "sequelize";
+import { Model, Sequelize, type ModelStatic, type Options } from "sequelize";
 import { fileURLToPath, pathToFileURL } from "url";
-import type { DB } from "./db-types.ts";
+import type { DB, Models, ModelStatics } from "./db-types.ts";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,7 +16,6 @@ const configModule = (await import("../../config/config.json", {
 })) as { default: Record<typeof env, Options & { use_env_variable?: string }> };
 const config = configModule.default[env] ?? {};
 
-const db = {} as DB;
 
 const sequelize = config.use_env_variable
   ? new Sequelize(_env[config.use_env_variable] ?? "", config)
@@ -32,20 +32,28 @@ const files = readdirSync(__dirname).filter((file) => {
   if (file.indexOf(".test.ts") !== -1 || file.indexOf(".test.js") !== -1) return false;
   return true;
 });
+const db = {} as DB
 
 for (const file of files) {
   const modelUrl = pathToFileURL(join(__dirname, file)).href;//await import(join(__dirname, file))
-  const mod: { default: Model<any, any> & { initModel: (sequelize: any) => void; name: string; associate: (models: DB) => void } } = await import(modelUrl);
+  const mod: {
+    default: Models[ keyof Models] &{ initModel: (s: Sequelize) => ModelStatic<any>, associate: (m: ModelStatics) => void}
+    // Model<any, any> & { initModel: (s: Sequelize) =>typeof Model<any, any>, associate: (m: ModelStatics) => void }
+    // Models[keyof Models] 
+  } = await import(modelUrl);
   const modelExport = mod.default;
-  modelExport.initModel(sequelize);
-  db[modelExport.name] = modelExport;
-
+  const model = modelExport.initModel(sequelize) ;
+  db[model.name] = model;
 }
+// const db = {
+//   ...sequelize.models,
+//   sequelize: sequelize,
+//   Sequelize: (await import("sequelize")).default,
+// } as DB
 
 Object.keys(db).forEach((modelName) => {
-  const model = (db as unknown as Record<string, { associate?: (models: DB) => void }>)[modelName];
-  if (model?.associate) {
-    model.associate(db);
+  if (db[modelName].associate) {
+    db[modelName].associate(db);
   }
 });
 
