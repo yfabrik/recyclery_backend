@@ -57,7 +57,8 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
       as: "parent",
       foreignKey: "parent_id",
     });
-    this.hasMany(models.LabeledItem, { foreignKey: "category_id" });
+    this.hasMany(models.LabeledItem, { foreignKey: "category_id", as: "itemsWithCategory" });
+    this.hasMany(models.LabeledItem, { foreignKey: "subcategory_id", as: "itemsWithSubCategory" });
     this.hasMany(models.Promotion, { foreignKey: "category_id" });
     this.belongsToMany(models.EcoOrganism, {
       through: "ecoOrg_categoryIn",
@@ -67,6 +68,16 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
       through: "ecoOrg_categorySell",
       as: "sellEcoOrganisms",
     });
+    this.hasMany(models.Arrival, {
+      foreignKey: "category_id",
+      as: "arrivalsWithCategory"
+    })
+    this.hasMany(models.Arrival, {
+      foreignKey: "subcategory_id",
+      as: "arrivalsWithSubCategory",
+    });
+    this.hasMany(models.WasteDisposal, { foreignKey: "category_id", as: "wastesWithCategory" });
+    this.hasMany(models.WasteDisposal, { foreignKey: "subcategory_id", as: "wastesWithSubCategory" });
   }
 
   static initModel(sequelize: Sequelize) {
