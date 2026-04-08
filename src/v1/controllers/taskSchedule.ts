@@ -1,5 +1,12 @@
 import createHttpError from "http-errors";
-import { col, fn, literal, Op, type Attributes, type WhereOptions } from "sequelize";
+import {
+  col,
+  fn,
+  literal,
+  Op,
+  type Attributes,
+  type WhereOptions,
+} from "sequelize";
 import * as z from "zod";
 import { idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
@@ -10,7 +17,6 @@ import Employee from "../../models/employee.js";
 import EmployeeWorkdays from "../../models/employeeworkdays.js";
 import { formatWhereDateRange } from "../../helpers.js";
 
-
 const dataSchema = z.object({
   scheduled_date: z.coerce.date("date requis"),
   start_time: z.coerce.date("heure de debut requis"),
@@ -19,7 +25,10 @@ const dataSchema = z.object({
   notes: z.string().nullish().prefault(null),
   store_id: idSchema().nullish().prefault(null),
   collection_point_id: idSchema().nullish().prefault(null),
-  recurrence_pattern: z.enum(["daily", "weekly", "monthly"]).nullish().prefault(null),
+  recurrence_pattern: z
+    .enum(["daily", "weekly", "monthly"])
+    .nullish()
+    .prefault(null),
   is_recurring: z.coerce.boolean().default(true),
   name: z.string().nullish(),
   location: z.string().nullish().prefault(null),
@@ -47,7 +56,10 @@ export const listSchedules = async (req: Request, res: Response) => {
 
   const where: WhereOptions<Attributes<TaskSchedule>> = {};
 
-  where.scheduled_date = formatWhereDateRange(filter.start_date, filter.end_date)
+  where.scheduled_date = formatWhereDateRange(
+    filter.start_date,
+    filter.end_date,
+  );
 
   // if (filter.employee_id) {
   //   where.assigned_to = filter.employee_id;
@@ -217,7 +229,6 @@ export const listSchedules = async (req: Request, res: Response) => {
   });
 };
 
-
 export const findSchedule = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
@@ -238,7 +249,7 @@ export const findSchedule = async (req: Request, res: Response) => {
     ],
   });
 
-  if (!schedules) throw new createHttpError.NotFound("Planning non trouvé")
+  if (!schedules) throw new createHttpError.NotFound("Planning non trouvé");
 
   res.json({
     success: true,
@@ -293,19 +304,20 @@ export const deleteSchedule = async (req: Request, res: Response) => {
   });
 };
 
-
 export const getEmployeeSchedule = async (req: Request, res: Response) => {
   const employee_id = idSchema().parse(req.params.employee_id);
 
-  const { start_date, end_date } = z.object({
-    start_date: z.coerce.date().optional(),
-    end_date: z.coerce.date().optional()
-  }).parse(req.query);
+  const { start_date, end_date } = z
+    .object({
+      start_date: z.coerce.date().optional(),
+      end_date: z.coerce.date().optional(),
+    })
+    .parse(req.query);
 
   const where: WhereOptions<Attributes<TaskSchedule>> = {};
-  where.scheduled_date = formatWhereDateRange(start_date, end_date)
+  where.scheduled_date = formatWhereDateRange(start_date, end_date);
 
-  where.assigned_to = employee_id;
+  // where.assigned_to = employee_id;
 
   const schedules = await TaskSchedule.findAll({
     where,
@@ -318,7 +330,6 @@ export const getEmployeeSchedule = async (req: Request, res: Response) => {
     schedules: schedules,
   });
 };
-
 
 export const addEmployeeToSchedule = async (req: Request, res: Response) => {
   const scheduleId = idSchema("ID tâche du planning requis").parse(
@@ -383,8 +394,10 @@ export const addEmployeeToSchedule = async (req: Request, res: Response) => {
   });
 };
 
-
-export const removeEmployeeFromSchedule = async (req: Request, res: Response) => {
+export const removeEmployeeFromSchedule = async (
+  req: Request,
+  res: Response,
+) => {
   const scheduleId = idSchema("ID tâche du planning requis").parse(
     req.params.scheduleId,
   );
@@ -405,8 +418,6 @@ export const removeEmployeeFromSchedule = async (req: Request, res: Response) =>
     message: "Employé retiré avec succès",
   });
 };
-
-
 
 export const findAvailableEMployee = async (req: Request, res: Response) => {
   const scheduleId = idSchema().parse(req.params.id);
@@ -503,7 +514,7 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
         },
       ],
     });
-    const toMinutes = (/** @type {Date | number} */ v) => {
+    const toMinutes = (v: Date | number) => {
       const d = v instanceof Date ? v : new Date(v);
       return d.getHours() * 60 + d.getMinutes();
     };
@@ -544,16 +555,16 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
   });
 };
 
-
 export const planningStats = async (req: Request, res: Response) => {
-
-  const { start_date, end_date } = z.object({
-    start_date: z.coerce.date().optional(),
-    end_date: z.coerce.date().optional()
-  }).parse(req.query);
+  const { start_date, end_date } = z
+    .object({
+      start_date: z.coerce.date().optional(),
+      end_date: z.coerce.date().optional(),
+    })
+    .parse(req.query);
 
   const where: WhereOptions<Attributes<TaskSchedule>> = {};
-  where.scheduled_date = formatWhereDateRange(start_date, end_date)
+  where.scheduled_date = formatWhereDateRange(start_date, end_date);
   // Statistiques générales
 
   const stats = await TaskSchedule.findOne({

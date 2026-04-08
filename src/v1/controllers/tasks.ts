@@ -1,5 +1,10 @@
 import createHttpError from "http-errors";
-import { Op, type Attributes, type Includeable, type WhereOptions } from "sequelize";
+import {
+  Op,
+  type Attributes,
+  type Includeable,
+  type WhereOptions,
+} from "sequelize";
 import * as z from "zod";
 import { idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
@@ -8,7 +13,6 @@ import Recyclery from "../../models/recyclery.js";
 import Task from "../../models/task.js";
 import { formatWhereDateRange } from "../../helpers.js";
 import TaskSchedule from "../../models/taskschedule.js";
-
 
 const dataSchema = z.object({
   name: z.string("Nom requis"),
@@ -32,7 +36,10 @@ const dataSchema = z.object({
     .transform((val) => JSON.stringify(val)),
   // hourly_rate: z.coerce.number().nullish(),
   is_recurring: z.coerce.boolean().optional(),
-  recurrence_pattern: z.enum(["daily", "weekly", "monthly"]).nullish().prefault(null),
+  recurrence_pattern: z
+    .enum(["daily", "weekly", "monthly"])
+    .nullish()
+    .prefault(null),
   assigned_to: idSchema().nullish(),
   notes: z.string().nullish().prefault(null),
   start_time: z.coerce.date().optional().default(new Date()),
@@ -40,7 +47,6 @@ const dataSchema = z.object({
   scheduled_date: z.coerce.date().optional().default(new Date()),
   store_id: idSchema().nullish().prefault(null),
 });
-
 
 export const listTasks = async (req: Request, res: Response) => {
   const ALLOWED_INCLUDES = ["user", "store"];
@@ -72,10 +78,8 @@ export const listTasks = async (req: Request, res: Response) => {
   // const category = req.originalUrl == '/api/collection-point-presence' ? "point" : req.originalUrl == '/api/store-hours' ? "vente" : req.originalUrl == '/api/collections' ? "collection" : null
   const data = includeSchema.parse({ ...req.query });
 
-
   const where: WhereOptions<Attributes<Task>> = {};
-  where.scheduled_date = formatWhereDateRange(data.date_from, data.date_to)
-
+  where.scheduled_date = formatWhereDateRange(data.date_from, data.date_to);
 
   if (data.category) where.category = data.category;
 
@@ -87,7 +91,6 @@ export const listTasks = async (req: Request, res: Response) => {
       { description: { [Op.like]: data.search } },
     ];
   if (data.store_id) where.store_id = data.store_id;
-
 
   const include: Includeable[] = [];
   if (data.include.includes("user"))
@@ -134,9 +137,8 @@ export const listTasks = async (req: Request, res: Response) => {
   });
 };
 
-
 export const detailTask = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id)
+  const id = idSchema().parse(req.params.id);
   const tasks = await Task.findByPk(id);
 
   if (!tasks) throw new createHttpError[404]("Tâche non trouvée");
@@ -161,9 +163,12 @@ export const detailTask = async (req: Request, res: Response) => {
 export const createTask = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
   let name = data.name ?? data.category;
-  if (data.store_id && data.category == "custom") {
-    const store = await Recyclery.findByPk(data.store_id);
+  let store;
+  if (data.store_id) {
+    store = await Recyclery.findByPk(data.store_id);
     if (!store) throw new createHttpError.NotFound("magasin non trouvé");
+  }
+  if (store && data.category == "custom") {
     name = store.name + "-" + name;
   }
 
@@ -196,7 +201,6 @@ export const createTask = async (req: Request, res: Response) => {
   }
 };
 
-
 export const updateTask = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
@@ -226,7 +230,6 @@ export const updateTask = async (req: Request, res: Response) => {
   });
 };
 
-
 export const deleteTask = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
@@ -240,7 +243,6 @@ export const deleteTask = async (req: Request, res: Response) => {
   });
 };
 
-
 export const getUsersFromTask = async (req: Request, res: Response) => {
   //TODO use the detail task with query param ?
   const taskId = idSchema().parse(req.params.taskId);
@@ -253,11 +255,9 @@ export const getUsersFromTask = async (req: Request, res: Response) => {
   });
 };
 
-
 export const addUserToTask = async (req: Request, res: Response) => {
   const taskId = idSchema().parse(req.params.taskId);
   const employee_id = idSchema("ID employé requis").parse(req.body.employee_id);
-
 
   const task = await Task.findByPk(taskId);
 
@@ -284,7 +284,6 @@ export const addUserToTask = async (req: Request, res: Response) => {
     message: "Employé assigné avec succès",
   });
 };
-
 
 export const removeUserFromTask = async (req: Request, res: Response) => {
   const employeeId = idSchema().parse(req.params.employeeId);
