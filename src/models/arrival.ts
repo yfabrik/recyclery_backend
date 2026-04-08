@@ -101,8 +101,3 @@ export default class Arrival extends Model<
     );
   }
 }
-
-
-type a = typeof Arrival
-const b:a
-b.name

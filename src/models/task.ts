@@ -40,9 +40,9 @@ export default class Task extends Model<InferAttributes<Task>, InferCreationAttr
 
   declare day_of_week: NonAttribute<string | null>;
 
-  declare schedule_id: ForeignKey<TaskSchedule["id"]>;
+  declare schedule_id: ForeignKey<TaskSchedule["id"]|null>;
   declare store_id: ForeignKey<Recyclery["id"]|null>;
-  declare collection_point_id: ForeignKey<CollectionPoint["id"]>;
+  declare collection_point_id: ForeignKey<CollectionPoint["id"]|null>;
 
   declare TaskSchedule?: NonAttribute<TaskSchedule | null>;
   declare Recyclery?: NonAttribute<Recyclery | null>;

@@ -90,7 +90,7 @@ export default class GiftCardTransaction extends Model<
         ],
         hooks: {
           beforeCreate: async (movement, options) => {
-            const GiftCardModel = movement.sequelize.models.GiftCard as ModelStatic<GiftCard>;
+            const GiftCardModel = movement.sequelize.models.GiftCard as ModelStatic<GiftCard>|undefined;
             if (!GiftCardModel) throw new Error("GiftCard model not found");
             const giftCard = await GiftCardModel.findByPk(movement.gift_card_id, {
               transaction: options.transaction ?? null,
@@ -101,7 +101,6 @@ export default class GiftCardTransaction extends Model<
             const amount = Math.abs(Number(movement.amount));
             const currentValue = giftCard.current_value ?? 0;
             if (movement.type === "charge") {
-              console.log(amount, currentValue);
               if (amount - currentValue < 0) {
                 newStatus = "partially_used";
               }
