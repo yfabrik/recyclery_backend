@@ -56,10 +56,11 @@ export const listSchedules = async (req: Request, res: Response) => {
 
   const where: WhereOptions<Attributes<TaskSchedule>> = {};
 
-  where.scheduled_date = formatWhereDateRange(
+  const dateRange = formatWhereDateRange(
     filter.start_date,
     filter.end_date,
   );
+  if (dateRange) where.scheduled_date = dateRange;
 
   // if (filter.employee_id) {
   //   where.assigned_to = filter.employee_id;
@@ -315,14 +316,15 @@ export const getEmployeeSchedule = async (req: Request, res: Response) => {
     .parse(req.query);
 
   const where: WhereOptions<Attributes<TaskSchedule>> = {};
-  where.scheduled_date = formatWhereDateRange(start_date, end_date);
+  const dateRange = formatWhereDateRange(start_date, end_date);
+  if (dateRange) where.scheduled_date = dateRange;
 
   // where.assigned_to = employee_id;
 
   const schedules = await TaskSchedule.findAll({
     where,
     include: [{ model: Task }],
-    order: [["scheduled_date"], ["start_time"]],
+    order: [["scheduled_date", "ASC"], ["start_time", "ASC"]],
   });
 
   res.json({
@@ -564,7 +566,8 @@ export const planningStats = async (req: Request, res: Response) => {
     .parse(req.query);
 
   const where: WhereOptions<Attributes<TaskSchedule>> = {};
-  where.scheduled_date = formatWhereDateRange(start_date, end_date);
+  const dateRange = formatWhereDateRange(start_date, end_date);
+  if (dateRange) where.scheduled_date = dateRange;
   // Statistiques générales
 
   const stats = await TaskSchedule.findOne({

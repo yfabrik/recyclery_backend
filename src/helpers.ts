@@ -15,6 +15,7 @@ export const formatWhereDateRange = (dateFrom?: Date, dateTo?: Date) => {
     ? new Date(new Date(dateTo).setHours(23, 59, 59, 999))
     : undefined;
 
+  if (!from && !to) return
   let result = {}; //as WhereAttributeHashValue<Date>
   if (from) result = { ...result, [Op.gte]: from };
   if (to) result = { ...result, [Op.lte]: to };

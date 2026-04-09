@@ -79,7 +79,8 @@ export const listTasks = async (req: Request, res: Response) => {
   const data = includeSchema.parse({ ...req.query });
 
   const where: WhereOptions<Attributes<Task>> = {};
-  where.scheduled_date = formatWhereDateRange(data.date_from, data.date_to);
+  const dateRange = formatWhereDateRange(data.date_from, data.date_to);
+  if (dateRange) where.scheduled_date = dateRange;
 
   if (data.category) where.category = data.category;
 

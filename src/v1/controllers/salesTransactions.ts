@@ -139,7 +139,8 @@ export const listTransactions = async (req: Request, res: Response) => {
   // if(filter.transaction_number) where.id={[Op.like]:+filter.transaction_number}
   // if (filter.store_id) where.recyclery_id = filter.store_id;
 
-  where.createdAt = formatWhereDateRange(filter.date_from, filter.date_to);
+  const dateRange = formatWhereDateRange(filter.date_from, filter.date_to);
+  if (dateRange) where.createdAt = dateRange;
 
   if (filter.session) where.cash_session_id = filter.session;
   if (filter.payment_method) where.payment_method = filter.payment_method;
@@ -693,7 +694,8 @@ export const transactionsStats = async (req: Request, res: Response) => {
   // where.store_id = filter.store_id;
 
   const { date_from, date_to } = filter;
-  where.createdAt = formatWhereDateRange(date_from, date_to)
+  const dateRange = formatWhereDateRange(date_from, date_to);
+  if (dateRange) where.createdAt = dateRange;
 
   // Subquery for total refunded amounts per transaction
   // const refundSubquery = literal(`(
@@ -900,7 +902,8 @@ export const transactionStatsPostalCode = async (req: Request, res: Response) =>
     });
   }
 
-  where.createdAt = formatWhereDateRange(date_from, date_to);
+  const dateRange = formatWhereDateRange(date_from, date_to);
+  if (dateRange) where.createdAt = dateRange;
 
   const postalStats = await SalesTransaction.findAll({
     where,
