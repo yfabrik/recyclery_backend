@@ -10,7 +10,7 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type LabeledItem from "./labeleditem.ts";
 import type SalesTransaction from "./salestransaction.ts";
 
@@ -18,7 +18,6 @@ export default class TransactionItem extends Model<
   InferAttributes<TransactionItem>,
   InferCreationAttributes<TransactionItem>
 > {
-  declare id: CreationOptional<number>;
   declare name: string;
   declare price: number;
   declare quantity: CreationOptional<number>;
@@ -37,9 +36,9 @@ export default class TransactionItem extends Model<
   declare LabeledItem?: NonAttribute<LabeledItem | null>;
 
   declare getSalesTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
-  declare setSalesTransaction: BelongsToSetAssociationMixin<SalesTransaction, number>;
+  declare setSalesTransaction: BelongsToSetAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
   declare getLabeledItem: BelongsToGetAssociationMixin<LabeledItem>;
-  declare setLabeledItem: BelongsToSetAssociationMixin<LabeledItem, number>;
+  declare setLabeledItem: BelongsToSetAssociationMixin<LabeledItem, LabeledItem["id"]>;
 
   static associate(models: ModelStatics) {
     this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" });
@@ -49,11 +48,6 @@ export default class TransactionItem extends Model<
   static initModel(sequelize: Sequelize) {
     return this.init(
       {
-        id: {
-          type: DataTypes.INTEGER.UNSIGNED,
-          primaryKey: true,
-          autoIncrement: true,
-        },
         name: { type: DataTypes.STRING, allowNull: false },
         price: { type: DataTypes.DECIMAL, allowNull: false },
         quantity: {
@@ -86,6 +80,16 @@ export default class TransactionItem extends Model<
           allowNull: false,
           defaultValue: 0,
           validate: { min: 0, max: 100 },
+        },
+        transaction_id: {
+          type: DataTypes.INTEGER.UNSIGNED,
+          allowNull: false,
+          primaryKey: true,
+        },
+        labeled_item_id: {
+          type: DataTypes.INTEGER.UNSIGNED,
+          allowNull: false,
+          primaryKey: true,
         },
         bundleQuantity: { type: DataTypes.INTEGER, allowNull: true },
         bundlePrice: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
