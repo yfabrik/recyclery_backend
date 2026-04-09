@@ -72,22 +72,36 @@ export const detailCaisse = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
   const register = await CashRegister.findByPk(id, {
-    attributes: [
-      [col("Recyclery.name"), "store_name"],
-      [fn("COUNT", col("sessions.id")), "total_sessions"],
-      [
-        fn("MAX", col("sessions.createdAt")),
-        "last_session",
-      ],
+    include: [
+      {
+        model: CashSession,
+        as: "sessions",
+        required: false,
+      },
+      { model: Recyclery, required: false },
     ],
-    include: [{ model: CashSession, as: "sessions" }, { model: Recyclery }],
+    order: [[{ model: CashSession, as: "sessions" }, "createdAt", "DESC"]],
   });
 
   if (!register) throw new createHttpError.NotFound("Caisse non trouvée");
 
+  const sessions = (register.get("sessions") as CashSession[] | undefined) ?? [];
+  const lastSession = sessions.reduce<Date | null>((latest, session) => {
+    const createdAt = session.get("createdAt") as Date;
+    if (!latest || createdAt > latest) return createdAt;
+    return latest;
+  }, null);
+
   res.json({
     success: true,
-    data: register,
+    data: {
+      ...register.toJSON(),
+      store_name: register.get("Recyclery")
+        ? (register.get("Recyclery") as Recyclery).get("name")
+        : null,
+      total_sessions: sessions.length,
+      last_session: lastSession,
+    },
   });
 };
 
@@ -178,7 +192,7 @@ export const updateCaisse = async (req: Request, res: Response) => {
 };
 
 
-export const deleteCaisse =async (req: Request, res: Response) => {
+export const deleteCaisse = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   // Vérifier que la caisse existe
   const existingRegister = await CashRegister.findByPk(id);
