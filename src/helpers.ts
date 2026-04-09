@@ -1,15 +1,11 @@
+import createHttpError from "http-errors";
 import {
-  Model,
   Op,
   type FindOptions,
   type Identifier,
-  type WhereAttributeHash,
-  type WhereAttributeHashValue,
-  type WhereOperators,
-  type WhereOptions,
+  type WhereAttributeHashValue
 } from "sequelize";
-import type { ModelStatics } from "./models/db-types.js";
-import createHttpError from "http-errors";
+import type { ModelClass } from "./models/db-types.js";
 
 export const formatWhereDateRange = (dateFrom?: Date, dateTo?: Date) => {
   let from = dateFrom
@@ -26,7 +22,7 @@ export const formatWhereDateRange = (dateFrom?: Date, dateTo?: Date) => {
 };
 
 export const ensureItemWithIdExist = async <
-  T extends ModelStatics[keyof ModelStatics],
+  T extends ModelClass,
 >(
   model: T,
   id: Identifier,
