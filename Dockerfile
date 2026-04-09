@@ -1,6 +1,6 @@
 FROM node:lts AS build
 
-ENV NODE_ENV=developpement
+ENV NODE_ENV=development
 
 WORKDIR /home/node/app
 
