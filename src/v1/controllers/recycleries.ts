@@ -28,7 +28,7 @@ const dataSchema = z.object({
 
 
 export const listRecycleries = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["employees", "horaires"];
+  const ALLOWED_INCLUDES = ["employees", "horaires","caisses"];
   const filterSchema = z.object({
     include: z
       .string()
