@@ -52,9 +52,21 @@ export type Models = {
 }
 
 export type ModelStatics = {
-  [P in keyof Models]: ModelStatic<Models[P]>
+  [P in keyof Models]: ModelClass<P>
 }
 
+export type ModelName = keyof Models;
+
+export type ModelClass<K extends ModelName = ModelName> =
+  ModelStatic<Models[K]> & {
+    initModel: (s: Sequelize) => ModelStatic<Models[K]>;
+    associate: (m: ModelStatics) => void;
+    // class name, e.g. "Arrival"
+    name: K;
+  };
+  export type ModelModule<K extends ModelName = ModelName> = {
+    default: ModelClass<K>;
+  };
 
 export type m =Models[ keyof Models]
 
