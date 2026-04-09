@@ -124,6 +124,7 @@ export const listTransactions = async (req: Request, res: Response) => {
         "methode de payment inconnue",
       )
       .optional(),
+    transaction_number:z.string().optional(),
     page: z.coerce.number().positive().optional(),
     include: z
       .string()
@@ -134,6 +135,7 @@ export const listTransactions = async (req: Request, res: Response) => {
   const filter = filterSchema.parse(req.query);
 
   const where: WhereOptions<Attributes<SalesTransaction>> = {};
+  // if(filter.transaction_number) where.id={[Op.like]:+filter.transaction_number}
   // if (filter.store_id) where.recyclery_id = filter.store_id;
 
   where.createdAt = formatWhereDateRange(filter.date_from, filter.date_to);
