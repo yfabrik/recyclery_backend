@@ -52,6 +52,8 @@ export const listLabeledItem = async (req: Request, res: Response) => {
 
   const labeledItems = await LabeledItem.findAndCountAll({
     where,
+    distinct: true,
+    col: "id",
     include: [
       {
         model: Category,
