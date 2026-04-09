@@ -125,6 +125,10 @@ export default class SalesTransaction extends Model<
           primaryKey: true,
           autoIncrement: true,
         },
+        transactionId:{
+          type: DataTypes.INTEGER.UNSIGNED,
+          allowNull: true,
+        },
         total_amount: {
           type: DataTypes.DECIMAL(10, 2),//argent total des items dans la transaction
           allowNull: false
