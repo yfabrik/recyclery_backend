@@ -5,6 +5,7 @@ import {
   // createAvoir,
   createRefund,
   createTransaction,
+  getTransaction,
   listRefunds,
   listTransactions,
   transactionsStats,
@@ -21,6 +22,9 @@ router.get("/stats/postal-codes", asyncHandler(transactionStatsPostalCode));
 
 // GET - Récupérer les transactions
 router.get("/", asyncHandler(listTransactions));
+
+// GET - Récupérer les transactions
+router.get("/:id", asyncHandler(getTransaction));
 
 // POST - Créer une nouvelle transaction (version simplifiée)
 router.post("/", asyncHandler(createTransaction));

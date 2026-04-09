@@ -21,17 +21,18 @@ import db from "../../models/index.js";
 import { formatWhereDateRange } from "../../helpers.js";
 import TransactionItem from "../../models/transactionitem.js";
 import Category from "../../models/category.js";
+import GiftCard from "../../models/giftcard.js";
 
 
-export const getCartLinePrice = (line:CartItem) => {
+export const getCartLinePrice = (line: CartItem) => {
   let bundles = 0;
   let extraItems = line.quantity;
   if (line.bundleQuantity && line.bundleQuantity !== 0) {
     bundles = Math.trunc(line.quantity / line.bundleQuantity);
     extraItems = line.quantity % line.bundleQuantity;
   }
-  const sum = (price:number, quantity:number) =>
-    price * quantity * (1 - (line.promotion ??0) / 100);
+  const sum = (price: number, quantity: number) =>
+    price * quantity * (1 - (line.promotion ?? 0) / 100);
   return (
     sum(line.price, extraItems) + sum(line.bundlePrice || line.price, bundles)
   );
@@ -124,7 +125,7 @@ export const listTransactions = async (req: Request, res: Response) => {
         "methode de payment inconnue",
       )
       .optional(),
-    transaction_number:z.string().optional(),
+    transaction_number: z.string().optional(),
     page: z.coerce.number().positive().optional(),
     include: z
       .string()
@@ -215,6 +216,40 @@ export const listTransactions = async (req: Request, res: Response) => {
       total: transactions.count,
     },
   });
+};
+
+
+export const getTransaction = async (req: Request, res: Response) => {
+  const id = idSchema().parse(req.params.id);
+  const transaction = await SalesTransaction.findByPk(id, {
+    include: [
+      { model: LabeledItem, as: "items", include: [{ model: Category, as: "category" }, { model: Category, as: "subcategory" }] },
+      { model: TransactionPayment, as: "payments" },
+      {
+        model: CashSession, include: [
+          {
+            model: CashRegister,
+            include: [{ model: Recyclery }]
+          },
+          {
+            model: User,
+          },
+        ]
+      },
+      {
+        model: User,
+      },
+      { model: GiftCard, as: "giftCards" },
+      {
+        model: SalesTransaction, as: "refunds",
+        include: [
+          { model: LabeledItem, as: "items" },
+          { model: TransactionPayment, as: "payments" },
+        ],
+      },
+    ],
+  });
+  res.json({ success: true, transaction });
 };
 
 export const createTransaction = async (req: Request & { user: User }, res: Response) => {
