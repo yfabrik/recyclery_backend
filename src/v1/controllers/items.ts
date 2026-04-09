@@ -1,5 +1,5 @@
 import createHttpError from "http-errors";
-import { Op, type Attributes, type WhereOptions } from "sequelize";
+import { col, fn, literal, Op, type Attributes, type WhereOptions } from "sequelize";
 import z from "zod";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
@@ -159,4 +159,47 @@ export const tagItemAsSell = async (req: Request & { user: User }, res: Response
 
 
   res.json({ success: true, message: "Article marqué comme vendu" });
+};
+
+
+export const itemsStats = async (req: Request, res: Response) => {
+  const filterSchema = z.object({
+    status: z.string().optional(),
+    category_id: idSchema().optional(),
+    search: z.string().optional(),
+    recyclery_id: idSchema().optional(),
+    barcode: idSchema().optional(), //TODO verifier
+    page: z.coerce.number().positive().optional(),
+  });
+  const { search, page, ...filter } = filterSchema.parse(req.query);
+  const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
+
+  const where: WhereOptions<Attributes<LabeledItem>> = likeQuery
+    ? {
+      ...filter,
+      [Op.or]: [
+        // { name: likeQuery },
+        { description: likeQuery },
+        { id: likeQuery },
+      ],
+    }
+    : { ...filter };
+
+
+  const stats = await LabeledItem.findAll({
+    attributes: [
+      [fn("COUNT", col("*")), "total_items"],
+      [fn("SUM", literal(`CASE WHEN status = 'available' THEN 1 ELSE 0 END`)), "available_items"],
+      [fn("SUM", literal(`CASE WHEN status = 'sold' THEN 1 ELSE 0 END`)), "sold_items"],
+      [fn("SUM", literal(`CASE WHEN status = 'reserved' THEN 1 ELSE 0 END`)), "reserved_items"],
+      [fn("SUM", col("price")), "total_value"],
+    ],
+    where,
+
+  });
+
+  res.json({
+    success: true,
+    stats:stats[0]
+  });
 };
