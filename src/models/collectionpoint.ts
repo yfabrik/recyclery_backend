@@ -122,7 +122,24 @@ export default class CollectionPoint extends Model<
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },
-      { sequelize, modelName: "CollectionPoint", hooks: {} },
-    );
+      {
+        sequelize, modelName: "CollectionPoint", hooks: {
+          afterUpdate: async (instance, options) => {
+
+            if (!instance.changed("name") && !instance.changed("is_active") && !instance.changed("recyclery_id")) return
+            //TODO reuse transaction if exist ?
+            await instance.sequelize.transaction(async t => {
+
+              for (const schedule of await instance.getTaskSchedules({ transaction: options.transaction ?? null })) {
+                await schedule.update({
+                  is_recurring: instance.is_active,
+                  store_id: instance.recyclery_id,
+                  name: instance.name,
+                }, { transaction: options.transaction ?? t });
+              }
+            });
+          }
+        }
+      })
   }
 }

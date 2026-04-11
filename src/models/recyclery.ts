@@ -10,6 +10,7 @@ import {
   type CreationOptional,
   type ForeignKey,
   type HasManyAddAssociationMixin,
+  type HasManyCreateAssociationMixin,
   type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
@@ -86,6 +87,8 @@ export default class Recyclery extends Model<
     CashRegister,
     CashRegister["id"]
   >;
+  declare createCaisse: HasManyCreateAssociationMixin<CashRegister>
+
   declare getCollectionPoints: HasManyGetAssociationsMixin<CollectionPoint>;
   declare addCollectionPoint: HasManyAddAssociationMixin<
     CollectionPoint,
@@ -169,17 +172,21 @@ export default class Recyclery extends Model<
         modelName: "Recyclery",
         indexes: [{ fields: ["is_active"] }, { fields: ["manager_id"] }],
         hooks: {
-          afterUpdate: async (instance) => {
-            if (instance.changed("name") || instance.changed("is_active")) {
+          afterUpdate: async (instance, options) => {
+            if (!instance.changed("name") && !instance.changed("is_active")) return
+
+            await instance.sequelize.transaction(async t => {
+
               for (const schedule of await instance.getTaskSchedules({
                 where: { category: "vente" },
               })) {
                 await schedule.update({
                   is_recurring: instance.is_active,
                   name: "vente-" + instance.name,
-                });
+                }, { transaction: options.transaction ?? t });
               }
-            }
+            })
+
           },
           beforeDestroy: async (recyclery) => {
             const cashRegister = recyclery.sequelize.models

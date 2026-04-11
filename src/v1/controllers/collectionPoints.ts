@@ -123,21 +123,6 @@ export const updateCollectionPoint = async (req: Request, res: Response) => {
     }, { transaction: t });
 
     await point.reload({ transaction: t })
-
-    logger.debug(point.changed())
-
-    if (
-      data.is_active != point.is_active ||
-      data.recyclery_id != point.recyclery_id ||
-      data.name != point.name
-    )
-      for (const schedule of await point.getTaskSchedules()) {
-        await schedule.update({
-          is_recurring: data.is_active,
-          store_id: data.recyclery_id,
-          name: data.name,
-        }, { transaction: t });
-      }
   })
   // try {
   //   if (

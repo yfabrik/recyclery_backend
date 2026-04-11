@@ -21,6 +21,7 @@ import type { Request, Response } from "express";
 import LabeledItem from "../../models/labeleditem.js";
 import SalesTransaction from "../../models/salestransaction.js";
 import CashSession from "../../models/cashsession.js";
+import db from "../../models/index.js";
 
 const dataSchema = z.object({
   name: z.string("Le nom de la recyclerie est requis"),
@@ -132,24 +133,27 @@ export const updateRecyclerie = async (req: Request, res: Response) => {
   if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
 
   //TODO FIXME IMPORTANT URGENT make transaction work
-  try {
-    // if (data.is_active != recyclerie.is_active || data.name != recyclerie.name)
-    //   for (const schedule of recyclerie.TaskSchedules || []) {
-    //     await schedule.update({
-    //       is_recurring: data.is_active,
-    //       name: "vente-"+data.name,
-    //     });
-    //   }
+  // try {
+  // if (data.is_active != recyclerie.is_active || data.name != recyclerie.name)
+  //   for (const schedule of recyclerie.TaskSchedules || []) {
+  //     await schedule.update({
+  //       is_recurring: data.is_active,
+  //       name: "vente-"+data.name,
+  //     });
+  //   }
 
+  await db.sequelize.transaction(async t => {
     await recyclerie.update({
       ...data,
-    });
+    }, { transaction: t });
+  })
 
-    // await t.commit()
-  } catch (err) {
-    // await t.rollback()
-    throw err;
-  }
+
+  // await t.commit()
+  // } catch (err) {
+  //   // await t.rollback()
+  //   throw err;
+  // }
 
   res.json({
     success: true,
