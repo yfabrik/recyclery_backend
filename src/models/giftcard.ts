@@ -21,12 +21,17 @@ import type SalesTransaction from "./salestransaction.ts";
 import type TransactionPayment from "./transactionpayment.ts";
 import type User from "./user.ts";
 
-export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCreationAttributes<GiftCard>> {
+export default class GiftCard extends Model<
+  InferAttributes<GiftCard>,
+  InferCreationAttributes<GiftCard>
+> {
   declare id: CreationOptional<number>;
   declare code: string;
   declare initial_value: number;
   declare expires_at: CreationOptional<Date | null>;
-  declare status: CreationOptional<"active" | "partially_used" | "redeemed" | "expired" | "cancelled">;
+  declare status: CreationOptional<
+    "active" | "partially_used" | "redeemed" | "expired" | "cancelled"
+  >;
   declare currency: CreationOptional<string>;
   declare issued_at: CreationOptional<Date>;
   declare note: CreationOptional<string | null>;
@@ -38,7 +43,9 @@ export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCrea
   declare current_value: NonAttribute<number | null>;
 
   declare issued_transaction_id: ForeignKey<SalesTransaction["id"] | null>;
-  declare issued_refund_transaction_id: ForeignKey<SalesTransaction["id"] | null>;
+  declare issued_refund_transaction_id: ForeignKey<
+    SalesTransaction["id"] | null
+  >;
   declare created_by: ForeignKey<User["id"] | null>;
 
   declare issuedTransaction?: NonAttribute<SalesTransaction | null>;
@@ -49,18 +56,36 @@ export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCrea
   declare paymentUsages?: NonAttribute<TransactionPayment[]>;
 
   declare getIssuedTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
-  declare setIssuedTransaction: BelongsToSetAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
+  declare setIssuedTransaction: BelongsToSetAssociationMixin<
+    SalesTransaction,
+    SalesTransaction["id"]
+  >;
   declare getIssuedRefundTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
-  declare setIssuedRefundTransaction: BelongsToSetAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
+  declare setIssuedRefundTransaction: BelongsToSetAssociationMixin<
+    SalesTransaction,
+    SalesTransaction["id"]
+  >;
   declare getCreatedBy: BelongsToGetAssociationMixin<User>;
   declare setCreatedBy: BelongsToSetAssociationMixin<User, User["id"]>;
   declare getTransactions: BelongsToManyGetAssociationsMixin<SalesTransaction>;
-  declare setTransactions: BelongsToManySetAssociationsMixin<SalesTransaction, SalesTransaction["id"]>;
-  declare addTransaction: BelongsToManyAddAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
+  declare setTransactions: BelongsToManySetAssociationsMixin<
+    SalesTransaction,
+    SalesTransaction["id"]
+  >;
+  declare addTransaction: BelongsToManyAddAssociationMixin<
+    SalesTransaction,
+    SalesTransaction["id"]
+  >;
   declare getMovements: HasManyGetAssociationsMixin<GiftCardTransaction>;
-  declare addMovement: HasManyAddAssociationMixin<GiftCardTransaction, GiftCardTransaction["id"]>;
+  declare addMovement: HasManyAddAssociationMixin<
+    GiftCardTransaction,
+    GiftCardTransaction["id"]
+  >;
   declare getPaymentUsages: HasManyGetAssociationsMixin<TransactionPayment>;
-  declare addPaymentUsage: HasManyAddAssociationMixin<TransactionPayment, TransactionPayment["id"]>;
+  declare addPaymentUsage: HasManyAddAssociationMixin<
+    TransactionPayment,
+    TransactionPayment["id"]
+  >;
 
   static associate(models: ModelStatics) {
     this.belongsTo(models.SalesTransaction, {
@@ -78,8 +103,14 @@ export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCrea
       otherKey: "sales_transaction_id",
       as: "transactions",
     });
-    this.hasMany(models.GiftCardTransaction, { foreignKey: "gift_card_id", as: "movements" });
-    this.hasMany(models.TransactionPayment, { foreignKey: "gift_card_id", as: "paymentUsages" });
+    this.hasMany(models.GiftCardTransaction, {
+      foreignKey: "gift_card_id",
+      as: "movements",
+    });
+    this.hasMany(models.TransactionPayment, {
+      foreignKey: "gift_card_id",
+      as: "paymentUsages",
+    });
   }
 
   static initModel(sequelize: Sequelize) {
@@ -115,7 +146,13 @@ export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCrea
         },
         expires_at: { type: DataTypes.DATE, allowNull: true },
         status: {
-          type: DataTypes.ENUM("active", "partially_used", "redeemed", "expired", "cancelled"),
+          type: DataTypes.ENUM(
+            "active",
+            "partially_used",
+            "redeemed",
+            "expired",
+            "cancelled",
+          ),
           allowNull: false,
           defaultValue: "active",
         },
@@ -124,7 +161,11 @@ export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCrea
           allowNull: false,
           defaultValue: "EUR",
         },
-        issued_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+        issued_at: {
+          type: DataTypes.DATE,
+          allowNull: false,
+          defaultValue: DataTypes.NOW,
+        },
         // issued_transaction_id: { type: DataTypes.INTEGER, allowNull: true },
         // issued_refund_transaction_id: { type: DataTypes.INTEGER, allowNull: true },
         // created_by: { type: DataTypes.INTEGER, allowNull: true },
@@ -139,12 +180,13 @@ export default class GiftCard extends Model<InferAttributes<GiftCard>, InferCrea
         modelName: "GiftCard",
         validate: {
           singleIssuanceOrigin() {
-            const self = this as unknown as GiftCard;
             if (
-              self.issued_transaction_id != null &&
-              self.issued_refund_transaction_id != null
+              this.issued_transaction_id != null &&
+              this.issued_refund_transaction_id != null
             ) {
-              throw new Error("A gift card can only have one issuance origin transaction");
+              throw new Error(
+                "A gift card can only have one issuance origin transaction",
+              );
             }
           },
         },

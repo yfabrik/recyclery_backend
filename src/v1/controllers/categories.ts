@@ -108,8 +108,8 @@ export const listCategories = async (req: Request, res: Response) => {
   const includePromo = {
     model: Promotion,
     where: {
-      startDate: { [Op.lte]: new Date() },
-      endDate: { [Op.gte]: new Date() },
+      // startDate: { [Op.lte]: new Date() },
+      // endDate: { [Op.gte]: new Date() },
       isActive: true,
     },
     required: false,
@@ -150,6 +150,7 @@ export const listCategories = async (req: Request, res: Response) => {
       where: { ...insideWhere },
       include: insideInclude,
       required: false,
+      order: [["name", "ASC"]]
     });
   }
   if (filters.include.includes("parent")) {
@@ -172,7 +173,7 @@ export const listCategories = async (req: Request, res: Response) => {
     });
   }
 
-  let categories = await Category.findAll({ where, include });
+  let categories = await Category.findAll({ where, include, order: [["name", "ASC"]] });
   const storeId = filters.store_id;
   if (typeof storeId === "number" && filters.include.includes("promo")) {
     categories = categories.map((category) => category.toJSON());
@@ -267,7 +268,7 @@ export const updateCategorie = async (req: Request, res: Response) => {
 };
 
 
-export const patchCategory =async (req: Request, res: Response) => {
+export const patchCategory = async (req: Request, res: Response) => {
   const dataSchema = z.object({
     in: z.boolean().optional(),
     out: z.boolean().optional(),

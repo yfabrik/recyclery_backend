@@ -193,24 +193,31 @@ export const getSessionById = async (req: Request, res: Response) => {
         include: [{ model: Recyclery, attributes: ["name"] }],
       },
       { model: User, attributes: ["username"] },
+      { model: SalesTransaction }
     ],
   });
 
   if (!session) throw new createHttpError.NotFound("session pas trouvé")
 
   // transactions with joined transaction_lines (transaction_items) info
-  const transactions = await SalesTransaction.findAll({
-    where: { cash_session_id: id },
-    include: [
-      {
-        model: LabeledItem,
-        as: "items",
-      },
-    ],
-    order: [["createdAt", "DESC"]],
-  });
+  // const transactions = await SalesTransaction.findAll({
+  //   where: { cash_session_id: id },
+  //   include: [
+  //     {
+  //       model: LabeledItem,
+  //       as: "items",
+  //     },
+  //   ],
+  //   order: [["createdAt", "DESC"]],
+  // });
 
-  res.json({ success: true, session: { ...session.toJSON(), transactions } });
+  res.json({
+    success: true, session
+    // {
+    //   ...session.toJSON(),
+    //   transactions 
+    // }
+  });
 };
 
 /**

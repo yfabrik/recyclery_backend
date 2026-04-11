@@ -3,7 +3,7 @@ import { basename as _basename, dirname, join } from "path";
 import { env as _env } from "process";
 import { Model, Sequelize, type ModelStatic, type Options } from "sequelize";
 import { fileURLToPath, pathToFileURL } from "url";
-import type { DB, Models, ModelStatics } from "./db-types.ts";
+import type { DB, ModelModule, ModelName, Models, ModelStatics } from "./db-types.ts";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,32 +32,27 @@ const files = readdirSync(__dirname).filter((file) => {
   if (file.indexOf(".test.ts") !== -1 || file.indexOf(".test.js") !== -1) return false;
   return true;
 });
-const db = {} as DB
 
+const models  = {} as Partial<ModelStatics>;
+
+const registerModel = <K extends ModelName>(name: K, model: ModelStatics[K]) => {
+  models[name] = model;
+};
 for (const file of files) {
-  const modelUrl = pathToFileURL(join(__dirname, file)).href;//await import(join(__dirname, file))
-  const mod: {
-    default: Models[ keyof Models] &{ initModel: (s: Sequelize) => ModelStatic<any>, associate: (m: ModelStatics) => void}
-    // Model<any, any> & { initModel: (s: Sequelize) =>typeof Model<any, any>, associate: (m: ModelStatics) => void }
-    // Models[keyof Models] 
-  } = await import(modelUrl);
-  const modelExport = mod.default;
-  const model = modelExport.initModel(sequelize) ;
-  db[model.name] = model;
+  const modelUrl = pathToFileURL(join(__dirname, file)).href;
+  const mod = (await import(modelUrl)) as ModelModule;
+  const model = mod.default.initModel(sequelize);
+  const modelName = model.name as ModelName;
+  registerModel(modelName, model as ModelStatics[typeof modelName]);
 }
-// const db = {
-//   ...sequelize.models,
-//   sequelize: sequelize,
-//   Sequelize: (await import("sequelize")).default,
-// } as DB
 
-Object.keys(db).forEach((modelName) => {
-  if (db[modelName].associate) {
-    db[modelName].associate(db);
-  }
-});
-
-db.sequelize = sequelize;
-db.Sequelize = (await import("sequelize")).default;
-
+const modelStatics = models as ModelStatics;
+for (const modelName of Object.keys(modelStatics) as ModelName[]) {
+  modelStatics[modelName].associate?.(modelStatics);
+}
+const db: DB = {
+  ...modelStatics,
+  sequelize,
+  Sequelize: (await import("sequelize")).default,
+};
 export default db;

@@ -27,14 +27,14 @@ const dataSchema = z.object({
   start_time: z.union([
     z.iso.time().transform((val) => {
       const [hours, min] = val.split(":");
-      return new Date().setHours(+hours, +min);
+         return new Date().setHours(+(hours??0), +(min??0));
     }),
     z.coerce.date(),
   ]),
   end_time: z.union([
     z.iso.time().transform((val) => {
       const [hours, min] = val.split(":");
-      return new Date().setHours(+hours, +min);
+      return new Date().setHours(+(hours??0), +(min??0));
     }),
     z.coerce.date(),
   ]),
@@ -43,8 +43,8 @@ const dataSchema = z.object({
 });
 /**
  *
- * @param {string} day
- * @returns {Date}
+ * @param  day
+ * @returns
  */
 const getDateFromDay = (day:string) => {
   const today = new Date();

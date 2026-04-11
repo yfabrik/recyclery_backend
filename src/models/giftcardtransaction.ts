@@ -20,7 +20,7 @@ export default class GiftCardTransaction extends Model<
   InferAttributes<GiftCardTransaction>,
   InferCreationAttributes<GiftCardTransaction>
 > {
-  declare id: CreationOptional<number>;
+  // declare id: CreationOptional<number>;
   declare type: "issue" | "charge" | "refund_recredit" | "manual_adjustment" | "expire";
   declare amount: string;
   declare occurred_at: Date;
@@ -52,13 +52,13 @@ export default class GiftCardTransaction extends Model<
   static initModel(sequelize: Sequelize) {
     return this.init(
       {
-        id: {
-          type: DataTypes.INTEGER.UNSIGNED,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        // gift_card_id: { type: DataTypes.INTEGER, allowNull: false },
-        // sales_transaction_id: { type: DataTypes.INTEGER, allowNull: false },
+        // id: {
+        //   type: DataTypes.INTEGER.UNSIGNED,
+        //   primaryKey: true,
+        //   autoIncrement: true,
+        // },
+        gift_card_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, primaryKey: true, },
+        sales_transaction_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, primaryKey: true, },
         type: {
           type: DataTypes.ENUM("issue", "charge", "refund_recredit", "manual_adjustment", "expire"),
           allowNull: false,
@@ -90,7 +90,7 @@ export default class GiftCardTransaction extends Model<
         ],
         hooks: {
           beforeCreate: async (movement, options) => {
-            const GiftCardModel = movement.sequelize.models.GiftCard as ModelStatic<GiftCard>;
+            const GiftCardModel = movement.sequelize.models.GiftCard as ModelStatic<GiftCard> | undefined;
             if (!GiftCardModel) throw new Error("GiftCard model not found");
             const giftCard = await GiftCardModel.findByPk(movement.gift_card_id, {
               transaction: options.transaction ?? null,
@@ -101,7 +101,6 @@ export default class GiftCardTransaction extends Model<
             const amount = Math.abs(Number(movement.amount));
             const currentValue = giftCard.current_value ?? 0;
             if (movement.type === "charge") {
-              console.log(amount, currentValue);
               if (amount - currentValue < 0) {
                 newStatus = "partially_used";
               }

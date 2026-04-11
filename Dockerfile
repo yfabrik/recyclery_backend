@@ -1,20 +1,44 @@
-# FROM node:lts AS build
+FROM node:lts AS build
 
-# ENV NODE_ENV=developpement
+ENV NODE_ENV=development
 
-# WORKDIR /home/node/app
+WORKDIR /home/node/app
 
-# RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
+RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
 
-# USER node
+USER node
 
-# COPY package.json ./
+COPY package.json ./
 
-# RUN npm i
+RUN npm ci --ignore-scripts
 
-# COPY --chown=node:node . .
+COPY --chown=node:node . .
 
-# RUN npx tsc
+RUN npx tsc --noCheck
+
+FROM node:lts
+
+ENV NODE_ENV=production
+
+WORKDIR /home/node/app
+
+RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
+
+USER node
+
+COPY package.json ./
+
+RUN npm ci --omit=dev --ignore-scripts
+
+COPY --from=build --chown=node:node /home/node/app/dist ./dist
+
+COPY ./config /home/node/app/config
+
+RUN mkdir -p database/
+
+EXPOSE 5000
+
+CMD [ "node","dist/index.js" ]
 
 # FROM node:lts
 
@@ -30,34 +54,10 @@
 
 # RUN npm i
 
-# COPY --from=build --chown=node:node /home/node/app/dist ./src
-
-# COPY ./config /home/node/app/config
+# COPY --chown=node:node . .
 
 # RUN mkdir -p database/
 
 # EXPOSE 5000
 
 # CMD [ "node","src/index.js" ]
-
-FROM node:lts
-
-ENV NODE_ENV=production
-
-WORKDIR /home/node/app
-
-RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
-
-USER node
-
-COPY package.json ./
-
-RUN npm i
-
-COPY --chown=node:node . .
-
-RUN mkdir -p database/
-
-EXPOSE 5000
-
-CMD [ "node","src/index.js" ]

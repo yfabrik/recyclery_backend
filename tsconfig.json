@@ -50,6 +50,7 @@
     "src/models/types",
     "src/models/**/*.js",
     "src/migrations",
+    "src/seeders",
     "src/v1/controllers/*.js"
   ],
 }

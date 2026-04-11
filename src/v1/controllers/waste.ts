@@ -54,7 +54,8 @@ export const listWaste = async (req: Request, res: Response) => {
   if (filter.subcategory_id) where.subcategory_id = filter.subcategory_id;
   if (filter.eco_organism_id) where.eco_organism_id = filter.eco_organism_id;
   if (filter.disposal_type) where.disposal_type = filter.disposal_type;
-  where.disposal_date = formatWhereDateRange(filter.date_from, filter.date_to)
+  const dateRange = formatWhereDateRange(filter.date_from, filter.date_to);
+  if (dateRange) where.disposal_date = dateRange;
 
   const offset = filter.limit * (filter.page - 1 >= 0 ? filter.page - 1 : 0);
   const waste = await WasteDisposal.findAll({
@@ -160,7 +161,8 @@ export const wasteStats = async (req: Request, res: Response) => {
   const filter = filterSchema.parse(req.query);
 
   const where: WhereOptions<Attributes<WasteDisposal>> = {};
-  where.disposal_date = formatWhereDateRange(filter.date_from, filter.date_to)
+  const dateRange = formatWhereDateRange(filter.date_from, filter.date_to);
+  if (dateRange) where.disposal_date = dateRange;
 
   const stats = await WasteDisposal.findOne({
     attributes: [
@@ -205,7 +207,8 @@ export const wasteStatsCategory = async (req: Request, res: Response) => {
   const { date_from, date_to } = data.parse(req.query);
 
   const where: WhereOptions<Attributes<WasteDisposal>> = {};
-  where.disposal_date = formatWhereDateRange(date_from, date_to)
+  const dateRange = formatWhereDateRange(date_from, date_to);
+  if (dateRange) where.disposal_date = dateRange;
 
 
   const stats = await WasteDisposal.findAll({

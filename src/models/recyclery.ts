@@ -28,8 +28,12 @@ import type Task from "./task.ts";
 import type TaskSchedule from "./taskschedule.ts";
 import type User from "./user.ts";
 import type CashSession from "./cashsession.js";
+import logger from "../services/logger.js";
 
-export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCreationAttributes<Recyclery>> {
+export default class Recyclery extends Model<
+  InferAttributes<Recyclery>,
+  InferCreationAttributes<Recyclery>
+> {
   declare id: CreationOptional<number>;
   declare name: string;
   declare address: CreationOptional<string | null>;
@@ -54,25 +58,49 @@ export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCr
   declare promotions?: NonAttribute<Promotion[]>;
 
   declare getLabeledItems: HasManyGetAssociationsMixin<LabeledItem>;
-  declare addLabeledItem: HasManyAddAssociationMixin<LabeledItem, LabeledItem["id"]>;
+  declare addLabeledItem: HasManyAddAssociationMixin<
+    LabeledItem,
+    LabeledItem["id"]
+  >;
   declare getDonations: HasManyGetAssociationsMixin<Donation>;
   declare addDonation: HasManyAddAssociationMixin<Donation, Donation["id"]>;
   declare getTasks: HasManyGetAssociationsMixin<Task>;
   declare addTask: HasManyAddAssociationMixin<Task, Task["id"]>;
   declare getTaskSchedules: HasManyGetAssociationsMixin<TaskSchedule>;
-  declare addTaskSchedule: HasManyAddAssociationMixin<TaskSchedule, TaskSchedule["id"]>;
+  declare addTaskSchedule: HasManyAddAssociationMixin<
+    TaskSchedule,
+    TaskSchedule["id"]
+  >;
   declare getEmployees: BelongsToManyGetAssociationsMixin<Employee>;
-  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, Employee["id"]>;
-  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, Employee["id"]>;
+  declare setEmployees: BelongsToManySetAssociationsMixin<
+    Employee,
+    Employee["id"]
+  >;
+  declare addEmployee: BelongsToManyAddAssociationMixin<
+    Employee,
+    Employee["id"]
+  >;
   declare getManager: BelongsToGetAssociationMixin<User>;
   declare setManager: BelongsToSetAssociationMixin<User, User["id"]>;
   declare getCaisses: HasManyGetAssociationsMixin<CashRegister>;
-  declare addCaisse: HasManyAddAssociationMixin<CashRegister, CashRegister["id"]>;
+  declare addCaisse: HasManyAddAssociationMixin<
+    CashRegister,
+    CashRegister["id"]
+  >;
   declare getCollectionPoints: HasManyGetAssociationsMixin<CollectionPoint>;
-  declare addCollectionPoint: HasManyAddAssociationMixin<CollectionPoint, CollectionPoint["id"]>;
+  declare addCollectionPoint: HasManyAddAssociationMixin<
+    CollectionPoint,
+    CollectionPoint["id"]
+  >;
   declare getPromotions: BelongsToManyGetAssociationsMixin<Promotion>;
-  declare setPromotions: BelongsToManySetAssociationsMixin<Promotion, Promotion["id"]>;
-  declare addPromotion: BelongsToManyAddAssociationMixin<Promotion, Promotion["id"]>;
+  declare setPromotions: BelongsToManySetAssociationsMixin<
+    Promotion,
+    Promotion["id"]
+  >;
+  declare addPromotion: BelongsToManyAddAssociationMixin<
+    Promotion,
+    Promotion["id"]
+  >;
 
   static associate(models: ModelStatics) {
     this.hasMany(models.LabeledItem, { foreignKey: "recyclery_id" });
@@ -115,11 +143,13 @@ export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCr
           primaryKey: true,
           autoIncrement: true,
         },
-        name: { type: DataTypes.STRING, allowNull: false ,unique:true},
+        name: { type: DataTypes.STRING, allowNull: false, unique: true },
         address: DataTypes.TEXT,
         phone: {
           type: DataTypes.STRING,
-          validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ },
+          validate: {
+            is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/,
+          },
         },
         email: { type: DataTypes.STRING, validate: { isEmail: true } },
         city: DataTypes.STRING,
@@ -127,7 +157,11 @@ export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCr
           type: DataTypes.STRING,
           validate: { is: /^(?:0[1-9]|[1-8]\d|9[0-8])\d{3}$/ },
         },
-        is_active: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
+        is_active: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: true,
+          allowNull: false,
+        },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },
@@ -138,7 +172,9 @@ export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCr
         hooks: {
           afterUpdate: async (instance) => {
             if (instance.changed("name") || instance.changed("is_active")) {
-              for (const schedule of instance.TaskSchedules ?? []) {
+              for (const schedule of await instance.getTaskSchedules({
+                where: { category: "vente" },
+              })) {
                 await schedule.update({
                   is_recurring: instance.is_active,
                   name: "vente-" + instance.name,
@@ -147,8 +183,10 @@ export default class Recyclery extends Model<InferAttributes<Recyclery>, InferCr
             }
           },
           beforeDestroy: async (recyclery) => {
-            const cashRegister = recyclery.sequelize.models.CashRegister as ModelStatic<CashRegister>;
-            const sessions = recyclery.sequelize.models.CashSession as ModelStatic<CashSession>;
+            const cashRegister = recyclery.sequelize.models
+              .CashRegister as ModelStatic<CashRegister>;
+            const sessions = recyclery.sequelize.models
+              .CashSession as ModelStatic<CashSession>;
             if (cashRegister) {
               const caisses = await recyclery.getCaisses({
                 include: [

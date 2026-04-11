@@ -49,7 +49,8 @@ export const listArrivals = async (req: Request, res: Response) => {
   const { date_from, date_to, ...rest } = filterSchema.parse(req.query);
 
   const where: WhereOptions<Attributes<Arrival>> = { ...rest };
-  where.arrival_date = formatWhereDateRange(date_from, date_to)
+  const dateRange = formatWhereDateRange(date_from, date_to);
+  if (dateRange) where.arrival_date = dateRange;
 
   const arrivals = await Arrival.findAll({
     where,
@@ -149,7 +150,8 @@ export const statsSummary = async (req: Request & { user: User }, res: Response)
   const data = filterSchema.parse(req.query);
 
   const where: WhereOptions<Attributes<Arrival>> = {};
-  where.arrival_date = formatWhereDateRange(data.date_from, data.date_to)
+  const dateRange = formatWhereDateRange(data.date_from, data.date_to);
+  if (dateRange) where.arrival_date = dateRange;
 
   const stats = await Arrival.findOne({
     attributes: [
@@ -221,7 +223,8 @@ export const statsByCategories = async (req: Request, res: Response) => {
   const data = filterSchema.parse(req.query);
 
   const where: WhereOptions<Attributes<Arrival>> = {};
-  where.arrival_date = formatWhereDateRange(data.date_from, data.date_to)
+  const dateRange = formatWhereDateRange(data.date_from, data.date_to);
+  if (dateRange) where.arrival_date = dateRange;
 
   const stats = await Arrival.findAll({
     attributes: {
