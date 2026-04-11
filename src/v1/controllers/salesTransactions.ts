@@ -302,9 +302,9 @@ export const createTransaction = async (
             subcategory_id: item.subcategory_id,
             price: item.price,
             weight: item.weight,
-            name: item.name,
+            // name: item.name,
             status: "sold",
-            sold_at: new Date(),
+            // sold_at: new Date(),
             created_by: req.user.id,
           },
           {
@@ -481,7 +481,7 @@ export const createRefund = async (
       }, 0);
       //test que le compte d'object deborde pas
       const c = parent.items?.find((i) => i.barcode === item.barcode);
-      if (alreadyRefunded + item.quantity > c.quantity)
+      if (alreadyRefunded && alreadyRefunded + item.quantity > c.quantity)
         throw new createHttpError.BadRequest(
           "peut pas rembourser plus d'objects que vendu",
         );

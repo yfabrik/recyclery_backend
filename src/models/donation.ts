@@ -23,7 +23,7 @@ export default class Donation extends Model<
   declare donor_phone: CreationOptional<string | null>;
   declare donor_email: CreationOptional<string | null>;
   declare item_description: CreationOptional<string | null>;
-  declare estimated_value: CreationOptional<string | null>;
+  declare estimated_value: CreationOptional<number | null>;
   declare status: CreationOptional<"pending" | "accepted" | "rejected">;
   declare received_at: CreationOptional<Date>;
   declare donorContact: NonAttribute<string | null>;

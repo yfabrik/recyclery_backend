@@ -45,16 +45,19 @@ export const listLabeledItem = async (req: Request, res: Response) => {
 
   const where: WhereOptions<Attributes<LabeledItem>> = likeQuery
     ? {
-        ...filter,
-        [Op.or]: [
-          // { name: likeQuery },
-          { description: likeQuery },
-          { id: likeQuery },
-        ],
-      }
+      ...filter,
+      [Op.or]: [
+        // { name: likeQuery },
+        { description: likeQuery },
+        { id: likeQuery },
+      ],
+    }
     : { ...filter };
   const pagination = {} as { limit: number; offset: number };
-  if (page) ((pagination.limit = 50), (pagination.offset = (page - 1) * 50));
+  if (page) {
+    pagination.limit = 50
+    pagination.offset = (page - 1) * 50
+  }
 
   const labeledItems = await LabeledItem.findAndCountAll({
     where,
@@ -188,13 +191,13 @@ export const itemsStats = async (req: Request, res: Response) => {
 
   const where: WhereOptions<Attributes<LabeledItem>> = likeQuery
     ? {
-        ...filter,
-        [Op.or]: [
-          // { name: likeQuery },
-          { description: likeQuery },
-          { id: likeQuery },
-        ],
-      }
+      ...filter,
+      [Op.or]: [
+        // { name: likeQuery },
+        { description: likeQuery },
+        { id: likeQuery },
+      ],
+    }
     : { ...filter };
 
   const stats = await LabeledItem.findAll({

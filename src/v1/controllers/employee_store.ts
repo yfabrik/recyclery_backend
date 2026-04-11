@@ -50,14 +50,14 @@ export const getEmployeeStoreById = async (req: Request, res: Response) => {
 
   if (!employee) throw new createHttpError.NotFound("Utilisateur non trouvé");
 
-  const stores = employee?.stores || [];
-  const assignments = stores.map((s) => {
-    const values = s.dataValues;
-    return { ...values, is_primary: s.EmployeeStore.is_primary };
-  });
+  // const stores = employee?.stores || [];
+  // const assignments = stores.map((s) => {
+  //   const values = s.dataValues;
+  //   return { ...values, is_primary: s.employees? };
+  // });
   res.json({
     success: true,
-    assignments,
+    // assignments,
     stores: employee.stores,
   });
 };

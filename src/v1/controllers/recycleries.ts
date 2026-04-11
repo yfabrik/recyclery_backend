@@ -224,15 +224,13 @@ export const recycleryStats = async (req: Request, res: Response) => {
       createdAt: { [Op.gte]: startOfMonth },
     },
     raw: true,
-  });
+  }) as { monthly_sales?: number | string; monthly_revenue?: number | string } | null
 
-  const salesRow =
-    /** @type {{ monthly_sales?: number | string; monthly_revenue?: number | string } | null } */ salesResult;
-  const sales = salesRow
+  const sales = salesResult
     ? {
-        monthly_sales: Number(salesRow.monthly_sales ?? 0),
-        monthly_revenue: Number(salesRow.monthly_revenue ?? 0),
-      }
+      monthly_sales: Number(salesResult.monthly_sales ?? 0),
+      monthly_revenue: Number(salesResult.monthly_revenue ?? 0),
+    }
     : { monthly_sales: 0, monthly_revenue: 0 };
 
   res.json({

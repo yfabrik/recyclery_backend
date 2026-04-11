@@ -10,7 +10,7 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type Employee from "./employee.ts";
 
 export default class Skill extends Model<

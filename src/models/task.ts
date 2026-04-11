@@ -110,7 +110,7 @@ export default class Task extends Model<
         equipment_needed: DataTypes.TEXT,
         hourly_rate: DataTypes.DECIMAL,
         scheduled_date: { type: DataTypes.DATE, allowNull: false },
-        // @ts-expect-error
+        // @ts-expect-error  sequelize virtual marqued as nonattribute
         day_of_week: {
           type: DataTypes.VIRTUAL,
           get(this: Task) {

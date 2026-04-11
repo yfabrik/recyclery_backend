@@ -6,6 +6,8 @@ import CollectionPoint from "../../models/collectionpoint.js";
 import type { Attributes, WhereOptions } from "sequelize";
 import TaskSchedule from "../../models/taskschedule.js";
 import Recyclery from "../../models/recyclery.js";
+import db from "../../models/index.js";
+import logger from "../../services/logger.js";
 
 const dataSchema = z.object({
   name: z.string().trim().nonempty("nom requis"),
@@ -24,8 +26,7 @@ const dataSchema = z.object({
       "hospital",
       "other",
     ])
-    .nullish()
-    .prefault(null),
+    .optional().default("standard"),
   notes: z.string().nullish().prefault(null),
   recyclery_id: idSchema().nullish().prefault(null),
   is_active: z.coerce.boolean().optional().default(true),
@@ -116,29 +117,51 @@ export const updateCollectionPoint = async (req: Request, res: Response) => {
   // const t = await db.sequelize.transaction()
 
   //TODO FIXME IMPORTANT URGENT make transaction work
-  try {
+  await db.sequelize.transaction(async t => {
+    await point.update({
+      ...data,
+    }, { transaction: t });
+
+    await point.reload({ transaction: t })
+
+    logger.debug(point.changed())
+
     if (
       data.is_active != point.is_active ||
       data.recyclery_id != point.recyclery_id ||
       data.name != point.name
     )
-      for (const schedule of point?.TaskSchedules || []) {
+      for (const schedule of await point.getTaskSchedules()) {
         await schedule.update({
           is_recurring: data.is_active,
           store_id: data.recyclery_id,
           name: data.name,
-        });
+        }, { transaction: t });
       }
+  })
+  // try {
+  //   if (
+  //     data.is_active != point.is_active ||
+  //     data.recyclery_id != point.recyclery_id ||
+  //     data.name != point.name
+  //   )
+  //     for (const schedule of point?.TaskSchedules || []) {
+  //       await schedule.update({
+  //         is_recurring: data.is_active,
+  //         store_id: data.recyclery_id,
+  //         name: data.name,
+  //       });
+  //     }
 
-    await point.update({
-      ...data,
-    });
+  //   await point.update({
+  //     ...data,
+  //   });
 
-    // await t.commit()
-  } catch (err) {
-    // await t.rollback()
-    throw err;
-  }
+  //   // await t.commit()
+  // } catch (err) {
+  //   // await t.rollback()
+  //   throw err;
+  // }
 
   res.json({
     success: true,
@@ -164,7 +187,7 @@ export const deleteCollectionPoint = async (req: Request, res: Response) => {
  * @deprecated
  */
 export const stats = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  // const { id } = req.params;
 
   // const stats = await CollectionSchedule.findOne({
   //   attributes: [

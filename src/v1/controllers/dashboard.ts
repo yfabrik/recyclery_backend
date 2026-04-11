@@ -15,7 +15,7 @@ import CashSession from "../../models/cashsession.js";
 function formatTimeAgo(dateString: string | Date) {
   const date = new Date(dateString);
   const now = new Date();
-  const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+  const diffInMinutes = Math.floor((+now - +date) / (1000 * 60));
 
   if (diffInMinutes < 60) {
     return `Il y a ${diffInMinutes}min`;
@@ -210,7 +210,7 @@ export const dashboardActivities = async (req: Request, res: Response) => {
   });
 
   // Trier par date et limiter à 10 activités
-  activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+  activities.sort((a, b) => +new Date(b.time) - +new Date(a.time));
 
   res.json({
     success: true,

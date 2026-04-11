@@ -105,7 +105,7 @@ export default class LabeledItem extends Model<
           primaryKey: true,
           autoIncrement: true,
         },
-        //@ts-expect-error
+        //@ts-expect-error  sequelize virtual marqued as nonattribute
         barcode: {
           type: DataTypes.VIRTUAL,
           get(this: LabeledItem) {

@@ -22,7 +22,7 @@ const dataSchema = z.object({
     .number()
     .nonnegative("valeur doit etre un nombre valide"),
   weight: z.coerce.number().nonnegative(),
-  status: z.enum(["pending", "accepted", "rejected"]).nullish().prefault(null),
+  status: z.enum(["pending", "accepted", "rejected"]).optional(),
 });
 
 export const listDons = async (req: Request, res: Response) => {

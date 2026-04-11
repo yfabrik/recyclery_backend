@@ -81,7 +81,7 @@ export const listPointPrecense = async (req: Request, res: Response) => {
  * @deprecated
  */
 export const detailPointPrecense = async (req: Request, res: Response) => {
-  const { collectionPointId } = req.params;
+  // const { collectionPointId } = req.params;
 
   return detailTask(req, res);
 };
@@ -139,6 +139,6 @@ export const updatePointPrecense = async (req: Request, res: Response) => {
  * @deprecated
  */
 export const deletePointPrecense = async (req: Request, res: Response) => {
-  const id = z.coerce.number().positive().parse(req.params.id);
+  // const id = z.coerce.number().positive().parse(req.params.id);
   return deleteSchedule(req, res);
 };

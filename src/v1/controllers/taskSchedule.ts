@@ -294,7 +294,7 @@ export const deleteSchedule = async (req: Request, res: Response) => {
 
   const scheduleToDelete = await TaskSchedule.findByPk(id);
   if (!scheduleToDelete) throw new createHttpError[404]("Planning non trouvé");
-  scheduleToDelete.destroy();
+  await scheduleToDelete.destroy();
 
   res.json({
     success: true,
@@ -444,7 +444,7 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
     .toLowerCase();
 
   const newYear = new Date(taskDate.getFullYear(), 0, 1);
-  const dayNumber = Math.floor((taskDate - newYear) / (24 * 60 * 60 * 1000));
+  const dayNumber = Math.floor((+taskDate - +newYear) / (24 * 60 * 60 * 1000));
   const weekNumber = Math.ceil((taskDate.getDay() + 1 + dayNumber) / 7);
   if (!schedule.store_id)
     allEmployees = await Employee.findAll({

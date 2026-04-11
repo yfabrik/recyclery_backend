@@ -133,7 +133,7 @@ export default class GiftCard extends Model<
           defaultValue: 0,
           validate: { min: 0 },
         },
-        //@ts-expect-error
+        //@ts-expect-error  sequelize virtual marqued as nonattribute
         current_value: {
           type: DataTypes.VIRTUAL,
           get(this: GiftCard) {
@@ -166,9 +166,6 @@ export default class GiftCard extends Model<
           allowNull: false,
           defaultValue: DataTypes.NOW,
         },
-        // issued_transaction_id: { type: DataTypes.INTEGER, allowNull: true },
-        // issued_refund_transaction_id: { type: DataTypes.INTEGER, allowNull: true },
-        // created_by: { type: DataTypes.INTEGER, allowNull: true },
         note: { type: DataTypes.TEXT, allowNull: true },
         recipient_name: { type: DataTypes.STRING, allowNull: true },
         recipient_email: { type: DataTypes.STRING, allowNull: true },

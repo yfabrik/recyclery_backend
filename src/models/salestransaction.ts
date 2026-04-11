@@ -178,7 +178,7 @@ export default class SalesTransaction extends Model<
           type: DataTypes.DECIMAL(10, 2), //argent donné par le client
           allowNull: false,
         },
-        //@ts-expect-error
+        //@ts-expect-error  sequelize virtual marqued as nonattribute
         change_amount: {
           type: DataTypes.VIRTUAL,
           get(this: SalesTransaction) {

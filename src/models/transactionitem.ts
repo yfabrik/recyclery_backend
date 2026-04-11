@@ -64,7 +64,7 @@ export default class TransactionItem extends Model<
             min: 1,
           },
         },
-        //@ts-expect-error
+        //@ts-expect-error  sequelize virtual marqued as nonattribute
         total_price: {
           type: DataTypes.VIRTUAL,
           get(this) {

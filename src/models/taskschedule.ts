@@ -301,7 +301,7 @@ export default class TaskSchedule extends Model<
         scheduled_date: { type: DataTypes.DATE, allowNull: false },
         start_time: { type: DataTypes.DATE, allowNull: false },
         end_time: { type: DataTypes.DATE, allowNull: false },
-        // @ts-expect-error
+        // @ts-expect-error  sequelize virtual marqued as nonattribute
         day_of_week: {
           type: DataTypes.VIRTUAL,
           get(this: TaskSchedule) {
