@@ -80,10 +80,10 @@ export const detailCaisse = async (req: Request, res: Response) => {
 
   if (!register) throw new createHttpError.NotFound("Caisse non trouvée");
 
-  const sessions =
-    (register.get("sessions") as CashSession[] | undefined) ?? [];
+  const sessions = register.sessions! //TODO better ?
+
   const lastSession = sessions.reduce<Date | null>((latest, session) => {
-    const createdAt = session.get("createdAt") as Date;
+    const createdAt = session.createdAt;
     if (!latest || createdAt > latest) return createdAt;
     return latest;
   }, null);
@@ -123,6 +123,7 @@ export const createCaisse = async (req: Request, res: Response) => {
       "Une caisse avec ce nom existe déjà dans ce magasin",
     );
 
+  //FIXME  whyyyyyyyyyyyy
   // const result = await store.createCaisse({
   //   name:data.name,
   //   is_active:data.is_active
@@ -157,24 +158,6 @@ export const updateCaisse = async (req: Request, res: Response) => {
 
   if (!existingRegister) {
     throw new createHttpError.NotFound("Caisse non trouvée");
-  }
-  //TODO check on the model
-
-  // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
-  const duplicateRegister = await CashRegister.findAll({
-    where: {
-      [Op.and]: [
-        { name: data.name },
-        { recyclery_id: existingRegister.recyclery_id },
-        { id: { [Op.ne]: id } }, // Exclude current record
-      ],
-    },
-  });
-
-  if (duplicateRegister.length > 0) {
-    throw new createHttpError.Conflict(
-      "Une autre caisse avec ce nom existe déjà dans ce magasin",
-    );
   }
   await existingRegister.update({ ...data });
 

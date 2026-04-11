@@ -2,6 +2,7 @@ import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
+  Op,
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
@@ -11,12 +12,14 @@ import {
   type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
+  type ModelStatic,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type CashSession from "./cashsession.ts";
 import type { ModelStatics } from "./db-types.ts";
 import type Recyclery from "./recyclery.ts";
+import logger from "../services/logger.js";
 
 export default class CashRegister extends Model<
   InferAttributes<CashRegister>,
@@ -79,6 +82,32 @@ export default class CashRegister extends Model<
           { fields: ["recyclery_id", "name"], unique: true },
         ],
         hooks: {
+          //TODO constraint sur name + recyclery ID =>unique possible ????
+
+          // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
+          beforeUpdate: async (caisse, options) => {
+            const Registrer = caisse.sequelize.models.CashRegister as ModelStatic<CashRegister> | undefined
+            if (!Registrer) {
+              logger.error(`Task model not found for schedule ${caisse.id}`);
+              return;
+            }
+
+            const duplicateRegister = await Registrer.findOne({
+              where: {
+                [Op.and]: [
+                  { name: caisse.name },
+                  { recyclery_id: caisse.recyclery_id },
+                  { id: { [Op.ne]: caisse.id } }, // Exclude current record
+                ],
+              },
+            });
+
+            if (duplicateRegister) {
+              throw new createHttpError.Conflict(
+                "Une autre caisse avec ce nom existe déjà dans ce magasin",
+              );
+            }
+          },
           beforeDestroy: async (caisse) => {
             const sessions = await caisse.countSessions({
               where: { status: "open" },
