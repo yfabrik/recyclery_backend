@@ -92,10 +92,9 @@ export default class SalesTransaction extends Model<
     GiftCard["id"]
   >;
   declare getGiftCardMovements: HasManyGetAssociationsMixin<GiftCardTransaction>;
-  //FIXME ????
   declare addGiftCardMovement: HasManyAddAssociationMixin<
-    GiftCardTransaction,
-    [GiftCardTransaction["sales_transaction_id"], GiftCardTransaction["gift_card_id"]]
+    GiftCard,
+    GiftCard["id"]
   >;
   declare getPayments: HasManyGetAssociationsMixin<TransactionPayment>;
   declare addPayment: HasManyAddAssociationMixin<
