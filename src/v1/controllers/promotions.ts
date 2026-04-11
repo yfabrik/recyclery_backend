@@ -6,10 +6,12 @@ import type { Request, Response } from "express";
 import Category from "../../models/category.js";
 import Recyclery from "../../models/recyclery.js";
 
-
 const dataSchema = z.object({
-  startDate: z.coerce.date().transform(v => v.toDateString()),
-  endDate: z.coerce.date().transform(v => v.toDateString()).nullable(),
+  startDate: z.coerce.date().transform((v) => v.toDateString()),
+  endDate: z.coerce
+    .date()
+    .transform((v) => v.toDateString())
+    .nullable(),
   isActive: z.coerce.boolean().default(true),
   promotionValue: z.coerce
     .number("promotion requise")
@@ -19,7 +21,6 @@ const dataSchema = z.object({
   stores: z.array(idSchema()).optional(),
   // subcategory_id: idSchema().nullable()
 });
-
 
 export const listPromotions = async (req: Request, res: Response) => {
   const promotions = await Promotion.findAll({
@@ -49,7 +50,6 @@ export const listPromotions = async (req: Request, res: Response) => {
   return res.json({ success: true, message: "promotions", data: promotions });
 };
 
-
 export const createPromotion = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
   const { stores, ...promotionData } = data;
@@ -68,7 +68,6 @@ export const createPromotion = async (req: Request, res: Response) => {
   });
   return res.json({ success: true, message: "promo cree", data: promo });
 };
-
 
 export const updatePromotion = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
@@ -91,7 +90,6 @@ export const updatePromotion = async (req: Request, res: Response) => {
   });
   return res.json({ success: true, message: "promo mis a jour", data: promo });
 };
-
 
 export const deletePromotion = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);

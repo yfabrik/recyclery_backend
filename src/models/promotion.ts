@@ -13,11 +13,14 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
 import type Category from "./category.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type Recyclery from "./recyclery.ts";
 
-export default class Promotion extends Model<InferAttributes<Promotion>, InferCreationAttributes<Promotion>> {
+export default class Promotion extends Model<
+  InferAttributes<Promotion>,
+  InferCreationAttributes<Promotion>
+> {
   declare id: CreationOptional<number>;
   declare startDate: string;
   declare endDate: CreationOptional<string | null>;
@@ -26,7 +29,7 @@ export default class Promotion extends Model<InferAttributes<Promotion>, InferCr
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  declare category_id: ForeignKey<Category["id"]>
+  declare category_id: ForeignKey<Category["id"]>;
 
   declare Category?: NonAttribute<Category>;
   declare stores?: NonAttribute<Recyclery[]>;
@@ -34,8 +37,14 @@ export default class Promotion extends Model<InferAttributes<Promotion>, InferCr
   declare getCategory: BelongsToGetAssociationMixin<Category>;
   declare setCategory: BelongsToSetAssociationMixin<Category, Category["id"]>;
   declare getStores: BelongsToManyGetAssociationsMixin<Recyclery>;
-  declare setStores: BelongsToManySetAssociationsMixin<Recyclery, Recyclery["id"]>;
-  declare addStore: BelongsToManyAddAssociationMixin<Recyclery, Recyclery["id"]>;
+  declare setStores: BelongsToManySetAssociationsMixin<
+    Recyclery,
+    Recyclery["id"]
+  >;
+  declare addStore: BelongsToManyAddAssociationMixin<
+    Recyclery,
+    Recyclery["id"]
+  >;
 
   static associate(models: ModelStatics) {
     this.belongsTo(models.Category, { foreignKey: "category_id" });
@@ -57,7 +66,11 @@ export default class Promotion extends Model<InferAttributes<Promotion>, InferCr
         },
         startDate: { type: DataTypes.DATEONLY, allowNull: false },
         endDate: { type: DataTypes.DATEONLY, allowNull: true },
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
+        isActive: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: true,
+          allowNull: false,
+        },
         promotionValue: {
           type: DataTypes.DECIMAL(5, 2),
           allowNull: false,
@@ -70,7 +83,10 @@ export default class Promotion extends Model<InferAttributes<Promotion>, InferCr
       {
         sequelize,
         modelName: "Promotion",
-        indexes: [{ fields: ["category_id"] }, { fields: ["startDate", "endDate"] }],
+        indexes: [
+          { fields: ["category_id"] },
+          { fields: ["startDate", "endDate"] },
+        ],
       },
     );
   }

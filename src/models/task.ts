@@ -14,13 +14,16 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
 import type CollectionPoint from "./collectionpoint.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type Employee from "./employee.ts";
 import type Recyclery from "./recyclery.ts";
 import type TaskSchedule from "./taskschedule.ts";
 
-export default class Task extends Model<InferAttributes<Task>, InferCreationAttributes<Task>> {
+export default class Task extends Model<
+  InferAttributes<Task>,
+  InferCreationAttributes<Task>
+> {
   declare id: CreationOptional<number>;
   declare name: string;
   declare description: CreationOptional<string | null>;
@@ -40,9 +43,9 @@ export default class Task extends Model<InferAttributes<Task>, InferCreationAttr
 
   declare day_of_week: NonAttribute<string | null>;
 
-  declare schedule_id: ForeignKey<TaskSchedule["id"]|null>;
-  declare store_id: ForeignKey<Recyclery["id"]|null>;
-  declare collection_point_id: ForeignKey<CollectionPoint["id"]|null>;
+  declare schedule_id: ForeignKey<TaskSchedule["id"] | null>;
+  declare store_id: ForeignKey<Recyclery["id"] | null>;
+  declare collection_point_id: ForeignKey<CollectionPoint["id"] | null>;
 
   declare TaskSchedule?: NonAttribute<TaskSchedule | null>;
   declare Recyclery?: NonAttribute<Recyclery | null>;
@@ -50,20 +53,40 @@ export default class Task extends Model<InferAttributes<Task>, InferCreationAttr
   declare Employees?: NonAttribute<Employee[]>;
 
   declare getTaskSchedule: BelongsToGetAssociationMixin<TaskSchedule>;
-  declare setTaskSchedule: BelongsToSetAssociationMixin<TaskSchedule, TaskSchedule["id"]>;
+  declare setTaskSchedule: BelongsToSetAssociationMixin<
+    TaskSchedule,
+    TaskSchedule["id"]
+  >;
   declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
-  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, Recyclery["id"]>;
+  declare setRecyclery: BelongsToSetAssociationMixin<
+    Recyclery,
+    Recyclery["id"]
+  >;
   declare getCollectionPoint: BelongsToGetAssociationMixin<CollectionPoint>;
-  declare setCollectionPoint: BelongsToSetAssociationMixin<CollectionPoint, CollectionPoint["id"]>;
+  declare setCollectionPoint: BelongsToSetAssociationMixin<
+    CollectionPoint,
+    CollectionPoint["id"]
+  >;
   declare getEmployees: BelongsToManyGetAssociationsMixin<Employee>;
-  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, Employee["id"]>;
-  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, Employee["id"]>;
-  declare removeEmployee: BelongsToManyRemoveAssociationMixin<Employee, Employee["id"]>
+  declare setEmployees: BelongsToManySetAssociationsMixin<
+    Employee,
+    Employee["id"]
+  >;
+  declare addEmployee: BelongsToManyAddAssociationMixin<
+    Employee,
+    Employee["id"]
+  >;
+  declare removeEmployee: BelongsToManyRemoveAssociationMixin<
+    Employee,
+    Employee["id"]
+  >;
 
   static associate(models: ModelStatics) {
     this.belongsTo(models.TaskSchedule, { foreignKey: "schedule_id" });
     this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
-    this.belongsTo(models.CollectionPoint, { foreignKey: "collection_point_id" });
+    this.belongsTo(models.CollectionPoint, {
+      foreignKey: "collection_point_id",
+    });
     this.belongsToMany(models.Employee, { through: "employee_task" });
   }
 
@@ -92,12 +115,14 @@ export default class Task extends Model<InferAttributes<Task>, InferCreationAttr
           type: DataTypes.VIRTUAL,
           get(this: Task) {
             if (!this.scheduled_date) return null;
-            const d = new Intl.DateTimeFormat("fr-FR", { weekday: "long" }).format(this.scheduled_date);
+            const d = new Intl.DateTimeFormat("fr-FR", {
+              weekday: "long",
+            }).format(this.scheduled_date);
             return d ? d.charAt(0).toUpperCase() + d.slice(1) : null;
           },
         },
-        start_time:  { type: DataTypes.DATE, allowNull: false },
-        end_time:  { type: DataTypes.DATE, allowNull: false },
+        start_time: { type: DataTypes.DATE, allowNull: false },
+        end_time: { type: DataTypes.DATE, allowNull: false },
         notes: DataTypes.TEXT,
         status: DataTypes.STRING,
 
@@ -107,7 +132,11 @@ export default class Task extends Model<InferAttributes<Task>, InferCreationAttr
       {
         sequelize,
         modelName: "Task",
-        indexes: [{ fields: ["schedule_id"] }, { fields: ["scheduled_date"] }, { fields: ["status"] }],
+        indexes: [
+          { fields: ["schedule_id"] },
+          { fields: ["scheduled_date"] },
+          { fields: ["status"] },
+        ],
       },
     );
   }

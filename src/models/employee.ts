@@ -13,14 +13,17 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type EmployeeWorkdays from "./employeeworkdays.ts";
 import type Recyclery from "./recyclery.ts";
 import type Skill from "./skill.ts";
 import type Task from "./task.ts";
 import type TaskSchedule from "./taskschedule.ts";
 
-export default class Employee extends Model<InferAttributes<Employee>, InferCreationAttributes<Employee>> {
+export default class Employee extends Model<
+  InferAttributes<Employee>,
+  InferCreationAttributes<Employee>
+> {
   declare id: CreationOptional<number>;
   declare nom: string;
   declare prenom: string;
@@ -39,17 +42,35 @@ export default class Employee extends Model<InferAttributes<Employee>, InferCrea
   declare skills?: NonAttribute<Skill[]>;
 
   declare getStores: BelongsToManyGetAssociationsMixin<Recyclery>;
-  declare setStores: BelongsToManySetAssociationsMixin<Recyclery, Recyclery["id"]>;
-  declare addStore: BelongsToManyAddAssociationMixin<Recyclery, Recyclery["id"]>;
-  declare removeStore: BelongsToManyRemoveAssociationMixin<Recyclery, Recyclery["id"]>
+  declare setStores: BelongsToManySetAssociationsMixin<
+    Recyclery,
+    Recyclery["id"]
+  >;
+  declare addStore: BelongsToManyAddAssociationMixin<
+    Recyclery,
+    Recyclery["id"]
+  >;
+  declare removeStore: BelongsToManyRemoveAssociationMixin<
+    Recyclery,
+    Recyclery["id"]
+  >;
   declare getTasks: BelongsToManyGetAssociationsMixin<Task>;
   declare setTasks: BelongsToManySetAssociationsMixin<Task, Task["id"]>;
   declare addTask: BelongsToManyAddAssociationMixin<Task, Task["id"]>;
   declare getTaskSchedules: BelongsToManyGetAssociationsMixin<TaskSchedule>;
-  declare setTaskSchedules: BelongsToManySetAssociationsMixin<TaskSchedule, TaskSchedule["id"]>;
-  declare addTaskSchedule: BelongsToManyAddAssociationMixin<TaskSchedule, TaskSchedule["id"]>;
+  declare setTaskSchedules: BelongsToManySetAssociationsMixin<
+    TaskSchedule,
+    TaskSchedule["id"]
+  >;
+  declare addTaskSchedule: BelongsToManyAddAssociationMixin<
+    TaskSchedule,
+    TaskSchedule["id"]
+  >;
   declare getEmployeeWorkdays: HasManyGetAssociationsMixin<EmployeeWorkdays>;
-  declare addEmployeeWorkday: HasManyAddAssociationMixin<EmployeeWorkdays, EmployeeWorkdays["id"]>;
+  declare addEmployeeWorkday: HasManyAddAssociationMixin<
+    EmployeeWorkdays,
+    EmployeeWorkdays["id"]
+  >;
   declare getSkills: BelongsToManyGetAssociationsMixin<Skill>;
   declare setSkills: BelongsToManySetAssociationsMixin<Skill, Skill["id"]>;
   declare addSkill: BelongsToManyAddAssociationMixin<Skill, Skill["id"]>;
@@ -81,16 +102,19 @@ export default class Employee extends Model<InferAttributes<Employee>, InferCrea
         },
         nom: { type: DataTypes.STRING, allowNull: false },
         prenom: { type: DataTypes.STRING, allowNull: false },
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
+        isActive: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: true,
+          allowNull: false,
+        },
 
-        //@ts-expect-error
+        //@ts-expect-error  sequelize virtual marqued as nonattribute
         fullName: {
           type: DataTypes.VIRTUAL,
           get(this: Employee) {
             return `${this.nom} ${this.prenom}`;
           },
         },
-        //@ts-expect-error
         workTime: {
           type: DataTypes.VIRTUAL,
           get(this: Employee) {
@@ -100,7 +124,9 @@ export default class Employee extends Model<InferAttributes<Employee>, InferCrea
               const start = current.start_time.split(":");
               const end = current.end_time.split(":");
               const time =
-                Number(end[0]) * 60 + Number(end[1]) - (Number(start[0]) * 60 + Number(start[1]));
+                Number(end[0]) * 60 +
+                Number(end[1]) -
+                (Number(start[0]) * 60 + Number(start[1]));
               return prev + time;
             }, 0);
             return minutes / (60 * 2);

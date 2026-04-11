@@ -1,38 +1,45 @@
-import { col, fn, literal, Op, type Attributes, type WhereOptions } from "sequelize";
-import createHttpError from "http-errors";
-import z from "zod";
-import { idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
-import WasteDisposal from "../../models/wasteDisposal.js";
+import createHttpError from "http-errors";
+import {
+  col,
+  fn,
+  literal,
+  type Attributes,
+  type WhereOptions
+} from "sequelize";
+import z from "zod";
+import { formatWhereDateRange } from "../../helpers.js";
 import Category from "../../models/category.js";
 import EcoOrganism from "../../models/ecoorganism.js";
 import User from "../../models/user.js";
-import { formatWhereDateRange } from "../../helpers.js";
+import WasteDisposal from "../../models/wasteDisposal.js";
+import { idSchema } from "../../services/zod.js";
 
-
-const dataSchema = z.object({
-  disposal_date: z.coerce.date("date de sortie requis"),
-  category_id: idSchema("categorie requis"),
-  subcategory_id: idSchema().nullish().prefault(null),
-  eco_organism_id: idSchema().nullish().prefault(null),
-  disposal_type: z.enum(["eco_organism", "landfill", "recycling", "other"], {
-    message: "type de sortie requis",
-  }),
-  weight_kg: z.coerce.number().positive("poid requis"),
-  volume_m3: z.coerce.number().nonnegative().nullish().prefault(null),
-  transport_method: z.string().nullish().prefault(null),
-  transport_company: z.string().nullish().prefault(null),
-  transport_cost: z.coerce.number().nonnegative().nullish().prefault(null),
-  notes: z.string().nullish().prefault(null),
-}).superRefine((obj, ctx) => {
-  if (obj.disposal_type === "eco_organism" && !obj.eco_organism_id)
-    ctx.addIssue({
-      code: "custom",
-      origin: "disposal_type",
-      message: "Éco-organisme requis pour ce type de sortie",
-      input: obj
-    })
-});
+const dataSchema = z
+  .object({
+    disposal_date: z.coerce.date("date de sortie requis"),
+    category_id: idSchema("categorie requis"),
+    subcategory_id: idSchema().nullish().prefault(null),
+    eco_organism_id: idSchema().nullish().prefault(null),
+    disposal_type: z.enum(["eco_organism", "landfill", "recycling", "other"], {
+      message: "type de sortie requis",
+    }),
+    weight_kg: z.coerce.number().positive("poid requis"),
+    volume_m3: z.coerce.number().nonnegative().nullish().prefault(null),
+    transport_method: z.string().nullish().prefault(null),
+    transport_company: z.string().nullish().prefault(null),
+    transport_cost: z.coerce.number().nonnegative().nullish().prefault(null),
+    notes: z.string().nullish().prefault(null),
+  })
+  .superRefine((obj, ctx) => {
+    if (obj.disposal_type === "eco_organism" && !obj.eco_organism_id)
+      ctx.addIssue({
+        code: "custom",
+        origin: "disposal_type",
+        message: "Éco-organisme requis pour ce type de sortie",
+        input: obj,
+      });
+  });
 
 export const listWaste = async (req: Request, res: Response) => {
   const filterSchema = z.object({
@@ -100,10 +107,11 @@ export const detailWaste = async (req: Request, res: Response) => {
   res.json({ disposal: waste });
 };
 
-export const createWaste = async (req: Request & { user: User }, res: Response) => {
-
+export const createWaste = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const data = dataSchema.parse(req.body);
-
 
   const waste = await WasteDisposal.create({
     ...data,
@@ -119,7 +127,6 @@ export const createWaste = async (req: Request & { user: User }, res: Response) 
 };
 
 export const updateWaste = async (req: Request, res: Response) => {
-
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
 
@@ -142,16 +149,15 @@ export const updateWaste = async (req: Request, res: Response) => {
   res.json({ message: "Sortie de déchets mise à jour avec succès" });
 };
 
-
 export const deleteWaste = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id)
-  const toDelete = await WasteDisposal.findByPk(id)
-  if (!toDelete) throw new createHttpError[404]("Sortie de déchets non trouvée");
-  await toDelete.destroy()
+  const id = idSchema().parse(req.params.id);
+  const toDelete = await WasteDisposal.findByPk(id);
+  if (!toDelete)
+    throw new createHttpError[404]("Sortie de déchets non trouvée");
+  await toDelete.destroy();
 
   res.json({ message: "Sortie de déchets supprimée avec succès" });
 };
-
 
 export const wasteStats = async (req: Request, res: Response) => {
   const filterSchema = z.object({
@@ -198,18 +204,16 @@ export const wasteStats = async (req: Request, res: Response) => {
   res.json({ stats });
 };
 
-
 export const wasteStatsCategory = async (req: Request, res: Response) => {
   const data = z.object({
     date_from: z.coerce.date().optional(),
-    date_to: z.coerce.date().optional()
-  })
+    date_to: z.coerce.date().optional(),
+  });
   const { date_from, date_to } = data.parse(req.query);
 
   const where: WhereOptions<Attributes<WasteDisposal>> = {};
   const dateRange = formatWhereDateRange(date_from, date_to);
   if (dateRange) where.disposal_date = dateRange;
-
 
   const stats = await WasteDisposal.findAll({
     attributes: [

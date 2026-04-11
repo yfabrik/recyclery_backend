@@ -22,12 +22,12 @@ import {
   type WhereOptions,
 } from "sequelize";
 import logger from "../services/logger.js";
-import type { Models, ModelStatics } from "./db-types.ts";
+import { generateTasksFromSchedule } from "../services/taskScheduleUtils.js";
 import type CollectionPoint from "./collectionpoint.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type Employee from "./employee.ts";
 import type Recyclery from "./recyclery.ts";
 import type Task from "./task.ts";
-import { generateTasksFromSchedule } from "../services/taskScheduleUtils.js";
 
 export default class TaskSchedule extends Model<
   InferAttributes<TaskSchedule>,

@@ -1,5 +1,13 @@
 import createHttpError from "http-errors";
-import { col, fn, literal, Op, where, type Attributes, type WhereOptions } from "sequelize";
+import {
+  col,
+  fn,
+  literal,
+  Op,
+  where,
+  type Attributes,
+  type WhereOptions,
+} from "sequelize";
 import * as z from "zod";
 import { listCaisses } from "../../services/caisse.js";
 import { idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
@@ -14,7 +22,6 @@ import LabeledItem from "../../models/labeleditem.js";
 import SalesTransaction from "../../models/salestransaction.js";
 import CashSession from "../../models/cashsession.js";
 
-
 const dataSchema = z.object({
   name: z.string("Le nom de la recyclerie est requis"),
   address: z.string().nullish().prefault(null),
@@ -26,9 +33,8 @@ const dataSchema = z.object({
   is_active: z.coerce.boolean().default(true),
 });
 
-
 export const listRecycleries = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["employees", "horaires","caisses"];
+  const ALLOWED_INCLUDES = ["employees", "horaires", "caisses"];
   const filterSchema = z.object({
     include: z
       .string()
@@ -89,7 +95,7 @@ export const listRecycleries = async (req: Request, res: Response) => {
 };
 
 export const detailRecyclerie = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id)
+  const id = idSchema().parse(req.params.id);
   const recyclerie = await Recyclery.findByPk(id, {
     include: [
       { model: CashRegister, as: "caisses" },
@@ -99,7 +105,6 @@ export const detailRecyclerie = async (req: Request, res: Response) => {
 
   res.json({ success: true, store: recyclerie });
 };
-
 
 export const createRecyclerie = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
@@ -114,14 +119,15 @@ export const createRecyclerie = async (req: Request, res: Response) => {
   });
 };
 
-
 export const updateRecyclerie = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id)
+  const id = idSchema().parse(req.params.id);
 
   const data = dataSchema.parse(req.body);
 
   const recyclerie = await Recyclery.findByPk(id, {
-    include: [{ model: TaskSchedule, where: { category: "vente" }, required: false }],
+    include: [
+      { model: TaskSchedule, where: { category: "vente" }, required: false },
+    ],
   });
   if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
 
@@ -153,9 +159,8 @@ export const updateRecyclerie = async (req: Request, res: Response) => {
   });
 };
 
-
 export const deleteRecyclerie = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id)
+  const id = idSchema().parse(req.params.id);
 
   const recyclerie = await Recyclery.findByPk(id);
   if (!recyclerie) throw new createHttpError.NotFound("Recyclerie non trouvée");
@@ -168,16 +173,15 @@ export const deleteRecyclerie = async (req: Request, res: Response) => {
  * @param {import("express").Response} res
  */
 export const listCaissesRecyclerie = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id)
+  const id = idSchema().parse(req.params.id);
 
   const caisses = listCaisses(id);
 
   res.json({ success: true, cash_registers: caisses });
 };
 
-
 export const recycleryStats = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id)
+  const id = idSchema().parse(req.params.id);
 
   const items = await LabeledItem.findOne({
     attributes: [
@@ -223,14 +227,12 @@ export const recycleryStats = async (req: Request, res: Response) => {
   });
 
   const salesRow =
-    /** @type {{ monthly_sales?: number | string; monthly_revenue?: number | string } | null } */ (
-      salesResult
-    );
+    /** @type {{ monthly_sales?: number | string; monthly_revenue?: number | string } | null } */ salesResult;
   const sales = salesRow
     ? {
-      monthly_sales: Number(salesRow.monthly_sales ?? 0),
-      monthly_revenue: Number(salesRow.monthly_revenue ?? 0),
-    }
+        monthly_sales: Number(salesRow.monthly_sales ?? 0),
+        monthly_revenue: Number(salesRow.monthly_revenue ?? 0),
+      }
     : { monthly_sales: 0, monthly_revenue: 0 };
 
   res.json({

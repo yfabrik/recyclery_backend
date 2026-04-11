@@ -1,20 +1,22 @@
+import type { Request, Response } from "express";
 import createHttpError from "http-errors";
 import * as z from "zod";
+import CollectionPoint from "../../models/collectionpoint.js";
+import TaskSchedule from "../../models/taskschedule.js";
 import { idSchema } from "../../services/zod.js";
 import { detailTask } from "./tasks.js";
 import { deleteSchedule, listSchedules } from "./taskSchedule.js";
-import type { Request, Response } from "express";
-import CollectionPoint from "../../models/collectionpoint.js";
-import TaskSchedule from "../../models/taskschedule.js";
 
-
-const getDateFromDay = (day: "Lundi" |
-  "Mardi" |
-  "Mercredi" |
-  "Jeudi" |
-  "Vendredi" |
-  "Samedi" |
-  "Dimanche") => {
+const getDateFromDay = (
+  day:
+    | "Lundi"
+    | "Mardi"
+    | "Mercredi"
+    | "Jeudi"
+    | "Vendredi"
+    | "Samedi"
+    | "Dimanche",
+) => {
   const today = new Date();
   let d;
   let i = 0;
@@ -118,7 +120,8 @@ export const updatePointPrecense = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const existing = await TaskSchedule.findByPk(id);
 
-  if (!existing) throw new createHttpError.NotFound("Jours de présence non trouvés")
+  if (!existing)
+    throw new createHttpError.NotFound("Jours de présence non trouvés");
 
   const { day_of_week, ...rest } = data;
   await existing.update({

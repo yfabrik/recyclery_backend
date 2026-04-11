@@ -12,14 +12,17 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
 import type Arrival from "./arrival.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type Donation from "./donation.ts";
 import type LabeledItem from "./labeleditem.ts";
 import type Recyclery from "./recyclery.ts";
 import type SalesTransaction from "./salestransaction.ts";
 
-export default class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
+export default class User extends Model<
+  InferAttributes<User>,
+  InferCreationAttributes<User>
+> {
   declare id: CreationOptional<number>;
   declare username: string;
   declare email: string;
@@ -41,22 +44,40 @@ export default class User extends Model<InferAttributes<User>, InferCreationAttr
   declare getDonations: HasManyGetAssociationsMixin<Donation>;
   declare addDonation: HasManyAddAssociationMixin<Donation, Donation["id"]>;
   declare getSalesTransactions: HasManyGetAssociationsMixin<SalesTransaction>;
-  declare addSalesTransaction: HasManyAddAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
+  declare addSalesTransaction: HasManyAddAssociationMixin<
+    SalesTransaction,
+    SalesTransaction["id"]
+  >;
   declare getLabeledItems: HasManyGetAssociationsMixin<LabeledItem>;
-  declare addLabeledItem: HasManyAddAssociationMixin<LabeledItem, LabeledItem["id"]>;
+  declare addLabeledItem: HasManyAddAssociationMixin<
+    LabeledItem,
+    LabeledItem["id"]
+  >;
   declare getArrivals: HasManyGetAssociationsMixin<Arrival>;
   declare addArrival: HasManyAddAssociationMixin<Arrival, Arrival["id"]>;
   declare getManagedStores: HasManyGetAssociationsMixin<Recyclery>;
-  declare addManagedStore: HasManyAddAssociationMixin<Recyclery, Recyclery["id"]>;
-  declare addManagedStores: HasManyAddAssociationsMixin<Recyclery, Recyclery["id"]>
-  declare setManagedStores: HasManySetAssociationsMixin<Recyclery, Recyclery["id"]>
+  declare addManagedStore: HasManyAddAssociationMixin<
+    Recyclery,
+    Recyclery["id"]
+  >;
+  declare addManagedStores: HasManyAddAssociationsMixin<
+    Recyclery,
+    Recyclery["id"]
+  >;
+  declare setManagedStores: HasManySetAssociationsMixin<
+    Recyclery,
+    Recyclery["id"]
+  >;
 
   static associate(models: ModelStatics) {
     this.hasMany(models.Donation, { foreignKey: "received_by" });
     this.hasMany(models.SalesTransaction, { foreignKey: "created_by" });
     this.hasMany(models.LabeledItem, { foreignKey: "created_by" });
     this.hasMany(models.Arrival, { foreignKey: "processed_by" });
-    this.hasMany(models.Recyclery, { foreignKey: "manager_id", as: "managedStores" });
+    this.hasMany(models.Recyclery, {
+      foreignKey: "manager_id",
+      as: "managedStores",
+    });
   }
 
   static initModel(sequelize: Sequelize) {
@@ -68,7 +89,12 @@ export default class User extends Model<InferAttributes<User>, InferCreationAttr
           autoIncrement: true,
         },
         username: { type: DataTypes.STRING, unique: true, allowNull: false },
-        email: { type: DataTypes.STRING, unique: true, allowNull: false, validate: { isEmail: true } },
+        email: {
+          type: DataTypes.STRING,
+          unique: true,
+          allowNull: false,
+          validate: { isEmail: true },
+        },
         password_hash: {
           type: DataTypes.STRING,
           allowNull: true,
@@ -87,12 +113,22 @@ export default class User extends Model<InferAttributes<User>, InferCreationAttr
             return undefined;
           },
         },
-        role: { type: DataTypes.STRING, defaultValue: "employee", allowNull: false },
+        role: {
+          type: DataTypes.STRING,
+          defaultValue: "employee",
+          allowNull: false,
+        },
         phone: {
           type: DataTypes.STRING,
-          validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ },
+          validate: {
+            is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/,
+          },
         },
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
+        isActive: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: true,
+          allowNull: false,
+        },
         last_login: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
@@ -112,13 +148,23 @@ export default class User extends Model<InferAttributes<User>, InferCreationAttr
           beforeCreate: async (user) => {
             if (user.password_hash && !user.password_hash.startsWith("$2")) {
               const saltRounds = 10;
-              user.password_hash = await bcrypt.hash(user.password_hash, saltRounds);
+              user.password_hash = await bcrypt.hash(
+                user.password_hash,
+                saltRounds,
+              );
             }
           },
           beforeUpdate: async (user) => {
-            if (user.changed("password_hash") && user.password_hash && !user.password_hash.startsWith("$2")) {
+            if (
+              user.changed("password_hash") &&
+              user.password_hash &&
+              !user.password_hash.startsWith("$2")
+            ) {
               const saltRounds = 10;
-              user.password_hash = await bcrypt.hash(user.password_hash, saltRounds);
+              user.password_hash = await bcrypt.hash(
+                user.password_hash,
+                saltRounds,
+              );
             }
           },
         },

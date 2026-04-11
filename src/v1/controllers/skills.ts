@@ -7,7 +7,6 @@ export const listSkills = async (req: Request, res: Response) => {
   return res.json({ success: true, skills });
 };
 
-
 export const detailSkill = async (req: Request, res: Response) => {
   return res.json({});
 };
@@ -22,7 +21,6 @@ export const createSkill = async (req: Request, res: Response) => {
   const skill = await Skill.create({ ...data });
   return res.json({ success: true, skill });
 };
-
 
 export const updateSkill = async (req: Request, res: Response) => {
   return res.json({});

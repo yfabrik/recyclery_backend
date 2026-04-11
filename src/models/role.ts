@@ -6,9 +6,12 @@ import {
   type InferCreationAttributes,
   type Sequelize,
 } from "sequelize";
-import type { Models } from "./db-types.ts";
+import type { ModelStatics } from "./db-types.ts";
 
-export default class Role extends Model<InferAttributes<Role>, InferCreationAttributes<Role>> {
+export default class Role extends Model<
+  InferAttributes<Role>,
+  InferCreationAttributes<Role>
+> {
   declare id: CreationOptional<number>;
   declare level: string | null;
   declare display_name: string | null;
@@ -16,7 +19,7 @@ export default class Role extends Model<InferAttributes<Role>, InferCreationAttr
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  static associate(_models: Models) {}
+  static associate(_models: ModelStatics) {}
 
   static initModel(sequelize: Sequelize) {
     return this.init(

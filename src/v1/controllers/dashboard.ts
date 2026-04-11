@@ -11,9 +11,8 @@ import Recyclery from "../../models/recyclery.js";
 import CashRegister from "../../models/cashregister.js";
 import CashSession from "../../models/cashsession.js";
 
-
 // Fonctions utilitaires
-function formatTimeAgo(dateString: string|Date) {
+function formatTimeAgo(dateString: string | Date) {
   const date = new Date(dateString);
   const now = new Date();
   const diffInMinutes = Math.floor((now - date) / (1000 * 60));
@@ -27,7 +26,7 @@ function formatTimeAgo(dateString: string|Date) {
   }
 }
 
-function formatDate(dateString: string|Date) {
+function formatDate(dateString: string | Date) {
   const date = new Date(dateString);
   return date.toLocaleDateString("fr-FR", {
     day: "2-digit",
@@ -38,20 +37,19 @@ function formatDate(dateString: string|Date) {
 }
 
 type stats = {
-  totalItems: number,
-  availableItems: number,
-  soldThisMonth: number,
-  totalRevenue: number,
-  pendingDonations: number,
-  scheduledCollections: number,
-  categoriesCount: number,
-  usersCount: number,
-  lastMonthRevenue: number,
-  lastMonthSales: number,
-  thisMonthRevenue: number,
-  thisMonthSales: number,
-}
-
+  totalItems: number;
+  availableItems: number;
+  soldThisMonth: number;
+  totalRevenue: number;
+  pendingDonations: number;
+  scheduledCollections: number;
+  categoriesCount: number;
+  usersCount: number;
+  lastMonthRevenue: number;
+  lastMonthSales: number;
+  thisMonthRevenue: number;
+  thisMonthSales: number;
+};
 
 export const dashboardStats = async (req: Request, res: Response) => {
   // Statistiques principales
@@ -86,7 +84,10 @@ export const dashboardStats = async (req: Request, res: Response) => {
   // 6. Collections programmées ce mois
   // console.log(CollectionSchedule.findAll({ where: { scheduled_date: { [Op.gt]: currentMonth } } }))
   stats.scheduledCollections = await Task.count({
-    where: { category: "collection", scheduled_date: { [Op.gt]: currentMonth } },
+    where: {
+      category: "collection",
+      scheduled_date: { [Op.gt]: currentMonth },
+    },
   });
 
   // 7. Nombre de catégories actives
@@ -128,16 +129,16 @@ export const dashboardStats = async (req: Request, res: Response) => {
 };
 
 type activity = {
-  id: string,
-  type: string,
-  description: string,
-  amount: string,
-  time: string,
-  icon: string,
-  color: string,
-  status: string,
-  statusColor: string,
-}
+  id: string;
+  type: string;
+  description: string;
+  amount: string;
+  time: string;
+  icon: string;
+  color: string;
+  status: string;
+  statusColor: string;
+};
 export const dashboardActivities = async (req: Request, res: Response) => {
   const activities = [] as activity[];
 
@@ -217,7 +218,6 @@ export const dashboardActivities = async (req: Request, res: Response) => {
   });
 };
 
-
 export const dashboardCharts = async (req: Request, res: Response) => {
   // Ventes des 7 derniers jours
   const salesData = [];
@@ -257,7 +257,6 @@ export const dashboardCharts = async (req: Request, res: Response) => {
     },
   });
 };
-
 
 export const dashboardStoreStats = async (req: Request, res: Response) => {
   // Récupérer tous les magasins actifs

@@ -1,5 +1,13 @@
 import createHttpError from "http-errors";
-import { col, fn, literal, Op, type Attributes, type Includeable, type WhereOptions } from "sequelize";
+import {
+  col,
+  fn,
+  literal,
+  Op,
+  type Attributes,
+  type Includeable,
+  type WhereOptions,
+} from "sequelize";
 import z from "zod";
 
 import { idSchema, postalSchema } from "../../services/zod.js";
@@ -22,7 +30,6 @@ import { formatWhereDateRange } from "../../helpers.js";
 import TransactionItem from "../../models/transactionitem.js";
 import Category from "../../models/category.js";
 import GiftCard from "../../models/giftcard.js";
-
 
 export const getCartLinePrice = (line: CartItem) => {
   let bundles = 0;
@@ -64,8 +71,8 @@ const dataSchema = z.object({
   customer_postal_code: postalSchema().nullish(),
   items: z.array(itemSchema),
 });
-type Data = z.infer<typeof dataSchema>
-type CartItem = z.infer<typeof itemSchema>
+type Data = z.infer<typeof dataSchema>;
+type CartItem = z.infer<typeof itemSchema>;
 
 /**
  * @param {number|string|null|undefined} value
@@ -77,15 +84,15 @@ const toAmount = (value) => Number.parseFloat(String(value ?? 0));
  */
 const amountsEqual = (a, b) => Math.abs(toAmount(a) - toAmount(b)) < 0.001;
 
-
 const normalizePayments = (data: Data) => {
   const explicitPayments = Array.isArray(data.payments) ? data.payments : [];
-  const payments =
-    explicitPayments.length > 0
-      ? explicitPayments : []
+  const payments = explicitPayments.length > 0 ? explicitPayments : [];
   // : [{ method: data.payment_method??0, amount: data.payment_amount }];
 
-  const totalPayments = payments.reduce((acc, p) => acc + toAmount(p.amount), 0);
+  const totalPayments = payments.reduce(
+    (acc, p) => acc + toAmount(p.amount),
+    0,
+  );
   if (data.total_amount > totalPayments) {
     // if (!amountsEqual(totalPayments, data.total_amount)) {//TODO FIXME for cash with extra money
     throw new createHttpError.BadRequest(
@@ -103,7 +110,6 @@ const normalizePayments = (data: Data) => {
 
   return payments;
 };
-
 
 export const listTransactions = async (req: Request, res: Response) => {
   const ALLOWED_INCLUDES = ["refund", "items", "payments"];
@@ -149,10 +155,10 @@ export const listTransactions = async (req: Request, res: Response) => {
   const whereStore: WhereOptions<Attributes<CashRegister>> = {};
   if (filter.store_id) whereStore.recyclery_id = filter.store_id;
 
-  const pagination = {} as { limit: number, offset: number }
+  const pagination = {} as { limit: number; offset: number };
   if (filter.page) {
-    pagination.limit = filter.limit || 50
-    pagination.offset = filter.offset || (filter.page - 1) * pagination.limit
+    pagination.limit = filter.limit || 50;
+    pagination.offset = filter.offset || (filter.page - 1) * pagination.limit;
   }
   const include: Includeable[] = [
     {
@@ -205,7 +211,7 @@ export const listTransactions = async (req: Request, res: Response) => {
     where,
     include,
     order: [["createdAt", "DESC"]],
-    ...pagination
+    ...pagination,
   });
 
   res.json({
@@ -219,30 +225,38 @@ export const listTransactions = async (req: Request, res: Response) => {
   });
 };
 
-
 export const getTransaction = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const transaction = await SalesTransaction.findByPk(id, {
     include: [
-      { model: LabeledItem, as: "items", include: [{ model: Category, as: "category" }, { model: Category, as: "subcategory" }] },
+      {
+        model: LabeledItem,
+        as: "items",
+        include: [
+          { model: Category, as: "category" },
+          { model: Category, as: "subcategory" },
+        ],
+      },
       { model: TransactionPayment, as: "payments" },
       {
-        model: CashSession, include: [
+        model: CashSession,
+        include: [
           {
             model: CashRegister,
-            include: [{ model: Recyclery }]
+            include: [{ model: Recyclery }],
           },
           {
             model: User,
           },
-        ]
+        ],
       },
       {
         model: User,
       },
       { model: GiftCard, as: "giftCards" },
       {
-        model: SalesTransaction, as: "refunds",
+        model: SalesTransaction,
+        as: "refunds",
         include: [
           { model: LabeledItem, as: "items" },
           { model: TransactionPayment, as: "payments" },
@@ -253,7 +267,10 @@ export const getTransaction = async (req: Request, res: Response) => {
   res.json({ success: true, transaction });
 };
 
-export const createTransaction = async (req: Request & { user: User }, res: Response) => {
+export const createTransaction = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const data = dataSchema.parse(req.body);
   const payments = normalizePayments(data);
   const session = await CashSession.findByPk(data.cash_session_id);
@@ -262,15 +279,18 @@ export const createTransaction = async (req: Request & { user: User }, res: Resp
   const result = await db.sequelize.transaction(async (t) => {
     // const uniqueMethods = [...new Set(payments.map((p) => p.method))];
     // const storedMethod = uniqueMethods.length === 1 ? uniqueMethods[0] : "mixed";
-    const storedMethod = payments && payments.length === 1 ? payments[0]?.method ?? "mixed" : "mixed"
+    const storedMethod =
+      payments && payments.length === 1
+        ? (payments[0]?.method ?? "mixed")
+        : "mixed";
 
     const sale = await session.createSalesTransaction(
       {
-        total_amount: data.total_amount,//TODO recalculer coté server mais j'ai la flemme
+        total_amount: data.total_amount, //TODO recalculer coté server mais j'ai la flemme
         payment_method: storedMethod,
-        payment_amount: data.payment_amount,//TODO payments.reduce(...)
+        payment_amount: data.payment_amount, //TODO payments.reduce(...)
         customer_postal_code: data?.customer_postal_code || null,
-        transactionType: "sell"
+        transactionType: "sell",
       },
       { transaction: t },
     );
@@ -323,7 +343,9 @@ export const createTransaction = async (req: Request & { user: User }, res: Resp
       }
     }
 
-    for await (const payment of payments.filter((p) => p.method === "giftcard")) {
+    for await (const payment of payments.filter(
+      (p) => p.method === "giftcard",
+    )) {
       const giftCardCode = payment.gift_card_code;
       if (!giftCardCode) {
         throw new createHttpError.BadRequest(
@@ -356,7 +378,9 @@ export const createTransaction = async (req: Request & { user: User }, res: Resp
       );
     }
 
-    for await (const payment of payments.filter((p) => p.method !== "giftcard")) {
+    for await (const payment of payments.filter(
+      (p) => p.method !== "giftcard",
+    )) {
       await TransactionPayment.create(
         {
           sales_transaction_id: sale.id,
@@ -395,7 +419,10 @@ export const createTransaction = async (req: Request & { user: User }, res: Resp
   });
 };
 
-export const createRefund = async (req: Request & { user: User }, res: Response) => {
+export const createRefund = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const id = idSchema().parse(req.params.id);
   const refundItemSchema = z.object({
     name: z.string(),
@@ -414,8 +441,12 @@ export const createRefund = async (req: Request & { user: User }, res: Response)
   const refundDataSchema = z.object({
     cash_session_id: idSchema(),
     total_amount: z.coerce.number("argent requis"),
-    payment_method: z.enum(["cash", "card", "check", "giftcard"]).default("cash"),
-    refund_method: z.enum(["cash", "card", "check", "giftcard"]).default("cash"),
+    payment_method: z
+      .enum(["cash", "card", "check", "giftcard"])
+      .default("cash"),
+    refund_method: z
+      .enum(["cash", "card", "check", "giftcard"])
+      .default("cash"),
     gift_card_code: z.string().trim().min(1).nullish(),
     refund_reason: z.string("refund raison requis"),
     items: z.array(refundItemSchema),
@@ -438,7 +469,7 @@ export const createRefund = async (req: Request & { user: User }, res: Response)
   //FIXME on se fait baiser quand les object sont en lot et qu'on rembourse qu'une partie
 
   const data = refundDataSchema.parse(req.body);
-  data.refund_method = data.payment_method
+  data.refund_method = data.payment_method;
 
   const refunded = data.items
     .map((item) => {
@@ -526,7 +557,6 @@ export const createRefund = async (req: Request & { user: User }, res: Response)
       const giftCardCode = data.gift_card_code;
       const refundAmount = Number(refund.total_amount || 0);
       if (giftCardCode) {
-
         const giftCard = await findGiftCardByCode(giftCardCode, {
           transaction: t,
         });
@@ -567,16 +597,14 @@ export const createRefund = async (req: Request & { user: User }, res: Response)
       } else {
         // Refund -> Gift card (create a new card when no code is provided)
         const generatedCode = `GC-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-        const giftCard = await issueGiftCard(
-          {
-            code: generatedCode,
-            initialValue: refundAmount,
-            issuedRefundTransactionId: refund.id,
-            createdBy: req.user.id,
-            metadata: { source: "refund_issue", parentTransactionId: id },
-            transaction: t,
-          },
-        );
+        const giftCard = await issueGiftCard({
+          code: generatedCode,
+          initialValue: refundAmount,
+          issuedRefundTransactionId: refund.id,
+          createdBy: req.user.id,
+          metadata: { source: "refund_issue", parentTransactionId: id },
+          transaction: t,
+        });
 
         await TransactionPayment.create(
           {
@@ -615,7 +643,6 @@ export const createRefund = async (req: Request & { user: User }, res: Response)
     return { refund, giftCard: refundGiftCard };
   });
 
-
   // Example response:
   // {
   //   "success": true,
@@ -630,7 +657,6 @@ export const createRefund = async (req: Request & { user: User }, res: Response)
     // refund,
   });
 };
-
 
 //FIXME y'a le meme truc dans refunds
 export const listRefunds = async (req: Request, res: Response) => {
@@ -664,7 +690,6 @@ export const listRefunds = async (req: Request, res: Response) => {
     ref: refunds,
   });
 };
-
 
 export const transactionsStats = async (req: Request, res: Response) => {
   const filterSchema = z.object({
@@ -848,22 +873,22 @@ export const transactionsStats = async (req: Request, res: Response) => {
       total_refunded: 0,
       payment_methods: methods ?? [],
       by_day:
-        /** @type {Array<{ date?: string; transaction_count?: number; total_amount?: string | number }>} */ (
-          byDay
-        ).map((row) => ({
-          date: row.date,
-          transaction_count: Number(row.transaction_count ?? 0),
-          total_amount: parseFloat(String(row.total_amount ?? 0)),
-        })),
+        /** @type {Array<{ date?: string; transaction_count?: number; total_amount?: string | number }>} */ byDay.map(
+          (row) => ({
+            date: row.date,
+            transaction_count: Number(row.transaction_count ?? 0),
+            total_amount: parseFloat(String(row.total_amount ?? 0)),
+          }),
+        ),
       by_category:
-        /** @type {Array<{ category_id?: number; category_name?: string | null; total_quantity?: number; total_price_sum?: string | number }>} */ (
-          byCategory
-        ).map((row) => ({
-          category_id: row.category_id,
-          category_name: row.category_name ?? null,
-          total_quantity: Number(row.total_quantity ?? 0),
-          total_price_sum: parseFloat(String(row.total_price_sum ?? 0)),
-        })),
+        /** @type {Array<{ category_id?: number; category_name?: string | null; total_quantity?: number; total_price_sum?: string | number }>} */ byCategory.map(
+          (row) => ({
+            category_id: row.category_id,
+            category_name: row.category_name ?? null,
+            total_quantity: Number(row.total_quantity ?? 0),
+            total_price_sum: parseFloat(String(row.total_price_sum ?? 0)),
+          }),
+        ),
       // total_sales_before_refunds: parseFloat(
       //   stats[0].total_sales_before_refunds || 0,
       // ),
@@ -880,8 +905,10 @@ export const transactionsStats = async (req: Request, res: Response) => {
   });
 };
 
-
-export const transactionStatsPostalCode = async (req: Request, res: Response) => {
+export const transactionStatsPostalCode = async (
+  req: Request,
+  res: Response,
+) => {
   const filterSchema = z.object({
     store_id: z.union([idSchema(), z.literal("")]).nullish(),
     date_from: z.coerce.date().optional(),

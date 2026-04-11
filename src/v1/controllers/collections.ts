@@ -5,21 +5,20 @@ import type { Request, Response } from "express";
 import Employee from "../../models/employee.js";
 import type { Attributes, WhereOptions } from "sequelize";
 
-
 /**
  * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
 //FIXME doublon avec collection schedule
-export const listCollections =  async (req: Request, res: Response) => {
+export const listCollections = async (req: Request, res: Response) => {
   logger.info("called collection controller FIXME");
   const { recyclery_id, status } = req.query;
 
   /**
    * @type {import("sequelize").WhereOptions<import("../../models/types/taskModel.js").TaskAttributes>}
    */
-  const where:WhereOptions<Attributes<Task>> = { category: "collection" };
+  const where: WhereOptions<Attributes<Task>> = { category: "collection" };
   if (recyclery_id) where.store_id = recyclery_id as string;
   if (status) where.status = status as string;
   const include = [{ model: Employee }];

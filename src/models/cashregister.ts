@@ -5,17 +5,17 @@ import {
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
+  type ForeignKey,
   type HasManyAddAssociationMixin,
-  type HasManyGetAssociationsMixin,
   type HasManyCountAssociationsMixin,
+  type HasManyGetAssociationsMixin,
+  type InferAttributes,
   type InferCreationAttributes,
   type NonAttribute,
   type Sequelize,
-  type InferAttributes,
-  type ForeignKey,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
 import type CashSession from "./cashsession.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type Recyclery from "./recyclery.ts";
 
 export default class CashRegister extends Model<
@@ -28,15 +28,21 @@ export default class CashRegister extends Model<
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  declare recyclery_id: ForeignKey<Recyclery["id"]>
+  declare recyclery_id: ForeignKey<Recyclery["id"]>;
 
   declare Recyclery?: NonAttribute<Recyclery>;
   declare sessions?: NonAttribute<CashSession[]>;
 
   declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
-  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, Recyclery['id']>;
+  declare setRecyclery: BelongsToSetAssociationMixin<
+    Recyclery,
+    Recyclery["id"]
+  >;
   declare getSessions: HasManyGetAssociationsMixin<CashSession>;
-  declare addSession: HasManyAddAssociationMixin<CashSession, CashSession["id"]>;
+  declare addSession: HasManyAddAssociationMixin<
+    CashSession,
+    CashSession["id"]
+  >;
   declare countSessions: HasManyCountAssociationsMixin;
 
   static associate(models: ModelStatics) {
@@ -57,7 +63,11 @@ export default class CashRegister extends Model<
           autoIncrement: true,
         },
         name: { type: DataTypes.STRING, allowNull: false },
-        is_active: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
+        is_active: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: true,
+          allowNull: false,
+        },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },
@@ -74,7 +84,9 @@ export default class CashRegister extends Model<
               where: { status: "open" },
             });
             if (sessions) {
-              throw new createHttpError[424]("Impossible de supprimer une caisse avec des sessions ouvertes");
+              throw new createHttpError[424](
+                "Impossible de supprimer une caisse avec des sessions ouvertes",
+              );
             }
           },
         },

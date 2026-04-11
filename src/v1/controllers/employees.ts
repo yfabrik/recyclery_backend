@@ -7,7 +7,6 @@ import EmployeeWorkdays from "../../models/employeeworkdays.js";
 import type { Request, Response } from "express";
 import Skill from "../../models/skill.js";
 
-
 const dataSchema = z.object({
   nom: z.string("nom requis").trim().nonempty("nom requis"),
   prenom: z.string("prenom requis").trim().nonempty("prenom requis"),
@@ -15,7 +14,6 @@ const dataSchema = z.object({
   email: z.email().nullish().prefault(null),
   phone: phoneSchema().nullish().prefault(null),
 });
-
 
 export const listEmployees = async (req: Request, res: Response) => {
   const data = await Employee.findAll({
@@ -64,7 +62,6 @@ export const detailEmployee = async (req: Request, res: Response) => {
   });
 };
 
-
 export const createEmployee = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
   const employee = await Employee.create({
@@ -76,7 +73,6 @@ export const createEmployee = async (req: Request, res: Response) => {
     data: employee,
   });
 };
-
 
 export const updateEmployee = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
@@ -94,7 +90,6 @@ export const updateEmployee = async (req: Request, res: Response) => {
   });
 };
 
-
 export const deleteEmployee = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const employee = await Employee.findByPk(id);
@@ -105,7 +100,6 @@ export const deleteEmployee = async (req: Request, res: Response) => {
     message: "employee supprimé",
   });
 };
-
 
 export const updateEmployeeSkills = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);

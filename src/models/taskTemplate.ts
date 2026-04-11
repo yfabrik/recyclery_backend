@@ -8,7 +8,10 @@ import {
 } from "sequelize";
 import type { Models } from "./db-types.ts";
 
-export default class TaskTemplate extends Model<InferAttributes<TaskTemplate>, InferCreationAttributes<TaskTemplate>> {
+export default class TaskTemplate extends Model<
+  InferAttributes<TaskTemplate>,
+  InferCreationAttributes<TaskTemplate>
+> {
   declare id: CreationOptional<number>;
   declare name: string | null;
   declare description: string | null;

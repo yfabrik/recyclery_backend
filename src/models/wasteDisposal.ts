@@ -10,8 +10,8 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
 import type Category from "./category.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type EcoOrganism from "./ecoorganism.ts";
 import type User from "./user.ts";
 
@@ -31,11 +31,10 @@ export default class WasteDisposal extends Model<
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  declare category_id: ForeignKey<Category["id"]>
-  declare subcategory_id: ForeignKey<Category["id"] | null>
-  declare eco_organism_id: ForeignKey<EcoOrganism["id"] | null>
-  declare created_by: ForeignKey<User["id"]>
-
+  declare category_id: ForeignKey<Category["id"]>;
+  declare subcategory_id: ForeignKey<Category["id"] | null>;
+  declare eco_organism_id: ForeignKey<EcoOrganism["id"] | null>;
+  declare created_by: ForeignKey<User["id"]>;
 
   declare category?: NonAttribute<Category>;
   declare subcategory?: NonAttribute<Category | null>;
@@ -45,16 +44,31 @@ export default class WasteDisposal extends Model<
   declare getCategory: BelongsToGetAssociationMixin<Category>;
   declare setCategory: BelongsToSetAssociationMixin<Category, Category["id"]>;
   declare getSubcategory: BelongsToGetAssociationMixin<Category>;
-  declare setSubcategory: BelongsToSetAssociationMixin<Category, Category["id"]>;
+  declare setSubcategory: BelongsToSetAssociationMixin<
+    Category,
+    Category["id"]
+  >;
   declare getEco_organism: BelongsToGetAssociationMixin<EcoOrganism>;
-  declare setEco_organism: BelongsToSetAssociationMixin<EcoOrganism, EcoOrganism["id"]>;
+  declare setEco_organism: BelongsToSetAssociationMixin<
+    EcoOrganism,
+    EcoOrganism["id"]
+  >;
   declare getUser: BelongsToGetAssociationMixin<User>;
   declare setUser: BelongsToSetAssociationMixin<User, User["id"]>;
 
   static associate(models: ModelStatics) {
-    this.belongsTo(models.Category, { as: "category", foreignKey: "category_id" });
-    this.belongsTo(models.Category, { as: "subcategory", foreignKey: "subcategory_id" });
-    this.belongsTo(models.EcoOrganism, { as: "eco_organism", foreignKey: "eco_organism_id" });
+    this.belongsTo(models.Category, {
+      as: "category",
+      foreignKey: "category_id",
+    });
+    this.belongsTo(models.Category, {
+      as: "subcategory",
+      foreignKey: "subcategory_id",
+    });
+    this.belongsTo(models.EcoOrganism, {
+      as: "eco_organism",
+      foreignKey: "eco_organism_id",
+    });
     this.belongsTo(models.User, { foreignKey: "created_by" });
   }
 
@@ -66,9 +80,18 @@ export default class WasteDisposal extends Model<
           primaryKey: true,
           autoIncrement: true,
         },
-        disposal_date: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+        disposal_date: {
+          type: DataTypes.DATE,
+          allowNull: false,
+          defaultValue: DataTypes.NOW,
+        },
         disposal_type: {
-          type: DataTypes.ENUM("eco_organism", "landfill", "recycling", "other"),
+          type: DataTypes.ENUM(
+            "eco_organism",
+            "landfill",
+            "recycling",
+            "other",
+          ),
           allowNull: false,
         },
         weight_kg: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
@@ -83,7 +106,11 @@ export default class WasteDisposal extends Model<
       {
         sequelize,
         modelName: "WasteDisposal",
-        indexes: [{ fields: ["disposal_date"] }, { fields: ["category_id"] }, { fields: ["eco_organism_id"] }],
+        indexes: [
+          { fields: ["disposal_date"] },
+          { fields: ["category_id"] },
+          { fields: ["eco_organism_id"] },
+        ],
       },
     );
   }

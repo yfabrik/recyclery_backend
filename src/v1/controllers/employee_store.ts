@@ -7,7 +7,7 @@ import type { Request, Response } from "express";
 import type { Includeable } from "sequelize";
 import db from "../../models/index.js";
 
-const {sequelize}=db
+const { sequelize } = db;
 
 export const listEmployeeStore = async (req: Request, res: Response) => {
   const assignments = await Employee.findAll({
@@ -28,12 +28,11 @@ export const listEmployeeStore = async (req: Request, res: Response) => {
   });
 };
 
-
 export const getEmployeeStoreById = async (req: Request, res: Response) => {
   const params = z.object({
     id: idSchema("recyclerie id requis"),
     employeeId: idSchema("employee id requis"),
-  })
+  });
   const { id, employeeId } = params.parse(req.params);
 
   const employee = await Employee.findByPk(employeeId, {
@@ -63,9 +62,8 @@ export const getEmployeeStoreById = async (req: Request, res: Response) => {
   });
 };
 
-
 export const listStoreEmployee = async (req: Request, res: Response) => {
-  const storeId = idSchema().parse(req.query.storeId)
+  const storeId = idSchema().parse(req.query.storeId);
 
   const include: Includeable[] = [
     {
@@ -149,7 +147,6 @@ export const assignUserToStore = async (req: Request, res: Response) => {
     employee,
   });
 };
-
 
 export const removeEmployeeStore = async (req: Request, res: Response) => {
   const dataSchema = z.object({

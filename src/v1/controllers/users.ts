@@ -1,7 +1,14 @@
 import createHttpError from "http-errors";
 
 import { findUserByEmail } from "../../services/users.js";
-import { col, fn, Op, type Attributes, type Includeable, type WhereOptions } from "sequelize";
+import {
+  col,
+  fn,
+  Op,
+  type Attributes,
+  type Includeable,
+  type WhereOptions,
+} from "sequelize";
 import * as z from "zod";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
@@ -55,7 +62,6 @@ export const listUsers = async (req: Request, res: Response) => {
   res.json({ users });
 };
 
-
 export const findUserById = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params);
   const user = await User.findByPk(id, {
@@ -72,13 +78,15 @@ export const findUserById = async (req: Request, res: Response) => {
   });
 };
 
-
 export const createUser = async (req: Request, res: Response) => {
   const dataSchema = z.object({
     username: z.string("Nom d'utilisateur obligatoire"),
     email: z.email(" email obligatoire"),
     password: z.string(" mot de passe  obligatoire"),
-    role: z.enum(["employee", "manager", "admin"]).optional().default("employee"),
+    role: z
+      .enum(["employee", "manager", "admin"])
+      .optional()
+      .default("employee"),
     managedStores: z.array(idSchema()).nullish(),
     phone: phoneSchema().nullish().prefault(null),
     // contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
@@ -98,8 +106,9 @@ export const createUser = async (req: Request, res: Response) => {
     // password: data.password
   });
 
-  if (data.managedStores)//TODO check role ?
-    await user.addManagedStores(data.managedStores) //TODO setmanagerStores ?
+  if (data.managedStores)
+    //TODO check role ?
+    await user.addManagedStores(data.managedStores); //TODO setmanagerStores ?
 
   res.json({
     success: true,
@@ -108,13 +117,15 @@ export const createUser = async (req: Request, res: Response) => {
   });
 };
 
-
 export const updateUser = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id)
+  const id = idSchema().parse(req.params.id);
   const dataSchema = z.object({
     username: z.string("Nom d'utilisateur obligatoire"),
     email: z.email(" email obligatoire"),
-    role: z.enum(["employee", "manager", "admin"]).optional().default("employee"),
+    role: z
+      .enum(["employee", "manager", "admin"])
+      .optional()
+      .default("employee"),
     managedStores: z.array(idSchema()).nullish(),
     phone: phoneSchema().nullish().prefault(null),
     // contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
@@ -128,8 +139,7 @@ export const updateUser = async (req: Request, res: Response) => {
   await user.update({
     ...data,
   });
-  if (data.managedStores)
-    await user.setManagedStores(data.managedStores)
+  if (data.managedStores) await user.setManagedStores(data.managedStores);
 
   res.json({
     success: true,
@@ -138,18 +148,16 @@ export const updateUser = async (req: Request, res: Response) => {
   });
 };
 
-
 export const deleteUser = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id)
-  const user = await User.findByPk(id)
-  if (!user) throw new createHttpError.NotFound("utilisateur non trouvé")
-  await user.destroy()
+  const id = idSchema().parse(req.params.id);
+  const user = await User.findByPk(id);
+  if (!user) throw new createHttpError.NotFound("utilisateur non trouvé");
+  await user.destroy();
   res.json({
     success: true,
     message: "user removed",
   });
 };
-
 
 export const userStats = async (req: Request, res: Response) => {
   const totalUsers = await User.count();
@@ -185,7 +193,6 @@ export const userStats = async (req: Request, res: Response) => {
     },
   });
 };
-
 
 export const updatePassword = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);

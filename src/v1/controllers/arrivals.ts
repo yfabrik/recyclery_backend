@@ -1,40 +1,50 @@
-import createHttpError from "http-errors";
-import { col, fn, literal, Op, type Attributes, type WhereOptions } from "sequelize";
-import * as z from "zod";
-import { idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
-import Arrival from "../../models/arrival.js";
+import createHttpError from "http-errors";
+import {
+  col,
+  fn,
+  literal,
+  type Attributes,
+  type WhereOptions
+} from "sequelize";
+import * as z from "zod";
 import { formatWhereDateRange } from "../../helpers.js";
+import Arrival from "../../models/arrival.js";
 import Category from "../../models/category.js";
 import CollectionPoint from "../../models/collectionpoint.js";
 import User from "../../models/user.js";
+import { idSchema } from "../../services/zod.js";
 
-
-const dataSchema = z.object({
-  category_id: idSchema("catégorie requis"),
-  subcategory_id: idSchema().nullish().prefault(null),
-  weight: z.coerce.number().positive("poids requis"),
-  arrival_date: z.coerce.date("date d'arrivage requis"),
-  arrival_time: z.coerce
-    .date(" date d'arrivage requis")
-    .transform((val) =>
-      val.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
-    ),
-  source_type: z.enum(["point", "apport", "house_clearance"]),
-  source_details: z.string().nullish().prefault(null),
-  collection_point_id: idSchema().nullish().prefault(null),
-  collection_point_name: z.string().nullish().prefault(null),
-  collection_point_address: z.string().nullish().prefault(null),
-  notes: z.string().nullish().prefault(null),
-}).superRefine((obj, ctx) => {
-  if (obj.source_type == "point" && !obj.collection_point_id)
-    ctx.addIssue({
-      code: "custom",
-      origin: "collection_point_id",
-      message: "si source = point,collection point requis",
-      input: obj
-    })
-});
+const dataSchema = z
+  .object({
+    category_id: idSchema("catégorie requis"),
+    subcategory_id: idSchema().nullish().prefault(null),
+    weight: z.coerce.number().positive("poids requis"),
+    arrival_date: z.coerce.date("date d'arrivage requis"),
+    arrival_time: z.coerce
+      .date(" date d'arrivage requis")
+      .transform((val) =>
+        val.toLocaleTimeString(undefined, {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      ),
+    source_type: z.enum(["point", "apport", "house_clearance"]),
+    source_details: z.string().nullish().prefault(null),
+    collection_point_id: idSchema().nullish().prefault(null),
+    collection_point_name: z.string().nullish().prefault(null),
+    collection_point_address: z.string().nullish().prefault(null),
+    notes: z.string().nullish().prefault(null),
+  })
+  .superRefine((obj, ctx) => {
+    if (obj.source_type == "point" && !obj.collection_point_id)
+      ctx.addIssue({
+        code: "custom",
+        origin: "collection_point_id",
+        message: "si source = point,collection point requis",
+        input: obj,
+      });
+  });
 
 const filterSchema = z.object({
   category_id: idSchema().optional(),
@@ -45,7 +55,6 @@ const filterSchema = z.object({
 });
 
 export const listArrivals = async (req: Request, res: Response) => {
-
   const { date_from, date_to, ...rest } = filterSchema.parse(req.query);
 
   const where: WhereOptions<Attributes<Arrival>> = { ...rest };
@@ -69,9 +78,11 @@ export const listArrivals = async (req: Request, res: Response) => {
   });
 };
 
-
-export const detailArrival = async (req: Request & { user: User }, res: Response) => {
-  const id = idSchema().parse(req.params.id)
+export const detailArrival = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
+  const id = idSchema().parse(req.params.id);
   const arrival = await Arrival.findByPk(id, {
     include: [
       { model: Category, as: "categorie" },
@@ -87,8 +98,10 @@ export const detailArrival = async (req: Request & { user: User }, res: Response
   });
 };
 
-
-export const createArrival = async (req: Request & { user: User }, res: Response) => {
+export const createArrival = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const data = dataSchema.parse(req.body);
   const category = await Category.findByPk(
     data.subcategory_id ?? data.category_id,
@@ -109,8 +122,10 @@ export const createArrival = async (req: Request & { user: User }, res: Response
   });
 };
 
-
-export const updateArrival = async (req: Request & { user: User }, res: Response) => {
+export const updateArrival = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
 
@@ -129,8 +144,10 @@ export const updateArrival = async (req: Request & { user: User }, res: Response
   });
 };
 
-
-export const deleteArrival = async (req: Request & { user: User }, res: Response) => {
+export const deleteArrival = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const id = idSchema().parse(req.params.id);
   const arrival = await Arrival.destroy({ where: { id } });
   // Vérifier si l'arrivage existe
@@ -141,7 +158,10 @@ export const deleteArrival = async (req: Request & { user: User }, res: Response
   });
 };
 
-export const statsSummary = async (req: Request & { user: User }, res: Response) => {
+export const statsSummary = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const filterSchema = z.object({
     date_from: z.coerce.date().optional(),
     date_to: z.coerce.date().optional(),
@@ -212,7 +232,6 @@ export const statsSummary = async (req: Request & { user: User }, res: Response)
     },
   });
 };
-
 
 export const statsByCategories = async (req: Request, res: Response) => {
   const filterSchema = z.object({

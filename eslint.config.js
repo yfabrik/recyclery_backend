@@ -1,10 +1,13 @@
 import js from "@eslint/js";
 import globals from "globals";
 import json from "@eslint/json";
-import { defineConfig } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
 // import { jest } from "eslint-plugin-jest";
+import tseslint from 'typescript-eslint'
+
 
 export default defineConfig([
+  globalIgnores(['dist']),
   {
     files: ["**/*.{js,mjs,cjs}"],
     plugins: { js },
@@ -21,6 +24,14 @@ export default defineConfig([
     language: "json/json",
     extends: ["json/recommended"],
   },
+  {
+    files: ["**/*.ts"],
+    plugins: { tseslint },
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+    ]
+  }
   // {
   //   files: ["test/**"],
   //   ...jest.configs["flat/recommended"],

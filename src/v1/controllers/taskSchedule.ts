@@ -56,10 +56,7 @@ export const listSchedules = async (req: Request, res: Response) => {
 
   const where: WhereOptions<Attributes<TaskSchedule>> = {};
 
-  const dateRange = formatWhereDateRange(
-    filter.start_date,
-    filter.end_date,
-  );
+  const dateRange = formatWhereDateRange(filter.start_date, filter.end_date);
   if (dateRange) where.scheduled_date = dateRange;
 
   // if (filter.employee_id) {
@@ -324,7 +321,10 @@ export const getEmployeeSchedule = async (req: Request, res: Response) => {
   const schedules = await TaskSchedule.findAll({
     where,
     include: [{ model: Task }],
-    order: [["scheduled_date", "ASC"], ["start_time", "ASC"]],
+    order: [
+      ["scheduled_date", "ASC"],
+      ["start_time", "ASC"],
+    ],
   });
 
   res.json({
@@ -356,7 +356,7 @@ export const addEmployeeToSchedule = async (req: Request, res: Response) => {
     .toLowerCase();
 
   // Vérifier que l'employé existe, appartient au bon magasin ET est présent ce jour-là
-  let employee = await Employee.findOne({
+  const employee = await Employee.findOne({
     where: { id: employee_id },
     include: [
       {

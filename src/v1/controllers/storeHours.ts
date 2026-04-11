@@ -8,7 +8,6 @@ import TaskSchedule from "../../models/taskschedule.js";
 import type { Includeable } from "sequelize";
 import Recyclery from "../../models/recyclery.js";
 
-
 const dataSchema = z.object({
   store_id: idSchema("ID du magasin et jour de la semaine sont obligatoires"),
   day_of_week: z
@@ -27,14 +26,14 @@ const dataSchema = z.object({
   start_time: z.union([
     z.iso.time().transform((val) => {
       const [hours, min] = val.split(":");
-         return new Date().setHours(+(hours??0), +(min??0));
+      return new Date().setHours(+(hours ?? 0), +(min ?? 0));
     }),
     z.coerce.date(),
   ]),
   end_time: z.union([
     z.iso.time().transform((val) => {
       const [hours, min] = val.split(":");
-      return new Date().setHours(+(hours??0), +(min??0));
+      return new Date().setHours(+(hours ?? 0), +(min ?? 0));
     }),
     z.coerce.date(),
   ]),
@@ -46,7 +45,7 @@ const dataSchema = z.object({
  * @param  day
  * @returns
  */
-const getDateFromDay = (day:string) => {
+const getDateFromDay = (day: string) => {
   const today = new Date();
   let d;
   let i = 0;
@@ -69,12 +68,12 @@ const getDateFromDay = (day:string) => {
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-export const listHoraires = async (req:Request, res:Response) => {
+export const listHoraires = async (req: Request, res: Response) => {
   logger.warn("list horaires magasin plus a jour");
   const where = {
     category: "vente",
   };
-  const include:Includeable[] = [];
+  const include: Includeable[] = [];
   const schedules = await TaskSchedule.findAll({
     where,
     include,
@@ -110,7 +109,7 @@ export const listHoraires = async (req:Request, res:Response) => {
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-export const horairesMagasin = async (req:Request, res:Response) => {
+export const horairesMagasin = async (req: Request, res: Response) => {
   logger.warn("list horaires magasin plus a jour");
 
   const { storeId } = req.params;
@@ -153,7 +152,7 @@ export const horairesMagasin = async (req:Request, res:Response) => {
   });
 };
 
-export const addHoraire = async (req:Request, res:Response) => {
+export const addHoraire = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
 
   const store = await Recyclery.findByPk(data.store_id, {
@@ -190,8 +189,7 @@ export const addHoraire = async (req:Request, res:Response) => {
   });
 };
 
-
-export const updateHoraire = async (req:Request, res:Response) => {
+export const updateHoraire = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
   const id = idSchema().parse(req.params.id);
   const schedule = await TaskSchedule.findByPk(id, {
@@ -223,6 +221,6 @@ export const updateHoraire = async (req:Request, res:Response) => {
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-export const removeHoraires = async (req:Request, res:Response) => {
+export const removeHoraires = async (req: Request, res: Response) => {
   return deleteSchedule(req, res);
 };

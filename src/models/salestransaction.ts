@@ -16,8 +16,8 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
 import type CashSession from "./cashsession.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type GiftCard from "./giftcard.ts";
 import type GiftCardTransaction from "./giftcardtransaction.ts";
 import type LabeledItem from "./labeleditem.ts";
@@ -44,8 +44,7 @@ export default class SalesTransaction extends Model<
 
   declare cash_session_id: ForeignKey<CashSession["id"]>;
   declare created_by: ForeignKey<User["id"]>;
-  declare transactionId: ForeignKey<SalesTransaction["id"]>
-
+  declare transactionId: ForeignKey<SalesTransaction["id"]>;
 
   declare User?: NonAttribute<User>;
   declare CashSession?: NonAttribute<CashSession>;
@@ -60,25 +59,59 @@ export default class SalesTransaction extends Model<
   declare getUser: BelongsToGetAssociationMixin<User>;
   declare setUser: BelongsToSetAssociationMixin<User, User["id"]>;
   declare getCashSession: BelongsToGetAssociationMixin<CashSession>;
-  declare setCashSession: BelongsToSetAssociationMixin<CashSession, CashSession["id"]>;
+  declare setCashSession: BelongsToSetAssociationMixin<
+    CashSession,
+    CashSession["id"]
+  >;
   declare getItems: BelongsToManyGetAssociationsMixin<LabeledItem>;
-  declare setItems: BelongsToManySetAssociationsMixin<LabeledItem, LabeledItem["id"]>;
-  declare addItem: BelongsToManyAddAssociationMixin<LabeledItem, LabeledItem["id"]>;
-  declare addItems: BelongsToManyAddAssociationMixin<LabeledItem, LabeledItem["id"]>;
-  declare createItem: BelongsToManyCreateAssociationMixin<LabeledItem>
+  declare setItems: BelongsToManySetAssociationsMixin<
+    LabeledItem,
+    LabeledItem["id"]
+  >;
+  declare addItem: BelongsToManyAddAssociationMixin<
+    LabeledItem,
+    LabeledItem["id"]
+  >;
+  declare addItems: BelongsToManyAddAssociationMixin<
+    LabeledItem,
+    LabeledItem["id"]
+  >;
+  declare createItem: BelongsToManyCreateAssociationMixin<LabeledItem>;
   declare getRefunds: HasManyGetAssociationsMixin<SalesTransaction>;
-  declare addRefund: HasManyAddAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
+  declare addRefund: HasManyAddAssociationMixin<
+    SalesTransaction,
+    SalesTransaction["id"]
+  >;
   declare getGiftCards: BelongsToManyGetAssociationsMixin<GiftCard>;
-  declare setGiftCards: BelongsToManySetAssociationsMixin<GiftCard, GiftCard["id"]>;
-  declare addGiftCard: BelongsToManyAddAssociationMixin<GiftCard, GiftCard["id"]>;
+  declare setGiftCards: BelongsToManySetAssociationsMixin<
+    GiftCard,
+    GiftCard["id"]
+  >;
+  declare addGiftCard: BelongsToManyAddAssociationMixin<
+    GiftCard,
+    GiftCard["id"]
+  >;
   declare getGiftCardMovements: HasManyGetAssociationsMixin<GiftCardTransaction>;
-  declare addGiftCardMovement: HasManyAddAssociationMixin<GiftCardTransaction, GiftCardTransaction["id"]>;
+  //FIXME ????
+  declare addGiftCardMovement: HasManyAddAssociationMixin<
+    GiftCardTransaction,
+    [GiftCardTransaction["sales_transaction_id"], GiftCardTransaction["gift_card_id"]]
+  >;
   declare getPayments: HasManyGetAssociationsMixin<TransactionPayment>;
-  declare addPayment: HasManyAddAssociationMixin<TransactionPayment, TransactionPayment["id"]>;
+  declare addPayment: HasManyAddAssociationMixin<
+    TransactionPayment,
+    TransactionPayment["id"]
+  >;
   declare getIssuedGiftCards: HasManyGetAssociationsMixin<GiftCard>;
-  declare addIssuedGiftCard: HasManyAddAssociationMixin<GiftCard, GiftCard["id"]>;
+  declare addIssuedGiftCard: HasManyAddAssociationMixin<
+    GiftCard,
+    GiftCard["id"]
+  >;
   declare getRefundIssuedGiftCards: HasManyGetAssociationsMixin<GiftCard>;
-  declare addRefundIssuedGiftCard: HasManyAddAssociationMixin<GiftCard, GiftCard["id"]>;
+  declare addRefundIssuedGiftCard: HasManyAddAssociationMixin<
+    GiftCard,
+    GiftCard["id"]
+  >;
 
   static associate(models: ModelStatics) {
     this.belongsTo(models.User, { foreignKey: "created_by" });
@@ -125,32 +158,34 @@ export default class SalesTransaction extends Model<
           primaryKey: true,
           autoIncrement: true,
         },
-        transactionId:{
+        transactionId: {
           type: DataTypes.INTEGER.UNSIGNED,
           allowNull: true,
         },
         total_amount: {
-          type: DataTypes.DECIMAL(10, 2),//argent total des items dans la transaction
-          allowNull: false
+          type: DataTypes.DECIMAL(10, 2), //argent total des items dans la transaction
+          allowNull: false,
         },
         payment_method: {
           type: DataTypes.ENUM("cash", "card", "check", "giftcard", "mixed"),
-          allowNull: false
+          allowNull: false,
         },
         transactionType: {
           type: DataTypes.ENUM("sell", "refund"),
           defaultValue: "sell",
-          allowNull: false
+          allowNull: false,
         },
         payment_amount: {
-          type: DataTypes.DECIMAL(10, 2),//argent donné par le client
-          allowNull: false
+          type: DataTypes.DECIMAL(10, 2), //argent donné par le client
+          allowNull: false,
         },
         //@ts-expect-error
         change_amount: {
           type: DataTypes.VIRTUAL,
           get(this: SalesTransaction) {
-            return Number(this.payment_amount ?? 0) - Number(this.total_amount ?? 0);
+            return (
+              Number(this.payment_amount ?? 0) - Number(this.total_amount ?? 0)
+            );
           },
         },
         customer_name: DataTypes.STRING,
@@ -159,7 +194,7 @@ export default class SalesTransaction extends Model<
         status: {
           type: DataTypes.ENUM("pending", "completed", "cancelled"),
           defaultValue: "completed",
-          allowNull: false
+          allowNull: false,
         },
 
         createdAt: DataTypes.DATE,

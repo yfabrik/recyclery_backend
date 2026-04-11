@@ -1,18 +1,15 @@
 import {
+  DataTypes,
+  Model,
   Op,
   Transaction,
   type Attributes,
-  type ForeignKey,
-  type NonAttribute,
-  type WhereOptions,
-} from "sequelize";
-import {
-  DataTypes,
-  Model,
   type CreationOptional,
+  type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
   type Sequelize,
+  type WhereOptions
 } from "sequelize";
 import type { Models } from "./db-types.ts";
 import type Employee from "./employee.js";
@@ -22,7 +19,6 @@ export default class EmployeeStore extends Model<
   InferAttributes<EmployeeStore>,
   InferCreationAttributes<EmployeeStore>
 > {
-  // declare id: CreationOptional<number>;
   declare is_primary: boolean;
   declare employeeId: ForeignKey<Employee["id"]>;
   declare recycleryId: ForeignKey<Recyclery["id"]>;
@@ -57,18 +53,22 @@ export default class EmployeeStore extends Model<
 
     return this.init(
       {
-        // id: {
-        //   type: DataTypes.INTEGER.UNSIGNED,
-        //   primaryKey: true,
-        //   autoIncrement: true,
-        // },
+
         is_primary: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
           allowNull: false,
         },
-        employeeId:{type: DataTypes.INTEGER.UNSIGNED, allowNull: false, primaryKey: true,},
-        recycleryId:{type: DataTypes.INTEGER.UNSIGNED, allowNull: false, primaryKey: true,},
+        employeeId: {
+          type: DataTypes.INTEGER.UNSIGNED,
+          allowNull: false,
+          primaryKey: true,
+        },
+        recycleryId: {
+          type: DataTypes.INTEGER.UNSIGNED,
+          allowNull: false,
+          primaryKey: true,
+        },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },
@@ -108,9 +108,7 @@ export default class EmployeeStore extends Model<
               (r) => r.is_primary && r.employeeId != null,
             );
             const employeeIds = [
-              ...new Set(
-                withPrimary.map((r) => r.employeeId),
-              ),
+              ...new Set(withPrimary.map((r) => r.employeeId)),
             ];
             const opts = options.transaction
               ? { transaction: options.transaction }
@@ -153,7 +151,6 @@ export default class EmployeeStore extends Model<
               opts,
             );
           },
-
 
           //FAUX
           async beforeBulkUpdate(options) {

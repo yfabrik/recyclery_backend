@@ -7,7 +7,6 @@ import type { Attributes, WhereOptions } from "sequelize";
 import TaskSchedule from "../../models/taskschedule.js";
 import Recyclery from "../../models/recyclery.js";
 
-
 const dataSchema = z.object({
   name: z.string().trim().nonempty("nom requis"),
   address: z.string().trim().nonempty("addresse requis"),
@@ -25,12 +24,12 @@ const dataSchema = z.object({
       "hospital",
       "other",
     ])
-    .nullish().prefault(null),
+    .nullish()
+    .prefault(null),
   notes: z.string().nullish().prefault(null),
   recyclery_id: idSchema().nullish().prefault(null),
   is_active: z.coerce.boolean().optional().default(true),
 });
-
 
 export const listCollectionPoints = async (req: Request, res: Response) => {
   const ALLOWED_INCLUDES = ["horaires"];
@@ -97,7 +96,7 @@ export const createCollectionPoint = async (req: Request, res: Response) => {
   });
 };
 
-export const updateCollectionPoint =  async (req: Request, res: Response) => {
+export const updateCollectionPoint = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
   const id = idSchema().parse(req.params.id);
 
@@ -160,7 +159,6 @@ export const deleteCollectionPoint = async (req: Request, res: Response) => {
     message: "Point de collecte supprimé avec succès",
   });
 };
-
 
 /**
  * @deprecated

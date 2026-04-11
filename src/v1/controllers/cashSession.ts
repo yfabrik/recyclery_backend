@@ -1,4 +1,10 @@
-import { col, fn, type Attributes, type Includeable, type WhereOptions } from "sequelize";
+import {
+  col,
+  fn,
+  type Attributes,
+  type Includeable,
+  type WhereOptions,
+} from "sequelize";
 
 import createHttpError from "http-errors";
 import * as z from "zod";
@@ -23,7 +29,6 @@ export const listCashSessions = async (req: Request, res: Response) => {
   });
   const data = filterSchema.parse(req.query);
 
-
   const where: WhereOptions<Attributes<CashSession>> = {};
 
   if (data.status) where.status = data.status;
@@ -35,19 +40,9 @@ export const listCashSessions = async (req: Request, res: Response) => {
   const sessions = await CashSession.findAll({
     attributes: {
       include: [
+        [fn("COUNT", col("SalesTransactions.id")), "transactions_count"],
         [
-          fn("COUNT", col("SalesTransactions.id")),
-          "transactions_count",
-        ],
-        [
-          fn(
-            "COALESCE",
-            fn(
-              "SUM",
-              col("SalesTransactions.total_amount"),
-            ),
-            0,
-          ),
+          fn("COALESCE", fn("SUM", col("SalesTransactions.total_amount")), 0),
           "total_sales",
         ],
       ],
@@ -75,7 +70,10 @@ export const listCashSessions = async (req: Request, res: Response) => {
 };
 
 // 🧠 GET /cash-sessions/active
-export const getActiveSession = async (req: Request & { user: User }, res: Response) => {
+export const getActiveSession = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const userId = req.user.id;
   const session = await CashSession.findOne({
     where: {
@@ -105,10 +103,11 @@ export const getActiveSession = async (req: Request & { user: User }, res: Respo
   res.json({ success: true, session: t });
 };
 
-
-
 // 🧠 POST /cash-sessions/open
-export const openCashSession = async (req: Request & { user: User }, res: Response) => {
+export const openCashSession = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const dataSchema = z.object({
     cash_register_id: idSchema("caisse requise"),
     store_id: idSchema("magasin requis"),
@@ -138,7 +137,10 @@ export const openCashSession = async (req: Request & { user: User }, res: Respon
 };
 
 // 🧠 PUT /cash-sessions/:id/close
-export const closeCashSession = async (req: Request & { user: User }, res: Response) => {
+export const closeCashSession = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const id = idSchema().parse(req.params.id);
   const dataSchema = z.object({
     closing_amount: z.coerce.number().positive("argent requis"),
@@ -181,7 +183,6 @@ export const closeCashSession = async (req: Request & { user: User }, res: Respo
   });
 };
 
-
 export const getSessionById = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
@@ -193,11 +194,11 @@ export const getSessionById = async (req: Request, res: Response) => {
         include: [{ model: Recyclery, attributes: ["name"] }],
       },
       { model: User, attributes: ["username"] },
-      { model: SalesTransaction }
+      { model: SalesTransaction },
     ],
   });
 
-  if (!session) throw new createHttpError.NotFound("session pas trouvé")
+  if (!session) throw new createHttpError.NotFound("session pas trouvé");
 
   // transactions with joined transaction_lines (transaction_items) info
   // const transactions = await SalesTransaction.findAll({
@@ -212,19 +213,20 @@ export const getSessionById = async (req: Request, res: Response) => {
   // });
 
   res.json({
-    success: true, session
+    success: true,
+    session,
     // {
     //   ...session.toJSON(),
-    //   transactions 
+    //   transactions
     // }
   });
 };
 
 /**
  * @deprecated
- * @param req 
- * @param res 
- * @returns 
+ * @param req
+ * @param res
+ * @returns
  */
 export const getRegistersByStore = async (req: Request, res: Response) => {
   const store_id = idSchema("Missing store_id").parse(req.params.store_id);
@@ -232,82 +234,94 @@ export const getRegistersByStore = async (req: Request, res: Response) => {
   req.query.store_id = store_id.toString();
   logger.info("called get register by store REMAKE THIS ONE");
   return await listCaisses(req, res);
-
 };
-
 
 export const sessionsStats = async (req: Request, res: Response) => {
   const filtersSchema = z.object({
     date_from: z.coerce.date().nullish(),
     date_to: z.coerce.date().nullish(),
     store_id: idSchema().nullish(),
-  })
+  });
 
-  const filters = filtersSchema.parse(req.params)
+  const filters = filtersSchema.parse(req.params);
 
-
-  const where: WhereOptions<Attributes<CashRegister>> = {}
-  if (filters.store_id) where.recyclery_id = filters.store_id
+  const where: WhereOptions<Attributes<CashRegister>> = {};
+  if (filters.store_id) where.recyclery_id = filters.store_id;
   const include: Includeable[] = [
     {
       model: SalesTransaction,
-      include: [{
-        model: LabeledItem,
-        as: "items",
-        include: [{
-          model: Category,
-          as: "category"
-        },
+      include: [
         {
-          model: Category,
-          as: "subcategory"
-        }]
-      }]
-    }, {
+          model: LabeledItem,
+          as: "items",
+          include: [
+            {
+              model: Category,
+              as: "category",
+            },
+            {
+              model: Category,
+              as: "subcategory",
+            },
+          ],
+        },
+      ],
+    },
+    {
       model: CashRegister,
-      where
-    }
-  ]
+      where,
+    },
+  ];
   const stats = await CashSession.findAll({
-    include
-  })
+    include,
+  });
 
   return res.json({
     success: true,
-    data:
-      stats.map(session => {
-        return {
-          transactions: session.SalesTransactions?.length ?? 0,
-          cash: session.SalesTransactions?.reduce((prev, current) => {
+    data: stats.map((session) => {
+      return {
+        transactions: session.SalesTransactions?.length ?? 0,
+        cash: session.SalesTransactions?.reduce(
+          (prev, current) => {
             if (current.payment_method == "cash") {
-              prev.count++
-              prev.value += +(current.total_amount || 0)
+              prev.count++;
+              prev.value += +(current.total_amount || 0);
             }
-            return prev
-          }, { count: 0, value: 0 }),
-          card: session.SalesTransactions?.reduce((prev, current) => {
+            return prev;
+          },
+          { count: 0, value: 0 },
+        ),
+        card: session.SalesTransactions?.reduce(
+          (prev, current) => {
             if (current.payment_method == "card") {
-              prev.count++
-              prev.value += +(current.total_amount || 0)
+              prev.count++;
+              prev.value += +(current.total_amount || 0);
             }
-            return prev
-
-          }, { count: 0, value: 0 }),
-          categories: session.SalesTransactions?.reduce((prev, current) => {
-            current.items?.forEach(item => {
-              const categorie = item.category
-              const sub = item.subcategory
-              const val = { category: categorie?.name || "", sub: sub?.name || "", value: item.price }
-              const exist = prev.find(p => p.category == val.category && p.sub == val.sub)
-              if (exist) exist.value += val.value
-              else prev.push(val)
-            }
-            )
-            return prev
-          }, [] as { category: string, sub: string, value: number }[])
-
-        }
-      })
-
-  })
-}
+            return prev;
+          },
+          { count: 0, value: 0 },
+        ),
+        categories: session.SalesTransactions?.reduce(
+          (prev, current) => {
+            current.items?.forEach((item) => {
+              const categorie = item.category;
+              const sub = item.subcategory;
+              const val = {
+                category: categorie?.name || "",
+                sub: sub?.name || "",
+                value: item.price,
+              };
+              const exist = prev.find(
+                (p) => p.category == val.category && p.sub == val.sub,
+              );
+              if (exist) exist.value += val.value;
+              else prev.push(val);
+            });
+            return prev;
+          },
+          [] as { category: string; sub: string; value: number }[],
+        ),
+      };
+    }),
+  });
+};

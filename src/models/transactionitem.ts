@@ -29,16 +29,22 @@ export default class TransactionItem extends Model<
 
   declare total_price: NonAttribute<number>;
 
-  declare transaction_id: ForeignKey<SalesTransaction["id"]>
-  declare labeled_item_id: ForeignKey<LabeledItem["id"]>
+  declare transaction_id: ForeignKey<SalesTransaction["id"]>;
+  declare labeled_item_id: ForeignKey<LabeledItem["id"]>;
 
   declare SalesTransaction?: NonAttribute<SalesTransaction | null>;
   declare LabeledItem?: NonAttribute<LabeledItem | null>;
 
   declare getSalesTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
-  declare setSalesTransaction: BelongsToSetAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
+  declare setSalesTransaction: BelongsToSetAssociationMixin<
+    SalesTransaction,
+    SalesTransaction["id"]
+  >;
   declare getLabeledItem: BelongsToGetAssociationMixin<LabeledItem>;
-  declare setLabeledItem: BelongsToSetAssociationMixin<LabeledItem, LabeledItem["id"]>;
+  declare setLabeledItem: BelongsToSetAssociationMixin<
+    LabeledItem,
+    LabeledItem["id"]
+  >;
 
   static associate(models: ModelStatics) {
     this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" });
@@ -51,10 +57,12 @@ export default class TransactionItem extends Model<
         name: { type: DataTypes.STRING, allowNull: false },
         price: { type: DataTypes.DECIMAL, allowNull: false },
         quantity: {
-          type: DataTypes.INTEGER, allowNull: false, defaultValue: 1,
+          type: DataTypes.INTEGER,
+          allowNull: false,
+          defaultValue: 1,
           validate: {
-            min: 1
-          }
+            min: 1,
+          },
         },
         //@ts-expect-error
         total_price: {
@@ -71,7 +79,8 @@ export default class TransactionItem extends Model<
             const sum = (price: number, quantity: number) =>
               price * quantity * (1 - promotionNum / 100);
             const priceNum = Number(this.price ?? 0);
-            const bundleP = this.bundlePrice != null ? Number(this.bundlePrice) : priceNum;
+            const bundleP =
+              this.bundlePrice != null ? Number(this.bundlePrice) : priceNum;
             return sum(priceNum, extraItems) + sum(bundleP, bundles);
           },
         },
@@ -96,7 +105,11 @@ export default class TransactionItem extends Model<
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },
-      { sequelize, modelName: "TransactionItem", tableName: "transaction_items" },
+      {
+        sequelize,
+        modelName: "TransactionItem",
+        tableName: "transaction_items",
+      },
     );
   }
 }

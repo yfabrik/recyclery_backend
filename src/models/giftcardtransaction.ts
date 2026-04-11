@@ -11,7 +11,7 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type GiftCard from "./giftcard.ts";
 import type SalesTransaction from "./salestransaction.ts";
 import type User from "./user.ts";
@@ -20,11 +20,15 @@ export default class GiftCardTransaction extends Model<
   InferAttributes<GiftCardTransaction>,
   InferCreationAttributes<GiftCardTransaction>
 > {
-  // declare id: CreationOptional<number>;
-  declare type: "issue" | "charge" | "refund_recredit" | "manual_adjustment" | "expire";
+  declare type:
+    | "issue"
+    | "charge"
+    | "refund_recredit"
+    | "manual_adjustment"
+    | "expire";
   declare amount: string;
   declare occurred_at: Date;
-  declare metadata: Record<string, unknown> | null;
+  declare metadata: CreationOptional<Record<string, unknown> | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -39,28 +43,42 @@ export default class GiftCardTransaction extends Model<
   declare getGiftCard: BelongsToGetAssociationMixin<GiftCard>;
   declare setGiftCard: BelongsToSetAssociationMixin<GiftCard, GiftCard["id"]>;
   declare getSalesTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
-  declare setSalesTransaction: BelongsToSetAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
+  declare setSalesTransaction: BelongsToSetAssociationMixin<
+    SalesTransaction,
+    SalesTransaction["id"]
+  >;
   declare getCreatedBy: BelongsToGetAssociationMixin<User>;
   declare setCreatedBy: BelongsToSetAssociationMixin<User, User["id"]>;
 
   static associate(models: ModelStatics) {
     this.belongsTo(models.GiftCard, { foreignKey: "gift_card_id" });
-    this.belongsTo(models.SalesTransaction, { foreignKey: "sales_transaction_id" });
+    this.belongsTo(models.SalesTransaction, {
+      foreignKey: "sales_transaction_id",
+    });
     this.belongsTo(models.User, { as: "createdBy", foreignKey: "created_by" });
   }
 
   static initModel(sequelize: Sequelize) {
     return this.init(
       {
-        // id: {
-        //   type: DataTypes.INTEGER.UNSIGNED,
-        //   primaryKey: true,
-        //   autoIncrement: true,
-        // },
-        gift_card_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, primaryKey: true, },
-        sales_transaction_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, primaryKey: true, },
+        gift_card_id: {
+          type: DataTypes.INTEGER.UNSIGNED,
+          allowNull: false,
+          primaryKey: true,
+        },
+        sales_transaction_id: {
+          type: DataTypes.INTEGER.UNSIGNED,
+          allowNull: false,
+          primaryKey: true,
+        },
         type: {
-          type: DataTypes.ENUM("issue", "charge", "refund_recredit", "manual_adjustment", "expire"),
+          type: DataTypes.ENUM(
+            "issue",
+            "charge",
+            "refund_recredit",
+            "manual_adjustment",
+            "expire",
+          ),
           allowNull: false,
         },
         amount: {
@@ -74,8 +92,11 @@ export default class GiftCardTransaction extends Model<
             },
           },
         },
-        occurred_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
-        // created_by: { type: DataTypes.INTEGER, allowNull: true },
+        occurred_at: {
+          type: DataTypes.DATE,
+          allowNull: false,
+          defaultValue: DataTypes.NOW,
+        },
         metadata: { type: DataTypes.JSON, allowNull: true },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
@@ -90,12 +111,17 @@ export default class GiftCardTransaction extends Model<
         ],
         hooks: {
           beforeCreate: async (movement, options) => {
-            const GiftCardModel = movement.sequelize.models.GiftCard as ModelStatic<GiftCard> | undefined;
+            const GiftCardModel = movement.sequelize.models.GiftCard as
+              | ModelStatic<GiftCard>
+              | undefined;
             if (!GiftCardModel) throw new Error("GiftCard model not found");
-            const giftCard = await GiftCardModel.findByPk(movement.gift_card_id, {
-              transaction: options.transaction ?? null,
-              include: [{ model: GiftCardTransaction, as: "movements" }],
-            });
+            const giftCard = await GiftCardModel.findByPk(
+              movement.gift_card_id,
+              {
+                transaction: options.transaction ?? null,
+                include: [{ model: GiftCardTransaction, as: "movements" }],
+              },
+            );
             if (!giftCard) throw new Error("Gift card not found");
             let newStatus = giftCard.status;
             const amount = Math.abs(Number(movement.amount));

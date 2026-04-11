@@ -13,7 +13,10 @@ import {
 import type { Models, ModelStatics } from "./db-types.ts";
 import type Employee from "./employee.ts";
 
-export default class Skill extends Model<InferAttributes<Skill>, InferCreationAttributes<Skill>> {
+export default class Skill extends Model<
+  InferAttributes<Skill>,
+  InferCreationAttributes<Skill>
+> {
   declare id: CreationOptional<number>;
   declare name: string;
   declare isActive: CreationOptional<boolean>;
@@ -24,8 +27,14 @@ export default class Skill extends Model<InferAttributes<Skill>, InferCreationAt
   declare employees?: NonAttribute<Employee[]>;
 
   declare getEmployees: BelongsToManyGetAssociationsMixin<Employee>;
-  declare setEmployees: BelongsToManySetAssociationsMixin<Employee, Employee["id"]>;
-  declare addEmployee: BelongsToManyAddAssociationMixin<Employee, Employee["id"]>;
+  declare setEmployees: BelongsToManySetAssociationsMixin<
+    Employee,
+    Employee["id"]
+  >;
+  declare addEmployee: BelongsToManyAddAssociationMixin<
+    Employee,
+    Employee["id"]
+  >;
 
   static associate(models: ModelStatics) {
     this.belongsToMany(models.Employee, {
@@ -44,7 +53,11 @@ export default class Skill extends Model<InferAttributes<Skill>, InferCreationAt
           autoIncrement: true,
         },
         name: { type: DataTypes.STRING, allowNull: false, unique: true },
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
+        isActive: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: true,
+          allowNull: false,
+        },
         description: { type: DataTypes.TEXT },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

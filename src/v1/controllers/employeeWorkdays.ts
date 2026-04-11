@@ -6,7 +6,6 @@ import Employee from "../../models/employee.js";
 import db from "../../models/index.js";
 import createHttpError from "http-errors";
 
-
 export const listEmployeeWorkdays = async (req: Request, res: Response) => {
   const employeeId = idSchema().parse(req.params.employeeId);
 
@@ -19,7 +18,6 @@ export const listEmployeeWorkdays = async (req: Request, res: Response) => {
     workdays,
   });
 };
-
 
 export const createEmployeeWorkdays = async (req: Request, res: Response) => {
   const dataSchema = z.object({
@@ -56,10 +54,10 @@ export const createEmployeeWorkdays = async (req: Request, res: Response) => {
     ],
   });
 
-  if (!employee) throw new createHttpError.NotFound("Employé non trouvé")
+  if (!employee) throw new createHttpError.NotFound("Employé non trouvé");
 
   // Supprimer les anciens jours de travail de cet employé
-  const transaction = await db.sequelize.transaction(async (t) => {
+  await db.sequelize.transaction(async (t) => {
     await EmployeeWorkdays.destroy({
       where: { employee_id: employee.id },
       transaction: t,

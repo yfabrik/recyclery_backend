@@ -12,11 +12,14 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type LabeledItem from "./labeleditem.ts";
 import type Promotion from "./promotion.ts";
 
-export default class Category extends Model<InferAttributes<Category>, InferCreationAttributes<Category>> {
+export default class Category extends Model<
+  InferAttributes<Category>,
+  InferCreationAttributes<Category>
+> {
   declare id: CreationOptional<number>;
   declare name: string;
   declare description: CreationOptional<string | null>;
@@ -32,20 +35,22 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
 
   declare parent_id: ForeignKey<number | null>;
 
-
   declare subcategories?: NonAttribute<Category[]>;
   declare parent?: NonAttribute<Category>;
   declare LabeledItems?: NonAttribute<LabeledItem[]>;
   declare Promotions?: NonAttribute<Promotion[]>;
 
   declare getSubcategories: HasManyGetAssociationsMixin<Category>;
-  declare addSubcategory: HasManyAddAssociationMixin<Category, Category['id']>;
+  declare addSubcategory: HasManyAddAssociationMixin<Category, Category["id"]>;
   declare getParent: BelongsToGetAssociationMixin<Category>;
-  declare setParent: BelongsToSetAssociationMixin<Category, Category['id']>;
+  declare setParent: BelongsToSetAssociationMixin<Category, Category["id"]>;
   declare getLabeledItems: HasManyGetAssociationsMixin<LabeledItem>;
-  declare addLabeledItem: HasManyAddAssociationMixin<LabeledItem, LabeledItem['id']>;
+  declare addLabeledItem: HasManyAddAssociationMixin<
+    LabeledItem,
+    LabeledItem["id"]
+  >;
   declare getPromotions: HasManyGetAssociationsMixin<Promotion>;
-  declare addPromotion: HasManyAddAssociationMixin<Promotion, Promotion['id']>;
+  declare addPromotion: HasManyAddAssociationMixin<Promotion, Promotion["id"]>;
 
   static associate(models: ModelStatics) {
     this.hasMany(models.Category, {
@@ -57,8 +62,14 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
       as: "parent",
       foreignKey: "parent_id",
     });
-    this.hasMany(models.LabeledItem, { foreignKey: "category_id", as: "itemsWithCategory" });
-    this.hasMany(models.LabeledItem, { foreignKey: "subcategory_id", as: "itemsWithSubCategory" });
+    this.hasMany(models.LabeledItem, {
+      foreignKey: "category_id",
+      as: "itemsWithCategory",
+    });
+    this.hasMany(models.LabeledItem, {
+      foreignKey: "subcategory_id",
+      as: "itemsWithSubCategory",
+    });
     this.hasMany(models.Promotion, { foreignKey: "category_id" });
     this.belongsToMany(models.EcoOrganism, {
       through: "ecoOrg_categoryIn",
@@ -70,14 +81,20 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
     });
     this.hasMany(models.Arrival, {
       foreignKey: "category_id",
-      as: "arrivalsWithCategory"
-    })
+      as: "arrivalsWithCategory",
+    });
     this.hasMany(models.Arrival, {
       foreignKey: "subcategory_id",
       as: "arrivalsWithSubCategory",
     });
-    this.hasMany(models.WasteDisposal, { foreignKey: "category_id", as: "wastesWithCategory" });
-    this.hasMany(models.WasteDisposal, { foreignKey: "subcategory_id", as: "wastesWithSubCategory" });
+    this.hasMany(models.WasteDisposal, {
+      foreignKey: "category_id",
+      as: "wastesWithCategory",
+    });
+    this.hasMany(models.WasteDisposal, {
+      foreignKey: "subcategory_id",
+      as: "wastesWithSubCategory",
+    });
   }
 
   static initModel(sequelize: Sequelize) {
@@ -96,13 +113,13 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
           type: DataTypes.FLOAT(),
           validate: { min: 0 },
           defaultValue: 0,
-          allowNull: false
+          allowNull: false,
         },
         defaultPrice: {
           type: DataTypes.DECIMAL(10, 2),
           validate: { min: 0 },
           defaultValue: 0,
-          allowNull: false
+          allowNull: false,
         },
         IO: {
           type: DataTypes.INTEGER,
@@ -112,7 +129,7 @@ export default class Category extends Model<InferAttributes<Category>, InferCrea
         priceBasedOnWeight: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
-          allowNull: false
+          allowNull: false,
         },
         bundleQuantity: {
           type: DataTypes.INTEGER,

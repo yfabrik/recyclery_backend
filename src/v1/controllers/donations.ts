@@ -1,11 +1,16 @@
 import createHttpError from "http-errors";
-import { col, fn, literal, type Attributes, type WhereOptions } from "sequelize";
+import {
+  col,
+  fn,
+  literal,
+  type Attributes,
+  type WhereOptions,
+} from "sequelize";
 import z from "zod";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
 import Donation from "../../models/donation.js";
 import User from "../../models/user.js";
-
 
 const dataSchema = z.object({
   donor_name: z.string("nom requis"),
@@ -19,8 +24,6 @@ const dataSchema = z.object({
   weight: z.coerce.number().nonnegative(),
   status: z.enum(["pending", "accepted", "rejected"]).nullish().prefault(null),
 });
-
-
 
 export const listDons = async (req: Request, res: Response) => {
   const filterSchema = z.object({
@@ -48,7 +51,10 @@ export const listDons = async (req: Request, res: Response) => {
   res.json({ donations });
 };
 
-export const createDon = async (req: Request & { user: User }, res: Response) => {
+export const createDon = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   //TODO c'est au form de faire le tri et d'envoyer donor contact correctement
   // const donorContact = z.union([z.email(), z.string().regex(/^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/)]).optional().parse(req.body?.donor_contact)
 
@@ -89,16 +95,15 @@ export const updateDon = async (req: Request, res: Response) => {
   // donation.donor_email = donor_email || null;
   // donation.item_description = data.item_description;
   // donation.estimated_value = data.estimated_value;
-  const { status, ...rest } = data
+  const { status, ...rest } = data;
 
   // data.status && (donation.status = data.status);
   // donation.status = data.status;
-  await donation.update({ ...rest, status: status ?? donation.status })
+  await donation.update({ ...rest, status: status ?? donation.status });
   // await donation.save();
 
   res.json({ message: "Don mis à jour avec succès" });
 };
-
 
 export const deleteDon = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
@@ -107,7 +112,6 @@ export const deleteDon = async (req: Request, res: Response) => {
   await don.destroy();
   return res.json({ success: true, message: "Don supprimé avec succès" });
 };
-
 
 export const donStats = async (req: Request, res: Response) => {
   const stats = await Donation.findOne({

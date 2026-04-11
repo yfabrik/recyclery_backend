@@ -10,11 +10,14 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type Recyclery from "./recyclery.ts";
 import type User from "./user.ts";
 
-export default class Donation extends Model<InferAttributes<Donation>, InferCreationAttributes<Donation>> {
+export default class Donation extends Model<
+  InferAttributes<Donation>,
+  InferCreationAttributes<Donation>
+> {
   declare id: CreationOptional<number>;
   declare donor_name: CreationOptional<string | null>;
   declare donor_phone: CreationOptional<string | null>;
@@ -35,7 +38,10 @@ export default class Donation extends Model<InferAttributes<Donation>, InferCrea
   declare User?: NonAttribute<User | null>;
 
   declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
-  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, Recyclery["id"]>;
+  declare setRecyclery: BelongsToSetAssociationMixin<
+    Recyclery,
+    Recyclery["id"]
+  >;
   declare getUser: BelongsToGetAssociationMixin<User>;
   declare setUser: BelongsToSetAssociationMixin<User, User["id"]>;
 
@@ -58,7 +64,9 @@ export default class Donation extends Model<InferAttributes<Donation>, InferCrea
         },
         donor_phone: {
           type: DataTypes.STRING,
-          validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ },
+          validate: {
+            is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/,
+          },
         },
         donor_email: { type: DataTypes.STRING, validate: { isEmail: true } },
         item_description: DataTypes.TEXT,
@@ -66,10 +74,14 @@ export default class Donation extends Model<InferAttributes<Donation>, InferCrea
         status: {
           type: DataTypes.ENUM("pending", "accepted", "rejected"),
           defaultValue: "pending",
-          allowNull: false
+          allowNull: false,
         },
-        received_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW, allowNull: false },
-        // @ts-expect-error
+        received_at: {
+          type: DataTypes.DATE,
+          defaultValue: DataTypes.NOW,
+          allowNull: false,
+        },
+        // @ts-expect-error  sequelize virtual marqued as nonattribute
         donorContact: {
           type: DataTypes.VIRTUAL,
           get(this: Donation) {
@@ -81,7 +93,7 @@ export default class Donation extends Model<InferAttributes<Donation>, InferCrea
           validate: {
             min: 0,
           },
-          allowNull: false
+          allowNull: false,
         },
 
         createdAt: DataTypes.DATE,
@@ -90,7 +102,11 @@ export default class Donation extends Model<InferAttributes<Donation>, InferCrea
       {
         sequelize,
         modelName: "Donation",
-        indexes: [{ fields: ["recyclery_id"] }, { fields: ["status"] }, { fields: ["createdAt"] }],
+        indexes: [
+          { fields: ["recyclery_id"] },
+          { fields: ["status"] },
+          { fields: ["createdAt"] },
+        ],
       },
     );
   }

@@ -17,9 +17,10 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
 import type CashRegister from "./cashregister.ts";
+import type CashSession from "./cashsession.js";
 import type CollectionPoint from "./collectionpoint.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type Donation from "./donation.ts";
 import type Employee from "./employee.ts";
 import type LabeledItem from "./labeleditem.ts";
@@ -27,8 +28,6 @@ import type Promotion from "./promotion.ts";
 import type Task from "./task.ts";
 import type TaskSchedule from "./taskschedule.ts";
 import type User from "./user.ts";
-import type CashSession from "./cashsession.js";
-import logger from "../services/logger.js";
 
 export default class Recyclery extends Model<
   InferAttributes<Recyclery>,

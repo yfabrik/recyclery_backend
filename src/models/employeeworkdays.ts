@@ -10,7 +10,7 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type Employee from "./employee.ts";
 
 export default class EmployeeWorkdays extends Model<
@@ -28,7 +28,7 @@ export default class EmployeeWorkdays extends Model<
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  declare employee_id: ForeignKey<Employee["id"]>
+  declare employee_id: ForeignKey<Employee["id"]>;
 
   declare Employee?: NonAttribute<Employee | null>;
 
@@ -60,7 +60,10 @@ export default class EmployeeWorkdays extends Model<
       {
         sequelize,
         modelName: "EmployeeWorkdays",
-        indexes: [{ fields: ["employee_id"] }, { fields: ["employee_id", "day_of_week"] }],
+        indexes: [
+          { fields: ["employee_id"] },
+          { fields: ["employee_id", "day_of_week"] },
+        ],
       },
     );
   }

@@ -14,8 +14,6 @@ import GiftCardTransaction from "../../models/giftcardtransaction.js";
 import { Op, type Attributes, type WhereOptions } from "sequelize";
 import type User from "../../models/user.js";
 
-
-
 const issueSchema = z.object({
   code: z.string().trim().min(1, "code requis"),
   initial_value: z.coerce.number("valeur initiale requise").min(0),
@@ -43,11 +41,10 @@ const listSchema = z.object({
   offset: z.coerce.number().nonnegative().default(0),
 });
 
-
-export const listGiftCards =async (req:Request, res:Response) => {
+export const listGiftCards = async (req: Request, res: Response) => {
   const filter = listSchema.parse(req.query);
 
-  const where:WhereOptions<Attributes<GiftCard>> = {};
+  const where: WhereOptions<Attributes<GiftCard>> = {};
 
   if (filter.status) where.status = filter.status;
   if (filter.code) {
@@ -79,8 +76,10 @@ export const listGiftCards =async (req:Request, res:Response) => {
   });
 };
 
-
-export const createGiftCard =async (req:Request&{user:User}, res:Response) => {
+export const createGiftCard = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const data = issueSchema.parse(req.body);
   const card = await issueGiftCard({
     code: data.code,
@@ -102,16 +101,17 @@ export const createGiftCard =async (req:Request&{user:User}, res:Response) => {
   });
 };
 
-
-export const getGiftCardByCode =async (req:Request, res:Response) => {
+export const getGiftCardByCode = async (req: Request, res: Response) => {
   const code = z.string().trim().min(1).parse(req.params.code);
   const card = await findGiftCardByCode(code);
   if (!card) throw new createHttpError.NotFound("gift card introuvable");
   res.json({ success: true, data: card });
 };
 
-
-export const getGiftCardCurrentBalance =async (req:Request, res:Response) => {
+export const getGiftCardCurrentBalance = async (
+  req: Request,
+  res: Response,
+) => {
   const id = idSchema().parse(req.params.id);
   const balance = await getGiftCardBalance(id);
   res.json({
@@ -126,8 +126,10 @@ export const getGiftCardCurrentBalance =async (req:Request, res:Response) => {
   });
 };
 
-
-export const createGiftCardCharge =async (req:Request&{user:User}, res:Response) => {
+export const createGiftCardCharge = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const id = idSchema().parse(req.params.id);
   const data = movementSchema.parse(req.body);
   const movement = await chargeGiftCard({
@@ -144,8 +146,10 @@ export const createGiftCardCharge =async (req:Request&{user:User}, res:Response)
   });
 };
 
-
-export const createGiftCardRecredit =async (req:Request&{user:User}, res:Response) => {
+export const createGiftCardRecredit = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const id = idSchema().parse(req.params.id);
   const data = movementSchema.parse(req.body);
   const movement = await recreditGiftCard({

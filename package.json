@@ -43,7 +43,8 @@
     "prettier": "3.8.1",
     "sequelize-cli": "^6.6.3",
     "supertest": "^7.1.4",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.58.1"
   },
   "jest": {
     "setupFilesAfterEnv": [

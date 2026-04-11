@@ -1,4 +1,3 @@
-
 import createHttpError from "http-errors";
 import { col, fn, Op, type Attributes, type WhereOptions } from "sequelize";
 import * as z from "zod";
@@ -10,7 +9,7 @@ import Recyclery from "../../models/recyclery.js";
 import CashSession from "../../models/cashsession.js";
 
 export const listCaisses = async (req: Request, res: Response) => {
-  const store_id = idSchema().parse(req.params.id)
+  const store_id = idSchema().parse(req.params.id);
 
   const filterSchema = z.object({
     is_active: z.coerce.boolean().optional(),
@@ -34,10 +33,7 @@ export const listCaisses = async (req: Request, res: Response) => {
       include: [
         [col("Recyclery.name"), "store_name"],
         [fn("COUNT", col("sessions.id")), "total_sessions"],
-        [
-          fn("MAX", col("sessions.createdAt")),
-          "last_session",
-        ],
+        [fn("MAX", col("sessions.createdAt")), "last_session"],
       ],
     },
     include: [
@@ -67,7 +63,6 @@ export const listCaisses = async (req: Request, res: Response) => {
   });
 };
 
-
 export const detailCaisse = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
@@ -85,7 +80,8 @@ export const detailCaisse = async (req: Request, res: Response) => {
 
   if (!register) throw new createHttpError.NotFound("Caisse non trouvée");
 
-  const sessions = (register.get("sessions") as CashSession[] | undefined) ?? [];
+  const sessions =
+    (register.get("sessions") as CashSession[] | undefined) ?? [];
   const lastSession = sessions.reduce<Date | null>((latest, session) => {
     const createdAt = session.get("createdAt") as Date;
     if (!latest || createdAt > latest) return createdAt;
@@ -104,7 +100,6 @@ export const detailCaisse = async (req: Request, res: Response) => {
     },
   });
 };
-
 
 export const createCaisse = async (req: Request, res: Response) => {
   const dataSchema = z.object({
@@ -148,7 +143,6 @@ export const createCaisse = async (req: Request, res: Response) => {
   });
 };
 
-
 export const updateCaisse = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
@@ -190,7 +184,6 @@ export const updateCaisse = async (req: Request, res: Response) => {
     data: existingRegister,
   });
 };
-
 
 export const deleteCaisse = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);

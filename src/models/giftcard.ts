@@ -15,7 +15,7 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type GiftCardTransaction from "./giftcardtransaction.ts";
 import type SalesTransaction from "./salestransaction.ts";
 import type TransactionPayment from "./transactionpayment.ts";
@@ -77,9 +77,10 @@ export default class GiftCard extends Model<
     SalesTransaction["id"]
   >;
   declare getMovements: HasManyGetAssociationsMixin<GiftCardTransaction>;
+  //FIXME ???
   declare addMovement: HasManyAddAssociationMixin<
     GiftCardTransaction,
-    GiftCardTransaction["id"]
+    [GiftCardTransaction["sales_transaction_id"],GiftCardTransaction["gift_card_id"]]
   >;
   declare getPaymentUsages: HasManyGetAssociationsMixin<TransactionPayment>;
   declare addPaymentUsage: HasManyAddAssociationMixin<

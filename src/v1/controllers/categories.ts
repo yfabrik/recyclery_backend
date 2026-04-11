@@ -1,5 +1,11 @@
 import createHttpError from "http-errors";
-import { literal, Op, type Attributes, type Includeable, type WhereOptions } from "sequelize";
+import {
+  literal,
+  Op,
+  type Attributes,
+  type Includeable,
+  type WhereOptions,
+} from "sequelize";
 import * as z from "zod";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
@@ -16,7 +22,12 @@ const dataSchema = z.object({
   defaultWeight: z.number().nonnegative().prefault(0),
   defaultPrice: z.number().nonnegative().prefault(0),
   priceBasedOnWeight: z.boolean().prefault(false),
-  bundleQuantity: z.coerce.number().int().nonnegative().nullish().prefault(null),
+  bundleQuantity: z.coerce
+    .number()
+    .int()
+    .nonnegative()
+    .nullish()
+    .prefault(null),
   bundlePrice: z.coerce.number().nonnegative().nullish().prefault(null),
 });
 
@@ -26,7 +37,10 @@ const IOValues = {
   SELL: 1 << 2,
 };
 
-const findExistingCategory = async (name: string, parent_id: number | null = null) => {
+const findExistingCategory = async (
+  name: string,
+  parent_id: number | null = null,
+) => {
   return await Category.findOne({
     where: { [Op.and]: [{ name: name }, { parent_id: parent_id }] },
   });
@@ -41,7 +55,10 @@ const findExistingCategory = async (name: string, parent_id: number | null = nul
  * @param {any} category
  * @param {number} storeId
  */
-const filterPromotionsForStore = (category: Category, storeId: Recyclery["id"]) => {
+const filterPromotionsForStore = (
+  category: Category,
+  storeId: Recyclery["id"],
+) => {
   if (!category || typeof category !== "object") return;
 
   if (Array.isArray(category.Promotions)) {
@@ -52,12 +69,15 @@ const filterPromotionsForStore = (category: Category, storeId: Recyclery["id"]) 
         return (
           stores.length === 0 ||
           stores.some(
-          /** @param {{ id: number }} store */(store) => store.id === storeId,
+            /** @param {{ id: number }} store */ (store) =>
+              store.id === storeId,
           )
         );
       },
     ).map(
-      /** @param {{ stores?: Array<{ id: number }> }} promotion */(promotion) => {
+      /** @param {{ stores?: Array<{ id: number }> }} promotion */ (
+        promotion,
+      ) => {
         if (promotion && typeof promotion === "object") {
           delete promotion.stores;
         }
@@ -68,7 +88,7 @@ const filterPromotionsForStore = (category: Category, storeId: Recyclery["id"]) 
 
   if (Array.isArray(category.subcategories)) {
     category.subcategories.forEach(
-      /** @param {any} subcat */(subcat) =>
+      /** @param {any} subcat */ (subcat) =>
         filterPromotionsForStore(subcat, storeId),
     );
   }
@@ -77,7 +97,6 @@ const filterPromotionsForStore = (category: Category, storeId: Recyclery["id"]) 
     filterPromotionsForStore(category.parent, storeId);
   }
 };
-
 
 export const listCategories = async (req: Request, res: Response) => {
   const ALLOWED_INCLUDES = ["category", "parent", "promo"];
@@ -115,14 +134,14 @@ export const listCategories = async (req: Request, res: Response) => {
     required: false,
     include: filters.store_id
       ? [
-        {
-          model: Recyclery,
-          as: "stores",
-          attributes: ["id"],
-          through: { attributes: [] },
-          required: false,
-        },
-      ]
+          {
+            model: Recyclery,
+            as: "stores",
+            attributes: ["id"],
+            through: { attributes: [] },
+            required: false,
+          },
+        ]
       : [],
   };
   if (filters.include.includes("promo")) {
@@ -142,7 +161,8 @@ export const listCategories = async (req: Request, res: Response) => {
     if (typeof filters.sell == "boolean" && filters.sell)
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.SELL} != 0`);
     const insideInclude = [];
-    if (filters.include.includes("promo")) //TODO PK ça marche pas ?
+    if (filters.include.includes("promo"))
+      //TODO PK ça marche pas ?
       insideInclude.push({ ...includePromo });
     include.push({
       model: Category,
@@ -150,7 +170,7 @@ export const listCategories = async (req: Request, res: Response) => {
       where: { ...insideWhere },
       include: insideInclude,
       required: false,
-      order: [["name", "ASC"]]
+      order: [["name", "ASC"]],
     });
   }
   if (filters.include.includes("parent")) {
@@ -173,7 +193,11 @@ export const listCategories = async (req: Request, res: Response) => {
     });
   }
 
-  let categories = await Category.findAll({ where, include, order: [["name", "ASC"]] });
+  let categories = await Category.findAll({
+    where,
+    include,
+    order: [["name", "ASC"]],
+  });
   const storeId = filters.store_id;
   if (typeof storeId === "number" && filters.include.includes("promo")) {
     categories = categories.map((category) => category.toJSON());
@@ -204,7 +228,6 @@ export const listSubcategories = async (req, res) => {
   });
 };
 
-
 export const createCategorie = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
   // Vérifier si la catégorie existe déjà
@@ -229,9 +252,9 @@ export const createCategorie = async (req: Request, res: Response) => {
 
 export const deleteCategorie = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const toDelete = await Category.findByPk(id)
+  const toDelete = await Category.findByPk(id);
   if (!toDelete) throw new createHttpError[404]("Catégorie non trouvée");
-  await toDelete.destroy()
+  await toDelete.destroy();
   res.json({
     success: true,
     message: "Catégorie supprimée avec succès",
@@ -266,7 +289,6 @@ export const updateCategorie = async (req: Request, res: Response) => {
     category,
   });
 };
-
 
 export const patchCategory = async (req: Request, res: Response) => {
   const dataSchema = z.object({

@@ -1,5 +1,12 @@
 import createHttpError from "http-errors";
-import { col, fn, literal, Op, type Attributes, type WhereOptions } from "sequelize";
+import {
+  col,
+  fn,
+  literal,
+  Op,
+  type Attributes,
+  type WhereOptions,
+} from "sequelize";
 import z from "zod";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
@@ -24,7 +31,6 @@ const dataSchema = z.object({
   recyclery_id: idSchema().nullish().prefault(null),
 });
 
-
 export const listLabeledItem = async (req: Request, res: Response) => {
   const filterSchema = z.object({
     status: z.string().optional(),
@@ -39,15 +45,15 @@ export const listLabeledItem = async (req: Request, res: Response) => {
 
   const where: WhereOptions<Attributes<LabeledItem>> = likeQuery
     ? {
-      ...filter,
-      [Op.or]: [
-        // { name: likeQuery },
-        { description: likeQuery },
-        { id: likeQuery },
-      ],
-    }
+        ...filter,
+        [Op.or]: [
+          // { name: likeQuery },
+          { description: likeQuery },
+          { id: likeQuery },
+        ],
+      }
     : { ...filter };
-  const pagination = {} as { limit: number, offset: number };
+  const pagination = {} as { limit: number; offset: number };
   if (page) ((pagination.limit = 50), (pagination.offset = (page - 1) * 50));
 
   const labeledItems = await LabeledItem.findAndCountAll({
@@ -73,7 +79,6 @@ export const listLabeledItem = async (req: Request, res: Response) => {
     ],
     order: [["createdAt", "DESC"]],
     ...pagination,
-
   });
 
   res.json({
@@ -97,14 +102,17 @@ export const getItemFromBarcode = async (req, res) => {
   res.json({ success: true, item });
 };
 
-
-export const createLabeledItem = async (req: Request & { user: User }, res: Response) => {
+export const createLabeledItem = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
   const data = dataSchema.parse(req.body);
 
   const category = await Category.findByPk(data.category_id);
-  const sub = data.subcategory_id != null
-    ? await Category.findByPk(data.subcategory_id)
-    : data.subcategory_id;
+  const sub =
+    data.subcategory_id != null
+      ? await Category.findByPk(data.subcategory_id)
+      : data.subcategory_id;
   if (!data.name) {
     data.name = category ? category.name : "Article";
     if (sub) data.name += `> ${sub.name}`;
@@ -121,8 +129,11 @@ export const createLabeledItem = async (req: Request & { user: User }, res: Resp
   });
 };
 
-export const updateItem = async (req: Request & { user: User }, res: Response) => {
-  const id = idSchema().parse(req.params.id)
+export const updateItem = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
+  const id = idSchema().parse(req.params.id);
 
   const data = dataSchema.parse(req.body);
 
@@ -137,30 +148,31 @@ export const updateItem = async (req: Request & { user: User }, res: Response) =
   res.json({ success: true, message: "Article mis à jour avec succès" });
 };
 
-
 export const deleteLabeledItem = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id)
-  const toDelete = await LabeledItem.findByPk(id)
+  const id = idSchema().parse(req.params.id);
+  const toDelete = await LabeledItem.findByPk(id);
 
   if (!toDelete) throw new createHttpError[404]("Article non trouvé");
-  await toDelete.destroy()
+  await toDelete.destroy();
 
   res.json({ success: true, message: "Article supprimé avec succès" });
 };
 
-export const tagItemAsSell = async (req: Request & { user: User }, res: Response) => {
-  const id = idSchema().parse(req.params.id)
-  const item = await LabeledItem.findByPk(id)
-  if (!item || item.status == "available") throw new createHttpError[404]("Article non trouvé");
+export const tagItemAsSell = async (
+  req: Request & { user: User },
+  res: Response,
+) => {
+  const id = idSchema().parse(req.params.id);
+  const item = await LabeledItem.findByPk(id);
+  if (!item || item.status == "available")
+    throw new createHttpError[404]("Article non trouvé");
   await item.update({
     status: "sold",
     // sold_at: new Date()
-  })
-
+  });
 
   res.json({ success: true, message: "Article marqué comme vendu" });
 };
-
 
 export const itemsStats = async (req: Request, res: Response) => {
   const filterSchema = z.object({
@@ -176,30 +188,37 @@ export const itemsStats = async (req: Request, res: Response) => {
 
   const where: WhereOptions<Attributes<LabeledItem>> = likeQuery
     ? {
-      ...filter,
-      [Op.or]: [
-        // { name: likeQuery },
-        { description: likeQuery },
-        { id: likeQuery },
-      ],
-    }
+        ...filter,
+        [Op.or]: [
+          // { name: likeQuery },
+          { description: likeQuery },
+          { id: likeQuery },
+        ],
+      }
     : { ...filter };
-
 
   const stats = await LabeledItem.findAll({
     attributes: [
       [fn("COUNT", col("*")), "total_items"],
-      [fn("SUM", literal(`CASE WHEN status = 'available' THEN 1 ELSE 0 END`)), "available_items"],
-      [fn("SUM", literal(`CASE WHEN status = 'sold' THEN 1 ELSE 0 END`)), "sold_items"],
-      [fn("SUM", literal(`CASE WHEN status = 'reserved' THEN 1 ELSE 0 END`)), "reserved_items"],
+      [
+        fn("SUM", literal(`CASE WHEN status = 'available' THEN 1 ELSE 0 END`)),
+        "available_items",
+      ],
+      [
+        fn("SUM", literal(`CASE WHEN status = 'sold' THEN 1 ELSE 0 END`)),
+        "sold_items",
+      ],
+      [
+        fn("SUM", literal(`CASE WHEN status = 'reserved' THEN 1 ELSE 0 END`)),
+        "reserved_items",
+      ],
       [fn("SUM", col("price")), "total_value"],
     ],
     where,
-
   });
 
   res.json({
     success: true,
-    stats:stats[0]
+    stats: stats[0],
   });
 };

@@ -11,11 +11,14 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
-import type WasteDisposal from "./wasteDisposal.ts";
 import type Category from "./category.js";
+import type { ModelStatics } from "./db-types.ts";
+import type WasteDisposal from "./wasteDisposal.ts";
 
-export default class EcoOrganism extends Model<InferAttributes<EcoOrganism>, InferCreationAttributes<EcoOrganism>> {
+export default class EcoOrganism extends Model<
+  InferAttributes<EcoOrganism>,
+  InferCreationAttributes<EcoOrganism>
+> {
   declare id: CreationOptional<number>;
   declare name: string;
   declare description: CreationOptional<string | null>;
@@ -28,18 +31,25 @@ export default class EcoOrganism extends Model<InferAttributes<EcoOrganism>, Inf
   declare updatedAt: CreationOptional<Date>;
 
   declare WasteDisposals?: NonAttribute<WasteDisposal[]>;
-  declare inCategories: NonAttribute<Category[]>
-  declare sellCategories: NonAttribute<Category[]>
-
+  declare inCategories: NonAttribute<Category[]>;
+  declare sellCategories: NonAttribute<Category[]>;
 
   declare getWasteDisposals: HasManyGetAssociationsMixin<WasteDisposal>;
-  declare addWasteDisposal: HasManyAddAssociationMixin<WasteDisposal, WasteDisposal["id"]>;
+  declare addWasteDisposal: HasManyAddAssociationMixin<
+    WasteDisposal,
+    WasteDisposal["id"]
+  >;
 
-  declare getInCategories: BelongsToManyGetAssociationsMixin<Category>
-  declare getSellCategories: BelongsToManyGetAssociationsMixin<Category>
-  declare setInCategories: BelongsToManySetAssociationsMixin<Category, Category["id"]>
-  declare setSellCategories: BelongsToManySetAssociationsMixin<Category, Category["id"]>
-
+  declare getInCategories: BelongsToManyGetAssociationsMixin<Category>;
+  declare getSellCategories: BelongsToManyGetAssociationsMixin<Category>;
+  declare setInCategories: BelongsToManySetAssociationsMixin<
+    Category,
+    Category["id"]
+  >;
+  declare setSellCategories: BelongsToManySetAssociationsMixin<
+    Category,
+    Category["id"]
+  >;
 
   static associate(models: ModelStatics) {
     this.hasMany(models.WasteDisposal, { foreignKey: "eco_organism_id" });
@@ -51,7 +61,6 @@ export default class EcoOrganism extends Model<InferAttributes<EcoOrganism>, Inf
       through: "ecoOrg_categorySell",
       as: "sellCategories",
     });
-
   }
 
   static initModel(sequelize: Sequelize) {
@@ -67,11 +76,17 @@ export default class EcoOrganism extends Model<InferAttributes<EcoOrganism>, Inf
         contact_email: { type: DataTypes.STRING, validate: { isEmail: true } },
         contact_phone: {
           type: DataTypes.STRING,
-          validate: { is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/ },
+          validate: {
+            is: /^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/,
+          },
         },
         address: DataTypes.STRING,
         website: { type: DataTypes.STRING, validate: { isUrl: true } },
-        is_active: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
+        is_active: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: true,
+          allowNull: false,
+        },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
       },

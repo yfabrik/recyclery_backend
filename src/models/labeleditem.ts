@@ -13,20 +13,25 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { Models, ModelStatics } from "./db-types.ts";
 import type Category from "./category.ts";
+import type { ModelStatics } from "./db-types.ts";
 import type Recyclery from "./recyclery.ts";
 import type SalesTransaction from "./salestransaction.ts";
 import type User from "./user.ts";
 
-export default class LabeledItem extends Model<InferAttributes<LabeledItem>, InferCreationAttributes<LabeledItem>> {
+export default class LabeledItem extends Model<
+  InferAttributes<LabeledItem>,
+  InferCreationAttributes<LabeledItem>
+> {
   declare id: CreationOptional<number>;
   declare barcode: NonAttribute<string>;
   declare description: CreationOptional<string | null>;
   declare weight: number;
   declare price: number;
   declare cost: CreationOptional<number | null>;
-  declare condition_state: CreationOptional<"excellent" | "good" | "fair" | "poor">;
+  declare condition_state: CreationOptional<
+    "excellent" | "good" | "fair" | "poor"
+  >;
   declare status: CreationOptional<"available" | "sold">;
 
   declare category_id: ForeignKey<Category["id"]>;
@@ -45,20 +50,44 @@ export default class LabeledItem extends Model<InferAttributes<LabeledItem>, Inf
   declare getCategory: BelongsToGetAssociationMixin<Category>;
   declare setCategory: BelongsToSetAssociationMixin<Category, Category["id"]>;
   declare getSubcategory: BelongsToGetAssociationMixin<Category>;
-  declare setSubcategory: BelongsToSetAssociationMixin<Category, Category["id"]>;
+  declare setSubcategory: BelongsToSetAssociationMixin<
+    Category,
+    Category["id"]
+  >;
   declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
-  declare setRecyclery: BelongsToSetAssociationMixin<Recyclery, Recyclery["id"]>;
+  declare setRecyclery: BelongsToSetAssociationMixin<
+    Recyclery,
+    Recyclery["id"]
+  >;
   declare getCreatedBy: BelongsToGetAssociationMixin<User>;
   declare setCreatedBy: BelongsToSetAssociationMixin<User, User["id"]>;
   declare getTransactions: BelongsToManyGetAssociationsMixin<SalesTransaction>;
-  declare setTransactions: BelongsToManySetAssociationsMixin<SalesTransaction, SalesTransaction["id"]>;
-  declare addTransaction: BelongsToManyAddAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
-  declare addTransactions: BelongsToManyAddAssociationMixin<SalesTransaction, SalesTransaction["id"]>;
+  declare setTransactions: BelongsToManySetAssociationsMixin<
+    SalesTransaction,
+    SalesTransaction["id"]
+  >;
+  declare addTransaction: BelongsToManyAddAssociationMixin<
+    SalesTransaction,
+    SalesTransaction["id"]
+  >;
+  declare addTransactions: BelongsToManyAddAssociationMixin<
+    SalesTransaction,
+    SalesTransaction["id"]
+  >;
 
   static associate(models: ModelStatics) {
-    this.belongsTo(models.Category, { as: "category", foreignKey: "category_id" });
-    this.belongsTo(models.Category, { as: "subcategory", foreignKey: "subcategory_id" });
-    this.belongsTo(models.Recyclery, { as: "recyclery", foreignKey: "recyclery_id" });
+    this.belongsTo(models.Category, {
+      as: "category",
+      foreignKey: "category_id",
+    });
+    this.belongsTo(models.Category, {
+      as: "subcategory",
+      foreignKey: "subcategory_id",
+    });
+    this.belongsTo(models.Recyclery, {
+      as: "recyclery",
+      foreignKey: "recyclery_id",
+    });
     this.belongsTo(models.User, { as: "createdBy", foreignKey: "created_by" });
     this.belongsToMany(models.SalesTransaction, {
       through: models.TransactionItem,
@@ -88,7 +117,7 @@ export default class LabeledItem extends Model<InferAttributes<LabeledItem>, Inf
           type: DataTypes.DECIMAL(10, 2),
           defaultValue: 0,
           validate: { min: 0 },
-          allowNull: false
+          allowNull: false,
         },
         price: {
           type: DataTypes.DECIMAL(10, 2),
@@ -99,12 +128,12 @@ export default class LabeledItem extends Model<InferAttributes<LabeledItem>, Inf
         condition_state: {
           type: DataTypes.ENUM("excellent", "good", "fair", "poor"),
           defaultValue: "good",
-          allowNull: false
+          allowNull: false,
         },
         status: {
           type: DataTypes.ENUM("available", "sold"),
           defaultValue: "available",
-          allowNull: false
+          allowNull: false,
         },
 
         createdAt: DataTypes.DATE,
@@ -113,7 +142,11 @@ export default class LabeledItem extends Model<InferAttributes<LabeledItem>, Inf
       {
         sequelize,
         modelName: "LabeledItem",
-        indexes: [{ fields: ["status"] }, { fields: ["recyclery_id"] }, { fields: ["category_id"] }],
+        indexes: [
+          { fields: ["status"] },
+          { fields: ["recyclery_id"] },
+          { fields: ["category_id"] },
+        ],
       },
     );
   }

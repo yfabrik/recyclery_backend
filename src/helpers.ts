@@ -8,10 +8,10 @@ import {
 import type { ModelClass } from "./models/db-types.js";
 
 export const formatWhereDateRange = (dateFrom?: Date, dateTo?: Date) => {
-  let from = dateFrom
+  const from = dateFrom
     ? new Date(new Date(dateFrom).setHours(0, 0, 0, 0))
     : undefined;
-  let to = dateTo
+  const to = dateTo
     ? new Date(new Date(dateTo).setHours(23, 59, 59, 999))
     : undefined;
 
