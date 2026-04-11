@@ -123,9 +123,10 @@ export const updatePointPrecense = async (req: Request, res: Response) => {
   if (!existing)
     throw new createHttpError.NotFound("Jours de présence non trouvés");
 
-  const { day_of_week, ...rest } = data;
+  const { day_of_week, is_present, ...rest } = data;
   await existing.update({
     ...rest,
+    is_recurring: is_present,
     scheduled_date: day_of_week,
   });
 
