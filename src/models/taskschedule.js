@@ -33,7 +33,7 @@ export default (sequelize, DataTypes) => {
    */
   const conflictCheck = async (data, options) => {
     const values = data.dataValues;
-    if (values.category === "custom") return;//skip check for tache normales
+    if (values.category === "custom") return; //skip check for tache normales
     const toMinutes = (/** @type {Date | number} */ v) => {
       const d = v instanceof Date ? v : new Date(v);
       return d.getHours() * 60 + d.getMinutes();

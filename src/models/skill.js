@@ -20,8 +20,8 @@ export default (sequelize, DataTypes) => {
   Skill.init(
     {
       name: { type: DataTypes.STRING, allowNull: false, unique: true },
-      isActive:{type:DataTypes.BOOLEAN,defaultValue:true},
-      description:{type:DataTypes.TEXT}
+      isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+      description: { type: DataTypes.TEXT },
     },
     {
       sequelize,

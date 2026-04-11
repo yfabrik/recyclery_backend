@@ -7,10 +7,10 @@ import { createLabeledItem, listLabeledItem } from "../controllers/items.js";
 export const router = express.Router();
 
 // Obtenir tous les articles
-router.get("/",  asyncHandler(listLabeledItem));
+router.get("/", asyncHandler(listLabeledItem));
 
 // Créer un nouvel article
-router.post("/",  asyncHandler(createLabeledItem));
+router.post("/", asyncHandler(createLabeledItem));
 
 // Obtenir les catégories
-router.get("/categories",  asyncHandler(listCategories));
+router.get("/categories", asyncHandler(listCategories));

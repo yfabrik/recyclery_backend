@@ -175,7 +175,10 @@ import {
   createTransaction,
 } from "../../src/v1/controllers/salesTransactions.js";
 import { closeCashSession } from "../../src/v1/controllers/cashSession.js";
-import { getGiftCardBalance, issueGiftCard } from "../../src/services/giftCards.js";
+import {
+  getGiftCardBalance,
+  issueGiftCard,
+} from "../../src/services/giftCards.js";
 import { createRecyclery, createUser } from "../models/helpers.js";
 
 const {
@@ -193,7 +196,13 @@ const makeRes = () => ({
   status: jest.fn().mockReturnThis(),
 });
 
-const makeItemPayload = ({ item, quantity = 1, promotion = 0, bundleQuantity = null, bundlePrice = null }) => ({
+const makeItemPayload = ({
+  item,
+  quantity = 1,
+  promotion = 0,
+  bundleQuantity = null,
+  bundlePrice = null,
+}) => ({
   name: `item-${item.id}`,
   price: Number(item.price),
   quantity,
@@ -505,7 +514,8 @@ describe("salesTransactions controller gift card/refund flows", () => {
     await createRefund(promoRefundReq, promoRefundRes);
     const balanceAfterPromoRefund = await getGiftCardBalance(giftCardId);
     expect(
-      balanceAfterPromoRefund.currentBalance - balanceBeforePromoRefund.currentBalance,
+      balanceAfterPromoRefund.currentBalance -
+        balanceBeforePromoRefund.currentBalance,
     ).toBe(promoExpected);
 
     const bundleSaleReq = {

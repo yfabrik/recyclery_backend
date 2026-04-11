@@ -91,12 +91,14 @@ export const createUser = async (req, res) => {
     username: z.string("Nom d'utilisateur obligatoire"),
     email: z.email(" email obligatoire"),
     password: z.string(" mot de passe  obligatoire"),
-    role: z.enum(["employee", "manager", "admin"]).optional().default("employee"),
+    role: z
+      .enum(["employee", "manager", "admin"])
+      .optional()
+      .default("employee"),
     managedStores: z.array(idSchema()).nullish(),
     phone: phoneSchema().nullish(),
     // contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
     isActive: z.coerce.boolean().nullish().default(true),
-
   });
 
   const data = dataSchema.parse(req.body);
@@ -111,8 +113,9 @@ export const createUser = async (req, res) => {
     // password: data.password
   });
 
-  if (data.managedStores)//TODO check role ?
-    await user.addManagedStores(data.managedStores) //TODO setmanagerStores ?
+  if (data.managedStores)
+    //TODO check role ?
+    await user.addManagedStores(data.managedStores); //TODO setmanagerStores ?
 
   res.json({
     success: true,
@@ -130,7 +133,10 @@ export const updateUser = async (req, res) => {
   const dataSchema = z.object({
     username: z.string("Nom d'utilisateur obligatoire"),
     email: z.email(" email obligatoire"),
-    role: z.enum(["employee", "manager", "admin"]).optional().default("employee"),
+    role: z
+      .enum(["employee", "manager", "admin"])
+      .optional()
+      .default("employee"),
     managedStores: z.array(idSchema()).nullish(),
     phone: phoneSchema().nullish(),
     // contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
@@ -144,8 +150,7 @@ export const updateUser = async (req, res) => {
   await user.update({
     ...data,
   });
-  if (data.managedStores)
-    await user.setManagedStores(data.managedStores)
+  if (data.managedStores) await user.setManagedStores(data.managedStores);
 
   res.json({
     success: true,
@@ -159,10 +164,10 @@ export const updateUser = async (req, res) => {
  * @param {import("express").Response} res
  */
 export const deleteUser = async (req, res) => {
-  const id = idSchema().parse(req.params.id)
-  const user = await User.findByPk(id)
-  if (!user) throw new createHttpError.NotFound("utilisateur non trouvé")
-  await user.destroy()
+  const id = idSchema().parse(req.params.id);
+  const user = await User.findByPk(id);
+  if (!user) throw new createHttpError.NotFound("utilisateur non trouvé");
+  await user.destroy();
   res.json({
     success: true,
     message: "user removed",

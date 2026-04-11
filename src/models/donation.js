@@ -44,9 +44,9 @@ export default (sequelize, DataTypes) => {
       weight: {
         type: DataTypes.DECIMAL(10, 2),
         validate: {
-          min: 0
-        }
-      }
+          min: 0,
+        },
+      },
     },
     {
       sequelize,

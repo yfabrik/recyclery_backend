@@ -34,40 +34,53 @@ logger.debug(
 );
 logger.debug(`parent: ${parent.id},${parent.name}`);
 
-db.sequelize.transaction(async t => {
-  await subcat.update({
-    parent_id: parent.id,
-  }, { transaction: t });
-  logger.debug("update parent id")
-  const items = await LabeledItem.update({
-    category_id: parent.id
-  }, {
-    where: {
-      subcategory_id: subcat.id
-    }, transaction: t
-  })
-  logger.debug("update les item lié")
+db.sequelize.transaction(async (t) => {
+  await subcat.update(
+    {
+      parent_id: parent.id,
+    },
+    { transaction: t },
+  );
+  logger.debug("update parent id");
+  const items = await LabeledItem.update(
+    {
+      category_id: parent.id,
+    },
+    {
+      where: {
+        subcategory_id: subcat.id,
+      },
+      transaction: t,
+    },
+  );
+  logger.debug("update les item lié");
 
-  const arrivals = await Arrival.update({
-    category_id: parent.id
-  }, {
-    where: {
-      subcategory_id: subcat.id
-    }, transaction: t
-  })
-  logger.debug("update les arrivage lié")
+  const arrivals = await Arrival.update(
+    {
+      category_id: parent.id,
+    },
+    {
+      where: {
+        subcategory_id: subcat.id,
+      },
+      transaction: t,
+    },
+  );
+  logger.debug("update les arrivage lié");
 
-
-  const promo = await WasteDisposal.update({
-    category_id: parent.id
-  }, {
-    where: {
-      subcategory_id: subcat.id
-    }, transaction: t
-  })
-  logger.debug("update les wastes lié")
-
-})
+  const promo = await WasteDisposal.update(
+    {
+      category_id: parent.id,
+    },
+    {
+      where: {
+        subcategory_id: subcat.id,
+      },
+      transaction: t,
+    },
+  );
+  logger.debug("update les wastes lié");
+});
 
 await subcat.reload();
 logger.debug(subcat.get({ plain: true }));

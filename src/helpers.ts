@@ -3,7 +3,7 @@ import {
   Op,
   type FindOptions,
   type Identifier,
-  type WhereAttributeHashValue
+  type WhereAttributeHashValue,
 } from "sequelize";
 import type { ModelClass } from "./models/db-types.js";
 
@@ -15,16 +15,14 @@ export const formatWhereDateRange = (dateFrom?: Date, dateTo?: Date) => {
     ? new Date(new Date(dateTo).setHours(23, 59, 59, 999))
     : undefined;
 
-  if (!from && !to) return
+  if (!from && !to) return;
   let result = {}; //as WhereAttributeHashValue<Date>
   if (from) result = { ...result, [Op.gte]: from };
   if (to) result = { ...result, [Op.lte]: to };
   return result as WhereAttributeHashValue<Date>;
 };
 
-export const ensureItemWithIdExist = async <
-  T extends ModelClass,
->(
+export const ensureItemWithIdExist = async <T extends ModelClass>(
   model: T,
   id: Identifier,
   options?: Omit<FindOptions<T>, "where">,

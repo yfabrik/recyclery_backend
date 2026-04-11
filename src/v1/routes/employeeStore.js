@@ -11,28 +11,26 @@ import {
 
 export const router = Router();
 // Obtenir toutes les affectations employés-magasins
-router.get("/",  asyncHandler(listEmployeeStore));
+router.get("/", asyncHandler(listEmployeeStore));
 
 // Obtenir les affectations d'un employé
-router.get(
-  "/employee/:employeeId",
-  asyncHandler(getEmployeeStoreById),
-);
+router.get("/employee/:employeeId", asyncHandler(getEmployeeStoreById));
 
 // Obtenir les employés d'un magasin
-router.get(
-  "/store/:storeId",
-  asyncHandler(listStoreEmployee),
-);
+router.get("/store/:storeId", asyncHandler(listStoreEmployee));
 
 // Créer une nouvelle affectation
-router.post("/",  asyncHandler(assignUserToStore));
+router.post("/", asyncHandler(assignUserToStore));
 
 // Mettre à jour une affectation
-router.put("/:id",  async (req, res) => {
+router.put("/:id", async (req, res) => {
   const { id } = req.params;
   const { is_primary } = req.body;
-  logger.error("called useless fn in the router FIXME", { params: req.params, body: req.body, referer: req?.headers?.referer, });
+  logger.error("called useless fn in the router FIXME", {
+    params: req.params,
+    body: req.body,
+    referer: req?.headers?.referer,
+  });
 
   // Si c'est une affectation principale, retirer le statut principal des autres affectations de cet employé
   //   if (is_primary) {
@@ -71,9 +69,13 @@ router.put("/:id",  async (req, res) => {
 });
 
 // Supprimer une affectation
-router.delete("/:id",  async (req, res) => {
+router.delete("/:id", async (req, res) => {
   const { id } = req.params;
-  logger.error("called useless fn in the router FIXME", { params: req.params, body: req.body, referer: req?.headers?.referer, });
+  logger.error("called useless fn in the router FIXME", {
+    params: req.params,
+    body: req.body,
+    referer: req?.headers?.referer,
+  });
 
   //   const result = await database.run(
   //     "DELETE FROM employee_stores WHERE id = ?",
@@ -94,7 +96,4 @@ router.delete("/:id",  async (req, res) => {
 });
 
 // Supprimer toutes les affectations d'un employé
-router.delete(
-  "/employee/:employeeId",
-  asyncHandler(removeEmployeeStore),
-);
+router.delete("/employee/:employeeId", asyncHandler(removeEmployeeStore));

@@ -78,12 +78,13 @@ const amountsEqual = (a, b) => Math.abs(toAmount(a) - toAmount(b)) < 0.001;
  */
 const normalizePayments = (data) => {
   const explicitPayments = Array.isArray(data.payments) ? data.payments : [];
-  const payments =
-    explicitPayments.length > 0
-      ? explicitPayments : []
+  const payments = explicitPayments.length > 0 ? explicitPayments : [];
   // : [{ method: data.payment_method??0, amount: data.payment_amount }];
 
-  const totalPayments = payments.reduce((acc, p) => acc + toAmount(p.amount), 0);
+  const totalPayments = payments.reduce(
+    (acc, p) => acc + toAmount(p.amount),
+    0,
+  );
   if (data.total_amount > totalPayments) {
     // if (!amountsEqual(totalPayments, data.total_amount)) {//TODO FIXME for cash with extra money
     throw new createHttpError.BadRequest(
@@ -108,7 +109,7 @@ const normalizePayments = (data) => {
  * @param {import("express").Response} res
  */
 export const listTransactions = async (req, res) => {
-  const ALLOWED_INCLUDES = ["refund", "items","payments"];
+  const ALLOWED_INCLUDES = ["refund", "items", "payments"];
   const filterSchema = z.object({
     store_id: z.preprocess(
       (val) => (val === "" ? undefined : val),
@@ -243,13 +244,14 @@ export const createTransaction = async (req, res) => {
 
   const result = await db.sequelize.transaction(async (t) => {
     const uniqueMethods = [...new Set(payments.map((p) => p.method))];
-    const storedMethod = uniqueMethods.length === 1 ? uniqueMethods[0] : "mixed";
+    const storedMethod =
+      uniqueMethods.length === 1 ? uniqueMethods[0] : "mixed";
 
     const sale = await session.createSalesTransaction(
       {
-        total_amount: data.total_amount,//TODO recalculer coté server mais j'ai la flemme
+        total_amount: data.total_amount, //TODO recalculer coté server mais j'ai la flemme
         payment_method: storedMethod,
-        payment_amount: data.payment_amount,//TODO payments.reduce(...)
+        payment_amount: data.payment_amount, //TODO payments.reduce(...)
         customer_postal_code: data?.customer_postal_code || null,
       },
       { transaction: t },
@@ -303,7 +305,9 @@ export const createTransaction = async (req, res) => {
       }
     }
 
-    for await (const payment of payments.filter((p) => p.method === "giftcard")) {
+    for await (const payment of payments.filter(
+      (p) => p.method === "giftcard",
+    )) {
       const giftCardCode = payment.gift_card_code;
       if (!giftCardCode) {
         throw new createHttpError.BadRequest(
@@ -336,7 +340,9 @@ export const createTransaction = async (req, res) => {
       );
     }
 
-    for await (const payment of payments.filter((p) => p.method !== "giftcard")) {
+    for await (const payment of payments.filter(
+      (p) => p.method !== "giftcard",
+    )) {
       await TransactionPayment.create(
         {
           sales_transaction_id: sale.id,
@@ -398,8 +404,12 @@ export const createRefund = async (req, res) => {
   const refundDataSchema = z.object({
     cash_session_id: idSchema(),
     total_amount: z.coerce.number("argent requis"),
-    payment_method: z.enum(["cash", "card", "check", "giftcard"]).default("cash"),
-    refund_method: z.enum(["cash", "card", "check", "giftcard"]).default("cash"),
+    payment_method: z
+      .enum(["cash", "card", "check", "giftcard"])
+      .default("cash"),
+    refund_method: z
+      .enum(["cash", "card", "check", "giftcard"])
+      .default("cash"),
     gift_card_code: z.string().trim().min(1).nullish(),
     refund_reason: z.string("refund raison requis"),
     items: z.array(refundItemSchema),
@@ -422,8 +432,8 @@ export const createRefund = async (req, res) => {
   //FIXME on se fait baiser quand les object sont en lot et qu'on rembourse qu'une partie
 
   const data = refundDataSchema.parse(req.body);
-  data.refund_method = data.payment_method
-  console.log(data.payment_method)
+  data.refund_method = data.payment_method;
+  console.log(data.payment_method);
   const refunded = data.items
     .map((item) => {
       const alreadyRefunded = parent.refunds?.reduce((prev, current) => {
@@ -506,7 +516,6 @@ export const createRefund = async (req, res) => {
       const giftCardCode = data.gift_card_code;
       const refundAmount = Number(refund.total_amount || 0);
       if (giftCardCode) {
-
         const giftCard = await findGiftCardByCode(giftCardCode, {
           transaction: t,
         });
@@ -547,16 +556,14 @@ export const createRefund = async (req, res) => {
       } else {
         // Refund -> Gift card (create a new card when no code is provided)
         const generatedCode = `GC-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-        const giftCard = await issueGiftCard(
-          {
-            code: generatedCode,
-            initialValue: refundAmount,
-            issuedRefundTransactionId: refund.id,
-            createdBy: req.user.id,
-            metadata: { source: "refund_issue", parentTransactionId: id },
-            transaction: t,
-          },
-        );
+        const giftCard = await issueGiftCard({
+          code: generatedCode,
+          initialValue: refundAmount,
+          issuedRefundTransactionId: refund.id,
+          createdBy: req.user.id,
+          metadata: { source: "refund_issue", parentTransactionId: id },
+          transaction: t,
+        });
 
         await TransactionPayment.create(
           {
@@ -594,7 +601,6 @@ export const createRefund = async (req, res) => {
     }
     return { refund, giftCard: refundGiftCard };
   });
-
 
   // Example response:
   // {

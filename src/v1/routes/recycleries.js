@@ -13,7 +13,6 @@ import {
 
 export const router = Router();
 
-
 // Obtenir toutes les recycleries
 router.get("/", asyncHandler(listRecycleries));
 
@@ -21,34 +20,19 @@ router.get("/", asyncHandler(listRecycleries));
 router.get("/:id", asyncHandler(detailRecyclerie));
 
 // Créer une nouvelle recyclerie
-router.post(
-  "/",
-  asyncHandler(createRecyclerie),
-);
+router.post("/", asyncHandler(createRecyclerie));
 
 // Mettre à jour une recyclerie
-router.put(
-  "/:id",
-  asyncHandler(updateRecyclerie),
-);
+router.put("/:id", asyncHandler(updateRecyclerie));
 
 // Supprimer une recyclerie
-router.delete(
-  "/:id",
-  asyncHandler(deleteRecyclerie),
-);
+router.delete("/:id", asyncHandler(deleteRecyclerie));
 
 // Obtenir les statistiques d'une recyclerie
 router.get("/:id/stats", asyncHandler(recycleryStats));
 
 // GET - Récupérer les caisses d'un magasin
-router.get(
-  "/:id/cash-registers",
-  asyncHandler(listCaissesRecyclerie),
-);
+router.get("/:id/cash-registers", asyncHandler(listCaissesRecyclerie));
 
 // POST - Créer une nouvelle caisse pour un magasin
-router.post(
-  "/:id/cash-registers",
-  asyncHandler(createCaisse),
-);
+router.post("/:id/cash-registers", asyncHandler(createCaisse));

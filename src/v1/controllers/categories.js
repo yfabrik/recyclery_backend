@@ -51,16 +51,19 @@ const filterPromotionsForStore = (category, storeId) => {
     category.Promotions = category.Promotions.filter(
       /** @param {{ stores?: Array<{ id: number }> }} promotion */
       (promotion) => {
-      const stores = Array.isArray(promotion?.stores) ? promotion.stores : [];
-      return (
-        stores.length === 0 ||
-        stores.some(
-          /** @param {{ id: number }} store */ (store) => store.id === storeId,
-        )
-      );
-    },
+        const stores = Array.isArray(promotion?.stores) ? promotion.stores : [];
+        return (
+          stores.length === 0 ||
+          stores.some(
+            /** @param {{ id: number }} store */ (store) =>
+              store.id === storeId,
+          )
+        );
+      },
     ).map(
-      /** @param {{ stores?: Array<{ id: number }> }} promotion */ (promotion) => {
+      /** @param {{ stores?: Array<{ id: number }> }} promotion */ (
+        promotion,
+      ) => {
         if (promotion && typeof promotion === "object") {
           delete promotion.stores;
         }
@@ -72,7 +75,7 @@ const filterPromotionsForStore = (category, storeId) => {
   if (Array.isArray(category.subcategories)) {
     category.subcategories.forEach(
       /** @param {any} subcat */ (subcat) =>
-      filterPromotionsForStore(subcat, storeId),
+        filterPromotionsForStore(subcat, storeId),
     );
   }
 
@@ -153,7 +156,8 @@ export const listCategories = async (req, res) => {
     if (typeof filters.sell == "boolean" && filters.sell)
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.SELL} != 0`);
     const insideInclude = [];
-    if (filters.include.includes("promo")) //TODO PK ça marche pas ?
+    if (filters.include.includes("promo"))
+      //TODO PK ça marche pas ?
       insideInclude.push({ ...includePromo });
     include.push({
       model: Category,

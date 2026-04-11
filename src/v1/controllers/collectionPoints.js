@@ -4,7 +4,7 @@ import z from "zod";
 import db from "../../models/index.js";
 import { idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
 
-const { CollectionPoint, Recyclery,  TaskSchedule } = db;
+const { CollectionPoint, Recyclery, TaskSchedule } = db;
 
 const dataSchema = z.object({
   name: z.string().trim().nonempty("nom requis"),

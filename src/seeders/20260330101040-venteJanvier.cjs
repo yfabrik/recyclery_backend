@@ -1,20 +1,20 @@
-'use strict';
+"use strict";
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const fs = require('fs/promises');
-    const path = require('path');
+    const fs = require("fs/promises");
+    const path = require("path");
 
-    const inputPath = path.resolve(__dirname, 'vente_janvier.json');
+    const inputPath = path.resolve(__dirname, "vente_janvier.json");
 
-    const raw = await fs.readFile(inputPath, 'utf8');
+    const raw = await fs.readFile(inputPath, "utf8");
     /** @type {{category: string|null; subcategory: string|null; price: string|null; weight: string|null; quantity: string|null; store: string|null}[]} */
     const rows = JSON.parse(raw);
     if (!Array.isArray(rows) || rows.length === 0) return;
 
     // Use compiled TS models from dist (src model loader expects a different export shape).
-    const db = (await import('../../dist/models/index.js')).default;
+    const db = (await import("../../dist/models/index.js")).default;
     const {
       CashSession,
       CashRegister,
@@ -26,18 +26,18 @@ module.exports = {
 
     /** @param {unknown} s */
     const normalizeWhitespace = (s) =>
-      String(s ?? '')
-        .replace(/\u00A0/g, ' ')
-        .replace(/\s+/g, ' ')
+      String(s ?? "")
+        .replace(/\u00A0/g, " ")
+        .replace(/\s+/g, " ")
         .trim();
 
     /** @param {unknown} s */
     const normalizeMoneyFR = (s) => {
       const cleaned = normalizeWhitespace(s)
-        .replace(/€/g, '')
-        .replace(/\s/g, '')
-        .replace(/\./g, '') // thousands separators (if any)
-        .replace(',', '.');
+        .replace(/€/g, "")
+        .replace(/\s/g, "")
+        .replace(/\./g, "") // thousands separators (if any)
+        .replace(",", ".");
       const n = Number(cleaned);
       return Number.isFinite(n) ? n : 0;
     };
@@ -45,10 +45,10 @@ module.exports = {
     /** @param {unknown} s */
     const normalizeKgFR = (s) => {
       const cleaned = normalizeWhitespace(s)
-        .replace(/kg/gi, '')
-        .replace(/\s/g, '')
-        .replace(/\./g, '')
-        .replace(',', '.');
+        .replace(/kg/gi, "")
+        .replace(/\s/g, "")
+        .replace(/\./g, "")
+        .replace(",", ".");
       const n = Number(cleaned);
       return Number.isFinite(n) ? n : 0;
     };
@@ -61,7 +61,7 @@ module.exports = {
 
     /** @param {unknown} n */
     const toInt = (n) => {
-      const num = typeof n === 'number' ? n : Number(n);
+      const num = typeof n === "number" ? n : Number(n);
       if (!Number.isFinite(num)) return 0;
       const rounded = Math.round(num);
       // Allow common spreadsheet float noise.
@@ -71,7 +71,7 @@ module.exports = {
 
     /** @param {number} n */
     const money2 = (n) => roundTo(n, 2);
-    const baseDate = new Date('2026-01-10T08:00:00.000Z');
+    const baseDate = new Date("2026-01-10T08:00:00.000Z");
     let tsOffsetSeconds = 0;
     const nextTimestamp = () => {
       const d = new Date(baseDate);
@@ -86,11 +86,12 @@ module.exports = {
     const normalizeUpper = (value) => normalizeWhitespace(value).toUpperCase();
     /** @param {unknown} name @param {number|null|undefined} parentId */
     const categoryKey = (name, parentId) =>
-      `${keyName(name)}|${parentId ?? 'null'}`;
+      `${keyName(name)}|${parentId ?? "null"}`;
 
     /** @type {{id:number; name:string; parent_id:number|null; IO:number|null}[]} */
     const categories = await Category.findAll({
-      attributes: ['id', 'name', 'parent_id', 'IO'], where: { IO: db.Sequelize.literal(`Category.IO & ${1 << 2} != 0`) },
+      attributes: ["id", "name", "parent_id", "IO"],
+      where: { IO: db.Sequelize.literal(`Category.IO & ${1 << 2} != 0`) },
       raw: true,
     });
 
@@ -107,7 +108,7 @@ module.exports = {
 
     /** @type {{id:number; name:string}[]} */
     const stores = await Recyclery.findAll({
-      attributes: ['id', 'name'],
+      attributes: ["id", "name"],
       raw: true,
     });
     const storeByName = new Map(stores.map((s) => [keyName(s.name), s]));
@@ -132,13 +133,15 @@ module.exports = {
       for (const [storeKey, group] of byStore.entries()) {
         const store = storeByName.get(storeKey);
         if (!store) {
-          throw new Error(`Store not found for name '${group[0]?.storeName ?? storeKey}'`);
+          throw new Error(
+            `Store not found for name '${group[0]?.storeName ?? storeKey}'`,
+          );
         }
 
         const firstCashRegister = await CashRegister.findOne({
           where: { recyclery_id: store.id },
-          order: [['id', 'ASC']],
-          attributes: ['id'],
+          order: [["id", "ASC"]],
+          attributes: ["id"],
           transaction: outerT,
         });
         if (!firstCashRegister) {
@@ -150,7 +153,7 @@ module.exports = {
             cash_register_id: firstCashRegister.id,
             user_id: null,
             opening_amount: money2(0),
-            status: 'open',
+            status: "open",
             notes: `Seed: vente_janvier (${store.name})`,
             createdAt: nextTimestamp(),
             updatedAt: nextTimestamp(),
@@ -170,7 +173,9 @@ module.exports = {
             throw new Error(`Missing category at JSON row ${index}`);
           }
           if (quantity <= 0) {
-            throw new Error(`Invalid quantity at JSON row ${index} (${r.quantity})`);
+            throw new Error(
+              `Invalid quantity at JSON row ${index} (${r.quantity})`,
+            );
           }
           if (totalPrice <= 0) {
             skippedZero++;
@@ -179,10 +184,10 @@ module.exports = {
 
           const category = rootCategoryByName.get(keyName(categoryName));
           if (!category) {
-            throw new Error(`Category '${categoryName}' not found (row ${index})`);
+            throw new Error(
+              `Category '${categoryName}' not found (row ${index})`,
+            );
           }
-
-
 
           let subId = null;
           if (subcategoryName) {
@@ -210,9 +215,9 @@ module.exports = {
               category_id: category.id,
               subcategory_id: subId,
               recyclery_id: store.id,
-              weight: totalWeight/quantity,
+              weight: totalWeight / quantity,
               price: unitPriceForLabel,
-              status: 'sold',
+              status: "sold",
               createdAt: nextTimestamp(),
               updatedAt: nextTimestamp(),
             },
@@ -222,9 +227,9 @@ module.exports = {
           const sale = await cashSession.createSalesTransaction(
             {
               total_amount: totalPrice,
-              payment_method: 'cash',
+              payment_method: "cash",
               payment_amount: totalPrice,
-              transactionType: 'sell',
+              transactionType: "sell",
               customer_postal_code: null,
               createdAt: nextTimestamp(),
               updatedAt: nextTimestamp(),
@@ -233,7 +238,7 @@ module.exports = {
           );
 
           await queryInterface.bulkInsert(
-            'transaction_items',
+            "transaction_items",
             [
               {
                 transaction_id: sale.id,
@@ -254,7 +259,7 @@ module.exports = {
           await TransactionPayment.create(
             {
               sales_transaction_id: sale.id,
-              method: 'cash',
+              method: "cash",
               amount: totalPrice,
               createdAt: nextTimestamp(),
               updatedAt: nextTimestamp(),
@@ -269,7 +274,7 @@ module.exports = {
         const closedAt = nextTimestamp();
         await cashSession.update(
           {
-            status: 'close',
+            status: "close",
             expected_amount: money2(storeSessionSalesTotal),
             closing_amount: money2(storeSessionSalesTotal),
             closed_at: closedAt,
@@ -286,8 +291,8 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    const start = new Date('2026-01-10T00:00:00.000Z');
-    const end = new Date('2026-01-11T00:00:00.000Z');
+    const start = new Date("2026-01-10T00:00:00.000Z");
+    const end = new Date("2026-01-11T00:00:00.000Z");
     const whereByDay = {
       createdAt: {
         [Sequelize.Op.gte]: start,
@@ -295,10 +300,10 @@ module.exports = {
       },
     };
 
-    await queryInterface.bulkDelete('transaction_payments', whereByDay, {});
-    await queryInterface.bulkDelete('transaction_items', whereByDay, {});
-    await queryInterface.bulkDelete('SalesTransactions', whereByDay, {});
-    await queryInterface.bulkDelete('LabeledItems', whereByDay, {});
-    await queryInterface.bulkDelete('CashSessions', whereByDay, {});
+    await queryInterface.bulkDelete("transaction_payments", whereByDay, {});
+    await queryInterface.bulkDelete("transaction_items", whereByDay, {});
+    await queryInterface.bulkDelete("SalesTransactions", whereByDay, {});
+    await queryInterface.bulkDelete("LabeledItems", whereByDay, {});
+    await queryInterface.bulkDelete("CashSessions", whereByDay, {});
   },
 };

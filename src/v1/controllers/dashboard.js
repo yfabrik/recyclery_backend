@@ -75,7 +75,10 @@ export const dashboardStats = async (req, res) => {
   // 6. Collections programmées ce mois
   // console.log(CollectionSchedule.findAll({ where: { scheduled_date: { [Op.gt]: currentMonth } } }))
   stats.scheduledCollections = await Task.count({
-    where: {category:"collection", scheduled_date: { [Op.gt]: currentMonth } },
+    where: {
+      category: "collection",
+      scheduled_date: { [Op.gt]: currentMonth },
+    },
   });
 
   // 7. Nombre de catégories actives
@@ -130,7 +133,7 @@ export const dashboardActivities = async (req, res) => {
     limit: 5,
     order: [["updatedAt", "DESC"]],
   });
-  console.log(recentSales)
+  console.log(recentSales);
 
   recentSales.forEach((sale) => {
     activities.push({

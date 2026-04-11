@@ -17,7 +17,10 @@ export const register = async (req, res, next) => {
     username: z.string("Nom d'utilisateur requis"),
     email: z.email("email requis"),
     password: z.string("password requis"),
-    role: z.enum(["employee", "manager", "admin"]).optional().default("employee"),
+    role: z
+      .enum(["employee", "manager", "admin"])
+      .optional()
+      .default("employee"),
     recyclery_id: idSchema().optional(),
   });
 

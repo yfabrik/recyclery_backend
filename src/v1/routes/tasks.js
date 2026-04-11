@@ -14,31 +14,25 @@ import {
 
 export const router = Router();
 // Récupérer toutes les tâches
-router.get("/",  asyncHandler(listTasks));
+router.get("/", asyncHandler(listTasks));
 
 // Récupérer une tâche par ID
-router.get("/:id",  asyncHandler(detailTask));
+router.get("/:id", asyncHandler(detailTask));
 
 // Créer une nouvelle tâche
-router.post("/",  asyncHandler(createTask));
+router.post("/", asyncHandler(createTask));
 
 // Mettre à jour une tâche
-router.put("/:id",  asyncHandler(updateTask));
+router.put("/:id", asyncHandler(updateTask));
 
 // Supprimer une tâche
-router.delete("/:id",  asyncHandler(deleteTask));
+router.delete("/:id", asyncHandler(deleteTask));
 
 // Récupérer les employés assignés à une tâche
-router.get(
-  "/:taskId/employees",
-  asyncHandler(getUsersFromTask),
-);
+router.get("/:taskId/employees", asyncHandler(getUsersFromTask));
 
 // Assigner un employé à une tâche
-router.post(
-  "/:taskId/employees",
-  asyncHandler(addUserToTask),
-);
+router.post("/:taskId/employees", asyncHandler(addUserToTask));
 
 // Retirer un employé d'une tâche
 router.delete(

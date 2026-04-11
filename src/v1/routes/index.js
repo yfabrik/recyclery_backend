@@ -6,8 +6,8 @@ export const router = Router();
 
 router.use("/auth", (await import("./auth.js")).router);
 
-router.use(authenticateToken)
-router.use(hasPermissions)
+router.use(authenticateToken);
+router.use(hasPermissions);
 
 router.use("/recycleries", (await import("./recycleries.js")).router); //TODO store
 router.use("/users", (await import("./users.js")).router);
@@ -56,5 +56,3 @@ router.use(
 router.use("/employees", (await import("./employees.js")).router);
 router.use("/promotions", (await import("./promotions.js")).router);
 router.use("/skills", (await import("./skills.js")).router);
-
-

@@ -13,7 +13,6 @@ import {
 
 export const router = express.Router();
 
-
 router.get("/", asyncHandler(listCashSessions));
 router.get("/active", asyncHandler(getActiveSession));
 router.post("/open", asyncHandler(openCashSession));

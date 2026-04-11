@@ -142,7 +142,9 @@ export const updateRecyclerie = async (req, res) => {
   const data = dataSchema.parse(req.body);
 
   const recyclerie = await Recyclery.findByPk(id, {
-    include: [{ model: TaskSchedule, where: { category: "vente" },required:false }],
+    include: [
+      { model: TaskSchedule, where: { category: "vente" }, required: false },
+    ],
   });
   if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
 

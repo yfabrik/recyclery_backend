@@ -77,7 +77,9 @@ export const issueGiftCard = async ({
 }) => {
   const amount = toAmount(initialValue);
   if (!Number.isFinite(amount) || amount < 0) {
-    throw new createHttpError.BadRequest("initial gift card value must be >= 0");
+    throw new createHttpError.BadRequest(
+      "initial gift card value must be >= 0",
+    );
   }
   const linkedTransactionId = issuedTransactionId || issuedRefundTransactionId;
   if (!linkedTransactionId) {

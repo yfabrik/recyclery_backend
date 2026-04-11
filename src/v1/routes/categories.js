@@ -13,28 +13,16 @@ import {
 export const router = Router();
 
 // Obtenir toutes les catégories (principales et sous-catégories) en liste plate
-router.get(
-  "/",
-  asyncHandler(listCategories),
-);
+router.get("/", asyncHandler(listCategories));
 
 // Créer une nouvelle catégorie ou sous-catégorie
-router.post(
-  "/",
-  asyncHandler(createCategorie),
-);
+router.post("/", asyncHandler(createCategorie));
 
 // Mettre à jour une catégorie
-router.put(
-  "/:id",
-  asyncHandler(updateCategorie),
-);
+router.put("/:id", asyncHandler(updateCategorie));
 
 // Supprimer une catégorie
-router.delete(
-  "/:id",
-  asyncHandler(deleteCategorie),
-);
+router.delete("/:id", asyncHandler(deleteCategorie));
 
 // Obtenir la liste des icônes disponibles
 router.get("/icons", (req, res) => {

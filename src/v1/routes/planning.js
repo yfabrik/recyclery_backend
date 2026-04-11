@@ -23,28 +23,16 @@ router.get("/", asyncHandler(listSchedules));
 router.get("/:id", asyncHandler(findSchedule));
 
 // Créer un nouveau planning
-router.post(
-  "/",
-  asyncHandler(createSchedule),
-);
+router.post("/", asyncHandler(createSchedule));
 
 // Mettre à jour un planning
-router.put(
-  "/:id",
-  asyncHandler(updateSchedule),
-);
+router.put("/:id", asyncHandler(updateSchedule));
 
 // Supprimer un planning
-router.delete(
-  "/:id",
-  asyncHandler(deleteSchedule),
-);
+router.delete("/:id", asyncHandler(deleteSchedule));
 
 // Récupérer le planning d'un employé
-router.get(
-  "/employee/:employee_id",
-  asyncHandler(getEmployeeSchedule),
-);
+router.get("/employee/:employee_id", asyncHandler(getEmployeeSchedule));
 
 // Récupérer les statistiques du planning
 router.get("/stats/overview", asyncHandler(planningStats));
@@ -53,7 +41,10 @@ router.get("/stats/overview", asyncHandler(planningStats));
 router.get(
   "/:scheduleId/employees",
   asyncHandler(async (req, res) => {
-    logger.error("called useless fn in planning route FIXME", { params: req.params, referer: req?.headers?.referer, });
+    logger.error("called useless fn in planning route FIXME", {
+      params: req.params,
+      referer: req?.headers?.referer,
+    });
     const { scheduleId } = req.params;
 
     // const query = `
@@ -73,10 +64,7 @@ router.get(
 );
 
 // Assigner un employé à une tâche spécifique du planning
-router.post(
-  "/:scheduleId/employees",
-  asyncHandler(addEmployeeToSchedule),
-);
+router.post("/:scheduleId/employees", asyncHandler(addEmployeeToSchedule));
 
 // Récupérer les employés disponibles pour une tâche spécifique (en tenant compte des conflits d'horaires)
 router.get(

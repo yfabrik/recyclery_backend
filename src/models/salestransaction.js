@@ -53,7 +53,13 @@ export default (sequelize, DataTypes) => {
       // cash_session_id: DataTypes.INTEGER, //assoc
       // store_id: DataTypes.INTEGER, //assoc
       total_amount: DataTypes.DECIMAL(10, 2), //virtual ?
-      payment_method: DataTypes.ENUM("cash", "card", "check", "giftcard", "mixed"),
+      payment_method: DataTypes.ENUM(
+        "cash",
+        "card",
+        "check",
+        "giftcard",
+        "mixed",
+      ),
       transactionType: {
         type: DataTypes.ENUM("sell", "refund"),
         defaultValue: "sell",

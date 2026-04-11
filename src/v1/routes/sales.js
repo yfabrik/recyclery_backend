@@ -13,7 +13,10 @@ export const router = Router();
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    logger.error("called useless fn in sales route FIXME", { query: req.query, referer: req?.headers?.referer, });
+    logger.error("called useless fn in sales route FIXME", {
+      query: req.query,
+      referer: req?.headers?.referer,
+    });
 
     const { recyclery_id } = req.query;
     /**
@@ -36,7 +39,11 @@ router.get(
 router.post(
   "/",
   asyncHandler(async (req, res) => {
-    logger.error("called useless fn in sales route FIXME", { params: req.params, body: req.body, referer: req?.headers?.referer, });
+    logger.error("called useless fn in sales route FIXME", {
+      params: req.params,
+      body: req.body,
+      referer: req?.headers?.referer,
+    });
 
     const {
       customer_name,

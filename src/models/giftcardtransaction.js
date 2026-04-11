@@ -91,14 +91,16 @@ export default (sequelize, DataTypes) => {
               },
             ],
           });
-          if (!giftCard) { throw new Error("Gift card not found"); }
+          if (!giftCard) {
+            throw new Error("Gift card not found");
+          }
           /** @type {any} */
           const gc = giftCard;
           let newStatus = gc.status;
           const amount = Math.abs(m.amount);
           const currentValue = gc.current_value;
           if (m.type === "charge") {
-            console.log(amount, currentValue)
+            console.log(amount, currentValue);
             if (amount - currentValue < 0) {
               newStatus = "partially_used";
             }
@@ -106,14 +108,17 @@ export default (sequelize, DataTypes) => {
               newStatus = "redeemed";
             }
 
-            await giftCard.update({
-              status: newStatus,
-            }, { transaction: options.transaction });
+            await giftCard.update(
+              {
+                status: newStatus,
+              },
+              { transaction: options.transaction },
+            );
           }
         },
       },
-    });
-
+    },
+  );
 
   return GiftCardTransaction;
 };

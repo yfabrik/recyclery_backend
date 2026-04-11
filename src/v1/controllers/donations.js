@@ -4,7 +4,6 @@ import db from "../../models/index.js";
 import z from "zod";
 import { idSchema, nullishToNull, phoneSchema } from "../../services/zod.js";
 
-
 const dataSchema = z.object({
   donor_name: z.string("nom requis"),
   donor_email: z.email().nullish(),
@@ -17,7 +16,6 @@ const dataSchema = z.object({
   weight: z.coerce.number().nonnegative(),
   status: z.enum(["pending", "accepted", "rejected"]).nullish(),
 });
-
 
 const { Donation, User } = db;
 /**
@@ -102,11 +100,11 @@ export const updateDon = async (req, res) => {
   // donation.donor_email = donor_email || null;
   // donation.item_description = data.item_description;
   // donation.estimated_value = data.estimated_value;
-  const { status, ...rest } = data
+  const { status, ...rest } = data;
 
   // data.status && (donation.status = data.status);
   // donation.status = data.status;
-  await donation.update({ ...rest, status: status ?? donation.status })
+  await donation.update({ ...rest, status: status ?? donation.status });
   // await donation.save();
 
   res.json({ message: "Don mis à jour avec succès" });

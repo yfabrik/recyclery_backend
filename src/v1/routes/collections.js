@@ -11,7 +11,7 @@ import {
 export const router = Router();
 
 // Obtenir toutes les collectes
-router.get("/",  asyncHandler(listCollections));
+router.get("/", asyncHandler(listCollections));
 
 // Créer une nouvelle collecte
-router.post("/",  asyncHandler(createCollection));
+router.post("/", asyncHandler(createCollection));

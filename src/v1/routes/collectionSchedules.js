@@ -14,12 +14,7 @@ import {
 } from "../controllers/CollectionSchedule.js";
 import logger from "../../services/logger.js";
 
-const {
-  CollectionPoint,
-  User,
-  EmployeeWorkdays,
-  sequelize,
-} = db;
+const { CollectionPoint, User, EmployeeWorkdays, sequelize } = db;
 
 /**
  * @deprecated
@@ -87,22 +82,13 @@ router.get("/", asyncHandler(listcollectionSchedule));
 // );
 
 // Créer un nouveau planning de collecte
-router.post(
-  "/",
-  asyncHandler(createCollectionSchedule),
-);
+router.post("/", asyncHandler(createCollectionSchedule));
 
 // Mettre à jour un planning de collecte
-router.put(
-  "/:id",
-  asyncHandler(updateCollectionSchedule),
-);
+router.put("/:id", asyncHandler(updateCollectionSchedule));
 
 // Supprimer un planning de collecte
-router.delete(
-  "/:id",
-  asyncHandler(deleteCollectionSchedule),
-);
+router.delete("/:id", asyncHandler(deleteCollectionSchedule));
 
 // Générer un bordereau de collecte
 router.post("/:id/receipt", asyncHandler(generateBSD));
@@ -256,10 +242,7 @@ router.get("/:id/receipt", asyncHandler(detailBSD));
 // );
 
 // Assigner un employé à une collecte spécifique
-router.post(
-  "/:scheduleId/employees",
-  asyncHandler(addUserToSchedule),
-);
+router.post("/:scheduleId/employees", asyncHandler(addUserToSchedule));
 
 // Retirer un employé d'une collecte spécifique
 router.delete(

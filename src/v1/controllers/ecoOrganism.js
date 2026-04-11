@@ -51,8 +51,10 @@ export const listEcoOrganism = async (req, res) => {
   if (filter.active) where.is_active = filter.active;
   const include = [];
   if (filter.include.includes("waste")) include.push({ model: WasteDisposal });
-  if (filter.include.includes("incategories")) include.push({ model: Category, as: "inCategories" });
-  if (filter.include.includes("sellcategories")) include.push({ model: Category, as: "sellCategories" });
+  if (filter.include.includes("incategories"))
+    include.push({ model: Category, as: "inCategories" });
+  if (filter.include.includes("sellcategories"))
+    include.push({ model: Category, as: "sellCategories" });
   const eco_organisms = await EcoOrganism.findAll({ where, include });
 
   res.json({ eco_organisms });
@@ -148,9 +150,9 @@ export const deleteEcoOrganism = async (req, res) => {
 };
 
 /**
- * 
- * @param {Date} startDate 
- * @param {number} quarterCount 
+ *
+ * @param {Date} startDate
+ * @param {number} quarterCount
  */
 const quartersDateRanges = (startDate, quarterCount = 4) => {
   // Normalize to local midnight to avoid timezone drift
@@ -179,7 +181,15 @@ const quartersDateRanges = (startDate, quarterCount = 4) => {
     );
     const quarterEnd =
       i === 0
-        ? new Date(normalizedStartDate.getFullYear(), normalizedStartDate.getMonth(), normalizedStartDate.getDate(), 23, 59, 59, 999)
+        ? new Date(
+            normalizedStartDate.getFullYear(),
+            normalizedStartDate.getMonth(),
+            normalizedStartDate.getDate(),
+            23,
+            59,
+            59,
+            999,
+          )
         : new Date(
             quarterStart.getFullYear(),
             quarterStart.getMonth() + 3,
@@ -285,8 +295,14 @@ export const ecoOrgQuarterStats = async (req, res) => {
   // };
 
   const [inCategoryLinks, sellCategoryLinks] = await Promise.all([
-    EcoOrganism.findAll({ attributes: ["id"], include: [{ model: Category, as: "inCategories" }] }),
-    EcoOrganism.findAll({ attributes: ["id"], include: [{ model: Category, as: "sellCategories" }] })
+    EcoOrganism.findAll({
+      attributes: ["id"],
+      include: [{ model: Category, as: "inCategories" }],
+    }),
+    EcoOrganism.findAll({
+      attributes: ["id"],
+      include: [{ model: Category, as: "sellCategories" }],
+    }),
     // loadEcoOrgCategoryLinks("ecoOrg_categoryIn"),
     // loadEcoOrgCategoryLinks("ecoOrg_categorySell"),
   ]);
@@ -343,7 +359,6 @@ export const ecoOrgQuarterStats = async (req, res) => {
       };
     }),
   );
-
 
   //IN PART
   // For each quarter, get arrivals split by source_type and grouped by category/subcategory
@@ -413,7 +428,10 @@ export const ecoOrgQuarterStats = async (req, res) => {
                   where: { status: "sold" },
                 },
               ],
-              group: [col("LabeledItem.category_id"), col("LabeledItem.subcategory_id")],
+              group: [
+                col("LabeledItem.category_id"),
+                col("LabeledItem.subcategory_id"),
+              ],
               raw: true,
             })
           )
@@ -661,7 +679,10 @@ export const ecoOrgQuarterStats = async (req, res) => {
         }
       });
       return {
-        total_weight_kg: categories.reduce((sum, c) => sum + Number(c.weight_kg ?? 0), 0),
+        total_weight_kg: categories.reduce(
+          (sum, c) => sum + Number(c.weight_kg ?? 0),
+          0,
+        ),
         categories,
       };
     };
@@ -724,12 +745,16 @@ export const ecoOrgQuarterStats = async (req, res) => {
     const quarters = quarterRanges.map((range) => {
       const data = quarterDataByEcoOrg.get(id)?.[range.label];
       const arrivalRows = arrivalRowsByQuarterLabel.get(range.label) ?? [];
-      const quarterInData = buildQuarterFromArrivalRows(arrivalRows, inCategoryIds);
+      const quarterInData = buildQuarterFromArrivalRows(
+        arrivalRows,
+        inCategoryIds,
+      );
       const quarterInBySourceType = splitQuarterInBySourceType(
         arrivalRows,
         inCategoryIds,
       );
-      const soldQuantityRows = soldQuantityRowsByQuarterLabel.get(range.label) ?? [];
+      const soldQuantityRows =
+        soldQuantityRowsByQuarterLabel.get(range.label) ?? [];
       const quarterSellData = buildQuarterSellFromSoldRows(
         soldQuantityRows,
         sellCategoryIds,
@@ -743,14 +768,17 @@ export const ecoOrgQuarterStats = async (req, res) => {
           category.id,
           {
             ...category,
-            quantity: quarterSellQuantityData.categories.find((c) => c.id === category.id)
-              ?.quantity ?? 0,
+            quantity:
+              quarterSellQuantityData.categories.find(
+                (c) => c.id === category.id,
+              )?.quantity ?? 0,
             subcategories: category.subcategories.map((subcat) => ({
               ...subcat,
               quantity:
                 quarterSellQuantityData.categories
                   .find((c) => c.id === category.id)
-                  ?.subcategories.find((s) => s.id === subcat.id)?.quantity ?? 0,
+                  ?.subcategories.find((s) => s.id === subcat.id)?.quantity ??
+                0,
             })),
           },
         ]),
@@ -773,7 +801,8 @@ export const ecoOrgQuarterStats = async (req, res) => {
           total_weight_kg: quarterSellData.total_weight_kg,
           quantity: quarterSellQuantityData.quantity,
           categories: quarterSellData.categories.map(
-            (category) => quarterSellCategoriesById.get(category.id) ?? category,
+            (category) =>
+              quarterSellCategoriesById.get(category.id) ?? category,
           ),
         },
       };

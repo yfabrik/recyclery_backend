@@ -22,22 +22,13 @@ router.get("/:id", asyncHandler(detailArrival));
 router.post("/", asyncHandler(createArrival));
 
 // Mettre à jour un arrivage
-router.put(
-  "/:id",
-  asyncHandler(updateArrival),
-);
+router.put("/:id", asyncHandler(updateArrival));
 
 // Supprimer un arrivage
-router.delete(
-  "/:id",
-  asyncHandler(deleteArrival),
-);
+router.delete("/:id", asyncHandler(deleteArrival));
 
 // Obtenir les statistiques des arrivages
 router.get("/stats/summary", asyncHandler(statsSummary));
 
 // Obtenir les arrivages par catégorie
-router.get(
-  "/stats/by-category",
-  asyncHandler(statsByCategories),
-);
+router.get("/stats/by-category", asyncHandler(statsByCategories));

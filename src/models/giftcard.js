@@ -52,7 +52,9 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
-        defaultValue: () => {`GC-${Date.now().toString(36).toUpperCase()}`}
+        defaultValue: () => {
+          `GC-${Date.now().toString(36).toUpperCase()}`;
+        },
       },
       initial_value: {
         type: DataTypes.DECIMAL(10, 2),
@@ -63,8 +65,13 @@ export default (sequelize, DataTypes) => {
       current_value: {
         type: DataTypes.VIRTUAL,
         get() {
-          return this?.movements?.reduce((prev, current) => prev += current.amount, 0) ?? this.initial_value
-        }
+          return (
+            this?.movements?.reduce(
+              (prev, current) => (prev += current.amount),
+              0,
+            ) ?? this.initial_value
+          );
+        },
       },
       expires_at: {
         type: DataTypes.DATE,

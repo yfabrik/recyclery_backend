@@ -13,37 +13,22 @@ import {
 export const router = Router();
 
 // GET all waste disposals with filters
-router.get("/",  asyncHandler(listWaste));
+router.get("/", asyncHandler(listWaste));
 
 // GET single waste disposal by ID
-router.get(
-  "/:id",
-  asyncHandler(detailWaste),
-);
+router.get("/:id", asyncHandler(detailWaste));
 
 // POST create new waste disposal
-router.post("/",  asyncHandler(createWaste));
+router.post("/", asyncHandler(createWaste));
 
 // PUT update waste disposal
-router.put(
-  "/:id",
-  asyncHandler(updateWaste),
-);
+router.put("/:id", asyncHandler(updateWaste));
 
 // DELETE waste disposal
-router.delete(
-  "/:id",
-  asyncHandler(deleteWaste),
-);
+router.delete("/:id", asyncHandler(deleteWaste));
 
 // GET waste disposal statistics
-router.get(
-  "/stats/summary",
-  asyncHandler(wasteStats),
-);
+router.get("/stats/summary", asyncHandler(wasteStats));
 
 // GET waste disposal statistics by category
-router.get(
-  "/stats/by-category",
-  asyncHandler(wasteStatsCategory),
-);
+router.get("/stats/by-category", asyncHandler(wasteStatsCategory));

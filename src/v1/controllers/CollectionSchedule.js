@@ -8,13 +8,7 @@ import {
   updateSchedule,
 } from "./taskSchedule.js";
 
-const {
-  CollectionPoint,
-  User,
-  CollectionReceipt,
-  TaskSchedule,
-  Task
-} = db;
+const { CollectionPoint, User, CollectionReceipt, TaskSchedule, Task } = db;
 
 const generateReceiptNumber = () => {
   const date = new Date();

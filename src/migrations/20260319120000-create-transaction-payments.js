@@ -38,7 +38,9 @@ export default {
       },
     });
 
-    await queryInterface.addIndex("transaction_payments", ["sales_transaction_id"]);
+    await queryInterface.addIndex("transaction_payments", [
+      "sales_transaction_id",
+    ]);
     await queryInterface.addIndex("transaction_payments", ["method"]);
     await queryInterface.addIndex("transaction_payments", ["gift_card_id"]);
   },

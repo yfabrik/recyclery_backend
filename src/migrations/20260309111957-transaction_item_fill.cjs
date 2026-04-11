@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -19,10 +19,13 @@ module.exports = {
        FROM "LabeledItems" li
        LEFT JOIN "Categories" cat ON li.category_id = cat.id
        LEFT JOIN "Categories" sub ON li.subcategory_id = sub.id
-       WHERE li.transaction_id IS NOT NULL`
+       WHERE li.transaction_id IS NOT NULL`,
     );
 
-    const labeledItems = /** @type {Array<{ id: number, name: string, price: number, transaction_id: number }>} */ (Array.isArray(rawRows) ? rawRows : []);
+    const labeledItems =
+      /** @type {Array<{ id: number, name: string, price: number, transaction_id: number }>} */ (
+        Array.isArray(rawRows) ? rawRows : []
+      );
 
     if (labeledItems.length === 0) {
       await removeTransactionIdColumnIfExists(queryInterface, sequelize);
@@ -35,14 +38,22 @@ module.exports = {
 
     // 2. Insert into transaction_items using raw SQL (avoids bulkInsert rollback if a later step fails)
     for (const item of labeledItems) {
-      const name = item.name != null ? String(item.name).slice(0, 255) : '';
-      if (dialect === 'sqlite') {
+      const name = item.name != null ? String(item.name).slice(0, 255) : "";
+      if (dialect === "sqlite") {
         await sequelize.query(
           `INSERT INTO transaction_items (transaction_id, labeled_item_id, name, price, quantity, total_price, promotionValue, bundleQuantity, bundlePrice, createdAt, updatedAt)
            VALUES (?, ?, ?, ?, 1, ?, 0, NULL, NULL, ?, ?)`,
           {
-            replacements: [item.transaction_id, item.id, name, item.price, item.price, isoNow, isoNow],
-          }
+            replacements: [
+              item.transaction_id,
+              item.id,
+              name,
+              item.price,
+              item.price,
+              isoNow,
+              isoNow,
+            ],
+          },
         );
       } else {
         await sequelize.query(
@@ -58,7 +69,7 @@ module.exports = {
               createdAt: isoNow,
               updatedAt: isoNow,
             },
-          }
+          },
         );
       }
     }
@@ -71,7 +82,7 @@ module.exports = {
     const { sequelize } = queryInterface;
 
     // Re-add transaction_id column to LabeledItems
-    await queryInterface.addColumn('LabeledItems', 'transaction_id', {
+    await queryInterface.addColumn("LabeledItems", "transaction_id", {
       type: Sequelize.INTEGER,
       allowNull: true,
     });
@@ -85,7 +96,7 @@ module.exports = {
         LIMIT 1
       ) WHERE id IN (
         SELECT labeled_item_id FROM transaction_items WHERE quantity = 1
-      )`
+      )`,
     );
   },
 };
@@ -97,11 +108,14 @@ module.exports = {
  * @param {import('sequelize').Sequelize} sequelize
  */
 async function removeTransactionIdColumnIfExists(queryInterface, sequelize) {
-  const tableName = 'LabeledItems';
-  const columnName = 'transaction_id';
+  const tableName = "LabeledItems";
+  const columnName = "transaction_id";
 
   const tableDesc = await queryInterface.describeTable(tableName);
-  if (!tableDesc || !Object.prototype.hasOwnProperty.call(tableDesc, columnName)) {
+  if (
+    !tableDesc ||
+    !Object.prototype.hasOwnProperty.call(tableDesc, columnName)
+  ) {
     return;
   }
 

@@ -57,7 +57,9 @@ export default {
       "gift_card_id",
       "occurred_at",
     ]);
-    await queryInterface.addIndex("giftcard_transactions", ["sales_transaction_id"]);
+    await queryInterface.addIndex("giftcard_transactions", [
+      "sales_transaction_id",
+    ]);
   },
 
   async down(queryInterface, Sequelize) {

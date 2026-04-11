@@ -13,39 +13,34 @@ import {
 export const router = Router();
 
 // GET - Récupérer tous les magasins
-router.get("/",  asyncHandler(listRecycleries));
+router.get("/", asyncHandler(listRecycleries));
 
 // GET - Récupérer un magasin par ID
-router.get("/:id",  asyncHandler(detailRecyclerie));
+router.get("/:id", asyncHandler(detailRecyclerie));
 
 // POST - Créer un nouveau magasin
-router.post(
-  "/",
-  asyncHandler(createRecyclerie),
-);
+router.post("/", asyncHandler(createRecyclerie));
 
 // PUT - Mettre à jour un magasin
-router.put(
-  "/:id",
-  asyncHandler(updateRecyclerie),
-);
+router.put("/:id", asyncHandler(updateRecyclerie));
 
 // DELETE - Supprimer un magasin
-router.delete(
-  "/:id",
-  asyncHandler(deleteRecyclerie),
-);
+router.delete("/:id", asyncHandler(deleteRecyclerie));
 
 // GET - Récupérer les caisses d'un magasin
-router.get("/:id/cash-registers",  asyncHandler(listCaisses));
+router.get("/:id/cash-registers", asyncHandler(listCaisses));
 
 // POST - Créer une nouvelle caisse pour un magasin
 router.post(
   "/:id/cash-registers",
-  
+
   // requireRole(["admin", "manager"]),
   asyncHandler(async (req, res) => {
-    logger.error("called useless fn in store route FIXME", { params: req.params, body: req.body, referer: req?.headers?.referer, });
+    logger.error("called useless fn in store route FIXME", {
+      params: req.params,
+      body: req.body,
+      referer: req?.headers?.referer,
+    });
 
     const { id } = req.params;
     const { name } = req.body;

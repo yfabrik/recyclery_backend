@@ -12,16 +12,16 @@ import {
 export const router = Router();
 
 // Récupérer tous les horaires des magasins
-router.get("/",  asyncHandler(listHoraires));
+router.get("/", asyncHandler(listHoraires));
 
 // Récupérer les horaires d'un magasin spécifique
-router.get("/store/:storeId",  asyncHandler(horairesMagasin));
+router.get("/store/:storeId", asyncHandler(horairesMagasin));
 
 // Créer de nouveaux horaires
-router.post("/",  asyncHandler(addHoraire));
+router.post("/", asyncHandler(addHoraire));
 
 // Mettre à jour des horaires
-router.put("/:id",  asyncHandler(updateHoraire));
+router.put("/:id", asyncHandler(updateHoraire));
 
 // Supprimer des horaires
-router.delete("/:id",  asyncHandler(removeHoraires));
+router.delete("/:id", asyncHandler(removeHoraires));

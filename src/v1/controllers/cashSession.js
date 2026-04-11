@@ -276,73 +276,84 @@ export const sessionsStats = async (req, res) => {
     date_from: z.coerce.date().nullish(),
     date_to: z.coerce.date().nullish(),
     store_id: idSchema().nullish(),
-  })
+  });
 
-  const filters = filtersSchema.parse(req.params)
+  const filters = filtersSchema.parse(req.params);
 
-
-  const where = {}
-  if (filters.store_id) where.recyclery_id = filters.store_id
+  const where = {};
+  if (filters.store_id) where.recyclery_id = filters.store_id;
   const include = [
     {
       model: SalesTransaction,
-      include: [{
-        model: LabeledItem,
-        as: "items",
-        include: [{
-          model: Category,
-          as: "category"
-        },
+      include: [
         {
-          model: Category,
-          as: "subcategory"
-        }]
-      }]
-    }, {
+          model: LabeledItem,
+          as: "items",
+          include: [
+            {
+              model: Category,
+              as: "category",
+            },
+            {
+              model: Category,
+              as: "subcategory",
+            },
+          ],
+        },
+      ],
+    },
+    {
       model: CashRegister,
-      where
-    }
-  ]
+      where,
+    },
+  ];
   const stats = await CashSession.findAll({
-    include
-  })
+    include,
+  });
 
   return res.json({
     success: true,
-    data:
-      stats.map(session => {
-        return {
-          transactions: session.SalesTransactions?.length ?? 0,
-          cash: session.SalesTransactions?.reduce((prev, current) => {
+    data: stats.map((session) => {
+      return {
+        transactions: session.SalesTransactions?.length ?? 0,
+        cash: session.SalesTransactions?.reduce(
+          (prev, current) => {
             if (current.payment_method == "cash") {
-              prev.count++
-              prev.value += +(current.total_amount || 0)
+              prev.count++;
+              prev.value += +(current.total_amount || 0);
             }
-            return prev
-          }, { count: 0, value: 0 }),
-          card: session.SalesTransactions?.reduce((prev, current) => {
+            return prev;
+          },
+          { count: 0, value: 0 },
+        ),
+        card: session.SalesTransactions?.reduce(
+          (prev, current) => {
             if (current.payment_method == "card") {
-              prev.count++
-              prev.value += +(current.total_amount || 0)
+              prev.count++;
+              prev.value += +(current.total_amount || 0);
             }
-            return prev
-
-          }, { count: 0, value: 0 }),
-          categories: session.SalesTransactions?.reduce((prev, current) => {
-            current.items?.forEach(item => {
-              const categorie = item.category
-              const sub = item.subcategory
-              const val = { category: categorie.name, sub: sub?.name || "", value: item.total_amount }
-              const exist = prev.find(p => p.category == val.category && p.sub == val.sub)
-              if (exist) exist.value += val.value
-              else prev.push(val)
-            }
-            )
-            return prev
-          }, [])
-
-        }
-      })
-
-  })
-}
+            return prev;
+          },
+          { count: 0, value: 0 },
+        ),
+        categories: session.SalesTransactions?.reduce((prev, current) => {
+          current.items?.forEach((item) => {
+            const categorie = item.category;
+            const sub = item.subcategory;
+            const val = {
+              category: categorie.name,
+              sub: sub?.name || "",
+              value: item.total_amount,
+            };
+            const exist = prev.find(
+              (p) => p.category == val.category && p.sub == val.sub,
+            );
+            if (exist) exist.value += val.value;
+            else prev.push(val);
+          });
+          return prev;
+        }, []),
+      };
+    }),
+  });
+};

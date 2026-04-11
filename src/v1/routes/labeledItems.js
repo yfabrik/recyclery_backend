@@ -22,8 +22,7 @@ router.get("/barcode/:barcode", asyncHandler(getItemFromBarcode));
 // POST - Créer un nouvel article étiqueté
 router.post("/", asyncHandler(createLabeledItem));
 
-router.get("/stats",asyncHandler(itemsStats))
-
+router.get("/stats", asyncHandler(itemsStats));
 
 // PUT - Mettre à jour un article
 router.put("/:id", asyncHandler(updateItem));

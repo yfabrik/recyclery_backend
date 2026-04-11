@@ -33,7 +33,7 @@ describe("dons controller functions", () => {
       item_description: "Table en bois massif, 4 chaises, état correct",
       estimated_value: 150.0,
       notes: "Donation généreuse - meubles en bon état général",
-      weight:50
+      weight: 50,
     };
     const req = {
       query: {},

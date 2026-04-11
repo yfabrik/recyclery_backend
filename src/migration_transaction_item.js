@@ -1,8 +1,7 @@
 import { Op } from "sequelize";
 import db from "./models/index.js";
 
-const { LabeledItem, TransactionItem, Category, SalesTransaction } =
-  db;
+const { LabeledItem, TransactionItem, Category, SalesTransaction } = db;
 
 db.sequelize.sync().then(async () => {
   const items = await LabeledItem.findAll({
