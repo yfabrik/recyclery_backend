@@ -18,6 +18,7 @@ import type { ModelStatics } from "./db-types.ts";
 import type Recyclery from "./recyclery.ts";
 import type SalesTransaction from "./salestransaction.ts";
 import type User from "./user.ts";
+import type TransactionItem from "./transactionitem.js";
 
 export default class LabeledItem extends Model<
   InferAttributes<LabeledItem>,
@@ -46,6 +47,7 @@ export default class LabeledItem extends Model<
   declare recyclery?: NonAttribute<Recyclery>;
   declare createdBy?: NonAttribute<User>;
   declare transactions?: NonAttribute<SalesTransaction[]>;
+  declare TransactionItem?: NonAttribute<TransactionItem>
 
   declare getCategory: BelongsToGetAssociationMixin<Category>;
   declare setCategory: BelongsToSetAssociationMixin<Category, Category["id"]>;

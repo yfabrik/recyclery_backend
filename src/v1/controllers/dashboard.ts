@@ -67,9 +67,12 @@ export const dashboardStats = async (req: Request, res: Response) => {
   const currentMonth = new Date().toISOString().slice(0, 7); // Format YYYY-MM
   const month_transactions = await SalesTransaction.findAll({
     where: { createdAt: { [Op.gt]: currentMonth } },
+    include: [{ model: LabeledItem, as: "items" }]
   });
 
-  stats.soldThisMonth = month_transactions.length;
+  stats.soldThisMonth = month_transactions.reduce((prev, current) => {
+    return prev + (current.items?.reduce((p, v) => p + (v.TransactionItem?.quantity ?? 0), 0) ?? 0)
+  }, 0);
 
   stats.totalRevenue = month_transactions.reduce(
     (prev, current) => (prev += current.total_amount),
