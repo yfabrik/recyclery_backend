@@ -7,7 +7,6 @@ import type { Attributes, WhereOptions } from "sequelize";
 import TaskSchedule from "../../models/taskschedule.js";
 import Recyclery from "../../models/recyclery.js";
 import db from "../../models/index.js";
-import logger from "../../services/logger.js";
 
 const dataSchema = z.object({
   name: z.string().trim().nonempty("nom requis"),
@@ -102,11 +101,11 @@ export const updateCollectionPoint = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
   const point = await CollectionPoint.findByPk(id, {
-    include: [
-      {
-        model: TaskSchedule,
-      },
-    ],
+    // include: [
+    //   {
+    //     model: TaskSchedule,
+    //   },
+    // ],
   });
 
   // Vérifier si le point existe
