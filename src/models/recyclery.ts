@@ -127,7 +127,7 @@ export default class Recyclery extends Model<
     });
     this.hasMany(models.CashRegister, {
       foreignKey: "recyclery_id",
-      as: "caisses",
+      as: { singular: "caisse", plural: "caisses" },
       onDelete: "CASCADE",
     });
     this.hasMany(models.CollectionPoint, { foreignKey: "recyclery_id" });
