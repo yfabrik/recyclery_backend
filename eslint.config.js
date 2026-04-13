@@ -31,6 +31,17 @@ export default defineConfig([
       js.configs.recommended,
       tseslint.configs.recommended,
     ]
+  },
+  {
+    "overrides": [
+      {
+        "files": ["tests/**/*"],
+        "plugins": ["jest"],
+        "env": {
+          "jest/globals": true
+        }
+      }
+    ]
   }
   // {
   //   files: ["test/**"],

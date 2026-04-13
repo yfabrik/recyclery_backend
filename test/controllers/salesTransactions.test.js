@@ -169,16 +169,16 @@
 // });
 
 import { beforeAll, describe, expect, it, jest } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   createRefund,
   createTransaction,
-} from "../../src/v1/controllers/salesTransactions.js";
-import { closeCashSession } from "../../src/v1/controllers/cashSession.js";
+} from "../../src/v1/controllers/salesTransactions";
+import { closeCashSession } from "../../src/v1/controllers/cashSession";
 import {
   getGiftCardBalance,
   issueGiftCard,
-} from "../../src/services/giftCards.js";
+} from "../../src/services/giftCards";
 import { createRecyclery, createUser } from "../models/helpers.js";
 
 const {

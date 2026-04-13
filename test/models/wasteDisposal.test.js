@@ -1,4 +1,4 @@
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import { createUser } from "./helpers.js";
 
 const { Category, EcoOrganism, WasteDisposal } = db;

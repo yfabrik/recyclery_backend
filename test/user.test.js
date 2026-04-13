@@ -1,5 +1,5 @@
 // __tests__/models/user.test.js
-import db from "../src/models/index.js";
+import db from "../src/models/index";
 const { User } = db;
 
 describe("User Model", () => {

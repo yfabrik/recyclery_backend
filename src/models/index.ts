@@ -13,6 +13,7 @@ import type {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const basename = _basename(__filename);
+const runtimeModelExtension = basename.endsWith(".ts") ? ".ts" : ".js";
 const env =
   (_env.NODE_ENV as "development" | "test" | "production") ?? "development";
 
@@ -33,11 +34,10 @@ const sequelize = config.use_env_variable
 const files = readdirSync(__dirname).filter((file) => {
   // Only load concrete model modules; skip our own loader/wrapper files.
   if (file.startsWith(".")) return false;
-  if (!file.endsWith(".js")) return false;
+  if (!file.endsWith(runtimeModelExtension)) return false;
   if (file === basename) return false;
   if (file === "db-types.js" || file === "db-types.ts") return false;
-  // Prevent importing `src/models/index.js` (or any `index.*.js`) which causes self-references.
-  if (file === "index.js" || file.startsWith("index.")) return false;
+  if (file === "index.js" || file === "index.ts" || file.startsWith("index.")) return false;
   if (file.indexOf(".test.ts") !== -1 || file.indexOf(".test.js") !== -1)
     return false;
   return true;

@@ -1,10 +1,10 @@
 import { beforeAll, afterAll, expect, jest } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   createWaste,
   detailWaste,
   listWaste,
-} from "../../src/v1/controllers/waste.js";
+} from "../../src/v1/controllers/waste";
 const { User, Category } = db;
 
 beforeAll(async () => {

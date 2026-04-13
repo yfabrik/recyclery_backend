@@ -1,11 +1,11 @@
 import { beforeAll, afterAll, jest, expect } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   dashboardStats,
   dashboardActivities,
   dashboardCharts,
   dashboardStoreStats,
-} from "../../src/v1/controllers/dashboard.js";
+} from "../../src/v1/controllers/dashboard";
 const {
   LabeledItem,
   SalesTransaction,

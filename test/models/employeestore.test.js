@@ -1,4 +1,4 @@
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import { createRecyclery, createEmployee } from "./helpers.js";
 
 const { EmployeeStore } = db;

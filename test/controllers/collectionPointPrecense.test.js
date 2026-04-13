@@ -1,11 +1,11 @@
 import { beforeAll, afterAll, expect, jest } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   createPointPrecense,
   deletePointPrecense,
   detailPointPrecense,
   listPointPrecense,
-} from "../../src/v1/controllers/collectionPointPrecense.js";
+} from "../../src/v1/controllers/collectionPointPrecense";
 const { User, CollectionPoint, Recyclery } = db;
 
 beforeAll(async () => {

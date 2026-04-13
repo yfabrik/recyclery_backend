@@ -1,12 +1,12 @@
 import { beforeAll, afterAll, jest, expect } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   createRecyclerie,
   deleteRecyclerie,
   detailRecyclerie,
   listRecycleries,
   updateRecyclerie,
-} from "../../src/v1/controllers/recycleries.js";
+} from "../../src/v1/controllers/recycleries";
 
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });

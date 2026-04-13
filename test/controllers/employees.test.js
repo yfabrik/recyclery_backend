@@ -1,11 +1,11 @@
 import { beforeAll, afterAll, jest, expect } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   listEmployees,
   createEmployee,
   updateEmployee,
   deleteEmployee,
-} from "../../src/v1/controllers/employees.js";
+} from "../../src/v1/controllers/employees";
 const { Employee, Recyclery, EmployeeWorkdays } = db;
 
 beforeAll(async () => {

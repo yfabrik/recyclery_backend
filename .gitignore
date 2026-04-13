@@ -4,3 +4,4 @@ database/
 *.log
 dist/
 db-test/
+coverage/

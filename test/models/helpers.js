@@ -1,4 +1,4 @@
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 
 const { Recyclery, User, CollectionPoint, Employee } = db;
 
@@ -8,10 +8,11 @@ const { Recyclery, User, CollectionPoint, Employee } = db;
  * @returns {Promise<import("../../src/models").Recyclery>}
  */
 export async function createRecyclery(overrides = {}) {
+  const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   return Recyclery.create({
-    name: "Test Recyclery",
+    name: `Test Recyclery ${unique}`,
     address: "123 Test St",
-    email: "test@recyclery.com",
+    email: `test_${unique}@recyclery.com`,
     ...overrides,
   });
 }

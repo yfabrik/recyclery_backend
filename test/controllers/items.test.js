@@ -1,10 +1,10 @@
 import { beforeAll, afterAll, jest, expect } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   createLabeledItem,
   deleteLabeledItem,
   listLabeledItem,
-} from "../../src/v1/controllers/items.js";
+} from "../../src/v1/controllers/items";
 const { Recyclery, Category, User } = db;
 
 beforeAll(async () => {

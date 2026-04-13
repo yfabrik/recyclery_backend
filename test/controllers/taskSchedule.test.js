@@ -1,5 +1,5 @@
 import { beforeAll, afterAll, jest, expect } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   listSchedules,
   findSchedule,
@@ -11,7 +11,7 @@ import {
   removeEmployeeFromSchedule,
   findAvailableEMployee,
   planningStats,
-} from "../../src/v1/controllers/taskSchedule.js";
+} from "../../src/v1/controllers/taskSchedule";
 const {
   TaskSchedule,
   Task,

@@ -1,12 +1,12 @@
 import { beforeAll, afterAll, expect, jest } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   createCategorie,
   deleteCategorie,
   listCategories,
   listSubcategories,
   updateCategorie,
-} from "../../src/v1/controllers/categories.js";
+} from "../../src/v1/controllers/categories";
 
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });

@@ -1,12 +1,12 @@
 import { beforeAll, afterAll, jest, expect } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   createUser,
   deleteUser,
   findUserById,
   listUsers,
   updateUser,
-} from "../../src/v1/controllers/users.js";
+} from "../../src/v1/controllers/users";
 
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });

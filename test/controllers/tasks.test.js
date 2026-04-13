@@ -1,5 +1,5 @@
 import { beforeAll, afterAll, expect, jest } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   addUserToTask,
   createTask,
@@ -7,7 +7,7 @@ import {
   getUsersFromTask,
   listTasks,
   removeUserFromTask,
-} from "../../src/v1/controllers/tasks.js";
+} from "../../src/v1/controllers/tasks";
 const { User } = db;
 
 beforeAll(async () => {

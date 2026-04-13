@@ -1,12 +1,12 @@
 import { beforeAll, afterAll, jest, expect } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 
 import {
   addHoraire,
   listHoraires,
   removeHoraires,
   updateHoraire,
-} from "../../src/v1/controllers/storeHours.js";
+} from "../../src/v1/controllers/storeHours";
 const { Recyclery, Category, User } = db;
 
 beforeAll(async () => {

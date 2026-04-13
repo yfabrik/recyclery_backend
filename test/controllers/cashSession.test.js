@@ -1,13 +1,13 @@
 import { beforeAll, afterAll, expect, jest } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   closeCashSession,
   getActiveSession,
   getSessionById,
   listCashSessions,
   openCashSession,
-} from "../../src/v1/controllers/cashSession.js";
-import { deleteCaisse } from "../../src/v1/controllers/cashRegister.js";
+} from "../../src/v1/controllers/cashSession";
+import { deleteCaisse } from "../../src/v1/controllers/cashRegister";
 const { Recyclery, CashRegister, User } = db;
 
 beforeAll(async () => {

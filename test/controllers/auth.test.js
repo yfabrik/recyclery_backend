@@ -1,6 +1,6 @@
 import { beforeAll, afterAll, jest, expect } from "@jest/globals";
-import db from "../../src/models/index.js";
-import { register, login, userProfile } from "../../src/v1/controllers/auth.js";
+import db from "../../src/models/index";
+import { register, login, userProfile } from "../../src/v1/controllers/auth";
 
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });

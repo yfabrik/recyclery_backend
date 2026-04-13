@@ -1,10 +1,10 @@
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   chargeGiftCard,
   getGiftCardBalance,
   issueGiftCard,
   recreditGiftCard,
-} from "../../src/services/giftCards.js";
+} from "../../src/services/giftCards";
 import { createRecyclery, createUser } from "../models/helpers.js";
 
 const { CashRegister, CashSession, SalesTransaction } = db;

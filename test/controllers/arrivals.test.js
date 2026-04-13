@@ -1,5 +1,5 @@
 import { beforeAll, afterAll, jest, expect } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 
 import {
   createArrival,
@@ -7,7 +7,7 @@ import {
   detailArrival,
   listArrivals,
   updateArrival,
-} from "../../src/v1/controllers/arrivals.js";
+} from "../../src/v1/controllers/arrivals";
 const { Recyclery, Category, User, CollectionPoint } = db;
 
 beforeAll(async () => {

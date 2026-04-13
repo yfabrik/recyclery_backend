@@ -1,5 +1,5 @@
 import { beforeAll, afterAll, expect, jest } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   createEcoOrganism,
   deleteEcoOrganism,

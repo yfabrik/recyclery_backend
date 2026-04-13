@@ -1,4 +1,4 @@
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import { createRecyclery, createCollectionPoint } from "./helpers.js";
 
 const { Task, TaskSchedule, Recyclery, CollectionPoint } = db;

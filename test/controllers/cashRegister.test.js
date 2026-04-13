@@ -1,12 +1,12 @@
 import { beforeAll, afterAll, jest, expect } from "@jest/globals";
-import db from "../../src/models/index.js";
+import db from "../../src/models/index";
 import {
   createCaisse,
   deleteCaisse,
   detailCaisse,
   listCaisses,
   updateCaisse,
-} from "../../src/v1/controllers/cashRegister.js";
+} from "../../src/v1/controllers/cashRegister";
 const { Recyclery } = db;
 
 beforeAll(async () => {
