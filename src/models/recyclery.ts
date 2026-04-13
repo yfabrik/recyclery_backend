@@ -117,6 +117,8 @@ export default class Recyclery extends Model<
     });
     this.belongsToMany(models.Employee, {
       through: models.EmployeeStore,
+      foreignKey: "recycleryId",
+      otherKey: "employeeId",
       as: "employees",
     });
     this.belongsTo(models.User, {

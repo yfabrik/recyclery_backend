@@ -78,6 +78,8 @@ export default class Employee extends Model<
   static associate(models: ModelStatics) {
     this.belongsToMany(models.Recyclery, {
       through: models.EmployeeStore,
+      foreignKey: "employeeId",
+      otherKey: "recycleryId",
       as: "stores",
     });
     this.belongsToMany(models.Task, { through: "employee_task" });
