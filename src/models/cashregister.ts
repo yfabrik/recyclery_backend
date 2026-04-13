@@ -86,27 +86,27 @@ export default class CashRegister extends Model<
 
           // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
           beforeUpdate: async (caisse, options) => {
-            const Registrer = caisse.sequelize.models.CashRegister as ModelStatic<CashRegister> | undefined
-            if (!Registrer) {
-              logger.error(`Task model not found for schedule ${caisse.id}`);
-              return;
-            }
+            // const Registrer = caisse.sequelize.models.CashRegister as ModelStatic<CashRegister> | undefined
+            // if (!Registrer) {
+            //   logger.error(`Task model not found for schedule ${caisse.id}`);
+            //   return;
+            // }
 
-            const duplicateRegister = await Registrer.findOne({
-              where: {
-                [Op.and]: [
-                  { name: caisse.name },
-                  { recyclery_id: caisse.recyclery_id },
-                  { id: { [Op.ne]: caisse.id } }, // Exclude current record
-                ],
-              },
-            });
+            // const duplicateRegister = await Registrer.findOne({
+            //   where: {
+            //     [Op.and]: [
+            //       { name: caisse.name },
+            //       { recyclery_id: caisse.recyclery_id },
+            //       { id: { [Op.ne]: caisse.id } }, // Exclude current record
+            //     ],
+            //   },
+            // });
 
-            if (duplicateRegister) {
-              throw new createHttpError.Conflict(
-                "Une autre caisse avec ce nom existe déjà dans ce magasin",
-              );
-            }
+            // if (duplicateRegister) {
+            //   throw new createHttpError.Conflict(
+            //     "Une autre caisse avec ce nom existe déjà dans ce magasin",
+            //   );
+            // }
           },
           beforeDestroy: async (caisse) => {
             const sessions = await caisse.countSessions({
