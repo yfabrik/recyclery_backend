@@ -2,6 +2,7 @@ import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
+  Transaction,
   type BelongsToGetAssociationMixin,
   type BelongsToManyAddAssociationMixin,
   type BelongsToManyGetAssociationsMixin,
@@ -177,18 +178,26 @@ export default class Recyclery extends Model<
           afterUpdate: async (instance, options) => {
             if (!instance.changed("name") && !instance.changed("is_active")) return
 
-            await instance.sequelize.transaction(async t => {
-
-              for (const schedule of await instance.getTaskSchedules({
+            const run = async (tx: Transaction) => {
+              const schedules = await instance.getTaskSchedules({
                 where: { category: "vente" },
-              })) {
-                await schedule.update({
-                  is_recurring: instance.is_active,
-                  name: "vente-" + instance.name,
-                }, { transaction: options.transaction ?? t });
+                transaction: tx,
+              });
+              for (const schedule of schedules) {
+                await schedule.update(
+                  {
+                    is_recurring: instance.is_active,
+                    name: `vente-${instance.name}`,
+                  },
+                  { transaction: tx },
+                );
               }
-            })
-
+            };
+            if (options.transaction) {
+              await run(options.transaction);
+            } else {
+              await instance.sequelize.transaction(run);
+            }
           },
           beforeDestroy: async (recyclery) => {
             const cashRegister = recyclery.sequelize.models
