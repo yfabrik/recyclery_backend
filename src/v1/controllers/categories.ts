@@ -2,17 +2,18 @@ import createHttpError from "http-errors";
 import {
   literal,
   Op,
-  type Attributes,
+
   type Includeable,
-  type WhereOptions,
 } from "sequelize";
 import * as z from "zod";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
-import Category from "../../models/category.js";
-import Recyclery from "../../models/recyclery.js";
 import type { Request, Response } from "express";
-import Promotion from "../../models/promotion.js";
+
+import db from "../../models/index.js";
+import type { ModelWhere,Models } from "../../models/db-types.js";
+
+const { Category, Recyclery, Promotion } = db;
 
 const dataSchema = z.object({
   name: z.string("Le nom est requis"),
@@ -52,12 +53,12 @@ const findExistingCategory = async (
  * - linked to the requested store.
  * Also removes the internal `stores` include from response payload.
  *
- * @param {any} category
- * @param {number} storeId
+ * @param  category
+ * @param storeId
  */
 const filterPromotionsForStore = (
-  category: Category,
-  storeId: Recyclery["id"],
+  category:Models["Category"],
+  storeId: Models["Recyclery"]["id"],
 ) => {
   if (!category || typeof category !== "object") return;
 
@@ -116,7 +117,7 @@ export const listCategories = async (req: Request, res: Response) => {
   });
   const filters = filtersSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<Category>> = {};
+  const where: ModelWhere<typeof Category> = {};
 
   const include: Includeable[] = [];
   if (filters.only_category) where.parent_id = { [Op.is]: null };
@@ -153,7 +154,7 @@ export const listCategories = async (req: Request, res: Response) => {
   if (filters.sell) where.IO = literal(`Category.IO & ${IOValues.SELL} != 0`);
 
   if (filters.include.includes("category")) {
-    const insideWhere: WhereOptions<Attributes<Category>> = {};
+    const insideWhere: ModelWhere<typeof Category> = {};
     if (typeof filters.in == "boolean" && filters.in)
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.IN} != 0`);
     if (typeof filters.out == "boolean" && filters.out)
@@ -174,7 +175,7 @@ export const listCategories = async (req: Request, res: Response) => {
     });
   }
   if (filters.include.includes("parent")) {
-    const insideWhere: WhereOptions<Attributes<Category>> = {};
+    const insideWhere: ModelWhere<typeof Category> = {};
     if (typeof filters.in == "boolean" && filters.in)
       insideWhere.IO = literal(`parent.IO & ${IOValues.IN} != 0`);
     if (typeof filters.out == "boolean" && filters.out)

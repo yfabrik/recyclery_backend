@@ -17,19 +17,25 @@ import {
   issueGiftCard,
   recreditGiftCard,
 } from "../../services/giftCards.js";
-import CashSession from "../../models/cashsession.js";
-import CashRegister from "../../models/cashregister.js";
-import Recyclery from "../../models/recyclery.js";
-import User from "../../models/user.js";
-import TransactionPayment from "../../models/transactionpayment.js";
-import LabeledItem from "../../models/labeleditem.js";
-import SalesTransaction from "../../models/salestransaction.js";
 import type { Request, Response } from "express";
+
 import db from "../../models/index.js";
+
 import { formatWhereDateRange } from "../../helpers.js";
-import TransactionItem from "../../models/transactionitem.js";
-import Category from "../../models/category.js";
-import GiftCard from "../../models/giftcard.js";
+import { type RequestWithUser } from "./types.js";
+
+const {
+  CashSession,
+  CashRegister,
+  Recyclery,
+  User,
+  TransactionPayment,
+  LabeledItem,
+  SalesTransaction,
+  TransactionItem,
+  Category,
+  GiftCard,
+} = db;
 
 export const getCartLinePrice = (line: CartItem) => {
   let bundles = 0;
@@ -268,7 +274,7 @@ export const getTransaction = async (req: Request, res: Response) => {
 };
 
 export const createTransaction = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const data = dataSchema.parse(req.body);
@@ -420,7 +426,7 @@ export const createTransaction = async (
 };
 
 export const createRefund = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const id = idSchema().parse(req.params.id);

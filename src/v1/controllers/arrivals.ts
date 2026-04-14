@@ -4,16 +4,16 @@ import {
   col,
   fn,
   literal,
-  type Attributes,
-  type WhereOptions
 } from "sequelize";
 import * as z from "zod";
+
 import { formatWhereDateRange } from "../../helpers.js";
-import Arrival from "../../models/arrival.js";
-import Category from "../../models/category.js";
-import CollectionPoint from "../../models/collectionpoint.js";
-import User from "../../models/user.js";
 import { idSchema } from "../../services/zod.js";
+import type { ModelWhere, RequestWithUser } from "./types.ts";
+
+import db from "../../models/index.js";
+
+const { Arrival, Category, CollectionPoint, User } = db;
 
 const dataSchema = z
   .object({
@@ -57,7 +57,7 @@ const filterSchema = z.object({
 export const listArrivals = async (req: Request, res: Response) => {
   const { date_from, date_to, ...rest } = filterSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<Arrival>> = { ...rest };
+  const where: ModelWhere<typeof Arrival> = { ...rest };
   const dateRange = formatWhereDateRange(date_from, date_to);
   if (dateRange) where.arrival_date = dateRange;
 
@@ -79,7 +79,7 @@ export const listArrivals = async (req: Request, res: Response) => {
 };
 
 export const detailArrival = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const id = idSchema().parse(req.params.id);
@@ -99,13 +99,11 @@ export const detailArrival = async (
 };
 
 export const createArrival = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const data = dataSchema.parse(req.body);
-  const category = await Category.findByPk(
-    data.subcategory_id ?? data.category_id,
-  ); //TODO filter par type de category need only IO.in ?
+  const category = await Category.findByPk(data.subcategory_id ?? data.category_id); //TODO filter par type de category need only IO.in ?
   // Vérifier si la catégorie existe
   if (!category) throw new createHttpError[404]("Catégorie non trouvée");
 
@@ -123,7 +121,7 @@ export const createArrival = async (
 };
 
 export const updateArrival = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const id = idSchema().parse(req.params.id);
@@ -145,7 +143,7 @@ export const updateArrival = async (
 };
 
 export const deleteArrival = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const id = idSchema().parse(req.params.id);
@@ -159,7 +157,7 @@ export const deleteArrival = async (
 };
 
 export const statsSummary = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const filterSchema = z.object({
@@ -169,7 +167,7 @@ export const statsSummary = async (
 
   const data = filterSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<Arrival>> = {};
+  const where: ModelWhere<typeof Arrival> = {};
   const dateRange = formatWhereDateRange(data.date_from, data.date_to);
   if (dateRange) where.arrival_date = dateRange;
 
@@ -241,7 +239,7 @@ export const statsByCategories = async (req: Request, res: Response) => {
 
   const data = filterSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<Arrival>> = {};
+  const where: ModelWhere<typeof Arrival> = {};
   const dateRange = formatWhereDateRange(data.date_from, data.date_to);
   if (dateRange) where.arrival_date = dateRange;
 

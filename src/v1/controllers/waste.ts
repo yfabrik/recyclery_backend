@@ -4,16 +4,17 @@ import {
   col,
   fn,
   literal,
-  type Attributes,
-  type WhereOptions
+
 } from "sequelize";
 import z from "zod";
+
 import { formatWhereDateRange } from "../../helpers.js";
-import Category from "../../models/category.js";
-import EcoOrganism from "../../models/ecoorganism.js";
-import User from "../../models/user.js";
-import WasteDisposal from "../../models/wasteDisposal.js";
+
+import db from "../../models/index.js";
 import { idSchema } from "../../services/zod.js";
+import { type ModelWhere, type RequestWithUser } from "./types.js";
+
+const { Category, EcoOrganism, User, WasteDisposal } = db;
 
 const dataSchema = z
   .object({
@@ -56,7 +57,7 @@ export const listWaste = async (req: Request, res: Response) => {
   });
   const filter = filterSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<WasteDisposal>> = {};
+  const where: ModelWhere<typeof WasteDisposal> = {};
   if (filter.category_id) where.category_id = filter.category_id;
   if (filter.subcategory_id) where.subcategory_id = filter.subcategory_id;
   if (filter.eco_organism_id) where.eco_organism_id = filter.eco_organism_id;
@@ -108,7 +109,7 @@ export const detailWaste = async (req: Request, res: Response) => {
 };
 
 export const createWaste = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const data = dataSchema.parse(req.body);
@@ -166,7 +167,7 @@ export const wasteStats = async (req: Request, res: Response) => {
   });
   const filter = filterSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<WasteDisposal>> = {};
+  const where: ModelWhere<typeof WasteDisposal> = {};
   const dateRange = formatWhereDateRange(filter.date_from, filter.date_to);
   if (dateRange) where.disposal_date = dateRange;
 
@@ -211,7 +212,7 @@ export const wasteStatsCategory = async (req: Request, res: Response) => {
   });
   const { date_from, date_to } = data.parse(req.query);
 
-  const where: WhereOptions<Attributes<WasteDisposal>> = {};
+  const where: ModelWhere<typeof WasteDisposal> = {};
   const dateRange = formatWhereDateRange(date_from, date_to);
   if (dateRange) where.disposal_date = dateRange;
 

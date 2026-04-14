@@ -1,9 +1,7 @@
 import {
   col,
   fn,
-  type Attributes,
   type Includeable,
-  type WhereOptions,
 } from "sequelize";
 
 import createHttpError from "http-errors";
@@ -12,13 +10,19 @@ import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
 import { listCaisses } from "./cashRegister.js";
 import type { Request, Response } from "express";
-import CashSession from "../../models/cashsession.js";
-import CashRegister from "../../models/cashregister.js";
-import Recyclery from "../../models/recyclery.js";
-import User from "../../models/user.js";
-import SalesTransaction from "../../models/salestransaction.js";
-import LabeledItem from "../../models/labeleditem.js";
-import Category from "../../models/category.js";
+
+import db from "../../models/index.js";
+import type { ModelWhere, RequestWithUser } from "./types.js";
+
+const {
+  CashSession,
+  CashRegister,
+  Recyclery,
+  User,
+  SalesTransaction,
+  LabeledItem,
+  Category,
+} = db;
 
 // 🧠 GET /cash-sessions
 export const listCashSessions = async (req: Request, res: Response) => {
@@ -29,12 +33,12 @@ export const listCashSessions = async (req: Request, res: Response) => {
   });
   const data = filterSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<CashSession>> = {};
+  const where: ModelWhere<typeof CashSession> = {};
 
   if (data.status) where.status = data.status;
   if (data.user_id) where.user_id = data.user_id;
 
-  const whereRegister: WhereOptions<Attributes<CashRegister>> = {};
+  const whereRegister: ModelWhere<typeof CashRegister> = {};
   if (data.store_id) whereRegister.recyclery_id = data.store_id;
 
   const sessions = await CashSession.findAll({
@@ -71,7 +75,7 @@ export const listCashSessions = async (req: Request, res: Response) => {
 
 // 🧠 GET /cash-sessions/active
 export const getActiveSession = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const userId = req.user.id;
@@ -105,7 +109,7 @@ export const getActiveSession = async (
 
 // 🧠 POST /cash-sessions/open
 export const openCashSession = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const dataSchema = z.object({
@@ -138,7 +142,7 @@ export const openCashSession = async (
 
 // 🧠 PUT /cash-sessions/:id/close
 export const closeCashSession = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const id = idSchema().parse(req.params.id);
@@ -163,7 +167,7 @@ export const closeCashSession = async (
     raw: true,
   });
 
-  const totalSales = parseFloat(sales[0].total_sales);
+  const totalSales = parseFloat(String(sales[0]?.total_sales ?? 0));
   const expected = session.opening_amount + totalSales;
   const difference = data.closing_amount - expected;
 
@@ -245,7 +249,7 @@ export const sessionsStats = async (req: Request, res: Response) => {
 
   const filters = filtersSchema.parse(req.params);
 
-  const where: WhereOptions<Attributes<CashRegister>> = {};
+  const where: ModelWhere<typeof CashRegister> = {};
   if (filters.store_id) where.recyclery_id = filters.store_id;
   const include: Includeable[] = [
     {

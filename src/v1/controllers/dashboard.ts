@@ -1,15 +1,20 @@
 import type { Request, Response } from "express";
 import { Op } from "sequelize";
-import LabeledItem from "../../models/labeleditem.js";
-import SalesTransaction from "../../models/salestransaction.js";
-import Donation from "../../models/donation.js";
-import Task from "../../models/task.js";
-import User from "../../models/user.js";
-import Category from "../../models/category.js";
-import CollectionPoint from "../../models/collectionpoint.js";
-import Recyclery from "../../models/recyclery.js";
-import CashRegister from "../../models/cashregister.js";
-import CashSession from "../../models/cashsession.js";
+
+import db from "../../models/index.js";
+
+const {
+  LabeledItem,
+  SalesTransaction,
+  Donation,
+  Task,
+  User,
+  Category,
+  CollectionPoint,
+  Recyclery,
+  CashRegister,
+  CashSession,
+} = db;
 
 // Fonctions utilitaires
 function formatTimeAgo(dateString: string | Date) {

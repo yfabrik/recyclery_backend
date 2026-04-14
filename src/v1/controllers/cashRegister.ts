@@ -1,15 +1,17 @@
 import createHttpError from "http-errors";
-import { col, fn, Op, type Attributes, type WhereOptions } from "sequelize";
+import { col, fn} from "sequelize";
 import * as z from "zod";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
-import CashRegister from "../../models/cashregister.js";
-import Recyclery from "../../models/recyclery.js";
-import CashSession from "../../models/cashsession.js";
+
+import db from "../../models/index.js";
+import type { ModelWhere } from "../../models/db-types.js";
+
+const { CashRegister, Recyclery, CashSession } = db;
 
 export const listCaisses = async (req: Request, res: Response) => {
-  const store_id = idSchema().parse(req.params.id);
+  const store_id = idSchema().optional().parse(req.params.id);
 
   const filterSchema = z.object({
     is_active: z.coerce.boolean().optional(),
@@ -18,7 +20,7 @@ export const listCaisses = async (req: Request, res: Response) => {
 
   const filter = filterSchema.parse({ store_id, ...req.query });
 
-  const where: WhereOptions<Attributes<CashRegister>> = {};
+  const where: ModelWhere<typeof CashRegister> = {};
   if (filter.store_id) {
     where.recyclery_id = filter.store_id;
   }
@@ -93,7 +95,7 @@ export const detailCaisse = async (req: Request, res: Response) => {
     data: {
       ...register.toJSON(),
       store_name: register.get("Recyclery")
-        ? (register.get("Recyclery") as Recyclery).get("name")
+        ? register.get("Recyclery").get("name")
         : null,
       total_sessions: sessions.length,
       last_session: lastSession,
@@ -188,7 +190,7 @@ export const deleteCaisse = async (req: Request, res: Response) => {
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-export const listCaissesMagasin = async (req, res) => {
+export const listCaissesMagasin = async (req: Request, res: Response) => {
   const { store_id } = req.params;
   req.query.store_id = store_id;
   logger.info("called list caisse magasin, REMAKE THIS ONE");

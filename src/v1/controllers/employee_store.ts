@@ -1,16 +1,14 @@
 import createHttpError from "http-errors";
 import z from "zod";
 import { idSchema } from "../../services/zod.js";
-import Employee from "../../models/employee.js";
-import Recyclery from "../../models/recyclery.js";
 import type { Request, Response } from "express";
 import type { Includeable } from "sequelize";
+
 import db from "../../models/index.js";
-import EmployeeStore from "../../models/employeestore.js";
 
-const { sequelize } = db;
+const { sequelize, Employee, Recyclery, EmployeeStore } = db;
 
-export const listEmployeeStore = async (req: Request, res: Response) => {
+export const listEmployeeStore = async (_req: Request, res: Response) => {
   const assignments = await Employee.findAll({
     include: [
       {
@@ -34,7 +32,7 @@ export const getEmployeeStoreById = async (req: Request, res: Response) => {
     // id: idSchema("recyclerie id requis"),
     employeeId: idSchema("employee id requis"),
   });
-  const { id, employeeId } = params.parse(req.params);
+  const { employeeId } = params.parse(req.params);
 
   const employee = await Employee.findByPk(employeeId, {
     include: [

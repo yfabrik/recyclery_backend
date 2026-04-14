@@ -1,11 +1,11 @@
 import createHttpError from "http-errors";
 import z from "zod";
 import { idSchema, phoneSchema } from "../../services/zod.js";
-import Employee from "../../models/employee.js";
-import Recyclery from "../../models/recyclery.js";
-import EmployeeWorkdays from "../../models/employeeworkdays.js";
 import type { Request, Response } from "express";
-import Skill from "../../models/skill.js";
+
+import db from "../../models/index.js";
+
+const { Employee, Recyclery, EmployeeWorkdays, Skill } = db;
 
 const dataSchema = z.object({
   nom: z.string("nom requis").trim().nonempty("nom requis"),

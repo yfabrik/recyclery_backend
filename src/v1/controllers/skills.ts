@@ -1,6 +1,9 @@
 import z from "zod";
-import Skill from "../../models/skill.js";
 import type { Request, Response } from "express";
+
+import db from "../../models/index.js";
+
+const { Skill } = db;
 
 export const listSkills = async (req: Request, res: Response) => {
   const skills = await Skill.findAll();

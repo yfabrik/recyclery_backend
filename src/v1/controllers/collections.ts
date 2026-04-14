@@ -1,9 +1,11 @@
 import * as z from "zod";
 import logger from "../../services/logger.js";
-import Task from "../../models/task.js";
 import type { Request, Response } from "express";
-import Employee from "../../models/employee.js";
-import type { Attributes, WhereOptions } from "sequelize";
+
+import db from "../../models/index.js";
+import type { ModelWhere } from "../../models/db-types.js";
+
+const { Task, Employee } = db;
 
 /**
  * @deprecated
@@ -18,7 +20,7 @@ export const listCollections = async (req: Request, res: Response) => {
   /**
    * @type {import("sequelize").WhereOptions<import("../../models/types/taskModel.js").TaskAttributes>}
    */
-  const where: WhereOptions<Attributes<Task>> = { category: "collection" };
+  const where: ModelWhere<typeof Task> = { category: "collection" };
   if (recyclery_id) where.store_id = recyclery_id as string;
   if (status) where.status = status as string;
   const include = [{ model: Employee }];

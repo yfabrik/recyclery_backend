@@ -83,6 +83,6 @@ export type DB = ModelStatics & {
 };
 
 
-export type WWW<M extends ModelClass> = WhereOptions<Attributes<InstanceType<M>>>
+export type ModelWhere<M extends ModelClass> = WhereOptions<Attributes<InstanceType<M>>>
 
 // const a :WWW<Arrival>

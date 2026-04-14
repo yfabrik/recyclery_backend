@@ -2,11 +2,11 @@ import createHttpError from "http-errors";
 import z from "zod";
 import { idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
-import CollectionPoint from "../../models/collectionpoint.js";
-import type { Attributes, WhereOptions } from "sequelize";
-import TaskSchedule from "../../models/taskschedule.js";
-import Recyclery from "../../models/recyclery.js";
+
 import db from "../../models/index.js";
+import type { ModelWhere } from "../../models/db-types.js";
+
+const { CollectionPoint, TaskSchedule, Recyclery } = db;
 
 const dataSchema = z.object({
   name: z.string().trim().nonempty("nom requis"),
@@ -43,7 +43,7 @@ export const listCollectionPoints = async (req: Request, res: Response) => {
   });
   const filter = filterSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<CollectionPoint>> = {};
+  const where: ModelWhere<typeof CollectionPoint> = {};
   if (typeof filter.active_only == "boolean")
     where.is_active = filter.active_only;
 
@@ -170,7 +170,7 @@ export const deleteCollectionPoint = async (req: Request, res: Response) => {
 /**
  * @deprecated
  */
-export const stats = async (req: Request, res: Response) => {
+export const stats = async (_req: Request, res: Response) => {
   // const { id } = req.params;
 
   // const stats = await CollectionSchedule.findOne({

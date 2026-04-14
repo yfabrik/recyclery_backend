@@ -1,10 +1,11 @@
 import z from "zod";
 import { idSchema } from "../../services/zod.js";
 import createHttpError from "http-errors";
-import Promotion from "../../models/promotion.js";
 import type { Request, Response } from "express";
-import Category from "../../models/category.js";
-import Recyclery from "../../models/recyclery.js";
+
+import db from "../../models/index.js";
+
+const { Promotion, Category, Recyclery } = db;
 
 const dataSchema = z.object({
   startDate: z.coerce.date().transform((v) => v.toDateString()),
@@ -22,7 +23,7 @@ const dataSchema = z.object({
   // subcategory_id: idSchema().nullable()
 });
 
-export const listPromotions = async (req: Request, res: Response) => {
+export const listPromotions = async (_req: Request, res: Response) => {
   const promotions = await Promotion.findAll({
     include: [
       {

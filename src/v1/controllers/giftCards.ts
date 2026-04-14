@@ -9,10 +9,12 @@ import {
   recreditGiftCard,
 } from "../../services/giftCards.js";
 import type { Request, Response } from "express";
-import GiftCard from "../../models/giftcard.js";
-import GiftCardTransaction from "../../models/giftcardtransaction.js";
-import { Op, type Attributes, type WhereOptions } from "sequelize";
-import type User from "../../models/user.js";
+import { Op} from "sequelize";
+
+import db from "../../models/index.js";
+import { type ModelWhere, type RequestWithUser } from "./types.js";
+
+const { GiftCard, GiftCardTransaction } = db;
 
 const issueSchema = z.object({
   code: z.string().trim().min(1, "code requis"),
@@ -44,7 +46,7 @@ const listSchema = z.object({
 export const listGiftCards = async (req: Request, res: Response) => {
   const filter = listSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<GiftCard>> = {};
+  const where: ModelWhere<typeof GiftCard> = {};
 
   if (filter.status) where.status = filter.status;
   if (filter.code) {
@@ -77,7 +79,7 @@ export const listGiftCards = async (req: Request, res: Response) => {
 };
 
 export const createGiftCard = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const data = issueSchema.parse(req.body);
@@ -127,7 +129,7 @@ export const getGiftCardCurrentBalance = async (
 };
 
 export const createGiftCardCharge = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const id = idSchema().parse(req.params.id);
@@ -147,7 +149,7 @@ export const createGiftCardCharge = async (
 };
 
 export const createGiftCardRecredit = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const id = idSchema().parse(req.params.id);

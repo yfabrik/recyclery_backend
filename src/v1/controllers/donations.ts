@@ -3,14 +3,15 @@ import {
   col,
   fn,
   literal,
-  type Attributes,
-  type WhereOptions,
 } from "sequelize";
 import z from "zod";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
-import Donation from "../../models/donation.js";
-import User from "../../models/user.js";
+
+import db from "../../models/index.js";
+import type { ModelWhere, RequestWithUser } from "./types.js";
+
+const { Donation, User } = db;
 
 const dataSchema = z.object({
   donor_name: z.string("nom requis"),
@@ -32,7 +33,7 @@ export const listDons = async (req: Request, res: Response) => {
   });
   const filter = filterSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<Donation>> = { ...filter };
+  const where: ModelWhere<typeof Donation> = { ...filter };
 
   const donations = await Donation.findAll({
     where,
@@ -52,7 +53,7 @@ export const listDons = async (req: Request, res: Response) => {
 };
 
 export const createDon = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   //TODO c'est au form de faire le tri et d'envoyer donor contact correctement

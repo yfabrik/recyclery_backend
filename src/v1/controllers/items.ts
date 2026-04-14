@@ -4,16 +4,17 @@ import {
   fn,
   literal,
   Op,
-  type Attributes,
-  type WhereOptions,
+
 } from "sequelize";
 import z from "zod";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
-import LabeledItem from "../../models/labeleditem.js";
-import Category from "../../models/category.js";
-import User from "../../models/user.js";
+
+import db from "../../models/index.js";
+import type { ModelWhere, RequestWithUser } from "./types.js";
+
+const { LabeledItem, Category, User } = db;
 
 const dataSchema = z.object({
   name: z.string().nullish(),
@@ -43,7 +44,7 @@ export const listLabeledItem = async (req: Request, res: Response) => {
   const { search, page, ...filter } = filterSchema.parse(req.query);
   const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
 
-  const where: WhereOptions<Attributes<LabeledItem>> = likeQuery
+  const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
       ...filter,
       [Op.or]: [
@@ -106,7 +107,7 @@ export const getItemFromBarcode = async (req, res) => {
 };
 
 export const createLabeledItem = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const data = dataSchema.parse(req.body);
@@ -133,7 +134,7 @@ export const createLabeledItem = async (
 };
 
 export const updateItem = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const id = idSchema().parse(req.params.id);
@@ -162,7 +163,7 @@ export const deleteLabeledItem = async (req: Request, res: Response) => {
 };
 
 export const tagItemAsSell = async (
-  req: Request & { user: User },
+  req: RequestWithUser,
   res: Response,
 ) => {
   const id = idSchema().parse(req.params.id);
@@ -189,7 +190,7 @@ export const itemsStats = async (req: Request, res: Response) => {
   const { search, page, ...filter } = filterSchema.parse(req.query);
   const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
 
-  const where: WhereOptions<Attributes<LabeledItem>> = likeQuery
+  const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
       ...filter,
       [Op.or]: [

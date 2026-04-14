@@ -41,7 +41,7 @@ export const createTaskObject = (
   scheduledDate: Date,
 ): InferCreationAttributes<Task> => {
   const task = {
-    name: schedule.name,
+    name: schedule.name ?? schedule.category,
     category: schedule.category,
     scheduled_date: scheduledDate,
     start_time: schedule.start_time,

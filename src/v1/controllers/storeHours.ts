@@ -2,11 +2,14 @@ import createHttpError from "http-errors";
 import * as z from "zod";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
+
 import { deleteSchedule } from "./taskSchedule.js";
 import type { Request, Response } from "express";
-import TaskSchedule from "../../models/taskschedule.js";
 import type { Includeable } from "sequelize";
-import Recyclery from "../../models/recyclery.js";
+
+import db from "../../models/index.js";
+
+const { TaskSchedule, Recyclery } = db;
 
 const dataSchema = z.object({
   store_id: idSchema("ID du magasin et jour de la semaine sont obligatoires"),
@@ -68,7 +71,7 @@ const getDateFromDay = (day: string) => {
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-export const listHoraires = async (req: Request, res: Response) => {
+export const listHoraires = async (_req: Request, res: Response) => {
   logger.warn("list horaires magasin plus a jour");
   const where = {
     category: "vente",

@@ -4,22 +4,28 @@ import {
   fn,
   literal,
   Op,
-  type Attributes,
+
   type Includeable,
-  type WhereOptions,
+
 } from "sequelize";
 import z from "zod";
 
 import logger from "../../services/logger.js";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
-import EcoOrganism from "../../models/ecoorganism.js";
-import WasteDisposal from "../../models/wasteDisposal.js";
-import Category from "../../models/category.js";
-import Arrival from "../../models/arrival.js";
-import TransactionItem from "../../models/transactionitem.js";
-import SalesTransaction from "../../models/salestransaction.js";
-import LabeledItem from "../../models/labeleditem.js";
+
+import db from "../../models/index.js";
+import type { ModelWhere } from "../../models/db-types.js";
+
+const {
+  EcoOrganism,
+  WasteDisposal,
+  Category,
+  Arrival,
+  TransactionItem,
+  SalesTransaction,
+  LabeledItem,
+} = db;
 
 const dataSchema = z.object({
   name: z.string().trim().nonempty("Le nom est requis"),
@@ -46,7 +52,7 @@ export const listEcoOrganism = async (req: Request, res: Response) => {
   });
   const filter = filterSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<EcoOrganism>> = {};
+  const where: ModelWhere<typeof EcoOrganism> = {};
   if (filter.active) where.is_active = filter.active;
   const include: Includeable[] = [];
   if (filter.include.includes("waste")) include.push({ model: WasteDisposal });

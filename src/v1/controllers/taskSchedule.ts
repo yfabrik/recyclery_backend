@@ -4,18 +4,18 @@ import {
   fn,
   literal,
   Op,
-  type Attributes,
-  type WhereOptions,
+
 } from "sequelize";
 import * as z from "zod";
 import { idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
-import Recyclery from "../../models/recyclery.js";
-import Task from "../../models/task.js";
-import TaskSchedule from "../../models/taskschedule.js";
-import Employee from "../../models/employee.js";
-import EmployeeWorkdays from "../../models/employeeworkdays.js";
+
+import db from "../../models/index.js";
+
 import { formatWhereDateRange } from "../../helpers.js";
+import type { ModelWhere } from "../../models/db-types.js";
+
+const { Recyclery, Task, TaskSchedule, Employee, EmployeeWorkdays } = db;
 
 const dataSchema = z.object({
   scheduled_date: z.coerce.date("date requis"),
@@ -54,7 +54,7 @@ export const listSchedules = async (req: Request, res: Response) => {
 
   const filter = filterSchema.parse({ ...req.query, category });
 
-  const where: WhereOptions<Attributes<TaskSchedule>> = {};
+  const where: ModelWhere<typeof TaskSchedule> = {};
 
   const dateRange = formatWhereDateRange(filter.start_date, filter.end_date);
   if (dateRange) where.scheduled_date = dateRange;
@@ -312,7 +312,7 @@ export const getEmployeeSchedule = async (req: Request, res: Response) => {
     })
     .parse(req.query);
 
-  const where: WhereOptions<Attributes<TaskSchedule>> = {};
+  const where: ModelWhere<typeof TaskSchedule> = {};
   const dateRange = formatWhereDateRange(start_date, end_date);
   if (dateRange) where.scheduled_date = dateRange;
 
@@ -565,7 +565,7 @@ export const planningStats = async (req: Request, res: Response) => {
     })
     .parse(req.query);
 
-  const where: WhereOptions<Attributes<TaskSchedule>> = {};
+  const where: ModelWhere<typeof TaskSchedule> = {};
   const dateRange = formatWhereDateRange(start_date, end_date);
   if (dateRange) where.scheduled_date = dateRange;
   // Statistiques générales

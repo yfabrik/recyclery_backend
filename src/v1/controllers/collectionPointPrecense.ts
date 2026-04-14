@@ -1,11 +1,15 @@
 import type { Request, Response } from "express";
 import createHttpError from "http-errors";
 import * as z from "zod";
-import CollectionPoint from "../../models/collectionpoint.js";
-import TaskSchedule from "../../models/taskschedule.js";
+
+import db from "../../models/index.js";
 import { idSchema } from "../../services/zod.js";
+
 import { detailTask } from "./tasks.js";
+
 import { deleteSchedule, listSchedules } from "./taskSchedule.js";
+
+const { CollectionPoint, TaskSchedule } = db;
 
 const getDateFromDay = (
   day:

@@ -1,10 +1,10 @@
 import z from "zod";
 import { idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
-import EmployeeWorkdays from "../../models/employeeworkdays.js";
-import Employee from "../../models/employee.js";
 import db from "../../models/index.js";
 import createHttpError from "http-errors";
+
+const { EmployeeWorkdays, Employee } = db;
 
 export const listEmployeeWorkdays = async (req: Request, res: Response) => {
   const employeeId = idSchema().parse(req.params.employeeId);

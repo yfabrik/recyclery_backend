@@ -5,23 +5,27 @@ import {
   literal,
   Op,
   where,
-  type Attributes,
-  type WhereOptions,
+
 } from "sequelize";
 import * as z from "zod";
 import { listCaisses } from "../../services/caisse.js";
 import { idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
-import Recyclery from "../../models/recyclery.js";
-import CashRegister from "../../models/cashregister.js";
-import User from "../../models/user.js";
-import TaskSchedule from "../../models/taskschedule.js";
-import EmployeeWorkdays from "../../models/employeeworkdays.js";
-import Employee from "../../models/employee.js";
 import type { Request, Response } from "express";
-import LabeledItem from "../../models/labeleditem.js";
-import SalesTransaction from "../../models/salestransaction.js";
-import CashSession from "../../models/cashsession.js";
+
 import db from "../../models/index.js";
+import type { ModelWhere } from "../../models/db-types.js";
+
+const {
+  Recyclery,
+  CashRegister,
+  User,
+  TaskSchedule,
+  EmployeeWorkdays,
+  Employee,
+  LabeledItem,
+  SalesTransaction,
+  CashSession,
+} = db;
 
 const dataSchema = z.object({
   name: z.string("Le nom de la recyclerie est requis"),
@@ -46,7 +50,7 @@ export const listRecycleries = async (req: Request, res: Response) => {
   });
 
   const filter = filterSchema.parse(req.query);
-  const where: WhereOptions<Attributes<Recyclery>> = {};
+  const where: ModelWhere<typeof Recyclery> = {};
   if (filter.active) where.is_active = filter.active;
   const include = [];
   if (filter.include.includes("employees"))

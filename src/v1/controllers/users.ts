@@ -5,16 +5,16 @@ import {
   col,
   fn,
   Op,
-  type Attributes,
   type Includeable,
-  type WhereOptions,
 } from "sequelize";
 import * as z from "zod";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
-import EmployeeWorkdays from "../../models/employeeworkdays.js";
-import Recyclery from "../../models/recyclery.js";
-import User from "../../models/user.js";
+
+import db from "../../models/index.js";
+import type { ModelWhere } from "./types.js";
+
+const { EmployeeWorkdays, Recyclery, User } = db;
 
 export const listUsers = async (req: Request, res: Response) => {
   const ALLOWED_INCLUDES = ["EmployeeWorkdays", "managedStores"];
@@ -33,7 +33,7 @@ export const listUsers = async (req: Request, res: Response) => {
   });
   const filter = filterSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<User>> = {};
+  const where: ModelWhere<typeof User> = {};
   // if (filter.store_id) where.recyclery_id = filter.store_id;
   if (filter.role.length > 0) where.role = { [Op.in]: filter.role };
   if (filter.active) where.isActive = filter.active;
@@ -63,7 +63,7 @@ export const listUsers = async (req: Request, res: Response) => {
 };
 
 export const findUserById = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params);
+  const id = idSchema().parse(req.params.id);
   const user = await User.findByPk(id, {
     include: [
       // { model: Recyclery, as: "stores", required: false },

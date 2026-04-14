@@ -2,17 +2,18 @@ import type { Request, Response } from "express";
 import createHttpError from "http-errors";
 import {
   Op,
-  type Attributes,
   type Includeable,
-  type WhereOptions,
 } from "sequelize";
 import * as z from "zod";
+
 import { formatWhereDateRange } from "../../helpers.js";
-import Employee from "../../models/employee.js";
-import Recyclery from "../../models/recyclery.js";
-import Task from "../../models/task.js";
-import TaskSchedule from "../../models/taskschedule.js";
+
 import { idSchema } from "../../services/zod.js";
+import type { ModelWhere } from "../../models/db-types.ts";
+
+import db from "../../models/index.js";
+
+const { Task, TaskSchedule, Employee, Recyclery } = db;
 
 const dataSchema = z.object({
   name: z.string("Nom requis"),
@@ -78,7 +79,7 @@ export const listTasks = async (req: Request, res: Response) => {
   // const category = req.originalUrl == '/api/collection-point-presence' ? "point" : req.originalUrl == '/api/store-hours' ? "vente" : req.originalUrl == '/api/collections' ? "collection" : null
   const data = includeSchema.parse({ ...req.query });
 
-  const where: WhereOptions<Attributes<Task>> = {};
+  const where: ModelWhere<typeof Task> = {};
   const dateRange = formatWhereDateRange(data.date_from, data.date_to);
   if (dateRange) where.scheduled_date = dateRange;
 
