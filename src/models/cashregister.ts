@@ -79,10 +79,9 @@ export default class CashRegister extends Model<
         modelName: "CashRegister",
         indexes: [
           { fields: ["recyclery_id"] },
-          { fields: ["recyclery_id", "name"], unique: true },
+          { fields: ["recyclery_id", "name"], unique: true },//=> enforce unique constraint
         ],
         hooks: {
-          //TODO constraint sur name + recyclery ID =>unique possible ????
 
           // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
           beforeUpdate: async (caisse, options) => {

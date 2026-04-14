@@ -145,7 +145,10 @@ export default class Category extends Model<
       {
         sequelize,
         modelName: "Category",
-        indexes: [{ fields: ["parent_id"] }],
+        indexes: [
+          { fields: ["parent_id"] },
+          { fields: ["parent_id", "name"], unique: true },//=> enforce unique constraint],
+        ]
       },
     );
   }
