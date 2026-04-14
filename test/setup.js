@@ -1,9 +1,19 @@
-import db from "../src/models/index"; // adjust path to your models
+const originalWarn = console.warn;
+let db;
 
 beforeAll(async () => {
+  console.warn = (...args) => {
+    const message = args.map((arg) => String(arg ?? "")).join(" ");
+    if (message.includes("SQLite does not support 'INTEGER' with UNSIGNED or ZEROFILL")) return;
+    if (message.includes("(sequelize) Warning")) return;
+    originalWarn(...args);
+  };
+
+  db = (await import("../src/models/index")).default;
   await db.sequelize.sync({ force: true });
 });
 
 afterAll(async () => {
+  console.warn = originalWarn;
   await db.sequelize.close();
 });

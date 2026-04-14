@@ -47,6 +47,8 @@ describe("SalesTransaction Model", () => {
         cash_session_id: session.id,
         created_by: user.id,
         payment_method: "card",
+        total_amount: 10,
+        payment_amount: 10,
         status: "pending",
       });
       const found = await SalesTransaction.findByPk(created.id);
@@ -70,6 +72,8 @@ describe("SalesTransaction Model", () => {
         cash_session_id: session.id,
         created_by: user.id,
         payment_method: "check",
+        total_amount: 15,
+        payment_amount: 15,
         status: "pending",
       });
       await created.update({ status: "completed" });
@@ -93,6 +97,8 @@ describe("SalesTransaction Model", () => {
         cash_session_id: session.id,
         created_by: user.id,
         payment_method: "cash",
+        total_amount: 20,
+        payment_amount: 20,
       });
       const id = created.id;
       await created.destroy();

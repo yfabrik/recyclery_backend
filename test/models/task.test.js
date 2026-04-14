@@ -47,6 +47,8 @@ describe("Task Model", () => {
         name: "ReadTest",
         category: "custom",
         scheduled_date: new Date("2030-07-01"),
+        start_time: new Date("2030-07-01T10:00:00Z"),
+        end_time: new Date("2030-07-01T12:00:00Z"),
       });
       const found = await Task.findByPk(created.id);
       expect(found).not.toBeNull();
@@ -69,6 +71,8 @@ describe("Task Model", () => {
         name: "Before",
         category: "point",
         scheduled_date: new Date("2030-08-01"),
+        start_time: new Date("2030-08-01T08:00:00Z"),
+        end_time: new Date("2030-08-01T16:00:00Z"),
       });
       await created.update({ name: "After", notes: "Updated" });
       const reloaded = await Task.findByPk(created.id);
@@ -92,6 +96,8 @@ describe("Task Model", () => {
         name: "ToDelete",
         category: "collection",
         scheduled_date: new Date("2030-09-01"),
+        start_time: new Date("2030-09-01T09:00:00Z"),
+        end_time: new Date("2030-09-01T15:00:00Z"),
       });
       const id = created.id;
       await created.destroy();

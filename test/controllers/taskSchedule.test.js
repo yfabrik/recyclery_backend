@@ -45,6 +45,9 @@ beforeAll(async () => {
     category: "custom",
     priority: "medium",
     estimated_duration: 120,
+    scheduled_date: new Date("2030-01-01T00:00:00.000Z"),
+    start_time: new Date("2030-01-01T09:00:00.000Z"),
+    end_time: new Date("2030-01-01T11:00:00.000Z"),
   });
 });
 

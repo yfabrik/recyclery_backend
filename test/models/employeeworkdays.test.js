@@ -25,6 +25,8 @@ describe("EmployeeWorkdays Model", () => {
         employee_id: employee.id,
         day_of_week: "tuesday",
         is_working: false,
+        start_time: "09:00",
+        end_time: "17:00",
       });
       const found = await EmployeeWorkdays.findByPk(created.id);
       expect(found).not.toBeNull();
@@ -37,6 +39,8 @@ describe("EmployeeWorkdays Model", () => {
         employee_id: employee.id,
         day_of_week: "wednesday",
         is_working: true,
+        start_time: "09:00",
+        end_time: "17:00",
       });
       await created.update({ is_working: false, notes: "Updated" });
       const reloaded = await EmployeeWorkdays.findByPk(created.id);
@@ -49,6 +53,9 @@ describe("EmployeeWorkdays Model", () => {
       const created = await EmployeeWorkdays.create({
         employee_id: employee.id,
         day_of_week: "thursday",
+        is_working: true,
+        start_time: "09:00",
+        end_time: "17:00",
       });
       const id = created.id;
       await created.destroy();
