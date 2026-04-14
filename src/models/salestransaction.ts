@@ -23,6 +23,7 @@ import type GiftCardTransaction from "./giftcardtransaction.ts";
 import type LabeledItem from "./labeleditem.ts";
 import type TransactionPayment from "./transactionpayment.ts";
 import type User from "./user.ts";
+import type TransactionItem from "./transactionitem.js";
 
 export default class SalesTransaction extends Model<
   InferAttributes<SalesTransaction>,
@@ -48,9 +49,9 @@ export default class SalesTransaction extends Model<
 
   declare User?: NonAttribute<User>;
   declare CashSession?: NonAttribute<CashSession>;
-  declare items?: NonAttribute<LabeledItem[]>;
+  declare items?: Array<LabeledItem & { TransactionItem?: NonAttribute<TransactionItem> }>
   declare refunds?: NonAttribute<SalesTransaction[]>;
-  declare giftCards?: NonAttribute<GiftCard[]>;
+  declare giftCards?: NonAttribute<Array <GiftCard &{GiftCardTransaction: NonAttribute<GiftCardTransaction>}>>;
   declare giftCardMovements?: NonAttribute<GiftCardTransaction[]>;
   declare payments?: NonAttribute<TransactionPayment[]>;
   declare issuedGiftCards?: NonAttribute<GiftCard[]>;
@@ -92,10 +93,11 @@ export default class SalesTransaction extends Model<
     GiftCard["id"]
   >;
   declare getGiftCardMovements: HasManyGetAssociationsMixin<GiftCardTransaction>;
-  declare addGiftCardMovement: HasManyAddAssociationMixin<
-    GiftCard,
-    GiftCard["id"]
-  >;
+  //FIXME FAUX
+  // declare addGiftCardMovement: HasManyAddAssociationMixin<
+  //   GiftCard,
+  //   GiftCard["id"]
+  // >;
   declare getPayments: HasManyGetAssociationsMixin<TransactionPayment>;
   declare addPayment: HasManyAddAssociationMixin<
     TransactionPayment,

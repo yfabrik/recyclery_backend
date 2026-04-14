@@ -30,6 +30,7 @@ import type Promotion from "./promotion.ts";
 import type Task from "./task.ts";
 import type TaskSchedule from "./taskschedule.ts";
 import type User from "./user.ts";
+import type EmployeeStore from "./employeestore.js";
 
 export default class Recyclery extends Model<
   InferAttributes<Recyclery>,
@@ -52,7 +53,7 @@ export default class Recyclery extends Model<
   declare LabeledItems?: NonAttribute<LabeledItem[]>;
   declare Donations?: NonAttribute<Donation[]>;
   declare Tasks?: NonAttribute<Task[]>;
-  declare employees?: NonAttribute<Employee[]>;
+  declare employees?: NonAttribute<Array<Employee & { EmployeeStore: NonAttribute<EmployeeStore> }>>;
   declare manager?: NonAttribute<User | null>;
   declare caisses?: NonAttribute<CashRegister[]>;
   declare CollectionPoints?: NonAttribute<CollectionPoint[]>;

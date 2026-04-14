@@ -46,8 +46,8 @@ export default class LabeledItem extends Model<
   declare subcategory?: NonAttribute<Category>;
   declare recyclery?: NonAttribute<Recyclery>;
   declare createdBy?: NonAttribute<User>;
-  declare transactions?: NonAttribute<SalesTransaction[]>;
-  declare TransactionItem?: NonAttribute<TransactionItem>
+  declare transactions?: Array<SalesTransaction & { TransactionItem?: NonAttribute<TransactionItem> }>
+  // declare TransactionItem?: NonAttribute<TransactionItem>
 
   declare getCategory: BelongsToGetAssociationMixin<Category>;
   declare setCategory: BelongsToSetAssociationMixin<Category, Category["id"]>;

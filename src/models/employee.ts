@@ -19,6 +19,7 @@ import type Recyclery from "./recyclery.ts";
 import type Skill from "./skill.ts";
 import type Task from "./task.ts";
 import type TaskSchedule from "./taskschedule.ts";
+import type EmployeeStore from "./employeestore.js";
 
 export default class Employee extends Model<
   InferAttributes<Employee>,
@@ -36,7 +37,7 @@ export default class Employee extends Model<
   declare updatedAt: CreationOptional<Date>;
 
   declare EmployeeWorkdays?: NonAttribute<EmployeeWorkdays[]>;
-  declare stores?: NonAttribute<Recyclery[]>;
+  declare stores?: NonAttribute<Array<Recyclery &{EmployeeStore:NonAttribute<EmployeeStore>}>>;
   declare Tasks?: NonAttribute<Task[]>;
   declare TaskSchedules?: NonAttribute<TaskSchedule[]>;
   declare skills?: NonAttribute<Skill[]>;

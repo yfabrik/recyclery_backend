@@ -51,7 +51,7 @@ export default class GiftCard extends Model<
   declare issuedTransaction?: NonAttribute<SalesTransaction | null>;
   declare issuedRefundTransaction?: NonAttribute<SalesTransaction | null>;
   declare createdBy?: NonAttribute<User | null>;
-  declare transactions?: NonAttribute<SalesTransaction[]>;
+  declare transactions?: NonAttribute<Array<SalesTransaction & { GiftCardTransaction: GiftCardTransaction }>>;
   declare movements?: NonAttribute<GiftCardTransaction[]>;
   declare paymentUsages?: NonAttribute<TransactionPayment[]>;
 
@@ -77,10 +77,11 @@ export default class GiftCard extends Model<
     SalesTransaction["id"]
   >;
   declare getMovements: HasManyGetAssociationsMixin<GiftCardTransaction>;
-  declare addMovement: HasManyAddAssociationMixin<
-    SalesTransaction,
-    SalesTransaction["id"]
-  >;
+  //FIXME FAUX
+  // declare addMovement: HasManyAddAssociationMixin<
+  //   SalesTransaction,
+  //   SalesTransaction["id"]
+  // >;
   declare getPaymentUsages: HasManyGetAssociationsMixin<TransactionPayment>;
   declare addPaymentUsage: HasManyAddAssociationMixin<
     TransactionPayment,
