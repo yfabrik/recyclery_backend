@@ -28,7 +28,8 @@ USER node
 
 COPY package.json ./
 
-RUN npm i --omit=dev --ignore-scripts
+RUN npm i --omit=dev
+ #--ignore-scripts && npm rebuild sqlite3 --build-from-source
 
 COPY --from=build --chown=node:node /home/node/app/dist ./dist
 
