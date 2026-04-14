@@ -79,7 +79,7 @@ export default class EmployeeStore extends Model<
         indexes: [
           { fields: ["employeeId"] },
           { fields: ["recycleryId"] },
-          { fields: ["employeeId", "recycleryId"], unique: true },
+          { fields: ["employeeId", "recycleryId"], unique: true },//already set by PK
           {
             unique: true,
             fields: ["employeeId"],

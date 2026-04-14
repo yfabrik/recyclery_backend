@@ -6,6 +6,7 @@ import Recyclery from "../../models/recyclery.js";
 import type { Request, Response } from "express";
 import type { Includeable } from "sequelize";
 import db from "../../models/index.js";
+import EmployeeStore from "../../models/employeestore.js";
 
 const { sequelize } = db;
 
@@ -30,7 +31,7 @@ export const listEmployeeStore = async (req: Request, res: Response) => {
 
 export const getEmployeeStoreById = async (req: Request, res: Response) => {
   const params = z.object({
-    id: idSchema("recyclerie id requis"),
+    // id: idSchema("recyclerie id requis"),
     employeeId: idSchema("employee id requis"),
   });
   const { id, employeeId } = params.parse(req.params);
@@ -169,8 +170,11 @@ export const removeEmployeeStore = async (req: Request, res: Response) => {
     await employee.removeStore(store);
   } else {
     // Remove all store assignments
-    await employee.setStores([]);
+    // await employee.setStores([]);
+    EmployeeStore.destroy({ where: { employeeId: data.employeeId } });
   }
+  const emplo = await Employee.findByPk(data.employeeId, { include: [{ model: Recyclery, as: "stores" }] });
+  console.log(emplo);
 
   res.json({
     success: true,

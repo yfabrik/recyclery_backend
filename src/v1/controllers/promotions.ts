@@ -18,7 +18,7 @@ const dataSchema = z.object({
     .min(0, "promo min 0")
     .max(100, "promo max 100"),
   category_id: idSchema("categorie requise"),
-  stores: z.array(idSchema()).optional(),
+  stores: z.array(idSchema()).nullish(),
   // subcategory_id: idSchema().nullable()
 });
 
@@ -78,6 +78,9 @@ export const updatePromotion = async (req: Request, res: Response) => {
   await promo.update(promotionData);
   if (Array.isArray(stores)) {
     await promo.setStores(stores);
+  }
+  if (stores === null) {
+    await promo.setStores([]);
   }
   await promo.reload({
     include: [
