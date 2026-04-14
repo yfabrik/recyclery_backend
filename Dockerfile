@@ -10,7 +10,7 @@ USER node
 
 COPY package.json ./
 
-RUN npm ci --ignore-scripts
+RUN npm i --ignore-scripts
 
 COPY --chown=node:node . .
 
@@ -28,7 +28,7 @@ USER node
 
 COPY package.json ./
 
-RUN npm ci --omit=dev --ignore-scripts
+RUN npm i --omit=dev --ignore-scripts
 
 COPY --from=build --chown=node:node /home/node/app/dist ./dist
 
