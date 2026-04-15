@@ -2,7 +2,6 @@ import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
-  Op,
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
@@ -12,14 +11,12 @@ import {
   type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
-  type ModelStatic,
   type NonAttribute,
-  type Sequelize,
+  type Sequelize
 } from "sequelize";
 import type CashSession from "./cashsession.ts";
 import type { ModelStatics } from "./db-types.ts";
 import type Recyclery from "./recyclery.ts";
-import logger from "../services/logger.js";
 
 export default class CashRegister extends Model<
   InferAttributes<CashRegister>,
@@ -84,7 +81,7 @@ export default class CashRegister extends Model<
         hooks: {
 
           // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
-          beforeUpdate: async (caisse, options) => {
+          // beforeUpdate: async (caisse, options) => {
             // const Registrer = caisse.sequelize.models.CashRegister as ModelStatic<CashRegister> | undefined
             // if (!Registrer) {
             //   logger.error(`Task model not found for schedule ${caisse.id}`);
@@ -106,7 +103,7 @@ export default class CashRegister extends Model<
             //     "Une autre caisse avec ce nom existe déjà dans ce magasin",
             //   );
             // }
-          },
+          // },
           beforeDestroy: async (caisse) => {
             const sessions = await caisse.countSessions({
               where: { status: "open" },

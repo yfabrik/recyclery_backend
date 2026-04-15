@@ -56,7 +56,7 @@ type stats = {
   thisMonthSales: number;
 };
 
-export const dashboardStats = async (req: Request, res: Response) => {
+export const dashboardStats = async (_req: Request, res: Response) => {
   // Statistiques principales
   const stats = {} as stats;
 
@@ -147,7 +147,7 @@ type activity = {
   status: string;
   statusColor: string;
 };
-export const dashboardActivities = async (req: Request, res: Response) => {
+export const dashboardActivities = async (_req: Request, res: Response) => {
   const activities = [] as activity[];
 
   // 1. Ventes récentes
@@ -226,7 +226,7 @@ export const dashboardActivities = async (req: Request, res: Response) => {
   });
 };
 
-export const dashboardCharts = async (req: Request, res: Response) => {
+export const dashboardCharts = async (_req: Request, res: Response) => {
   // Ventes des 7 derniers jours
   const salesData = [];
   const revenueData = [];
@@ -266,7 +266,7 @@ export const dashboardCharts = async (req: Request, res: Response) => {
   });
 };
 
-export const dashboardStoreStats = async (req: Request, res: Response) => {
+export const dashboardStoreStats = async (_req: Request, res: Response) => {
   // Récupérer tous les magasins actifs
   const stores = await Recyclery.findAll({
     where: { is_active: true },

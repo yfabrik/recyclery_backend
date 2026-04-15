@@ -5,12 +5,12 @@ import db from "../../models/index.js";
 
 const { Skill } = db;
 
-export const listSkills = async (req: Request, res: Response) => {
+export const listSkills = async (_req: Request, res: Response) => {
   const skills = await Skill.findAll();
   return res.json({ success: true, skills });
 };
 
-export const detailSkill = async (req: Request, res: Response) => {
+export const detailSkill = async (_req: Request, res: Response) => {
   return res.json({});
 };
 
@@ -25,10 +25,10 @@ export const createSkill = async (req: Request, res: Response) => {
   return res.json({ success: true, skill });
 };
 
-export const updateSkill = async (req: Request, res: Response) => {
+export const updateSkill = async (_req: Request, res: Response) => {
   return res.json({});
 };
 
-export const deleteSkill = async (req: Request, res: Response) => {
+export const deleteSkill = async (_req: Request, res: Response) => {
   return res.json({});
 };
