@@ -15,7 +15,7 @@ const dataSchema = z.object({
   phone: phoneSchema().nullish().prefault(null),
 });
 
-export const listEmployees = async (req: Request, res: Response) => {
+export const listEmployees = async (_req: Request, res: Response) => {
   const data = await Employee.findAll({
     include: [
       {

@@ -114,7 +114,7 @@ export const deleteDon = async (req: Request, res: Response) => {
   return res.json({ success: true, message: "Don supprimé avec succès" });
 };
 
-export const donStats = async (req: Request, res: Response) => {
+export const donStats = async (_req: Request, res: Response) => {
   const stats = await Donation.findOne({
     attributes: [
       [fn("COUNT", col("*")), "total_donations"],

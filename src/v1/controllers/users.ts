@@ -159,7 +159,7 @@ export const deleteUser = async (req: Request, res: Response) => {
   });
 };
 
-export const userStats = async (req: Request, res: Response) => {
+export const userStats = async (_req: Request, res: Response) => {
   const totalUsers = await User.count();
   // Statistiques générales des utilisateurs
 
@@ -173,7 +173,7 @@ export const userStats = async (req: Request, res: Response) => {
   const recentLogins = await User.count({
     where: {
       last_login: {
-        [Op.gte]: new Date(new Date() - 30 * 24 * 60 * 60 * 1000),
+        [Op.gte]: new Date(+new Date() - 30 * 24 * 60 * 60 * 1000),
       },
     },
   });
