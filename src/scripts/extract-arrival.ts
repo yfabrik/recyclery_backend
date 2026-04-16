@@ -1,6 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import db from "./models/index.js";
+import db from "../models/index.js";
 
 const { Arrival, Category, CollectionPoint, sequelize } = db;
 
