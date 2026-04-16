@@ -6,16 +6,15 @@ import {
   Op,
 
   type Includeable,
-
 } from "sequelize";
 import z from "zod";
 
+import type { Request, Response } from "express";
 import logger from "../../services/logger.js";
 import { idSchema, phoneSchema } from "../../services/zod.js";
-import type { Request, Response } from "express";
 
-import db from "../../models/index.js";
 import type { ModelWhere } from "../../models/db-types.js";
+import db from "../../models/index.js";
 
 const {
   EcoOrganism,
@@ -218,15 +217,15 @@ type ecoOrgQuarterStats = Pick<InstanceType<typeof EcoOrganism>, "id" | "name" |
   quarters: {
     quarter: quarterLabel;
     quarterOut: s;
-     quarterIn: s &{by_soure_type: Record<InstanceType<typeof Arrival>["source_type"], s>};
+    quarterIn: s & { by_soure_type: Record<InstanceType<typeof Arrival>["source_type"], s> };
     quarterSell: {
-        total_weight_kg: number;
+      total_weight_kg: number;
+      quantity: number;
+      categories: (cat & {
+        subcategories: (cat & { quantity: number })[];
         quantity: number;
-        categories: (cat & {
-          subcategories: (cat & { quantity: number })[];
-          quantity: number;
-        })[];
-      };
+      })[];
+    };
   }[]
 }
 
@@ -440,6 +439,7 @@ export const getQuarterStatIn = async (
       s,
     ][]) {
       arrivalRowsByQuarterLabel.get(label)?.forEach((row) => {
+
         const catId = row.category_id;
         const cat = quarter.categories.find((c) => c.id === catId);
         if (!cat) return;// categorie pas trouvé donc fait pas parti des in cat
@@ -727,12 +727,18 @@ export const getQuarterStatSell = async (
     soldQuantityByQuarter.map((q) => [q.label, q.rows]),
   );
 
+
   const byEcoOrg = new Map() as Map<
     InstanceType<typeof EcoOrganism>["id"],
-    Record<quarterLabel, s & { quantity: number; categories: (cat & { quantity: number, subcategories: (cat & { quantity: number })[] })[] }>
+    Record<quarterLabel, Omit<s, 'categories'> & {
+      categories: (cat & { quantity: number, subcategories: (cat & { quantity: number })[] })[];
+    }>
   >;
   for (const ecoOrg of sellCategoryLinks) {
-    const quarterRecord = {} as Record<quarterLabel, s & { quantity: number; categories: (cat & { subcategories: (cat & { quantity: number })[]; quantity: number })[] }>
+    const quarterRecord = {} as Record<quarterLabel, Omit<s, 'categories'> & {
+      quantity: number,
+      categories: (cat & { quantity: number, subcategories: (cat & { quantity: number })[] })[];
+    }>
     for (const range of quarterRanges) {
       quarterRecord[range.label] = {
         total_weight_kg: 0,
@@ -754,7 +760,9 @@ export const getQuarterStatSell = async (
   for (const [ecoOrgId, quarterData] of byEcoOrg) {
     for (const [label, quarter] of Object.entries(quarterData) as [
       quarterLabel,
-      s & { quantity: number; categories: (cat & { subcategories: (cat & { quantity: number })[]; quantity: number })[] },
+      Omit<s, 'categories'> & {
+        categories: (cat & { quantity: number, subcategories: (cat & { quantity: number })[] })[];
+      }
     ][]) {
       soldQuantityRowsByQuarterLabel.get(label)?.forEach((row) => {
         const catId = row.category_id;
@@ -1008,25 +1016,25 @@ export const ecoOrgQuarterStats = async (req: Request, res: Response) => {
     getQuarterStatSell(quarterRanges),
   ]);
 
-  const response = ecoOrganisms.map(eo=>{
+  const response = ecoOrganisms.map(eo => {
     return {
       id: eo.id,
       name: eo.name,
       description: eo.description,
       is_active: eo.is_active,
-      quarters: quarterRanges.map(range=>{
+      quarters: quarterRanges.map(range => {
         return {
           quarter: range.label,
-          quarterOut: quarterOutByEcoOrg.get(eo.id)?.[range.label],
-          quarterIn: quarterInByEcoOrg.get(eo.id)?.[range.label],
-          quarterSell: quarterSellByEcoOrg.get(eo.id)?.[range.label],
+          quarterOut: quarterOutByEcoOrg.get(eo.id)?.[range.label] ?? {},
+          quarterIn: quarterInByEcoOrg.get(eo.id)?.[range.label] ?? {},
+          quarterSell: quarterSellByEcoOrg.get(eo.id)?.[range.label] ?? {},
         }
       })
     }
 
   }) as Array<ecoOrgQuarterStats>
 
- return  res.json({ stats: response })
+  return res.json({ stats: response })
 
 
   // /**
