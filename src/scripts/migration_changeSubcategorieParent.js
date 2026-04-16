@@ -1,6 +1,6 @@
 import { Op } from "sequelize";
-import db from "./models/index.js";
-import logger from "./services/logger.js";
+import db from "../models/index.js";
+import logger from "../services/logger.js";
 
 const { Category, LabeledItem, Arrival, WasteDisposal } = db;
 

@@ -1,5 +1,5 @@
 import { Op } from "sequelize";
-import db from "./models/index.js";
+import db from "../models/index.js";
 
 const { LabeledItem, TransactionItem, Category, SalesTransaction } = db;
 
