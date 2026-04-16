@@ -52,16 +52,23 @@ const filterSchema = z.object({
   status: z.enum(["received"]).optional(),
   date_from: z.coerce.date().optional(),
   date_to: z.coerce.date().optional(),
+  page: z.coerce.number().positive().optional(),
 });
 
 export const listArrivals = async (req: Request, res: Response) => {
-  const { date_from, date_to, ...rest } = filterSchema.parse(req.query);
+  const { date_from, date_to, page, ...rest } = filterSchema.parse(req.query);
 
   const where: ModelWhere<typeof Arrival> = { ...rest };
   const dateRange = formatWhereDateRange(date_from, date_to);
   if (dateRange) where.arrival_date = dateRange;
 
-  const arrivals = await Arrival.findAll({
+  const pagination = {} as { limit: number; offset: number };
+  if (page) {
+    pagination.limit = 50;
+    pagination.offset = (page - 1) * pagination.limit;
+  }
+
+  const arrivals = await Arrival.findAndCountAll({
     where,
     include: [
       { model: Category, as: "categorie" },
@@ -70,11 +77,18 @@ export const listArrivals = async (req: Request, res: Response) => {
       { model: CollectionPoint },
     ],
     order: [["createdAt", "DESC"]],
+    ...pagination,
   });
 
   res.json({
     success: true,
-    arrivals: arrivals,
+    arrivals: arrivals.rows,
+    pagination: {
+      page: page || 1,
+      limit: pagination.limit,
+      total: arrivals.count,
+      totalPages: Math.ceil(arrivals.count / pagination.limit),
+    },
   });
 };
 
