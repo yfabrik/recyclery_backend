@@ -22,7 +22,7 @@ import type { Request, Response } from "express";
 import db from "../../models/index.js";
 
 import { formatWhereDateRange } from "../../helpers.js";
-import { type RequestWithUser } from "./types.js";
+import { type ModelWhere, type RequestWithUser } from "./types.js";
 
 const {
   CashSession,
@@ -80,15 +80,9 @@ const dataSchema = z.object({
 type Data = z.infer<typeof dataSchema>;
 type CartItem = z.infer<typeof itemSchema>;
 
-/**
- * @param {number|string|null|undefined} value
- */
-const toAmount = (value) => Number.parseFloat(String(value ?? 0));
-/**
- * @param {number|string} a
- * @param {number|string} b
- */
-const amountsEqual = (a, b) => Math.abs(toAmount(a) - toAmount(b)) < 0.001;
+const toAmount = (value?:number|string|null) => Number.parseFloat(String(value ?? 0));
+
+const amountsEqual = (a:number|string, b:number|string) => Math.abs(toAmount(a) - toAmount(b)) < 0.001;
 
 const normalizePayments = (data: Data) => {
   const explicitPayments = Array.isArray(data.payments) ? data.payments : [];
@@ -147,7 +141,7 @@ export const listTransactions = async (req: Request, res: Response) => {
   });
   const filter = filterSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<SalesTransaction>> = {};
+  const where: ModelWhere<typeof SalesTransaction> = {};
   // if(filter.transaction_number) where.id={[Op.like]:+filter.transaction_number}
   // if (filter.store_id) where.recyclery_id = filter.store_id;
 
@@ -158,7 +152,7 @@ export const listTransactions = async (req: Request, res: Response) => {
   if (filter.payment_method) where.payment_method = filter.payment_method;
   if (filter.type) where.transactionType = filter.type;
 
-  const whereStore: WhereOptions<Attributes<CashRegister>> = {};
+  const whereStore:  ModelWhere<typeof CashRegister> = {};
   if (filter.store_id) whereStore.recyclery_id = filter.store_id;
 
   const pagination = {} as { limit: number; offset: number };
@@ -705,7 +699,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
   });
   const filter = filterSchema.parse(req.query);
 
-  const where: WhereOptions<Attributes<SalesTransaction>> = {};
+  const where:  ModelWhere<typeof SalesTransaction> = {};
   const include: Includeable[] = [];
   if (filter.store_id) {
     include.push({
@@ -923,7 +917,7 @@ export const transactionStatsPostalCode = async (
   const filter = filterSchema.parse(req.query);
   const { store_id, date_from, date_to } = filter;
 
-  const where: WhereOptions<Attributes<SalesTransaction>> = {};
+  const where:  ModelWhere<typeof SalesTransaction> = {};
   const include: Includeable[] = [];
   // include.push({ model: LabeledItem, as: "items" })
   where.customer_postal_code = { [Op.ne]: null };

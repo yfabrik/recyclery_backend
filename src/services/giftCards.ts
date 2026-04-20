@@ -1,0 +1,237 @@
+import createHttpError from "http-errors";
+import {
+  Op,
+  Transaction,
+  type CreateOptions,
+  type FindOptions,
+} from "sequelize";
+import db from "../models/index.js";
+import type SalesTransaction from "../models/salestransaction.js";
+
+const { GiftCard, GiftCardTransaction, User, sequelize } = db;
+
+const toAmount = (value?: number | string | null) =>
+  Number.parseFloat(String(value ?? 0));
+
+const getGiftCardBalanceInTx = async (
+  giftCardId: InstanceType<typeof GiftCard>["id"],
+  transaction: Transaction,
+) => {
+  const giftCard = await GiftCard.findByPk(giftCardId, { transaction });
+  if (!giftCard) throw new createHttpError.NotFound("gift card not found");
+
+  const movementSum =
+    (await GiftCardTransaction.sum("amount", {
+      where: { gift_card_id: giftCardId },
+      transaction,
+    })) || 0;
+
+  return {
+    giftCard,
+    initialValue: toAmount(giftCard.initial_value),
+    movementSum: toAmount(movementSum),
+    currentBalance: toAmount(giftCard.initial_value) + toAmount(movementSum),
+  };
+};
+
+const assertGiftCardUsable = (giftCard: InstanceType<typeof GiftCard>) => {
+  if (giftCard.status === "cancelled") {
+    throw new createHttpError.BadRequest("gift card is cancelled");
+  }
+  if (giftCard.status === "expired") {
+    throw new createHttpError.BadRequest("gift card is expired");
+  }
+  if (giftCard.expires_at && new Date(giftCard.expires_at) < new Date()) {
+    throw new createHttpError.BadRequest("gift card is expired");
+  }
+};
+type GiftCreate = {
+  code: string;
+  initialValue: number | string;
+  expiresAt?: Date | string | null;
+  issuedTransactionId?: number | null;
+  issuedRefundTransactionId?: number | null;
+  createdBy?: number | null;
+  note?: string | null;
+  recipientName?: string | null;
+  recipientEmail?: string | null;
+  metadata?: object | null;
+};
+
+export const issueGiftCard = async ({
+  code,
+  initialValue,
+  expiresAt = null,
+  issuedTransactionId = null,
+  issuedRefundTransactionId = null,
+  createdBy = null,
+  note = null,
+  recipientName = null,
+  recipientEmail = null,
+  metadata = null,
+  transaction: externalTransaction = null,
+}: GiftCreate & { transaction: Transaction | null }) => {
+  const amount = toAmount(initialValue);
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new createHttpError.BadRequest(
+      "initial gift card value must be >= 0",
+    );
+  }
+  const linkedTransactionId = issuedTransactionId || issuedRefundTransactionId;
+  if (!linkedTransactionId) {
+    throw new createHttpError.BadRequest(
+      "gift card issuance requires a linked sales transaction id",
+    );
+  }
+
+  const run = async (transaction: Transaction) => {
+    const giftCard = await GiftCard.create(
+      {
+        code,
+        initial_value: amount,
+        expires_at: expiresAt != null ? new Date(expiresAt) : null,
+        issued_transaction_id: issuedTransactionId,
+        issued_refund_transaction_id: issuedRefundTransactionId,
+        created_by: createdBy,
+        note,
+        recipient_name: recipientName,
+        recipient_email: recipientEmail,
+      },
+      { transaction },
+    );
+
+    await GiftCardTransaction.create(
+      {
+        gift_card_id: giftCard.id,
+        sales_transaction_id: linkedTransactionId,
+        type: "issue",
+        amount,
+        created_by: createdBy,
+        metadata,
+      },
+      { transaction },
+    );
+
+    return giftCard;
+  };
+
+  if (externalTransaction) return run(externalTransaction);
+  return sequelize.transaction(run);
+};
+
+/**
+ * Retrieve current balance from immutable initial value + movements ledger.
+ * @param  giftCardId
+ * @param  [options]
+ */
+export const getGiftCardBalance = async (
+  giftCardId: InstanceType<typeof GiftCard>["id"],
+  options?: CreateOptions,
+) => {
+  if (options?.transaction) {
+    return getGiftCardBalanceInTx(giftCardId, options.transaction);
+  }
+  return sequelize.transaction((transaction) =>
+    getGiftCardBalanceInTx(giftCardId, transaction),
+  );
+};
+
+/**
+ * Debit gift card for a sale transaction.
+ */
+
+type GiftCharge = {
+  giftCardId: InstanceType<typeof GiftCard>["id"];
+  salesTransactionId: InstanceType<typeof SalesTransaction>["id"];
+  amount: number | string;
+  createdBy?: InstanceType<typeof User>["id"] | null;
+  metadata?: object | null;
+};
+export const chargeGiftCard = async ({
+  giftCardId,
+  salesTransactionId,
+  amount,
+  createdBy = null,
+  metadata = null,
+  transaction: externalTransaction = null,
+}: GiftCharge & { transaction: Transaction | null }) => {
+  const debit = toAmount(amount);
+  if (!Number.isFinite(debit) || debit <= 0) {
+    throw new createHttpError.BadRequest("charge amount must be > 0");
+  }
+
+  const run = async (transaction: Transaction) => {
+    const { giftCard, currentBalance } = await getGiftCardBalanceInTx(
+      giftCardId,
+      transaction,
+    );
+    assertGiftCardUsable(giftCard);
+
+    if (currentBalance < debit) {
+      throw new createHttpError.BadRequest("insufficient gift card balance");
+    }
+
+    return GiftCardTransaction.create(
+      {
+        gift_card_id: giftCardId,
+        sales_transaction_id: salesTransactionId,
+        type: "charge",
+        amount: -debit,
+        created_by: createdBy,
+        metadata,
+      },
+      { transaction },
+    );
+  };
+  if (externalTransaction) return run(externalTransaction);
+  return sequelize.transaction(run);
+};
+
+/**
+ * Credit gift card from refund flow.
+ */
+export const recreditGiftCard = async ({
+  giftCardId,
+  salesTransactionId,
+  amount,
+  createdBy = null,
+  metadata = null,
+  transaction: externalTransaction = null,
+}: GiftCharge & { transaction: Transaction | null }) => {
+  const credit = toAmount(amount);
+  if (!Number.isFinite(credit) || credit <= 0) {
+    throw new createHttpError.BadRequest("recredit amount must be > 0");
+  }
+
+  const run = async (transaction: Transaction) => {
+    const giftCard = await GiftCard.findByPk(giftCardId, { transaction });
+    if (!giftCard) throw new createHttpError.NotFound("gift card not found");
+    assertGiftCardUsable(giftCard);
+
+    return GiftCardTransaction.create(
+      {
+        gift_card_id: giftCardId,
+        sales_transaction_id: salesTransactionId,
+        type: "refund_recredit",
+        amount: credit,
+        created_by: createdBy,
+        metadata,
+      },
+      { transaction },
+    );
+  };
+  if (externalTransaction) return run(externalTransaction);
+  return sequelize.transaction(run);
+};
+
+export const findGiftCardByCode = async (
+  code: InstanceType<typeof GiftCard>["code"],
+  options: FindOptions = {},
+) =>
+  GiftCard.findOne({
+    where: {
+      code: { [Op.eq]: code },
+    },
+    include: [{ model: GiftCardTransaction, as: "movements", required: false }],
+    ...(options.transaction ? { transaction: options.transaction } : {}),
+  });

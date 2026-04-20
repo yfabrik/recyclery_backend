@@ -28,7 +28,7 @@ export default class User extends Model<
   declare email: string;
   declare password_hash: string | null;
   declare password: string | undefined;
-  declare role: CreationOptional<string>;
+  declare role: CreationOptional<"admin" | "manager" | "employee">;
   declare phone: CreationOptional<string | null>;
   declare isActive: CreationOptional<boolean>;
   declare last_login: CreationOptional<Date | null>;
@@ -114,7 +114,7 @@ export default class User extends Model<
           },
         },
         role: {
-          type: DataTypes.STRING,
+          type: DataTypes.ENUM("admin", "manager", "employee"),
           defaultValue: "employee",
           allowNull: false,
         },

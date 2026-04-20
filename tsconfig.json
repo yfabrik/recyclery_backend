@@ -37,7 +37,7 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "allowJs": true,
+    // "allowJs": true,
     "resolveJsonModule": true
     // "checkJs": true,
     // "noErrorTruncation": true,

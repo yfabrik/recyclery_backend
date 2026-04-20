@@ -87,4 +87,5 @@ docker run --rm -it \
   -v "$PROJECT_DIR:/workspace" \
   "${NODE_ENV_VARS[@]}" \
   "$NODE_IMAGE" \
-  bash -lc "$BOOTSTRAP_COMMAND && exec bash"
+  bash
+  #bash -lc "$BOOTSTRAP_COMMAND && exec bash"
