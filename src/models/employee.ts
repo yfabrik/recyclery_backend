@@ -143,6 +143,9 @@ export default class Employee extends Model<
       {
         sequelize,
         modelName: "Employee",
+        indexes:[ 
+          { fields: ["nom", "prenom"], unique: true },//=> enforce unique constraint
+        ]
       },
     );
   }
