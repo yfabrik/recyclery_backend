@@ -422,7 +422,7 @@ export const removeEmployeeFromSchedule = async (
 };
 
 export const findAvailableEMployee = async (req: Request, res: Response) => {
-  const scheduleId = idSchema().parse(req.params.id);
+  const scheduleId = idSchema().parse(req.params.scheduleId);
 
   // Récupérer les détails de la tâche
   const schedule = await Task.findByPk(scheduleId, {
