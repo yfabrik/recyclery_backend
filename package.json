@@ -4,12 +4,11 @@
   "description": "Backend pour le système de gestion de recyclerie",
   "main": "src/index.js",
   "type": "module",
-  "transform": {},
   "scripts": {
-    "dev": "nodemon",
+    "dev": "ts-node src/index.ts",
     "test": "jest",
     "jest": "NODE_OPTIONS='${NODE_OPTIONS} --experimental-vm-modules' jest --runInBand",
-    "test:ts": "node --experimental-vm-modules jest --runInBand",
+    "test:ts": "NODE_OPTIONS='${NODE_OPTIONS} --experimental-vm-modules' jest --runInBand",
     "mocha": "mocha"
   },
   "author": "",
@@ -35,6 +34,7 @@
     "@babel/preset-typescript": "^7.28.5",
     "@eslint/js": "^9.39.1",
     "@eslint/json": "^0.14.0",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.0",
@@ -48,6 +48,8 @@
     "prettier": "3.8.1",
     "sequelize-cli": "^6.6.3",
     "supertest": "^7.1.4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.58.1"
   }
