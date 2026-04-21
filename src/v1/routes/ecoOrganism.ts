@@ -6,7 +6,6 @@ import {
   detailEcoOrganism,
   ecoOrgaStats,
   ecoOrgQuarterStats,
-  listActiveEcoOrganism,
   listEcoOrganism,
   updateEcoOrganism,
 } from "../controllers/ecoOrganism.js";
@@ -15,9 +14,6 @@ export const router = Router();
 
 // GET all eco-organisms
 router.get("/", asyncHandler(listEcoOrganism));
-
-// GET active eco-organisms only
-router.get("/active", asyncHandler(listActiveEcoOrganism));
 
 // GET single eco-organism by ID
 router.get("/:id", asyncHandler(detailEcoOrganism));
