@@ -7,18 +7,25 @@ import {
 import logger from "../services/logger.js";
 import jwt from "jsonwebtoken";
 import { ZodError } from "zod";
-import type { ErrorRequestHandler, NextFunction, Request, Response } from "express";
+import type { ErrorRequestHandler } from "express";
 const { JsonWebTokenError, NotBeforeError, TokenExpiredError } = jwt;
 
 
-export const errorHandler = (err:ErrorRequestHandler, req:Request, res:Response, _next:NextFunction) => {
-  logger.error(err?.message || "Unhandled error", {
+export const errorHandler: ErrorRequestHandler = (err:unknown, req, res, _next) => {
+  const requestWithUser = req as typeof req & { user?: { id?: string | number } };
+  const errorLike = (typeof err === "object" && err !== null ? err : {}) as {
+    message?: string;
+    status?: number;
+    statusCode?: number;
+  };
+
+  logger.error(errorLike.message || "Unhandled error", {
     method: req?.method,
     url: req?.originalUrl,
-    status: err?.status || err?.statusCode || 500,
+    status: errorLike.status || errorLike.statusCode || 500,
     ip: req?.ip,
     "x-forwarded-for": req.headers["x-forwarded-for"],
-    userId: req?.user?.id,
+    userId: requestWithUser.user?.id,
     headers: {
       // Only log non-sensitive headers
       "user-agent": req?.headers?.["user-agent"],

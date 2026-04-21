@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from "express";
+import type { RequestHandler } from "express";
 import createHttpError from "http-errors";
 import type { RequestWithUser } from "../v1/controllers/types.js";
 
@@ -120,13 +120,17 @@ const PERMISSIONS = {
   },
 };
 
+type UserRole = keyof typeof PERMISSIONS;
+type PermissionMethod = keyof ReturnType<typeof modulePerms>;
 
-export const hasPermissions = async (req:RequestWithUser, res:Response, next:NextFunction) => {
-  const user = req.user;
+
+export const hasPermissions: RequestHandler = (req, _res, next) => {
+  const requestWithUser = req as RequestWithUser;
+  const user = requestWithUser.user;
   const module = req.originalUrl.split("/")[2]!.split("?")[0] as keyof typeof PERMISSIONS["admin"];
 
   if (!user) throw new createHttpError.Unauthorized("user not found");
-  let method;
+  let method: PermissionMethod;
   switch (req.method) {
     case "GET":
       method = "read";
@@ -146,7 +150,12 @@ export const hasPermissions = async (req:RequestWithUser, res:Response, next:Nex
     default:
       throw new Error("request method unknown");
   }
-  if (!PERMISSIONS[user.role][module][method])
+  if (!(user.role in PERMISSIONS))
+    throw new createHttpError.Forbidden("user role is invalid");
+
+  const role = user.role as UserRole;
+
+  if (!PERMISSIONS[role][module]?.[method])
     throw new createHttpError.Forbidden("user dont have rights");
 
   next();

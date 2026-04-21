@@ -1,13 +1,14 @@
 import createHttpError from "http-errors";
-import jwt from "jsonwebtoken";
+import jwt, { type JwtPayload } from "jsonwebtoken";
 import db from "../models/index.js";
-import type { NextFunction, Response } from "express";
+import type { RequestHandler } from "express";
 import type { RequestWithUser } from "../v1/controllers/types.js";
 
 const { User } = db;
 
 
-export const authenticateToken = async (req:RequestWithUser, _res:Response, next:NextFunction) => {
+export const authenticateToken: RequestHandler = async (req, _res, next) => {
+  const requestWithUser = req as RequestWithUser;
   try {
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
@@ -22,8 +23,13 @@ export const authenticateToken = async (req:RequestWithUser, _res:Response, next
       process.env.JWT_SECRET || "adapemont-secret-key",
     );
 
+    if (typeof decoded === "string" || !("id" in decoded))
+      throw new createHttpError.Unauthorized("Token invalide");
+
+    const userId = (decoded as JwtPayload & { id: number | string }).id;
+
     // Récupérer l'utilisateur
-    const user = await User.findByPk(decoded.id, {
+    const user = await User.findByPk(userId, {
       attributes: { exclude: ["password"] },
     });
 
@@ -34,7 +40,7 @@ export const authenticateToken = async (req:RequestWithUser, _res:Response, next
     }
 
     // Ajouter l'utilisateur à la requête
-    req.user = user;
+    requestWithUser.user = user;
     next();
   } catch (error) {
     next(error);

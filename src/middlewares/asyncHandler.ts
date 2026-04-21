@@ -1,6 +1,13 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
-import type { RequestWithUser } from "../v1/controllers/types.js";
 
 // utils/asyncHandler.js
-export const asyncHandler = (fn:CallableFunction) => (req:Request|RequestWithUser, res:Response, next:NextFunction) =>
-  Promise.resolve(fn(req, res, next)).catch(next);
+type AsyncMiddleware<TReq extends Request = Request> = (
+  req: TReq,
+  res: Response,
+  next: NextFunction,
+) => Promise<unknown> | unknown;
+
+export const asyncHandler = <TReq extends Request = Request>(
+  fn: AsyncMiddleware<TReq>,
+): RequestHandler => (req, res, next) =>
+  Promise.resolve(fn(req as TReq, res, next)).catch(next);
