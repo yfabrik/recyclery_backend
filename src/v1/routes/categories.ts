@@ -5,7 +5,6 @@ import {
   createCategorie,
   deleteCategorie,
   listCategories,
-  listSubcategories,
   patchCategory,
   updateCategorie,
 } from "../controllers/categories.js";
@@ -73,7 +72,5 @@ router.get("/icons", (_req, res) => {
   });
 });
 
-// Obtenir toutes les sous-catégories
-router.get("/subcategories", asyncHandler(listSubcategories));
 
 router.patch("/:id", asyncHandler(patchCategory));

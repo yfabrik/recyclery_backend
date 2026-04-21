@@ -24,7 +24,7 @@ const issueSchema = z.object({
   issued_refund_transaction_id: idSchema().nullish(),
   note: z.string().trim().nullish(),
   recipient_name: z.string().trim().nullish(),
-  recipient_email: z.string().email().nullish(),
+  recipient_email: z.email().nullish(),
   metadata: z.record(z.string(), z.any()).nullish(),
 });
 

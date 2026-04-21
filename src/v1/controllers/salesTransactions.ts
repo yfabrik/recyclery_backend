@@ -4,20 +4,18 @@ import {
   fn,
   literal,
   Op,
-  type Attributes,
-  type Includeable,
-  type WhereOptions,
+  type Includeable
 } from "sequelize";
 import z from "zod";
 
-import { idSchema, postalSchema } from "../../services/zod.js";
+import type { Request, Response } from "express";
 import {
   chargeGiftCard,
   findGiftCardByCode,
   issueGiftCard,
   recreditGiftCard,
 } from "../../services/giftCards.js";
-import type { Request, Response } from "express";
+import { idSchema, postalSchema } from "../../services/zod.js";
 
 import db from "../../models/index.js";
 

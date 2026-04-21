@@ -6,6 +6,13 @@ import type { RequestWithUser } from "../v1/controllers/types.js";
 
 const { User } = db;
 
+type Token = JwtPayload &{
+  id: number;
+  username: string;
+  email: string;
+  role: "employee" | "admin" | "manager";
+};
+
 
 export const authenticateToken: RequestHandler = async (req, _res, next) => {
   const requestWithUser = req as RequestWithUser;
@@ -21,12 +28,9 @@ export const authenticateToken: RequestHandler = async (req, _res, next) => {
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET || "adapemont-secret-key",
-    );
+    )as Token;
 
-    if (typeof decoded === "string" || !("id" in decoded))
-      throw new createHttpError.Unauthorized("Token invalide");
-
-    const userId = (decoded as JwtPayload & { id: number | string }).id;
+    const userId = decoded.id;
 
     // Récupérer l'utilisateur
     const user = await User.findByPk(userId, {

@@ -24,8 +24,8 @@ router.post("/", asyncHandler(assignUserToStore));
 
 // Mettre à jour une affectation
 router.put("/:id", async (req, res) => {
-  const { id } = req.params;
-  const { is_primary } = req.body;
+  // const { id } = req.params;
+  // const { is_primary } = req.body;
   logger.error("called useless fn in the router FIXME", {
     params: req.params,
     body: req.body,
@@ -70,7 +70,7 @@ router.put("/:id", async (req, res) => {
 
 // Supprimer une affectation
 router.delete("/:id", async (req, res) => {
-  const { id } = req.params;
+  // const { id } = req.params;
   logger.error("called useless fn in the router FIXME", {
     params: req.params,
     body: req.body,

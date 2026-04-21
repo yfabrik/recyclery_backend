@@ -47,7 +47,7 @@ const assertGiftCardUsable = (giftCard: InstanceType<typeof GiftCard>) => {
 };
 type GiftCreate = {
   code: string;
-  initialValue: number | string;
+  initialValue: number;
   expiresAt?: Date | string | null;
   issuedTransactionId?: number | null;
   issuedRefundTransactionId?: number | null;
@@ -70,7 +70,7 @@ export const issueGiftCard = async ({
   recipientEmail = null,
   metadata = null,
   transaction: externalTransaction = null,
-}: GiftCreate & { transaction: Transaction | null }) => {
+}: GiftCreate & { transaction?: Transaction | null }) => {
   const amount = toAmount(initialValue);
   if (!Number.isFinite(amount) || amount < 0) {
     throw new createHttpError.BadRequest(
@@ -154,7 +154,7 @@ export const chargeGiftCard = async ({
   createdBy = null,
   metadata = null,
   transaction: externalTransaction = null,
-}: GiftCharge & { transaction: Transaction | null }) => {
+}: GiftCharge & { transaction?: Transaction | null }) => {
   const debit = toAmount(amount);
   if (!Number.isFinite(debit) || debit <= 0) {
     throw new createHttpError.BadRequest("charge amount must be > 0");
@@ -197,7 +197,7 @@ export const recreditGiftCard = async ({
   createdBy = null,
   metadata = null,
   transaction: externalTransaction = null,
-}: GiftCharge & { transaction: Transaction | null }) => {
+}: GiftCharge & { transaction?: Transaction | null }) => {
   const credit = toAmount(amount);
   if (!Number.isFinite(credit) || credit <= 0) {
     throw new createHttpError.BadRequest("recredit amount must be > 0");

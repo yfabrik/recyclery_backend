@@ -10,7 +10,7 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20, // limite chaque IP à 1000 requêtes par windowMs (plus permissif)
   message: "Trop de requêtes depuis cette IP, veuillez réessayer plus tard.",
-  handler: (req, res, next, options) => {
+  handler: (req, res, _next, options) => {
     logger.error("too many request", {
       method: req?.method,
       url: req?.originalUrl,

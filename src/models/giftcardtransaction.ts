@@ -26,7 +26,7 @@ export default class GiftCardTransaction extends Model<
     | "refund_recredit"
     | "manual_adjustment"
     | "expire";
-  declare amount: string;
+  declare amount: number;
   declare occurred_at: Date;
   declare metadata: CreationOptional<Record<string, unknown> | null>;
   declare createdAt: CreationOptional<Date>;
