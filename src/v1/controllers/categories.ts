@@ -1,17 +1,11 @@
 import createHttpError from "http-errors";
-import {
-  literal,
-  Op,
-
-  type Includeable,
-} from "sequelize";
+import { literal, Op, type Includeable } from "sequelize";
 import * as z from "zod";
-import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
-import type { ModelWhere,Models } from "../../models/db-types.js";
+import type { ModelWhere, Models } from "../../models/db-types.js";
 
 const { Category, Recyclery, Promotion } = db;
 
@@ -57,40 +51,28 @@ const findExistingCategory = async (
  * @param storeId
  */
 const filterPromotionsForStore = (
-  category:Models["Category"],
+  category: Models["Category"],
   storeId: Models["Recyclery"]["id"],
 ) => {
   if (!category || typeof category !== "object") return;
 
   if (Array.isArray(category.Promotions)) {
-    category.Promotions = category.Promotions.filter(
-      /** @param {{ stores?: Array<{ id: number }> }} promotion */
-      (promotion) => {
-        const stores = Array.isArray(promotion?.stores) ? promotion.stores : [];
-        return (
-          stores.length === 0 ||
-          stores.some(
-            /** @param {{ id: number }} store */ (store) =>
-              store.id === storeId,
-          )
-        );
-      },
-    ).map(
-      /** @param {{ stores?: Array<{ id: number }> }} promotion */ (
-        promotion,
-      ) => {
-        if (promotion && typeof promotion === "object") {
-          delete promotion.stores;
-        }
-        return promotion;
-      },
-    );
+    category.Promotions = category.Promotions.filter((promotion) => {
+      const stores = Array.isArray(promotion?.stores) ? promotion.stores : [];
+      return (
+        stores.length === 0 || stores.some((store) => store.id === storeId)
+      );
+    }).map((promotion) => {
+      if (promotion && typeof promotion === "object") {
+        delete promotion.stores;
+      }
+      return promotion;
+    });
   }
 
   if (Array.isArray(category.subcategories)) {
-    category.subcategories.forEach(
-      /** @param {any} subcat */ (subcat) =>
-        filterPromotionsForStore(subcat, storeId),
+    category.subcategories.forEach((subcat) =>
+      filterPromotionsForStore(subcat, storeId),
     );
   }
 
@@ -128,8 +110,8 @@ export const listCategories = async (req: Request, res: Response) => {
   const includePromo = {
     model: Promotion,
     where: {
-      // startDate: { [Op.lte]: new Date() },
-      // endDate: { [Op.gte]: new Date() },
+      startDate: { [Op.lte]: new Date() },
+      endDate: { [Op.gte]: new Date() },
       isActive: true,
     },
     required: false,
@@ -212,22 +194,22 @@ export const listCategories = async (req: Request, res: Response) => {
     categories,
   });
 };
-/**
- *@deprecated
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- */
-export const listSubcategories = async (req, res) => {
-  logger.info("called list subcategorie REMAKE");
-  const subcategories = await Category.findAll({
-    where: { parent_id: { [Op.gt]: 0 } },
-  });
+// /**
+//  *@deprecated
+//  * @param {import("express").Request} req
+//  * @param {import("express").Response} res
+//  */
+// export const listSubcategories = async (req, res) => {
+//   logger.info("called list subcategorie REMAKE");
+//   const subcategories = await Category.findAll({
+//     where: { parent_id: { [Op.gt]: 0 } },
+//   });
 
-  res.json({
-    success: true,
-    subcategories,
-  });
-};
+//   res.json({
+//     success: true,
+//     subcategories,
+//   });
+// };
 
 export const createCategorie = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
