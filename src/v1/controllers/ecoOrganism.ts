@@ -1,16 +1,8 @@
 import createHttpError from "http-errors";
-import {
-  col,
-  fn,
-  literal,
-  Op,
-
-  type Includeable,
-} from "sequelize";
+import { col, fn, literal, Op, type Includeable } from "sequelize";
 import z from "zod";
 
 import type { Request, Response } from "express";
-import logger from "../../services/logger.js";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 
 import type { ModelWhere } from "../../models/db-types.js";
@@ -68,14 +60,14 @@ export const listEcoOrganism = async (req: Request, res: Response) => {
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-export const listActiveEcoOrganism = async (req, res) => {
-  logger.warn("use list active eco organise TO REMOVE");
-  req.query.active = "true";
-  return listEcoOrganism(req, res);
-  // const eco_organisms = await EcoOrganism.findAll({ where: { is_active } });
+// export const listActiveEcoOrganism = async (req, res) => {
+//   logger.warn("use list active eco organise TO REMOVE");
+//   req.query.active = "true";
+//   return listEcoOrganism(req, res);
+//   // const eco_organisms = await EcoOrganism.findAll({ where: { is_active } });
 
-  // res.json({ eco_organisms });
-};
+//   // res.json({ eco_organisms });
+// };
 
 export const detailEcoOrganism = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
@@ -171,23 +163,23 @@ export const quartersDateRanges = (startDate: Date, quarterCount = 4) => {
     const quarterEnd =
       i === 0
         ? new Date(
-          normalizedStartDate.getFullYear(),
-          normalizedStartDate.getMonth(),
-          normalizedStartDate.getDate(),
-          23,
-          59,
-          59,
-          999,
-        )
+            normalizedStartDate.getFullYear(),
+            normalizedStartDate.getMonth(),
+            normalizedStartDate.getDate(),
+            23,
+            59,
+            59,
+            999,
+          )
         : new Date(
-          quarterStart.getFullYear(),
-          quarterStart.getMonth() + 3,
-          0,
-          23,
-          59,
-          59,
-          999,
-        );
+            quarterStart.getFullYear(),
+            quarterStart.getMonth() + 3,
+            0,
+            23,
+            59,
+            59,
+            999,
+          );
 
     const year = quarterStart.getFullYear();
     const quarterNumber = Math.floor(quarterStart.getMonth() / 3) + 1;
@@ -204,7 +196,11 @@ export const quartersDateRanges = (startDate: Date, quarterCount = 4) => {
   return quarterRanges;
 };
 
-type cat = { id: InstanceType<typeof Category>["id"]; name: InstanceType<typeof Category>["name"]; weight_kg: number };
+type cat = {
+  id: InstanceType<typeof Category>["id"];
+  name: InstanceType<typeof Category>["name"];
+  weight_kg: number;
+};
 type s = {
   total_weight_kg: number;
   categories: (cat & { subcategories: cat[] })[];
@@ -213,11 +209,16 @@ type s = {
 
 type categories = s["categories"];
 
-type ecoOrgQuarterStats = Pick<InstanceType<typeof EcoOrganism>, "id" | "name" | "description" | "is_active"> & {
+type ecoOrgQuarterStats = Pick<
+  InstanceType<typeof EcoOrganism>,
+  "id" | "name" | "description" | "is_active"
+> & {
   quarters: {
     quarter: quarterLabel;
     quarterOut: s;
-    quarterIn: s & { by_soure_type: Record<InstanceType<typeof Arrival>["source_type"], s> };
+    quarterIn: s & {
+      by_soure_type: Record<InstanceType<typeof Arrival>["source_type"], s>;
+    };
     quarterSell: {
       total_weight_kg: number;
       quantity: number;
@@ -226,11 +227,13 @@ type ecoOrgQuarterStats = Pick<InstanceType<typeof EcoOrganism>, "id" | "name" |
         quantity: number;
       })[];
     };
-  }[]
-}
+  }[];
+};
 
 type WasteQuarterRow = {
-  eco_organism_id: NonNullable<InstanceType<typeof WasteDisposal>["eco_organism_id"]>;
+  eco_organism_id: NonNullable<
+    InstanceType<typeof WasteDisposal>["eco_organism_id"]
+  >;
   category_id: InstanceType<typeof WasteDisposal>["category_id"];
   subcategory_id: InstanceType<typeof WasteDisposal>["subcategory_id"] | null;
   category_name: string;
@@ -238,10 +241,13 @@ type WasteQuarterRow = {
   weight_kg: number; // SUM(DECIMAL) usually comes back as string in Sequelize
 };
 
-type arrivalQuarterRow = Omit<WasteQuarterRow, "eco_organism_id"> & { source_type: InstanceType<typeof Arrival>["source_type"] }
+type arrivalQuarterRow = Omit<WasteQuarterRow, "eco_organism_id"> & {
+  source_type: InstanceType<typeof Arrival>["source_type"];
+};
 
-type sellQuarterRow = Omit<WasteQuarterRow, "eco_organism_id"> & { quantity: number }
-
+type sellQuarterRow = Omit<WasteQuarterRow, "eco_organism_id"> & {
+  quantity: number;
+};
 
 export const getQuarterStatOut = async (
   quarterRanges: {
@@ -250,10 +256,12 @@ export const getQuarterStatOut = async (
     label: quarterLabel;
     labelMMYYYY: string;
   }[],
-): Promise<Map<InstanceType<typeof EcoOrganism>["id"], Record<quarterLabel, s>>> => {
+): Promise<
+  Map<InstanceType<typeof EcoOrganism>["id"], Record<quarterLabel, s>>
+> => {
   const weightByEcoOrgByQuarter = await Promise.all(
     quarterRanges.map(async (range) => {
-      const rows = await WasteDisposal.findAll({
+      const rows = (await WasteDisposal.findAll({
         attributes: [
           "eco_organism_id",
           "category_id",
@@ -266,23 +274,39 @@ export const getQuarterStatOut = async (
           eco_organism_id: { [Op.ne]: null },
           disposal_date: { [Op.between]: [range.start, range.end] },
         },
-        include: [{ model: Category, as: "category", required: false }, { model: Category, as: "subcategory", required: false }],
+        include: [
+          { model: Category, as: "category", required: false },
+          { model: Category, as: "subcategory", required: false },
+        ],
         group: ["eco_organism_id", "category_id", "subcategory_id"],
         raw: true,
-      }) as unknown as WasteQuarterRow[];
+      })) as unknown as WasteQuarterRow[];
 
-      let byEcoOrg = new Map<InstanceType<typeof EcoOrganism>["id"], Record<quarterLabel, s>>()
+      let byEcoOrg = new Map<
+        InstanceType<typeof EcoOrganism>["id"],
+        Record<quarterLabel, s>
+      >();
 
       for (const row of rows) {
         const ecoOrgId = row.eco_organism_id;
         if (!byEcoOrg.has(ecoOrgId)) {
-          byEcoOrg.set(ecoOrgId, { [range.label]: { total_weight_kg: 0, categories: [] } });
+          byEcoOrg.set(ecoOrgId, {
+            [range.label]: { total_weight_kg: 0, categories: [] },
+          });
         }
         const ecoOrg = byEcoOrg.get(ecoOrgId)![range.label]!;
         ecoOrg.total_weight_kg += row.weight_kg;
         const cat = ecoOrg.categories.find((c) => c.id === row.category_id);
         if (!cat) {
-          const subcategories = row.subcategory_id ? [{ id: row.subcategory_id, name: row.subcategory_name, weight_kg: row.weight_kg }] as cat[] : [] as cat[];
+          const subcategories = row.subcategory_id
+            ? ([
+                {
+                  id: row.subcategory_id,
+                  name: row.subcategory_name,
+                  weight_kg: row.weight_kg,
+                },
+              ] as cat[])
+            : ([] as cat[]);
           ecoOrg.categories.push({
             id: row.category_id,
             name: row.category_name,
@@ -291,7 +315,9 @@ export const getQuarterStatOut = async (
           });
         } else {
           cat.weight_kg += row.weight_kg;
-          const sub = cat?.subcategories.find((c) => c.id === row.subcategory_id);
+          const sub = cat?.subcategories.find(
+            (c) => c.id === row.subcategory_id,
+          );
           if (!sub) {
             cat?.subcategories.push({
               id: row.subcategory_id!,
@@ -313,7 +339,8 @@ export const getQuarterStatOut = async (
 
   for (const perQuarterMap of weightByEcoOrgByQuarter) {
     for (const [ecoOrgId, quarterData] of perQuarterMap.entries()) {
-      const currentData = quarterDataByEcoOrg.get(ecoOrgId) ?? ({} as Record<quarterLabel, s>);
+      const currentData =
+        quarterDataByEcoOrg.get(ecoOrgId) ?? ({} as Record<quarterLabel, s>);
       quarterDataByEcoOrg.set(ecoOrgId, { ...currentData, ...quarterData });
     }
   }
@@ -369,7 +396,7 @@ export const getQuarterStatIn = async (
   // les group par source type ,categorie, subcategorie et fait la somme des poids
   const arrivalBySourceByQuarter = await Promise.all(
     quarterRanges.map(async (range) => {
-      const rows = await Arrival.findAll({
+      const rows = (await Arrival.findAll({
         attributes: [
           "source_type",
           "category_id",
@@ -382,10 +409,13 @@ export const getQuarterStatIn = async (
           arrival_date: { [Op.between]: [range.start, range.end] },
           // category_id:{[Op.in]:}
         },
-        include: [{ model: Category, as: "categorie", required: true }, { model: Category, as: "subcategorie" }],
+        include: [
+          { model: Category, as: "categorie", required: true },
+          { model: Category, as: "subcategorie" },
+        ],
         group: ["source_type", "category_id", "subcategory_id"],
         raw: true,
-      }) as unknown as arrivalQuarterRow[];
+      })) as unknown as arrivalQuarterRow[];
       return {
         label: range.label,
         rows,
@@ -400,10 +430,20 @@ export const getQuarterStatIn = async (
 
   const byEcoOrg = new Map() as Map<
     InstanceType<typeof EcoOrganism>["id"],
-    Record<quarterLabel, s & { by_soure_type: Record<InstanceType<typeof Arrival>["source_type"], s> }>
+    Record<
+      quarterLabel,
+      s & {
+        by_soure_type: Record<InstanceType<typeof Arrival>["source_type"], s>;
+      }
+    >
   >;
   for (const ecoOrg of inCategoryLinks) {
-    const quarterRecord = {} as Record<quarterLabel, s & { by_soure_type: Record<InstanceType<typeof Arrival>["source_type"], s> }>;
+    const quarterRecord = {} as Record<
+      quarterLabel,
+      s & {
+        by_soure_type: Record<InstanceType<typeof Arrival>["source_type"], s>;
+      }
+    >;
     for (const range of quarterRanges) {
       quarterRecord[range.label] = {
         total_weight_kg: 0,
@@ -427,7 +467,7 @@ export const getQuarterStatIn = async (
             total_weight_kg: 0,
             categories: [],
           },
-        }
+        },
       };
     }
     byEcoOrg.set(ecoOrg.id, quarterRecord);
@@ -439,10 +479,9 @@ export const getQuarterStatIn = async (
       s,
     ][]) {
       arrivalRowsByQuarterLabel.get(label)?.forEach((row) => {
-
         const catId = row.category_id;
         const cat = quarter.categories.find((c) => c.id === catId);
-        if (!cat) return;// categorie pas trouvé donc fait pas parti des in cat
+        if (!cat) return; // categorie pas trouvé donc fait pas parti des in cat
         quarter.total_weight_kg += row.weight_kg;
         cat.weight_kg += row.weight_kg;
 
@@ -451,8 +490,7 @@ export const getQuarterStatIn = async (
           const sub = cat.subcategories.find((c) => c.id === subcatId);
           if (sub) {
             sub.weight_kg += row.weight_kg;
-          }
-          else {
+          } else {
             cat.subcategories.push({
               id: subcatId,
               name: row.subcategory_name,
@@ -462,9 +500,11 @@ export const getQuarterStatIn = async (
         }
         const sourceType = row.source_type;
         if (sourceType != null) {
-          const sourceTypeRecord = quarter.by_soure_type[sourceType]
+          const sourceTypeRecord = quarter.by_soure_type[sourceType];
           sourceTypeRecord.total_weight_kg += row.weight_kg;
-          const category = sourceTypeRecord.categories.find((c) => c.id === catId);
+          const category = sourceTypeRecord.categories.find(
+            (c) => c.id === catId,
+          );
           if (category) {
             category.weight_kg += row.weight_kg;
           } else {
@@ -476,11 +516,12 @@ export const getQuarterStatIn = async (
             });
           }
           if (row.subcategory_id != null) {
-            const subcat = category?.subcategories.find((c) => c.id === row.subcategory_id);
+            const subcat = category?.subcategories.find(
+              (c) => c.id === row.subcategory_id,
+            );
             if (subcat) {
               subcat.weight_kg += row.weight_kg;
-            }
-            else {
+            } else {
               category?.subcategories.push({
                 id: subcatId,
                 name: row.subcategory_name,
@@ -494,156 +535,6 @@ export const getQuarterStatIn = async (
   }
 
   return byEcoOrg;
-
-
-  // const quarters = quarterRanges.map((range) => {
-  //   const data = quarterDataByEcoOrg.get(id)?.[range.label];
-  //   const arrivalRows = arrivalRowsByQuarterLabel.get(range.label) ?? [];
-  //   const quarterInData = buildQuarterFromArrivalRows(
-  //     arrivalRows,
-  //     inCategoryIds,
-  //   );
-  //   const quarterInBySourceType = splitQuarterInBySourceType(
-  //     arrivalRows,
-  //     inCategoryIds,
-  //   );
-
-
-
-
-  //pour chaque ecoorg
-  const eco_organisms = ecoOrganisms.map((eo) => {
-    //incategorielink
-    //trouve les categorie pour un ecoorg
-    const inCategoryIds = inCategoryIdsByEcoOrg.get(eo.id) ?? new Set();
-
-    //enlever des categories pas autorisé ?????
-    const filterCategoriesByAllowedIds = (
-      categories: categories,
-      allowedCategoryIds: Set<InstanceType<typeof Category>["id"]>,
-    ) => {
-      return categories.filter((c) => allowedCategoryIds.has(c.id));
-    };
-
-    //fait le total du poid pour les categories filtré
-    const buildFilteredQuarter = (
-      data: categories,
-      allowedCategoryIds: Set<InstanceType<typeof Category>["id"]>,
-    ) => {
-      const filteredCategories = filterCategoriesByAllowedIds(
-        data?.categories ?? [],
-        allowedCategoryIds,
-      );
-      return {
-        total_weight_kg: filteredCategories.reduce(
-          (sum, category) => sum + Number(category.weight_kg ?? 0),
-          0,
-        ),
-        categories: filteredCategories,
-      };
-    };
-
-    //make les {weight, categories:[]} de chaque quarter
-    const buildQuarterFromArrivalRows = (
-      rows: InstanceType<typeof Arrival>[],
-      allowedCategoryIds: Set<InstanceType<typeof Category>["id"]>,
-    ) => {
-      const categories = [] as categories;
-      rows.forEach((r) => {
-        const catId = r.category_id;
-        if (catId == null || !allowedCategoryIds.has(catId)) return;
-        const weight = r.weight_kg ?? 0;
-        let category = categories.find((c) => c.id === catId);
-        if (!category) {
-          const cat = categoryMap.get(catId);
-          category = {
-            id: catId,
-            name: cat?.name ?? "",
-            weight_kg: 0,
-            subcategories: [],
-          };
-          categories.push(category);
-        }
-        category.weight_kg += weight;
-        const subcatId = r.subcategory_id;
-        if (subcatId != null) {
-          const subcat = categoryMap.get(subcatId);
-          category.subcategories.push({
-            id: subcatId,
-            name: subcat?.name ?? "",
-            weight_kg: weight,
-          });
-        }
-      });
-      return {
-        total_weight_kg: categories.reduce(
-          (sum, category) => sum + (category.weight_kg ?? 0),
-          0,
-        ),
-        categories,
-      };
-    };
-
-    const splitQuarterInBySourceType = (
-      rows: InstanceType<typeof Arrival>[],
-      allowedCategoryIds: Set<InstanceType<typeof Category>["id"]>,
-    ) => {
-      const sourceTypes = [
-        "point",
-        "apport",
-        "house_clearance",
-      ] as const satisfies InstanceType<typeof Arrival>["source_type"][];
-      return sourceTypes.reduce(
-        (acc, sourceType) => {
-          acc[sourceType] = buildQuarterFromArrivalRows(
-            rows.filter((r) => r.source_type === sourceType),
-            allowedCategoryIds,
-          );
-          return acc;
-        },
-        {} as Record<InstanceType<typeof Arrival>["source_type"], Omit<s, "labelMMYYYY">>,
-      );
-    };
-
-    const quarterDataByEcoOrg = new Map() as Map<
-      InstanceType<typeof WasteDisposal>["eco_organism_id"],
-      Record<quarterLabel, s>
-    >;
-    const id = eo.id;
-    const byEcoOrg = new Map() as Map<
-      InstanceType<typeof WasteDisposal>["eco_organism_id"],
-      Omit<s, "labelMMYYYY">
-    >;
-    const quarters = quarterRanges.map((range) => {
-      const data = quarterDataByEcoOrg.get(id)?.[range.label];
-      const arrivalRows = arrivalRowsByQuarterLabel.get(range.label) ?? [];
-      const quarterInData = buildQuarterFromArrivalRows(
-        arrivalRows,
-        inCategoryIds,
-      );
-      const quarterInBySourceType = splitQuarterInBySourceType(
-        arrivalRows,
-        inCategoryIds,
-      );
-
-      return {
-        quarter: range.label,
-        label: range.labelMMYYYY,
-        total_weight_kg: data?.total_weight_kg ?? 0,
-        categories: data?.categories ?? [],
-
-        quarterIn: {
-          total_weight_kg: quarterInData.total_weight_kg,
-          categories: quarterInData.categories,
-          by_source_type: quarterInBySourceType,
-        },
-      };
-    });
-    return {
-      ...eo.toJSON(),
-      quarters,
-    };
-  });
 };
 
 export const getQuarterStatSell = async (
@@ -675,7 +566,7 @@ export const getQuarterStatSell = async (
 
   const soldQuantityByQuarter = await Promise.all(
     quarterRanges.map(async (range) => {
-      const rows = await TransactionItem.findAll({
+      const rows = (await TransactionItem.findAll({
         attributes: [
           [col("LabeledItem.category_id"), "category_id"],
           [col("LabeledItem.subcategory_id"), "subcategory_id"],
@@ -706,7 +597,10 @@ export const getQuarterStatSell = async (
             model: LabeledItem,
             required: true,
             attributes: [],
-            include: [{ model: Category, as: "category", required: true }, { model: Category, as: "subcategory" }],
+            include: [
+              { model: Category, as: "category", required: true },
+              { model: Category, as: "subcategory" },
+            ],
             where: { status: "sold" },
           },
         ],
@@ -715,7 +609,7 @@ export const getQuarterStatSell = async (
           col("LabeledItem.subcategory_id"),
         ],
         raw: true,
-      }) as unknown as sellQuarterRow[];
+      })) as unknown as sellQuarterRow[];
       return {
         label: range.label,
         rows,
@@ -727,18 +621,29 @@ export const getQuarterStatSell = async (
     soldQuantityByQuarter.map((q) => [q.label, q.rows]),
   );
 
-
   const byEcoOrg = new Map() as Map<
     InstanceType<typeof EcoOrganism>["id"],
-    Record<quarterLabel, Omit<s, 'categories'> & {
-      categories: (cat & { quantity: number, subcategories: (cat & { quantity: number })[] })[];
-    }>
+    Record<
+      quarterLabel,
+      Omit<s, "categories"> & {
+        categories: (cat & {
+          quantity: number;
+          subcategories: (cat & { quantity: number })[];
+        })[];
+      }
+    >
   >;
   for (const ecoOrg of sellCategoryLinks) {
-    const quarterRecord = {} as Record<quarterLabel, Omit<s, 'categories'> & {
-      quantity: number,
-      categories: (cat & { quantity: number, subcategories: (cat & { quantity: number })[] })[];
-    }>
+    const quarterRecord = {} as Record<
+      quarterLabel,
+      Omit<s, "categories"> & {
+        quantity: number;
+        categories: (cat & {
+          quantity: number;
+          subcategories: (cat & { quantity: number })[];
+        })[];
+      }
+    >;
     for (const range of quarterRanges) {
       quarterRecord[range.label] = {
         total_weight_kg: 0,
@@ -751,7 +656,6 @@ export const getQuarterStatSell = async (
             subcategories: [],
             quantity: 0,
           })) ?? [],
-
       };
     }
     byEcoOrg.set(ecoOrg.id, quarterRecord);
@@ -760,14 +664,17 @@ export const getQuarterStatSell = async (
   for (const [ecoOrgId, quarterData] of byEcoOrg) {
     for (const [label, quarter] of Object.entries(quarterData) as [
       quarterLabel,
-      Omit<s, 'categories'> & {
-        categories: (cat & { quantity: number, subcategories: (cat & { quantity: number })[] })[];
-      }
+      Omit<s, "categories"> & {
+        categories: (cat & {
+          quantity: number;
+          subcategories: (cat & { quantity: number })[];
+        })[];
+      },
     ][]) {
       soldQuantityRowsByQuarterLabel.get(label)?.forEach((row) => {
         const catId = row.category_id;
         const category = quarter.categories.find((c) => c.id === catId);
-        if (!category) return;// categorie pas trouvé donc fait pas parti des sell cat
+        if (!category) return; // categorie pas trouvé donc fait pas parti des sell cat
         quarter.total_weight_kg += row.weight_kg;
         category.weight_kg += row.weight_kg;
 
@@ -776,203 +683,22 @@ export const getQuarterStatSell = async (
           const sub = category.subcategories.find((c) => c.id === subcatId);
           if (sub) {
             sub.weight_kg += row.weight_kg;
-            sub.quantity += row.quantity
-          }
-          else {
+            sub.quantity += row.quantity;
+          } else {
             category.subcategories.push({
               id: subcatId,
               name: row.subcategory_name,
               weight_kg: row.weight_kg,
-              quantity: row.quantity
+              quantity: row.quantity,
             });
           }
         }
-
       });
     }
   }
 
   return byEcoOrg;
-  // Ensure every eco organism has 4 quarters (0 / [] for quarters with no waste)
-  const eco_organisms = ecoOrganisms.map((eo) => {
-    const sellCategoryIds = sellCategoryIdsByEcoOrg.get(eo.id) ?? new Set();
-
-    const filterCategoriesByAllowedIds = (
-      categories: categories,
-      allowedCategoryIds: Set<InstanceType<typeof Category>["id"]>,
-    ) => {
-      return categories.filter((c) => allowedCategoryIds.has(c.id));
-    };
-
-    const buildFilteredQuarter = (
-      data: Omit<s, "labelMMYYYY">,
-      allowedCategoryIds: Set<InstanceType<typeof Category>["id"]>,
-    ) => {
-      const filteredCategories = filterCategoriesByAllowedIds(
-        data?.categories ?? [],
-        allowedCategoryIds,
-      );
-      return {
-        total_weight_kg: filteredCategories.reduce(
-          (sum, category) => sum + Number(category.weight_kg ?? 0),
-          0,
-        ),
-        categories: filteredCategories,
-      };
-    };
-
-    //SELL PART
-    /**
-     * @param {{ category_id: number | null; subcategory_id: number | null; quantity: string | number; weight_kg?: string | number }[]} rows
-     * @param {Set<number>} allowedCategoryIds
-     */
-    const buildQuarterSellQuantity = (
-      rows: {
-        category_id: number | null;
-        subcategory_id: number | null;
-        quantity: string | number;
-        weight_kg?: string | number;
-      }[],
-      allowedCategoryIds: Set<InstanceType<typeof Category>["id"]>,
-    ) => {
-      /** @type {{ id: number; name: string | null; quantity: number; subcategories: { id: number; name: string | null; quantity: number }[] }[]} */
-      const categories = [];
-      rows.forEach((r) => {
-        const catId = r.category_id;
-        if (catId == null || !allowedCategoryIds.has(catId)) return;
-        const quantity = Number(r.quantity ?? 0);
-        let category = categories.find((c) => c.id === catId);
-        if (!category) {
-          const cat = categoryMap.get(catId);
-          category = {
-            id: catId,
-            name: cat?.name ?? null,
-            quantity: 0,
-            subcategories: [],
-          };
-          categories.push(category);
-        }
-        category.quantity += quantity;
-        const subcatId = r.subcategory_id;
-        if (subcatId != null) {
-          const subcat = categoryMap.get(subcatId);
-          category.subcategories.push({
-            id: subcatId,
-            name: subcat?.name ?? null,
-            quantity,
-          });
-        }
-      });
-      return {
-        quantity: categories.reduce(
-          (sum, category) => sum + Number(category.quantity ?? 0),
-          0,
-        ),
-        categories,
-      };
-    };
-
-    /**
-     * @param {{ category_id: number | null; subcategory_id: number | null; quantity: string | number; weight_kg?: string | number }[]} rows
-     * @param {Set<number>} allowedCategoryIds
-     */
-    const buildQuarterSellFromSoldRows = (
-      rows,
-      allowedCategoryIds: Set<Category["id"]>,
-    ) => {
-      /** @type {{ id: number; name: string | null; weight_kg: number; subcategories: { id: number; name: string | null; weight_kg: number }[] }[]} */
-      const categories = [];
-      rows.forEach((r) => {
-        const catId = r.category_id;
-        if (catId == null || !allowedCategoryIds.has(catId)) return;
-        const weight = Number(r.weight_kg ?? 0);
-        let category = categories.find((c) => c.id === catId);
-        if (!category) {
-          const cat = categoryMap.get(catId);
-          category = {
-            id: catId,
-            name: cat?.name ?? null,
-            weight_kg: 0,
-            subcategories: [],
-          };
-          categories.push(category);
-        }
-        category.weight_kg += weight;
-        const subcatId = r.subcategory_id;
-        if (subcatId != null) {
-          const subcat = categoryMap.get(subcatId);
-          category.subcategories.push({
-            id: subcatId,
-            name: subcat?.name ?? null,
-            weight_kg: weight,
-          });
-        }
-      });
-      return {
-        total_weight_kg: categories.reduce(
-          (sum, c) => sum + Number(c.weight_kg ?? 0),
-          0,
-        ),
-        categories,
-      };
-    };
-    const id = eo.id;
-    const quarters = quarterRanges.map((range) => {
-      const data = quarterDataByEcoOrg.get(id)?.[range.label];
-
-      const soldQuantityRows =
-        soldQuantityRowsByQuarterLabel.get(range.label) ?? [];
-      const quarterSellData = buildQuarterSellFromSoldRows(
-        soldQuantityRows,
-        sellCategoryIds,
-      );
-      const quarterSellQuantityData = buildQuarterSellQuantity(
-        soldQuantityRows,
-        sellCategoryIds,
-      );
-      const quarterSellCategoriesById = new Map(
-        quarterSellData.categories.map((category) => [
-          category.id,
-          {
-            ...category,
-            quantity:
-              quarterSellQuantityData.categories.find(
-                (c) => c.id === category.id,
-              )?.quantity ?? 0,
-            subcategories: category.subcategories.map((subcat) => ({
-              ...subcat,
-              quantity:
-                quarterSellQuantityData.categories
-                  .find((c) => c.id === category.id)
-                  ?.subcategories.find((s) => s.id === subcat.id)?.quantity ??
-                0,
-            })),
-          },
-        ]),
-      );
-      return {
-        quarter: range.label,
-        label: range.labelMMYYYY,
-        total_weight_kg: data?.total_weight_kg ?? 0,
-        categories: data?.categories ?? [],
-
-        quarterSell: {
-          total_weight_kg: quarterSellData.total_weight_kg,
-          quantity: quarterSellQuantityData.quantity,
-          categories: quarterSellData.categories.map(
-            (category) =>
-              quarterSellCategoriesById.get(category.id) ?? category,
-          ),
-        },
-      };
-    });
-    return {
-      ...eo.toJSON(),
-      quarters,
-    };
-  });
 };
-
 
 export const ecoOrgaStats = async (req: Request, res: Response) => {
   const stats = await EcoOrganism.findOne({
@@ -993,15 +719,6 @@ export const ecoOrgaStats = async (req: Request, res: Response) => {
 };
 
 export const ecoOrgQuarterStats = async (req: Request, res: Response) => {
-  /**
-   * TODO
-   * 1 get current time
-   * 2 get start of the quarter
-   * 3 set to midnight
-   * 4 get end of the previous ( remove 1s)
-   * 5 loop( take date => find end of quarter, find start of quarter , find end of previous quarter)
-   */
-
   const quarterRanges = quartersDateRanges(new Date());
   // Fetch all eco organisms (we want the full list with quarters, including those with 0 waste)
   const ecoOrganisms = await EcoOrganism.findAll({
@@ -1009,595 +726,29 @@ export const ecoOrgQuarterStats = async (req: Request, res: Response) => {
     attributes: ["id", "name", "description", "is_active"],
   });
 
+  const [quarterOutByEcoOrg, quarterInByEcoOrg, quarterSellByEcoOrg] =
+    await Promise.all([
+      getQuarterStatOut(quarterRanges),
+      getQuarterStatIn(quarterRanges),
+      getQuarterStatSell(quarterRanges),
+    ]);
 
-  const [quarterOutByEcoOrg, quarterInByEcoOrg, quarterSellByEcoOrg] = await Promise.all([
-    getQuarterStatOut(quarterRanges),
-    getQuarterStatIn(quarterRanges),
-    getQuarterStatSell(quarterRanges),
-  ]);
-
-  const response = ecoOrganisms.map(eo => {
+  const response = ecoOrganisms.map((eo) => {
     return {
       id: eo.id,
       name: eo.name,
       description: eo.description,
       is_active: eo.is_active,
-      quarters: quarterRanges.map(range => {
+      quarters: quarterRanges.map((range) => {
         return {
           quarter: range.label,
           quarterOut: quarterOutByEcoOrg.get(eo.id)?.[range.label] ?? {},
           quarterIn: quarterInByEcoOrg.get(eo.id)?.[range.label] ?? {},
           quarterSell: quarterSellByEcoOrg.get(eo.id)?.[range.label] ?? {},
-        }
-      })
-    }
-
-  }) as Array<ecoOrgQuarterStats>
-
-  return res.json({ stats: response })
-
-
-  // /**
-  //  * Read category links from a pivot table and normalize output keys.
-  //  * Supports either snake_case columns or Sequelize default naming.
-  //  * @param {"ecoOrg_categoryIn" | "ecoOrg_categorySell"} tableName
-  //  */
-  // const loadEcoOrgCategoryLinks = async (tableName) => {
-  //   const columns =
-  //     /** @type {{ name: string }[]} */ (
-  //       await db.sequelize.query(`PRAGMA table_info("${tableName}")`, {
-  //         type: db.Sequelize.QueryTypes.SELECT,
-  //       })
-  //     );
-  //   const columnNames = new Set(columns.map((c) => c.name));
-
-  //   const ecoOrgColumn =
-  //     ["eco_organism_id", "EcoOrganismId", "ecoOrganismId"].find((c) =>
-  //       columnNames.has(c),
-  //     ) ?? null;
-  //   const categoryColumn =
-  //     ["category_id", "CategoryId", "categoryId"].find((c) =>
-  //       columnNames.has(c),
-  //     ) ?? null;
-
-  //   if (!ecoOrgColumn || !categoryColumn) return [];
-
-  //   return /** @type {{ eco_organism_id: number; category_id: number }[]} */ (
-  //     await db.sequelize.query(
-  //       `SELECT "${ecoOrgColumn}" as eco_organism_id, "${categoryColumn}" as category_id FROM "${tableName}"`,
-  //       {
-  //         type: db.Sequelize.QueryTypes.SELECT,
-  //       },
-  //     )
-  //   );
-  // };
-
-  const [inCategoryLinks, sellCategoryLinks] = await Promise.all([
-    EcoOrganism.findAll({
-      attributes: ["id"],
-      include: [{ model: Category, as: "inCategories" }],
-    }),
-    EcoOrganism.findAll({
-      attributes: ["id"],
-      include: [{ model: Category, as: "sellCategories" }],
-    }),
-    // loadEcoOrgCategoryLinks("ecoOrg_categoryIn"),
-    // loadEcoOrgCategoryLinks("ecoOrg_categorySell"),
-  ]);
-
-  const inCategoryIdsByEcoOrg: Map<number, Set<number>> = new Map();
-  inCategoryLinks.forEach((link) => {
-    if (!inCategoryIdsByEcoOrg.has(link.id)) {
-      inCategoryIdsByEcoOrg.set(link.id, new Set());
-    }
-    (link.inCategories ?? []).forEach((c) =>
-      inCategoryIdsByEcoOrg.get(link.id).add(c.id),
-    );
-  });
-
-  const sellCategoryIdsByEcoOrg: Map<number, Set<number>> = new Map();
-  sellCategoryLinks.forEach((link) => {
-    if (!sellCategoryIdsByEcoOrg.has(link.id)) {
-      sellCategoryIdsByEcoOrg.set(link.id, new Set());
-    }
-    (link.sellCategories ?? []).forEach((c) =>
-      sellCategoryIdsByEcoOrg.get(link.id).add(c.id),
-    );
-  });
-
-  //OUT PART
-  // For each quarter, get weight per eco_organism_id, category and subcategory
-  const weightByEcoOrgByQuarter = await Promise.all(
-    quarterRanges.map(async (range) => {
-      const rows =
-        /** @type {{ eco_organism_id: number; category_id: number | null; subcategory_id: number | null; weight_kg: string | number }[]} */ /** @type {unknown} */ await WasteDisposal.findAll(
-        {
-          attributes: [
-            "eco_organism_id",
-            "category_id",
-            "subcategory_id",
-            [fn("SUM", col("weight_kg")), "weight_kg"],
-          ],
-          where: {
-            eco_organism_id: { [Op.ne]: null },
-            disposal_date: { [Op.between]: [range.start, range.end] },
-          },
-          group: ["eco_organism_id", "category_id", "subcategory_id"],
-          raw: true,
-        },
-      );
-      return {
-        label: range.label,
-        labelMMYYYY: range.labelMMYYYY,
-        rows,
-      };
-    }),
-  );
-
-  //IN PART
-  // For each quarter, get arrivals split by source_type and grouped by category/subcategory
-  const arrivalBySourceByQuarter = await Promise.all(
-    quarterRanges.map(async (range) => {
-      const rows =
-        /** @type {{ source_type: "point" | "apport" | "house_clearance" | null; category_id: number | null; subcategory_id: number | null; weight_kg: string | number }[]} */ /** @type {unknown} */ await Arrival.findAll(
-        {
-          attributes: [
-            "source_type",
-            "category_id",
-            "subcategory_id",
-            [fn("SUM", col("weight")), "weight_kg"],
-          ],
-          where: {
-            arrival_date: { [Op.between]: [range.start, range.end] },
-          },
-          group: ["source_type", "category_id", "subcategory_id"],
-          raw: true,
-        },
-      );
-      return {
-        label: range.label,
-        rows,
-      };
-    }),
-  );
-
-  //SELL PART
-  // For each quarter, get sold quantity grouped by category/subcategory
-  const soldQuantityByQuarter = await Promise.all(
-    quarterRanges.map(async (range) => {
-      const rows =
-        /** @type {{ category_id: number | null; subcategory_id: number | null; quantity: string | number; weight_kg: string | number }[]} */ /** @type {unknown} */ await TransactionItem.findAll(
-        {
-          attributes: [
-            [col("LabeledItem.category_id"), "category_id"],
-            [col("LabeledItem.subcategory_id"), "subcategory_id"],
-            [fn("SUM", col("TransactionItem.quantity")), "quantity"],
-            [
-              fn(
-                "SUM",
-                literal(
-                  "COALESCE(CAST(LabeledItem.weight AS REAL), 0) * COALESCE(TransactionItem.quantity, 0)",
-                ),
-              ),
-              "weight_kg",
-            ],
-          ],
-          include: [
-            {
-              model: SalesTransaction,
-              required: true,
-              attributes: [],
-              where: {
-                createdAt: { [Op.between]: [range.start, range.end] },
-                transactionType: "sell",
-              },
-            },
-            {
-              model: LabeledItem,
-              required: true,
-              attributes: [],
-              where: { status: "sold" },
-            },
-          ],
-          group: [
-            col("LabeledItem.category_id"),
-            col("LabeledItem.subcategory_id"),
-          ],
-          raw: true,
-        },
-      );
-      return {
-        label: range.label,
-        rows,
-      };
-    }),
-  );
-
-  //OUT PART
-  // Resolve category/subcategory id -> { id, name } for all ids present in the results
-  const categoryIds = [
-    ...new Set(
-      weightByEcoOrgByQuarter.flatMap(({ rows }) =>
-        rows.map((r) => r.category_id).filter((id) => id != null),
-      ),
-    ),
-  ];
-  const subcategoryIds = [
-    ...new Set(
-      weightByEcoOrgByQuarter.flatMap(({ rows }) =>
-        rows.map((r) => r.subcategory_id).filter((id) => id != null),
-      ),
-    ),
-  ];
-
-  // IN PART
-  const arrivalCategoryIds = [
-    ...new Set(
-      arrivalBySourceByQuarter.flatMap(({ rows }) =>
-        rows.map((r) => r.category_id).filter((id) => id != null),
-      ),
-    ),
-  ];
-  const arrivalSubcategoryIds = [
-    ...new Set(
-      arrivalBySourceByQuarter.flatMap(({ rows }) =>
-        rows.map((r) => r.subcategory_id).filter((id) => id != null),
-      ),
-    ),
-  ];
-
-  // SELL PART
-  const soldCategoryIds = [
-    ...new Set(
-      soldQuantityByQuarter.flatMap(({ rows }) =>
-        rows.map((r) => r.category_id).filter((id) => id != null),
-      ),
-    ),
-  ];
-  const soldSubcategoryIds = [
-    ...new Set(
-      soldQuantityByQuarter.flatMap(({ rows }) =>
-        rows.map((r) => r.subcategory_id).filter((id) => id != null),
-      ),
-    ),
-  ];
-
-  const allCategoryIds = [
-    ...new Set([
-      ...categoryIds,
-      ...subcategoryIds,
-      ...arrivalCategoryIds,
-      ...arrivalSubcategoryIds,
-      ...soldCategoryIds,
-      ...soldSubcategoryIds,
-    ]),
-  ];
-  const categoryMap = new Map();
-  if (allCategoryIds.length > 0) {
-    const categories = await Category.findAll({
-      where: { id: { [Op.in]: allCategoryIds } },
-      attributes: ["id", "name"],
-      raw: true,
-    });
-    categories.forEach((c) =>
-      categoryMap.set(c.id, { id: c.id, name: c.name }),
-    );
-  }
-  //OUT PART
-  // Build a map: eco_organism_id -> { "2025-Q1": { total_weight_kg, categories: [{ id, name, weight_kg, subcategories }] } }
-  const quarterDataByEcoOrg = new Map();
-  weightByEcoOrgByQuarter.forEach(({ label, labelMMYYYY, rows }) => {
-    const byEcoOrg = new Map();
-    rows.forEach((r) => {
-      const id = r.eco_organism_id;
-      if (!byEcoOrg.has(id)) {
-        byEcoOrg.set(id, { total_weight_kg: 0, categories: [] });
-      }
-      const rec = byEcoOrg.get(id);
-      const weight = Number(r.weight_kg ?? 0);
-      rec.total_weight_kg += weight;
-      const catId = r.category_id;
-      if (catId != null) {
-        let category = rec.categories.find((c) => c.id === catId);
-        if (!category) {
-          const cat = categoryMap.get(catId);
-          category = {
-            id: catId,
-            name: cat?.name ?? null,
-            weight_kg: 0,
-            subcategories: [],
-          };
-          rec.categories.push(category);
-        }
-
-        category.weight_kg += weight;
-
-        const subcatId = r.subcategory_id;
-        if (subcatId != null) {
-          const subcat = categoryMap.get(subcatId);
-          category.subcategories.push({
-            id: subcatId,
-            name: subcat?.name ?? null,
-            weight_kg: weight,
-          });
-        }
-      }
-    });
-    byEcoOrg.forEach((data, id) => {
-      if (!quarterDataByEcoOrg.has(id)) quarterDataByEcoOrg.set(id, {});
-      quarterDataByEcoOrg.get(id)[label] = {
-        ...data,
-        labelMMYYYY,
-      };
-    });
-  });
-
-  //IN PART
-  const arrivalRowsByQuarterLabel = new Map(
-    arrivalBySourceByQuarter.map((q) => [q.label, q.rows]),
-  );
-  //SELL PART
-  const soldQuantityRowsByQuarterLabel = new Map(
-    soldQuantityByQuarter.map((q) => [q.label, q.rows]),
-  );
-
-  // Ensure every eco organism has 4 quarters (0 / [] for quarters with no waste)
-  const eco_organisms = ecoOrganisms.map((eo) => {
-    const inCategoryIds = inCategoryIdsByEcoOrg.get(eo.id) ?? new Set();
-    const sellCategoryIds = sellCategoryIdsByEcoOrg.get(eo.id) ?? new Set();
-
-    /**
-     * @param {{ id: number; name: string | null; weight_kg: number; subcategories: { id: number; name: string | null; weight_kg: number }[] }[]} categories
-     * @param {Set<number>} allowedCategoryIds
-     */
-    const filterCategoriesByAllowedIds = (
-      categories: Category[],
-      allowedCategoryIds: Set<Category["id"]>,
-    ) => {
-      return categories.filter((c) => allowedCategoryIds.has(c.id));
+        };
+      }),
     };
+  }) as Array<ecoOrgQuarterStats>;
 
-    /**
-     * @param {{ total_weight_kg: number; categories: { id: number; name: string | null; weight_kg: number; subcategories: { id: number; name: string | null; weight_kg: number }[] }[] } | undefined} data
-     * @param {Set<number>} allowedCategoryIds
-     */
-    const buildFilteredQuarter = (
-      data,
-      allowedCategoryIds: Set<Category["id"]>,
-    ) => {
-      const filteredCategories = filterCategoriesByAllowedIds(
-        data?.categories ?? [],
-        allowedCategoryIds,
-      );
-      return {
-        total_weight_kg: filteredCategories.reduce(
-          (sum, category) => sum + Number(category.weight_kg ?? 0),
-          0,
-        ),
-        categories: filteredCategories,
-      };
-    };
-
-    //SELL PART
-    /**
-     * @param {{ category_id: number | null; subcategory_id: number | null; quantity: string | number; weight_kg?: string | number }[]} rows
-     * @param {Set<number>} allowedCategoryIds
-     */
-    const buildQuarterSellQuantity = (
-      rows,
-      allowedCategoryIds: Set<Category["id"]>,
-    ) => {
-      /** @type {{ id: number; name: string | null; quantity: number; subcategories: { id: number; name: string | null; quantity: number }[] }[]} */
-      const categories = [];
-      rows.forEach((r) => {
-        const catId = r.category_id;
-        if (catId == null || !allowedCategoryIds.has(catId)) return;
-        const quantity = Number(r.quantity ?? 0);
-        let category = categories.find((c) => c.id === catId);
-        if (!category) {
-          const cat = categoryMap.get(catId);
-          category = {
-            id: catId,
-            name: cat?.name ?? null,
-            quantity: 0,
-            subcategories: [],
-          };
-          categories.push(category);
-        }
-        category.quantity += quantity;
-        const subcatId = r.subcategory_id;
-        if (subcatId != null) {
-          const subcat = categoryMap.get(subcatId);
-          category.subcategories.push({
-            id: subcatId,
-            name: subcat?.name ?? null,
-            quantity,
-          });
-        }
-      });
-      return {
-        quantity: categories.reduce(
-          (sum, category) => sum + Number(category.quantity ?? 0),
-          0,
-        ),
-        categories,
-      };
-    };
-
-    /**
-     * @param {{ category_id: number | null; subcategory_id: number | null; quantity: string | number; weight_kg?: string | number }[]} rows
-     * @param {Set<number>} allowedCategoryIds
-     */
-    const buildQuarterSellFromSoldRows = (
-      rows,
-      allowedCategoryIds: Set<Category["id"]>,
-    ) => {
-      /** @type {{ id: number; name: string | null; weight_kg: number; subcategories: { id: number; name: string | null; weight_kg: number }[] }[]} */
-      const categories = [];
-      rows.forEach((r) => {
-        const catId = r.category_id;
-        if (catId == null || !allowedCategoryIds.has(catId)) return;
-        const weight = Number(r.weight_kg ?? 0);
-        let category = categories.find((c) => c.id === catId);
-        if (!category) {
-          const cat = categoryMap.get(catId);
-          category = {
-            id: catId,
-            name: cat?.name ?? null,
-            weight_kg: 0,
-            subcategories: [],
-          };
-          categories.push(category);
-        }
-        category.weight_kg += weight;
-        const subcatId = r.subcategory_id;
-        if (subcatId != null) {
-          const subcat = categoryMap.get(subcatId);
-          category.subcategories.push({
-            id: subcatId,
-            name: subcat?.name ?? null,
-            weight_kg: weight,
-          });
-        }
-      });
-      return {
-        total_weight_kg: categories.reduce(
-          (sum, c) => sum + Number(c.weight_kg ?? 0),
-          0,
-        ),
-        categories,
-      };
-    };
-
-    //IN PART
-    /**
-     * @param {{ source_type: "point" | "apport" | "house_clearance" | null; category_id: number | null; subcategory_id: number | null; weight_kg: string | number }[]} rows
-     * @param {Set<number>} allowedCategoryIds
-     */
-    const buildQuarterFromArrivalRows = (
-      rows,
-      allowedCategoryIds: Set<Category["id"]>,
-    ) => {
-      /** @type {{ id: number; name: string | null; weight_kg: number; subcategories: { id: number; name: string | null; weight_kg: number }[] }[]} */
-      const categories = [];
-      rows.forEach((r) => {
-        const catId = r.category_id;
-        if (catId == null || !allowedCategoryIds.has(catId)) return;
-        const weight = Number(r.weight_kg ?? 0);
-        let category = categories.find((c) => c.id === catId);
-        if (!category) {
-          const cat = categoryMap.get(catId);
-          category = {
-            id: catId,
-            name: cat?.name ?? null,
-            weight_kg: 0,
-            subcategories: [],
-          };
-          categories.push(category);
-        }
-        category.weight_kg += weight;
-        const subcatId = r.subcategory_id;
-        if (subcatId != null) {
-          const subcat = categoryMap.get(subcatId);
-          category.subcategories.push({
-            id: subcatId,
-            name: subcat?.name ?? null,
-            weight_kg: weight,
-          });
-        }
-      });
-      return {
-        total_weight_kg: categories.reduce(
-          (sum, category) => sum + Number(category.weight_kg ?? 0),
-          0,
-        ),
-        categories,
-      };
-    };
-
-    const splitQuarterInBySourceType = (
-      rows,
-      allowedCategoryIds: Set<Category["id"]>,
-    ) => {
-      const sourceTypes = ["point", "apport", "house_clearance"];
-      return sourceTypes.reduce((acc, sourceType) => {
-        acc[sourceType] = buildQuarterFromArrivalRows(
-          rows.filter((r) => r.source_type === sourceType),
-          allowedCategoryIds,
-        );
-        return acc;
-      }, {});
-    };
-
-    const id = eo.id;
-    const quarters = quarterRanges.map((range) => {
-      const data = quarterDataByEcoOrg.get(id)?.[range.label];
-      const arrivalRows = arrivalRowsByQuarterLabel.get(range.label) ?? [];
-      const quarterInData = buildQuarterFromArrivalRows(
-        arrivalRows,
-        inCategoryIds,
-      );
-      const quarterInBySourceType = splitQuarterInBySourceType(
-        arrivalRows,
-        inCategoryIds,
-      );
-      const soldQuantityRows =
-        soldQuantityRowsByQuarterLabel.get(range.label) ?? [];
-      const quarterSellData = buildQuarterSellFromSoldRows(
-        soldQuantityRows,
-        sellCategoryIds,
-      );
-      const quarterSellQuantityData = buildQuarterSellQuantity(
-        soldQuantityRows,
-        sellCategoryIds,
-      );
-      const quarterSellCategoriesById = new Map(
-        quarterSellData.categories.map((category) => [
-          category.id,
-          {
-            ...category,
-            quantity:
-              quarterSellQuantityData.categories.find(
-                (c) => c.id === category.id,
-              )?.quantity ?? 0,
-            subcategories: category.subcategories.map((subcat) => ({
-              ...subcat,
-              quantity:
-                quarterSellQuantityData.categories
-                  .find((c) => c.id === category.id)
-                  ?.subcategories.find((s) => s.id === subcat.id)?.quantity ??
-                0,
-            })),
-          },
-        ]),
-      );
-      return {
-        quarter: range.label,
-        label: range.labelMMYYYY,
-        quarterOut: {
-          total_weight_kg: data?.total_weight_kg ?? 0,
-          categories: data?.categories ?? [],
-        },
-        quarterIn: {
-          total_weight_kg: quarterInData.total_weight_kg,
-          categories: quarterInData.categories,
-          by_source_type: quarterInBySourceType,
-        },
-        quarterSell: {
-          total_weight_kg: quarterSellData.total_weight_kg,
-          quantity: quarterSellQuantityData.quantity,
-          categories: quarterSellData.categories.map(
-            (category) =>
-              quarterSellCategoriesById.get(category.id) ?? category,
-          ),
-        },
-      };
-    });
-    return {
-      ...eo.toJSON(),
-      quarters,
-    };
-  });
-
-  res.json({ stats: eco_organisms });
+  return res.json({ stats: response });
 };
