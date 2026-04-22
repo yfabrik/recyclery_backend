@@ -606,11 +606,7 @@ export const planningStats = async (req: Request, res: Response) => {
       include: [[fn("COUNT", col("*")), "schedule_count"]],
     },
     include: [{ model: Task }],
-    group: [
-      [Task, "id"],
-      [Task, "name"],
-      [Task, "category"],
-    ],
+    group: [col("Task.id"), col("Task.name"), col("Task.category")],
     order: ["scheduled_count", "DESC"],
     limit: 5,
   });
@@ -626,7 +622,7 @@ export const planningStats = async (req: Request, res: Response) => {
     ],
     include: [{ model: Employee }],
     group: [
-      [Employee, "id"],
+      col("Employee.id"),
       // [Employee, "nom"],
     ],
     order: ["schedule_count", "DESC"],
@@ -636,7 +632,7 @@ export const planningStats = async (req: Request, res: Response) => {
   res.json({
     success: true,
     stats: {
-      overview: stats[0],
+      overview: stats,
       topTasks: topTasks,
       topEmployees: topEmployees,
     },
