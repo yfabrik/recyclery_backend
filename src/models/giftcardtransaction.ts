@@ -27,7 +27,7 @@ export default class GiftCardTransaction extends Model<
     | "manual_adjustment"
     | "expire";
   declare amount: number;
-  declare occurred_at: Date;
+  declare occurred_at: CreationOptional<Date>;
   declare metadata: CreationOptional<Record<string, unknown> | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;

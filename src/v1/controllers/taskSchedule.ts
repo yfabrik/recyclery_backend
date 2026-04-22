@@ -461,7 +461,6 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
           },
         },
       ],
-      distinct: true,
     });
   else
     allEmployees = await Employee.findAll({
@@ -484,7 +483,6 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
           required: true,
         },
       ],
-      distinct: true,
     });
 
   // Pour chaque employé, vérifier s'il est disponible

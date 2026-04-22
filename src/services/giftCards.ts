@@ -51,11 +51,11 @@ type GiftCreate = {
   expiresAt?: Date | string | null;
   issuedTransactionId?: number | null;
   issuedRefundTransactionId?: number | null;
-  createdBy?: number | null;
+  createdBy: number;
   note?: string | null;
   recipientName?: string | null;
   recipientEmail?: string | null;
-  metadata?: object | null;
+  metadata?: Record<string,unknown> | null;
 };
 
 export const issueGiftCard = async ({
@@ -64,7 +64,7 @@ export const issueGiftCard = async ({
   expiresAt = null,
   issuedTransactionId = null,
   issuedRefundTransactionId = null,
-  createdBy = null,
+  createdBy,
   note = null,
   recipientName = null,
   recipientEmail = null,
@@ -144,14 +144,14 @@ type GiftCharge = {
   giftCardId: InstanceType<typeof GiftCard>["id"];
   salesTransactionId: InstanceType<typeof SalesTransaction>["id"];
   amount: number | string;
-  createdBy?: InstanceType<typeof User>["id"] | null;
-  metadata?: object | null;
+  createdBy: InstanceType<typeof User>["id"] ;
+  metadata?: Record<string,unknown> | null;
 };
 export const chargeGiftCard = async ({
   giftCardId,
   salesTransactionId,
   amount,
-  createdBy = null,
+  createdBy,
   metadata = null,
   transaction: externalTransaction = null,
 }: GiftCharge & { transaction?: Transaction | null }) => {
@@ -194,7 +194,7 @@ export const recreditGiftCard = async ({
   giftCardId,
   salesTransactionId,
   amount,
-  createdBy = null,
+  createdBy,
   metadata = null,
   transaction: externalTransaction = null,
 }: GiftCharge & { transaction?: Transaction | null }) => {
