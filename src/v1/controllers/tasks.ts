@@ -87,11 +87,14 @@ export const listTasks = async (req: Request, res: Response) => {
 
   if (data.priority && data.priority !== "all") where.priority = data.priority;
 
-  if (data.search)
-    where[Op.or] = [
-      { name: { [Op.like]: data.search } },
-      { description: { [Op.like]: data.search } },
-    ];
+  if (data.search) {
+    Object.assign(where, {
+      [Op.or]: [
+        { name: { [Op.like]: data.search } },
+        { description: { [Op.like]: data.search } },
+      ],
+    } satisfies ModelWhere<typeof Task>);
+  }
   if (data.store_id) where.store_id = data.store_id;
 
   const include: Includeable[] = [];
@@ -147,12 +150,12 @@ export const detailTask = async (req: Request, res: Response) => {
 
   // Parser les champs JSON
   const task = {
-    ...tasks[0],
-    required_skills: tasks[0]?.required_skills
-      ? JSON.parse(tasks[0].required_skills)
+    ...tasks,
+    required_skills: tasks?.required_skills
+      ? JSON.parse(tasks.required_skills)
       : [],
-    equipment_needed: tasks[0]?.equipment_needed
-      ? JSON.parse(tasks[0].equipment_needed)
+    equipment_needed: tasks?.equipment_needed
+      ? JSON.parse(tasks.equipment_needed)
       : [],
   };
 
