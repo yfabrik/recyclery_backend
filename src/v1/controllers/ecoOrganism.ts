@@ -130,6 +130,61 @@ export const deleteEcoOrganism = async (req: Request, res: Response) => {
 };
 
 type quarterLabel = `${number}-T${1 | 2 | 3 | 4}`;
+type EcoOrgId = InstanceType<typeof EcoOrganism>["id"];
+type ArrivalSourceType = InstanceType<typeof Arrival>["source_type"];
+
+type QuarterRange = {
+  start: Date;
+  end: Date;
+  label: quarterLabel;
+  labelMMYYYY: string;
+};
+
+type WeightedCategory = {
+  id: InstanceType<typeof Category>["id"];
+  name: InstanceType<typeof Category>["name"];
+  weight_kg: number;
+};
+
+type QuarterCategoryBreakdown = {
+  total_weight_kg: number;
+  categories: (WeightedCategory & {
+    subcategories: WeightedCategory[];
+  })[];
+  labelMMYYYY?: string;
+};
+
+type QuarterInBreakdown = QuarterCategoryBreakdown & {
+  by_soure_type: Record<ArrivalSourceType, QuarterCategoryBreakdown>;
+};
+
+type SellCategoryBreakdown = Omit<WeightedCategory, "weight_kg"> & {
+  weight_kg: number;
+  quantity: number;
+  subcategories: (WeightedCategory & { quantity: number })[];
+};
+
+type QuarterSellBreakdown = {
+  total_weight_kg: number;
+  quantity: number;
+  categories: SellCategoryBreakdown[];
+};
+
+type QuarterOutByEcoOrgMap = Map<EcoOrgId, Record<quarterLabel, QuarterCategoryBreakdown>>;
+type QuarterInByEcoOrgMap = Map<EcoOrgId, Record<quarterLabel, QuarterInBreakdown>>;
+type QuarterSellByEcoOrgMap = Map<EcoOrgId, Record<quarterLabel, QuarterSellBreakdown>>;
+
+type EcoOrgQuarterStatsResponse = Pick<
+  InstanceType<typeof EcoOrganism>,
+  "id" | "name" | "description" | "is_active"
+> & {
+  quarters: {
+    quarter: quarterLabel;
+    quarterOut: QuarterCategoryBreakdown;
+    quarterIn: QuarterInBreakdown;
+    quarterSell: QuarterSellBreakdown;
+  }[];
+};
 
 export const quartersDateRanges = (startDate: Date, quarterCount = 4) => {
   // Normalize to local midnight to avoid timezone drift
@@ -144,12 +199,7 @@ export const quartersDateRanges = (startDate: Date, quarterCount = 4) => {
   );
   const currentQuarterIndex = Math.floor(normalizedStartDate.getMonth() / 3); // 0=Q1, 1=Q2, 2=Q3, 3=Q4
 
-  const quarterRanges = [] as {
-    start: Date;
-    end: Date;
-    label: quarterLabel;
-    labelMMYYYY: string;
-  }[];
+  const quarterRanges: QuarterRange[] = [];
   for (let i = 0; i < quarterCount; i++) {
     const quarterStart = new Date(
       normalizedStartDate.getFullYear(),
@@ -182,7 +232,11 @@ export const quartersDateRanges = (startDate: Date, quarterCount = 4) => {
           );
 
     const year = quarterStart.getFullYear();
-    const quarterNumber = Math.floor(quarterStart.getMonth() / 3) + 1;
+    const quarterNumber = (Math.floor(quarterStart.getMonth() / 3) + 1) as
+      | 1
+      | 2
+      | 3
+      | 4;
     const startMonth = quarterStart.getMonth() + 1;
     const endMonth = startMonth + 2;
     quarterRanges.push({
@@ -194,40 +248,6 @@ export const quartersDateRanges = (startDate: Date, quarterCount = 4) => {
   }
 
   return quarterRanges;
-};
-
-type cat = {
-  id: InstanceType<typeof Category>["id"];
-  name: InstanceType<typeof Category>["name"];
-  weight_kg: number;
-};
-type s = {
-  total_weight_kg: number;
-  categories: (cat & { subcategories: cat[] })[];
-  labelMMYYYY?: string;
-};
-
-type categories = s["categories"];
-
-type ecoOrgQuarterStats = Pick<
-  InstanceType<typeof EcoOrganism>,
-  "id" | "name" | "description" | "is_active"
-> & {
-  quarters: {
-    quarter: quarterLabel;
-    quarterOut: s;
-    quarterIn: s & {
-      by_soure_type: Record<InstanceType<typeof Arrival>["source_type"], s>;
-    };
-    quarterSell: {
-      total_weight_kg: number;
-      quantity: number;
-      categories: (cat & {
-        subcategories: (cat & { quantity: number })[];
-        quantity: number;
-      })[];
-    };
-  }[];
 };
 
 type WasteQuarterRow = {
@@ -250,15 +270,8 @@ type sellQuarterRow = Omit<WasteQuarterRow, "eco_organism_id"> & {
 };
 
 export const getQuarterStatOut = async (
-  quarterRanges: {
-    start: Date;
-    end: Date;
-    label: quarterLabel;
-    labelMMYYYY: string;
-  }[],
-): Promise<
-  Map<InstanceType<typeof EcoOrganism>["id"], Record<quarterLabel, s>>
-> => {
+  quarterRanges: QuarterRange[],
+): Promise<QuarterOutByEcoOrgMap> => {
   const weightByEcoOrgByQuarter = await Promise.all(
     quarterRanges.map(async (range) => {
       const rows = (await WasteDisposal.findAll({
@@ -282,10 +295,7 @@ export const getQuarterStatOut = async (
         raw: true,
       })) as unknown as WasteQuarterRow[];
 
-      let byEcoOrg = new Map<
-        InstanceType<typeof EcoOrganism>["id"],
-        Record<quarterLabel, s>
-      >();
+      let byEcoOrg = new Map<EcoOrgId, Record<quarterLabel, QuarterCategoryBreakdown>>();
 
       for (const row of rows) {
         const ecoOrgId = row.eco_organism_id;
@@ -305,8 +315,8 @@ export const getQuarterStatOut = async (
                   name: row.subcategory_name,
                   weight_kg: row.weight_kg,
                 },
-              ] as cat[])
-            : ([] as cat[]);
+              ] as WeightedCategory[])
+            : ([] as WeightedCategory[]);
           ecoOrg.categories.push({
             id: row.category_id,
             name: row.category_name,
@@ -333,14 +343,15 @@ export const getQuarterStatOut = async (
     }),
   );
   const quarterDataByEcoOrg = new Map<
-    InstanceType<typeof EcoOrganism>["id"],
-    Record<quarterLabel, s>
+    EcoOrgId,
+    Record<quarterLabel, QuarterCategoryBreakdown>
   >();
 
   for (const perQuarterMap of weightByEcoOrgByQuarter) {
     for (const [ecoOrgId, quarterData] of perQuarterMap.entries()) {
       const currentData =
-        quarterDataByEcoOrg.get(ecoOrgId) ?? ({} as Record<quarterLabel, s>);
+        quarterDataByEcoOrg.get(ecoOrgId) ??
+        ({} as Record<quarterLabel, QuarterCategoryBreakdown>);
       quarterDataByEcoOrg.set(ecoOrgId, { ...currentData, ...quarterData });
     }
   }
@@ -368,24 +379,9 @@ export const getQuarterStatOut = async (
  * @param ecoOrganisms
  */
 export const getQuarterStatIn = async (
-  quarterRanges: {
-    start: Date;
-    end: Date;
-    label: quarterLabel;
-    labelMMYYYY: string;
-  }[],
+  quarterRanges: QuarterRange[],
   // ecoOrganisms: InstanceType<typeof EcoOrganism>[],
-): Promise<
-  Map<
-    InstanceType<typeof EcoOrganism>["id"],
-    Record<
-      quarterLabel,
-      s & {
-        by_soure_type: Record<InstanceType<typeof Arrival>["source_type"], s>;
-      }
-    >
-  >
-> => {
+): Promise<QuarterInByEcoOrgMap> => {
   //all eco org avec leur incategories
   const inCategoryLinks = await EcoOrganism.findAll({
     attributes: ["id"],
@@ -428,22 +424,9 @@ export const getQuarterStatIn = async (
     arrivalBySourceByQuarter.map((q) => [q.label, q.rows]),
   );
 
-  const byEcoOrg = new Map() as Map<
-    InstanceType<typeof EcoOrganism>["id"],
-    Record<
-      quarterLabel,
-      s & {
-        by_soure_type: Record<InstanceType<typeof Arrival>["source_type"], s>;
-      }
-    >
-  >;
+  const byEcoOrg = new Map() as QuarterInByEcoOrgMap;
   for (const ecoOrg of inCategoryLinks) {
-    const quarterRecord = {} as Record<
-      quarterLabel,
-      s & {
-        by_soure_type: Record<InstanceType<typeof Arrival>["source_type"], s>;
-      }
-    >;
+    const quarterRecord = {} as Record<quarterLabel, QuarterInBreakdown>;
     for (const range of quarterRanges) {
       quarterRecord[range.label] = {
         total_weight_kg: 0,
@@ -473,10 +456,10 @@ export const getQuarterStatIn = async (
     byEcoOrg.set(ecoOrg.id, quarterRecord);
   }
 
-  for (const [ecoOrgId, quarterData] of byEcoOrg) {
+  for (const [_ecoOrgId, quarterData] of byEcoOrg) {
     for (const [label, quarter] of Object.entries(quarterData) as [
       quarterLabel,
-      s,
+      QuarterInBreakdown,
     ][]) {
       arrivalRowsByQuarterLabel.get(label)?.forEach((row) => {
         const catId = row.category_id;
@@ -493,7 +476,7 @@ export const getQuarterStatIn = async (
           } else {
             cat.subcategories.push({
               id: subcatId,
-              name: row.subcategory_name,
+              name: row.subcategory_name!,
               weight_kg: row.weight_kg,
             });
           }
@@ -515,16 +498,16 @@ export const getQuarterStatIn = async (
               subcategories: [],
             });
           }
-          if (row.subcategory_id != null) {
+          if (subcatId != null) {
             const subcat = category?.subcategories.find(
-              (c) => c.id === row.subcategory_id,
+              (c) => c.id === subcatId,
             );
             if (subcat) {
               subcat.weight_kg += row.weight_kg;
             } else {
               category?.subcategories.push({
                 id: subcatId,
-                name: row.subcategory_name,
+                name: row.subcategory_name!,
                 weight_kg: row.weight_kg,
               });
             }
@@ -538,27 +521,8 @@ export const getQuarterStatIn = async (
 };
 
 export const getQuarterStatSell = async (
-  quarterRanges: {
-    start: Date;
-    end: Date;
-    label: `${number}-T${1 | 2 | 3 | 4}`;
-    labelMMYYYY: string;
-  }[],
-): Promise<
-  Map<
-    InstanceType<typeof EcoOrganism>["id"],
-    Record<
-      quarterLabel,
-      {
-        total_weight_kg: number;
-        categories: (cat & {
-          subcategories: (cat & { quantity: number })[];
-          quantity: number;
-        })[];
-      }
-    >
-  >
-> => {
+  quarterRanges: QuarterRange[],
+): Promise<QuarterSellByEcoOrgMap> => {
   const sellCategoryLinks = await EcoOrganism.findAll({
     attributes: ["id"],
     include: [{ model: Category, as: "sellCategories" }],
@@ -621,28 +585,11 @@ export const getQuarterStatSell = async (
     soldQuantityByQuarter.map((q) => [q.label, q.rows]),
   );
 
-  const byEcoOrg = new Map() as Map<
-    InstanceType<typeof EcoOrganism>["id"],
-    Record<
-      quarterLabel,
-      Omit<s, "categories"> & {
-        categories: (cat & {
-          quantity: number;
-          subcategories: (cat & { quantity: number })[];
-        })[];
-      }
-    >
-  >;
+  const byEcoOrg = new Map() as QuarterSellByEcoOrgMap;
   for (const ecoOrg of sellCategoryLinks) {
     const quarterRecord = {} as Record<
       quarterLabel,
-      Omit<s, "categories"> & {
-        quantity: number;
-        categories: (cat & {
-          quantity: number;
-          subcategories: (cat & { quantity: number })[];
-        })[];
-      }
+      QuarterSellBreakdown
     >;
     for (const range of quarterRanges) {
       quarterRecord[range.label] = {
@@ -661,15 +608,10 @@ export const getQuarterStatSell = async (
     byEcoOrg.set(ecoOrg.id, quarterRecord);
   }
 
-  for (const [ecoOrgId, quarterData] of byEcoOrg) {
+  for (const [_ecoOrgId, quarterData] of byEcoOrg) {
     for (const [label, quarter] of Object.entries(quarterData) as [
       quarterLabel,
-      Omit<s, "categories"> & {
-        categories: (cat & {
-          quantity: number;
-          subcategories: (cat & { quantity: number })[];
-        })[];
-      },
+      QuarterSellBreakdown,
     ][]) {
       soldQuantityRowsByQuarterLabel.get(label)?.forEach((row) => {
         const catId = row.category_id;
@@ -687,7 +629,7 @@ export const getQuarterStatSell = async (
           } else {
             category.subcategories.push({
               id: subcatId,
-              name: row.subcategory_name,
+              name: row.subcategory_name!,
               weight_kg: row.weight_kg,
               quantity: row.quantity,
             });
@@ -700,7 +642,7 @@ export const getQuarterStatSell = async (
   return byEcoOrg;
 };
 
-export const ecoOrgaStats = async (req: Request, res: Response) => {
+export const ecoOrgaStats = async (_req: Request, res: Response) => {
   const stats = await EcoOrganism.findOne({
     attributes: [
       [fn("COUNT", col("*")), "total_eco_organisms"],
@@ -718,7 +660,7 @@ export const ecoOrgaStats = async (req: Request, res: Response) => {
   res.json({ stats });
 };
 
-export const ecoOrgQuarterStats = async (req: Request, res: Response) => {
+export const ecoOrgQuarterStats = async (_req: Request, res: Response) => {
   const quarterRanges = quartersDateRanges(new Date());
   // Fetch all eco organisms (we want the full list with quarters, including those with 0 waste)
   const ecoOrganisms = await EcoOrganism.findAll({
@@ -748,7 +690,7 @@ export const ecoOrgQuarterStats = async (req: Request, res: Response) => {
         };
       }),
     };
-  }) as Array<ecoOrgQuarterStats>;
+  }) as Array<EcoOrgQuarterStatsResponse>;
 
   return res.json({ stats: response });
 };
