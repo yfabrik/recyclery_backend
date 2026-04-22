@@ -96,10 +96,10 @@ export const listLabeledItem = async (req: Request, res: Response) => {
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-export const getItemFromBarcode = async (req, res) => {
+export const getItemFromBarcode = async (req:Request, res:Response) => {
   logger.warn("used getItemFromBarcode TO REMOVE");
-  const { barcode } = req.params;
-  const item = await LabeledItem.findOne({ where: { id: +barcode } });
+  const  barcode =idSchema().parse(req.params.barcode);
+  const item = await LabeledItem.findOne({ where: { id: barcode } });
 
   if (!item) throw new createHttpError[404]("Article non trouvé"); //TODO barcode as query param
 
