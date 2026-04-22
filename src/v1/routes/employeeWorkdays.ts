@@ -20,7 +20,11 @@ router.get(
 
     const workdays = await EmployeeWorkdays.findAll({
       include: [{ model: Employee }],
-      order: [[Employee, "nom"], ["day_of_week"], ["time_slot"]],
+      order: [
+        [Employee, "nom", "ASC"],
+        ["day_of_week", "ASC"],
+        ["time_slot", "ASC"],
+      ],
     });
     res.json({
       success: true,
