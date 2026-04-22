@@ -463,6 +463,8 @@ export const createRefund = async (
   });
   if (!parent)
     throw new createHttpError.NotFound("transaction parent pas trouvé");
+  const parentRefunds = parent.refunds ?? [];
+  const parentItems = parent.items ?? [];
 
   //FIXME on se fait baiser quand les object sont en lot et qu'on rembourse qu'une partie
 
@@ -471,23 +473,28 @@ export const createRefund = async (
 
   const refunded = data.items
     .map((item) => {
-      const alreadyRefunded = parent.refunds?.reduce((prev, current) => {
+      const alreadyRefunded = parentRefunds.reduce((prev, current) => {
         const items = current.items?.filter((i) => i.barcode == item.barcode);
         prev +=
-          items?.reduce((p, v) => (p += v.TransactionItem.quantity), 0) || 0;
+          items?.reduce((p, v) => (p += v.TransactionItem?.quantity ?? 0), 0) || 0;
         return prev;
       }, 0);
       //test que le compte d'object deborde pas
-      const c = parent.items?.find((i) => i.barcode === item.barcode);
-      if (alreadyRefunded && alreadyRefunded + item.quantity > c.quantity)
+      const c = parentItems.find((i) => i.barcode === item.barcode);
+      if (!c) throw new createHttpError.NotFound("item non trouvé dans la vente");
+      if (!c.TransactionItem)
+        throw new createHttpError.InternalServerError(
+          "transaction item relation manquante",
+        );
+      if (alreadyRefunded && alreadyRefunded + item.quantity > c.TransactionItem.quantity)
         throw new createHttpError.BadRequest(
           "peut pas rembourser plus d'objects que vendu",
         );
 
-      const alreadyRefundedPrice = parent.refunds?.reduce((prev, current) => {
+      const alreadyRefundedPrice = parentRefunds.reduce((prev, current) => {
         const items = current.items?.filter((i) => i.barcode == item.barcode);
         prev +=
-          items?.reduce((p, v) => (p += v.TransactionItem.total_price), 0) || 0;
+          items?.reduce((p, v) => (p += v.TransactionItem?.total_price ?? 0), 0) || 0;
         return prev;
       }, 0);
       const toRefundNow = getCartLinePrice(item) - alreadyRefundedPrice;
@@ -513,8 +520,7 @@ export const createRefund = async (
   // });
 
   const result = await db.sequelize.transaction(async (t) => {
-    /** @type {null | { id: number; code: string; status: string; initial_value?: number; current_balance?: number; type: "recredit_existing" | "issued_new" }} */
-    let refundGiftCard = null;
+    let refundGiftCard:null | { id: number; code: string; status: string; initial_value?: number; current_balance?: number; type: "recredit_existing" | "issued_new" } = null;
     const refund = await SalesTransaction.create(
       {
         transactionType: "refund",
@@ -656,7 +662,6 @@ export const createRefund = async (
   });
 };
 
-//FIXME y'a le meme truc dans refunds
 export const listRefunds = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const refunds = await SalesTransaction.findByPk(id, {
@@ -730,7 +735,29 @@ export const transactionsStats = async (req: Request, res: Response) => {
   //   )`);
 
   // Fetch global stats
-  const { count, rows } = await SalesTransaction.findAndCountAll({
+  type StatsRow = {
+    total_sales_before_refunds: number | string;
+    average_transaction: number | string;
+    sessions_count: number | string;
+  };
+  type PaymentMethodRow = {
+    payment_method: "cash" | "card" | "check" | "giftcard" | "mixed";
+    total: number | string;
+    count: number | string;
+  };
+  type ByDayRow = {
+    date: string;
+    transaction_count: number | string;
+    total_amount: number | string;
+  };
+  type ByCategoryRow = {
+    total_quantity: number | string;
+    total_price_sum: number | string;
+    category_id: number | string | null;
+    category_name: string | null;
+  };
+
+  const { count, rows } = (await SalesTransaction.findAndCountAll({
     attributes: [
       [
         fn("COALESCE", fn("SUM", col("total_amount")), 0),
@@ -759,14 +786,14 @@ export const transactionsStats = async (req: Request, res: Response) => {
     where,
     include,
     raw: true,
-  });
+  })) as unknown as { count: number; rows: StatsRow[] };
   // const stats = rows[0].get({ plain: true });
   const statsRow = rows[0] ?? {
     total_sales_before_refunds: 0,
     average_transaction: 0,
     sessions_count: 0,
   };
-  const methods = await SalesTransaction.findAll({
+  const methods = (await SalesTransaction.findAll({
     attributes: [
       "payment_method",
       [fn("SUM", col("total_amount")), "total"],
@@ -774,12 +801,12 @@ export const transactionsStats = async (req: Request, res: Response) => {
     ],
     where,
     include,
-    group: [["payment_method"]],
+    group: ["payment_method"],
     raw: true,
-  });
+  })) as unknown as PaymentMethodRow[];
 
   // Stats grouped per day: transaction count and total amount
-  const byDay = await SalesTransaction.findAll({
+  const byDay = (await SalesTransaction.findAll({
     attributes: [
       [fn("DATE", col("SalesTransaction.createdAt")), "date"],
       [fn("COUNT", col("SalesTransaction.id")), "transaction_count"],
@@ -793,7 +820,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
     group: [fn("DATE", col("SalesTransaction.createdAt"))],
     order: [[col("date"), "ASC"]],
     raw: true,
-  });
+  })) as unknown as ByDayRow[];
 
   // Stats grouped by category: sum of quantity and sum of total_price from transaction items
   // total_price is virtual in TransactionItem (price*extraItems*(1-promo) + (bundlePrice|price)*bundles*(1-promo))
@@ -801,7 +828,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
     (TransactionItem.price * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN TransactionItem.quantity % TransactionItem.bundleQuantity ELSE TransactionItem.quantity END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100))
     + (COALESCE(TransactionItem.bundlePrice, TransactionItem.price) * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN CAST(TransactionItem.quantity / TransactionItem.bundleQuantity AS INTEGER) ELSE 0 END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100))
   )`);
-  const byCategory = await TransactionItem.findAll({
+  const byCategory = (await TransactionItem.findAll({
     attributes: [
       [fn("SUM", col("TransactionItem.quantity")), "total_quantity"],
       [fn("COALESCE", fn("SUM", totalPriceExpr), 0), "total_price_sum"],
@@ -832,7 +859,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
     ],
     group: [col("LabeledItem.category_id"), col("LabeledItem.category.name")],
     raw: true,
-  });
+  })) as unknown as ByCategoryRow[];
 
   // const stats = await SalesTransaction.findAll({
   //   attributes: [
@@ -871,7 +898,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
       total_refunded: 0,
       payment_methods: methods ?? [],
       by_day:
-        /** @type {Array<{ date?: string; transaction_count?: number; total_amount?: string | number }>} */ byDay.map(
+        byDay.map(
           (row) => ({
             date: row.date,
             transaction_count: Number(row.transaction_count ?? 0),
@@ -879,7 +906,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
           }),
         ),
       by_category:
-        /** @type {Array<{ category_id?: number; category_name?: string | null; total_quantity?: number; total_price_sum?: string | number }>} */ byCategory.map(
+         byCategory.map(
           (row) => ({
             category_id: row.category_id,
             category_name: row.category_name ?? null,
