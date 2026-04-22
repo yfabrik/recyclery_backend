@@ -54,7 +54,7 @@ export async function createCollectionPoint(recycleryId, overrides = {}) {
  */
 export async function createEmployee(overrides = {}) {
   return Employee.create({
-    nom: "Dupont",
+    nom: `Dupont${Math.random().toString(36).slice(2, 8)}`,
     prenom: "Jean",
     email: `emp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@test.com`,
     isActive: true,

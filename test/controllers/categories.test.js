@@ -4,7 +4,6 @@ import {
   createCategorie,
   deleteCategorie,
   listCategories,
-  listSubcategories,
   updateCategorie,
 } from "../../src/v1/controllers/categories";
 
@@ -150,7 +149,7 @@ describe("categories controller functions", () => {
       store_id: 1,
     };
     const req = {
-      query: {},
+      query: { only_sub: true },
       user: { id: 1, role: "admin" },
       body,
       params: { id: 1 },
@@ -161,11 +160,13 @@ describe("categories controller functions", () => {
       status: jest.fn().mockReturnThis(),
     };
 
-    await listSubcategories(req, res);
+    await listCategories(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        subcategories: expect.any(Array),
+        categories: expect.arrayContaining([
+          expect.objectContaining({parent_id:expect.anything()})
+        ]),
         success: true,
       }),
     );

@@ -9,6 +9,11 @@
 //   SalesTransaction,
 //   SalesItem,
 // } = db;
+describe.skip('my test suite', () => {
+  test('does something', () => {
+    // ...
+  });
+});
 
 // describe("SalesItem Model", () => {
 //   describe("CRUD", () => {

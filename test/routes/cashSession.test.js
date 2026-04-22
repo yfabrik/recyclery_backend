@@ -11,6 +11,12 @@
 //   },
 // }));
 
+describe.skip('my test suite', () => {
+  test('does something', () => {
+    // ...
+  });
+});
+
 // // 2) Mock models BEFORE importing app
 // const mockCashSession = {
 //   findAll: jest.fn(),

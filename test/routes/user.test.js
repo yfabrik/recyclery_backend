@@ -12,6 +12,11 @@
 //     next();
 //   },
 // }));
+describe.skip('my test suite', () => {
+  test('does something', () => {
+    // ...
+  });
+});
 
 // beforeAll(async () => {
 //   // await db.sequelize.sync({ force: true });
