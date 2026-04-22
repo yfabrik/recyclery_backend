@@ -1,5 +1,5 @@
 import createHttpError from "http-errors";
-import { col, fn} from "sequelize";
+import { col, fn } from "sequelize";
 import * as z from "zod";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
@@ -82,7 +82,7 @@ export const detailCaisse = async (req: Request, res: Response) => {
 
   if (!register) throw new createHttpError.NotFound("Caisse non trouvée");
 
-  const sessions = register.sessions! //TODO better ?
+  const sessions = register.sessions!; //TODO better ?
 
   const lastSession = sessions.reduce<Date | null>((latest, session) => {
     const createdAt = session.createdAt;
@@ -95,7 +95,7 @@ export const detailCaisse = async (req: Request, res: Response) => {
     data: {
       ...register.toJSON(),
       store_name: register.get("Recyclery")
-        ? register.get("Recyclery").get("name")
+        ? (register.get("Recyclery")?.get("name") ?? null)
         : null,
       total_sessions: sessions.length,
       last_session: lastSession,
@@ -126,9 +126,9 @@ export const createCaisse = async (req: Request, res: Response) => {
   //   );
 
   const result = await store.createCaisse({
-    name:data.name,
-    is_active:data.is_active
-  })
+    name: data.name,
+    is_active: data.is_active,
+  });
 
   // Créer la caisse
   // const result = await CashRegister.create({

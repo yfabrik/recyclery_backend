@@ -34,13 +34,15 @@ const limiter = rateLimit({
   },
   skip: (req) => {
     // Skip rate limiting en développement pour localhost
+    const ip = req.ip ?? "";
+    const whitelist = (process.env.RATE_LIMIT_WHITELIST ?? "")
+      .split(",")
+      .map((v) => v.trim());
     return (
-      req.ip === "127.0.0.1" ||
-      req.ip === "::1" ||
-      req.ip === "::ffff:127.0.0.1" ||
-      process.env.RATE_LIMIT_WHITELIST?.split(",")
-        .map((v) => v.trim())
-        ?.includes(req.ip)
+      ip === "127.0.0.1" ||
+      ip === "::1" ||
+      ip === "::ffff:127.0.0.1" ||
+      whitelist.includes(ip)
     );
   },
 });

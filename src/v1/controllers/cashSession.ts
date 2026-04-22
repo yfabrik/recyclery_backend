@@ -165,7 +165,7 @@ export const closeCashSession = async (
       [fn("COALESCE", fn("SUM", col("total_amount")), 0), "total_sales"],
     ],
     raw: true,
-  });
+  })as unknown as{total_sales:number}[];
 
   const totalSales = parseFloat(String(sales[0]?.total_sales ?? 0));
   const expected = session.opening_amount + totalSales;

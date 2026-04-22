@@ -271,7 +271,7 @@ export const dashboardStoreStats = async (_req: Request, res: Response) => {
   const stores = await Recyclery.findAll({
     where: { is_active: true },
     include: [{ model: CashRegister, as: "caisses" }],
-    order: [["name"]],
+    order: ["name"],
   });
 
   const storesStats = [];

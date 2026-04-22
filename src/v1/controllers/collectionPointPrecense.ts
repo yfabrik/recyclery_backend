@@ -57,14 +57,14 @@ const dataSchema = z.object({
   is_open: z.coerce.boolean().default(true),
   start_time: z.union([
     z.iso.time().transform((val) => {
-      const [hours, min] = val.split(":");
+      const [hours, min] = val.split(":") as [string, string, ...string[]];
       return new Date(new Date().setHours(+hours, +min));
     }),
     z.coerce.date(),
   ]),
   end_time: z.union([
     z.iso.time().transform((val) => {
-      const [hours, min] = val.split(":");
+      const [hours, min] = val.split(":") as [string, string, ...string[]];
       return new Date(new Date().setHours(+hours, +min));
     }),
     z.coerce.date(),

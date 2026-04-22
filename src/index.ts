@@ -12,12 +12,12 @@ app.set("trust proxy", 1 /* number of proxies between user and server */);
 app.use(helmet());
 app.use(express.json());
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 1000, // limite chaque IP à 1000 requêtes par windowMs (plus permissif)
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? "") || 15 * 60 * 1000, // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS ?? "") || 1000, // limite chaque IP à 1000 requêtes par windowMs (plus permissif)
   message: {
     error: "Trop de requêtes depuis cette IP, veuillez réessayer plus tard.",
   },
-  handler: (req, res, next, options) => {
+  handler: (req, res, _next, options) => {
     logger.error("too many request", {
       method: req?.method,
       url: req?.originalUrl,
@@ -35,15 +35,18 @@ const limiter = rateLimit({
     });
     res.status(options.statusCode).send(options.message);
   },
-  skip: (req, res) => {
+  skip: (req, _res) => {
+    const ip = req.ip ?? "";
+    const whitelist = (process.env.RATE_LIMIT_WHITELIST ?? "")
+      .split(",")
+      .map((v) => v.trim());
+
     // Skip rate limiting en développement pour localhost
     return (
-      req.ip === "127.0.0.1" ||
-      req.ip === "::1" ||
-      req.ip === "::ffff:127.0.0.1" ||
-      process.env.RATE_LIMIT_WHITELIST?.split(",")
-        .map((v) => v.trim())
-        ?.includes(req.ip)
+      ip === "127.0.0.1" ||
+      ip === "::1" ||
+      ip === "::ffff:127.0.0.1" ||
+      whitelist.includes(ip)
     );
   },
 });
@@ -58,7 +61,7 @@ app.use(cors());
 app.use("/api", router);
 
 // Gestion des routes non trouvées
-app.use("*splat", (req, res, next) => {
+app.use("*splat", (_req, _res, next) => {
   return next(new createHttpError[404]("Route non trouvée"));
 });
 app.use(errorHandler);
