@@ -21,6 +21,7 @@ import db from "../../models/index.js";
 
 import { formatWhereDateRange } from "../../helpers.js";
 import { type ModelWhere, type RequestWithUser } from "./types.js";
+import TransactionGlobalPromotion from "../../models/transactionGlobalPromotion.js";
 
 const {
   CashSession,
@@ -69,18 +70,102 @@ const paymentLineSchema = z.object({
 const dataSchema = z.object({
   cash_session_id: idSchema("sesions requis"),
   total_amount: z.coerce.number("argent requis"),
+  total_amount_before_promotion: z.coerce.number("argent requis"),
   // payment_method: z.enum(["cash", "card", "check"]).default("cash"),
   payment_amount: z.coerce.number("argent requis"),
   payments: z.array(paymentLineSchema).optional(),
   customer_postal_code: postalSchema().nullish(),
   items: z.array(itemSchema),
+  change_amount: z.coerce.number().optional(),
+  global_promotion: z.coerce.number().min(0, "La promotion globale doit être supérieure à 0").nullish(),
+  global_promotion_type: z.enum(["percent", "fixed"], "Type de promotion globale invalide").nullish(),
+}).superRefine((data, ctx) => {
+  
+  if (data.global_promotion && !data.global_promotion_type) {
+    ctx.addIssue({ code: "custom", message: "global_promotion_type est requis" });
+  }
+  if (data.global_promotion_type && data.global_promotion) {
+    if(data.global_promotion_type === "percent" && data.global_promotion > 100) 
+    ctx.addIssue({ code: "custom", message: "La promotion globale doit être entre 0 et 100" });
+  }
 });
 type Data = z.infer<typeof dataSchema>;
 type CartItem = z.infer<typeof itemSchema>;
 
-const toAmount = (value?:number|string|null) => Number.parseFloat(String(value ?? 0));
+type GlobalPromotionType = "percent" | "fixed";
 
-const amountsEqual = (a:number|string, b:number|string) => Math.abs(toAmount(a) - toAmount(b)) < 0.001;
+interface GlobalPromotionInput {
+  type: GlobalPromotionType;
+  value: number;
+}
+const toAmount = (value?: number | string | null) => Number.parseFloat(String(value ?? 0));
+
+const amountsEqual = (a: number | string, b: number | string) => Math.abs(toAmount(a) - toAmount(b)) < 0.001;
+
+const getCartTotal = (cart: CartItem[]) => {
+  return cart.reduce(
+    (prev, current) =>
+    (prev +=
+      getCartLinePrice(current)),
+    0,
+  );
+};
+
+const getGlobalPromotionDiscount = (
+  subtotal: number,
+  promotion?: GlobalPromotionInput | null,
+) => {
+  if (!promotion) return 0;
+  const normalizedValue = Math.max(Number(promotion.value) || 0, 0);
+  const discount =
+    promotion.type === "percent"
+      ? subtotal * (Math.min(normalizedValue, 100) / 100)
+      : normalizedValue;
+  return Math.min(discount, subtotal);
+};
+
+const getCartTotalWithGlobalPromotion = (
+  cart: CartItem[],
+  promotion?: GlobalPromotionInput | null,
+) => {
+  const subtotal = getCartTotal(cart);
+  const discount = getGlobalPromotionDiscount(subtotal, promotion);
+  return Math.max(subtotal - discount, 0);
+};
+// shared helper — single source of truth
+export function computeTotalAfterPromotion(
+  before: number,
+  promotion: number | null | undefined,
+  type: "percent" | "fixed" | null | undefined,
+) {
+  const subtotal = Number(before);
+  const promo = Number(promotion ?? 0);
+  if (!promo || !type) return subtotal;
+  if (type === "percent") return subtotal * (1 - promo / 100);
+  return Math.max(subtotal - promo, 0);
+}
+
+const validateSaleAmounts = (data: Data) => {
+  const expectedNet = computeTotalAfterPromotion(
+    data.total_amount_before_promotion,
+    data.global_promotion,
+    data.global_promotion_type,
+  );
+  if (!amountsEqual(expectedNet, data.total_amount)) {
+    throw new createHttpError.BadRequest(
+      "total_amount incohérent avec total_amount_before_promotion et la promotion globale",
+    );
+  }
+  const totalPayments = data.payments?.reduce(
+    (acc, p) => acc + toAmount(p.amount),
+    0,
+  );
+  if (!amountsEqual(totalPayments ?? 0, data.payment_amount)) {
+    throw new createHttpError.BadRequest(
+      "la somme des paiements doit etre egale au total",
+    );
+  }
+};
 
 const normalizePayments = (data: Data) => {
   const explicitPayments = Array.isArray(data.payments) ? data.payments : [];
@@ -94,7 +179,7 @@ const normalizePayments = (data: Data) => {
   if (data.total_amount > totalPayments) {
     // if (!amountsEqual(totalPayments, data.total_amount)) {//TODO FIXME for cash with extra money
     throw new createHttpError.BadRequest(
-      "la somme des paiements doit etre egale au total",
+      "la somme des paiements doit etre au moins egale au total",
     );
   }
 
@@ -150,7 +235,7 @@ export const listTransactions = async (req: Request, res: Response) => {
   if (filter.payment_method) where.payment_method = filter.payment_method;
   if (filter.type) where.transactionType = filter.type;
 
-  const whereStore:  ModelWhere<typeof CashRegister> = {};
+  const whereStore: ModelWhere<typeof CashRegister> = {};
   if (filter.store_id) whereStore.recyclery_id = filter.store_id;
 
   const pagination = {} as { limit: number; offset: number };
@@ -179,6 +264,10 @@ export const listTransactions = async (req: Request, res: Response) => {
       ],
       required: true,
     },
+    {
+      model: TransactionGlobalPromotion,
+      as: "globalPromotions",
+    }
   ];
   if (filter.include.includes("payments"))
     include.push({
@@ -210,6 +299,8 @@ export const listTransactions = async (req: Request, res: Response) => {
     include,
     order: [["createdAt", "DESC"]],
     ...pagination,
+    distinct: true,
+    col: "id",
   });
 
   res.json({
@@ -260,6 +351,7 @@ export const getTransaction = async (req: Request, res: Response) => {
           { model: TransactionPayment, as: "payments" },
         ],
       },
+      { model: TransactionGlobalPromotion, as: "globalPromotions" },
     ],
   });
   res.json({ success: true, transaction });
@@ -270,6 +362,7 @@ export const createTransaction = async (
   res: Response,
 ) => {
   const data = dataSchema.parse(req.body);
+  validateSaleAmounts(data);
   const payments = normalizePayments(data);
   const session = await CashSession.findByPk(data.cash_session_id);
   if (!session) throw new createHttpError[404]("session non trouvé");
@@ -284,14 +377,28 @@ export const createTransaction = async (
 
     const sale = await session.createSalesTransaction(
       {
-        total_amount: data.total_amount, //TODO recalculer coté server mais j'ai la flemme
+        total_amount_before_promotion: data.total_amount_before_promotion,
+        total_amount: data.total_amount,
         payment_method: storedMethod,
         payment_amount: data.payment_amount, //TODO payments.reduce(...)
         customer_postal_code: data?.customer_postal_code || null,
         transactionType: "sell",
+        // change_amount: data.change_amount,
+        // global_promotion: data.global_promotion ?? null,
+        // global_promotion_type: data.global_promotion_type ?? null,
+
       },
       { transaction: t },
     );
+    if (data.global_promotion) {
+      await sale.createGlobalPromotion({
+
+        value: data.global_promotion,
+        type: data.global_promotion_type ?? "percent",
+
+      }, { transaction: t })
+
+    }
     for await (const item of data.items) {
       if (isNaN(+item.barcode)) {
         await sale.createItem(
@@ -389,6 +496,23 @@ export const createTransaction = async (
       );
     }
 
+    await sale.reload({
+      include: [
+        {
+          model: TransactionGlobalPromotion,
+          as: "globalPromotions",
+        },
+        {
+          model: LabeledItem,
+          as: "items",
+        },
+        {
+          model: TransactionPayment,
+          as: "payments",
+        }
+      ],
+      transaction: t,
+    });
     return sale;
   });
 
@@ -520,16 +644,20 @@ export const createRefund = async (
   // });
 
   const result = await db.sequelize.transaction(async (t) => {
-    let refundGiftCard:null | { id: number; code: string; status: string; initial_value?: number; current_balance?: number; type: "recredit_existing" | "issued_new" } = null;
+    let refundGiftCard: null | { id: number; code: string; status: string; initial_value?: number; current_balance?: number; type: "recredit_existing" | "issued_new" } = null;
+
+    const total_amount = refunded.reduce(
+      (prev, current) => (prev += current.toRefundNow),
+      0,
+    );
+
     const refund = await SalesTransaction.create(
       {
         transactionType: "refund",
         created_by: req.user.id,
         cash_session_id: data.cash_session_id,
-        total_amount: refunded.reduce(
-          (prev, current) => (prev += current.toRefundNow),
-          0,
-        ), //data.total_amount,
+        total_amount_before_promotion: total_amount,
+        total_amount: total_amount,// FIXME faut faire la diff avec les promo globales
         payment_method: data.payment_method,
         payment_amount: refunded.reduce(
           (prev, current) => (prev += current.toRefundNow),
@@ -702,7 +830,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
   });
   const filter = filterSchema.parse(req.query);
 
-  const where:  ModelWhere<typeof SalesTransaction> = {};
+  const where: ModelWhere<typeof SalesTransaction> = {};
   const include: Includeable[] = [];
   if (filter.store_id) {
     include.push({
@@ -906,7 +1034,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
           }),
         ),
       by_category:
-         byCategory.map(
+        byCategory.map(
           (row) => ({
             category_id: row.category_id,
             category_name: row.category_name ?? null,
@@ -942,7 +1070,7 @@ export const transactionStatsPostalCode = async (
   const filter = filterSchema.parse(req.query);
   const { store_id, date_from, date_to } = filter;
 
-  const where:  ModelWhere<typeof SalesTransaction> = {};
+  const where: ModelWhere<typeof SalesTransaction> = {};
   const include: Includeable[] = [];
   // include.push({ model: LabeledItem, as: "items" })
   where.customer_postal_code = { [Op.ne]: null };

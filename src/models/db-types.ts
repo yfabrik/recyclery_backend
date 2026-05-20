@@ -28,6 +28,7 @@ import type TransactionItem from "./transactionitem.js";
 import type TransactionPayment from "./transactionpayment.js";
 import type User from "./user.js";
 import type WasteDisposal from "./wasteDisposal.js";
+import type TransactionGlobalPromotion from "./transactionGlobalPromotion.js";
 
 export type Models = {
   Arrival: Arrival;
@@ -54,6 +55,7 @@ export type Models = {
   User: User;
   WasteDisposal: WasteDisposal;
   Skill: Skill;
+  TransactionGlobalPromotion: TransactionGlobalPromotion;
 };
 
 export type ModelStatics = {
