@@ -583,12 +583,26 @@ export const createRefund = async (
         include: [{ model: LabeledItem, as: "items" }],
       },
       { model: LabeledItem, as: "items" },
+      { model: TransactionGlobalPromotion, as:"globalPromotions" }
     ],
   });
   if (!parent)
     throw new createHttpError.NotFound("transaction parent pas trouvé");
   const parentRefunds = parent.refunds ?? [];
   const parentItems = parent.items ?? [];
+  const parentPromoValue =  parent.total_amount_before_promotion-parent.total_amount ;
+  const parentItemsCount = parentItems.reduce((prev, current) => prev + (current.TransactionItem?.quantity ?? 0), 0);
+  const globalPromoPerItem = parentPromoValue / parentItemsCount;
+  
+
+  //item total price / item quatity
+  // miss global prom
+  //1 faut check si item exist,
+  // 2 check si quantity refundable
+  // 3 get global promo value
+  // 4 total items
+  //5 global promo/totalitems
+  //6 (total item price /quantitty)-le 5 * refund quantity
 
   //FIXME on se fait baiser quand les object sont en lot et qu'on rembourse qu'une partie
 
@@ -614,6 +628,8 @@ export const createRefund = async (
         throw new createHttpError.BadRequest(
           "peut pas rembourser plus d'objects que vendu",
         );
+      
+      const toRefundNow =( c.TransactionItem.total_price/ c.TransactionItem.quantity - globalPromoPerItem) * item.quantity
 
       const alreadyRefundedPrice = parentRefunds.reduce((prev, current) => {
         const items = current.items?.filter((i) => i.barcode == item.barcode);
@@ -621,7 +637,8 @@ export const createRefund = async (
           items?.reduce((p, v) => (p += v.TransactionItem?.total_price ?? 0), 0) || 0;
         return prev;
       }, 0);
-      const toRefundNow = getCartLinePrice(item) - alreadyRefundedPrice;
+      // const toRefundNow = parent.items?.find((i) => i.barcode == item.barcode)?.TransactionItem?.total_price ??0 - alreadyRefundedPrice;
+      // const toRefundNow = getCartLinePrice(item) - alreadyRefundedPrice;
 
       return {
         ...item,
@@ -657,7 +674,7 @@ export const createRefund = async (
         created_by: req.user.id,
         cash_session_id: data.cash_session_id,
         total_amount_before_promotion: total_amount,
-        total_amount: total_amount,// FIXME faut faire la diff avec les promo globales
+        total_amount: total_amount,
         payment_method: data.payment_method,
         payment_amount: refunded.reduce(
           (prev, current) => (prev += current.toRefundNow),
