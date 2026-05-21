@@ -10,6 +10,7 @@ import {
   type CreationOptional,
   type ForeignKey,
   type HasManyAddAssociationMixin,
+  type HasManyCreateAssociationMixin,
   type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
@@ -24,12 +25,14 @@ import type LabeledItem from "./labeleditem.ts";
 import type TransactionPayment from "./transactionpayment.ts";
 import type User from "./user.ts";
 import type TransactionItem from "./transactionitem.js";
+import type TransactionGlobalPromotion from "./transactionGlobalPromotion.js";
 
 export default class SalesTransaction extends Model<
   InferAttributes<SalesTransaction>,
   InferCreationAttributes<SalesTransaction>
 > {
   declare id: CreationOptional<number>;
+  declare total_amount_before_promotion: number;
   declare total_amount: number;
   declare payment_method: "cash" | "card" | "check" | "giftcard" | "mixed";
   declare transactionType: "sell" | "refund";
@@ -38,6 +41,10 @@ export default class SalesTransaction extends Model<
   declare customer_email: CreationOptional<string | null>;
   declare customer_postal_code: CreationOptional<string | null>;
   declare status: CreationOptional<"pending" | "completed" | "cancelled">;
+
+  // declare global_promotion: number | null;
+  // declare global_promotion_type: "percent" | "fixed" | null;
+
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -51,11 +58,12 @@ export default class SalesTransaction extends Model<
   declare CashSession?: NonAttribute<CashSession>;
   declare items?: Array<LabeledItem & { TransactionItem?: NonAttribute<TransactionItem> }>
   declare refunds?: NonAttribute<SalesTransaction[]>;
-  declare giftCards?: NonAttribute<Array <GiftCard &{GiftCardTransaction: NonAttribute<GiftCardTransaction>}>>;
+  declare giftCards?: NonAttribute<Array<GiftCard & { GiftCardTransaction: NonAttribute<GiftCardTransaction> }>>;
   declare giftCardMovements?: NonAttribute<GiftCardTransaction[]>;
   declare payments?: NonAttribute<TransactionPayment[]>;
   declare issuedGiftCards?: NonAttribute<GiftCard[]>;
   declare refundIssuedGiftCards?: NonAttribute<GiftCard[]>;
+  declare globalPromotions?: NonAttribute<TransactionGlobalPromotion[]>;
 
   declare getUser: BelongsToGetAssociationMixin<User>;
   declare setUser: BelongsToSetAssociationMixin<User, User["id"]>;
@@ -113,6 +121,7 @@ export default class SalesTransaction extends Model<
     GiftCard,
     GiftCard["id"]
   >;
+  declare createGlobalPromotion: HasManyCreateAssociationMixin<TransactionGlobalPromotion>;
 
   static associate(models: ModelStatics) {
     this.belongsTo(models.User, { foreignKey: "created_by" });
@@ -149,6 +158,10 @@ export default class SalesTransaction extends Model<
       as: "refundIssuedGiftCards",
       foreignKey: "issued_refund_transaction_id",
     });
+    this.hasMany(models.TransactionGlobalPromotion, {
+      as: "globalPromotions",
+      foreignKey: "transaction_id",
+    });
   }
 
   static initModel(sequelize: Sequelize) {
@@ -163,7 +176,7 @@ export default class SalesTransaction extends Model<
           type: DataTypes.INTEGER.UNSIGNED,
           allowNull: true,
         },
-        total_amount: {
+        total_amount_before_promotion: {
           type: DataTypes.DECIMAL(10, 2), //argent total des items dans la transaction
           allowNull: false,
         },
@@ -188,6 +201,24 @@ export default class SalesTransaction extends Model<
               Number(this.payment_amount ?? 0) - Number(this.total_amount ?? 0)
             );
           },
+        },
+        global_promotion: {
+          type: DataTypes.VIRTUAL,
+          get(this: SalesTransaction) {
+            if (!this.globalPromotions) return null;
+            return this.globalPromotions[0]?.value ?? null;
+          },
+        },
+        global_promotion_type: {
+          type: DataTypes.VIRTUAL,
+          get(this: SalesTransaction) {
+            if (!this.globalPromotions) return null;
+            return this.globalPromotions[0]?.type ?? null;
+          },
+        },
+        total_amount: {
+          type: DataTypes.DECIMAL(10, 2),
+          allowNull: false,
         },
         customer_name: DataTypes.STRING,
         customer_email: DataTypes.STRING,
