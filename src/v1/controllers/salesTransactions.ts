@@ -624,12 +624,12 @@ export const createRefund = async (
         throw new createHttpError.InternalServerError(
           "transaction item relation manquante",
         );
-      if (alreadyRefunded && alreadyRefunded + item.quantity > c.TransactionItem.quantity)
+      if (alreadyRefunded &&( item.quantity- alreadyRefunded  > c.TransactionItem.quantity || item.quantity- alreadyRefunded  < 0))
         throw new createHttpError.BadRequest(
           "peut pas rembourser plus d'objects que vendu",
         );
-      
-      const toRefundNow =( c.TransactionItem.total_price/ c.TransactionItem.quantity - globalPromoPerItem) * item.quantity
+        const toRefundquantity = item.quantity - alreadyRefunded;
+      const toRefundNow =( c.TransactionItem.total_price/ c.TransactionItem.quantity - globalPromoPerItem) * toRefundquantity
 
       const alreadyRefundedPrice = parentRefunds.reduce((prev, current) => {
         const items = current.items?.filter((i) => i.barcode == item.barcode);
