@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { Op } from "sequelize";
 
 import db from "../../models/index.js";
+import type { Models } from "../../models/db-types.js";
 
 const {
   LabeledItem,
@@ -56,6 +57,17 @@ type stats = {
   thisMonthSales: number;
 };
 
+const profit = (transactions: Models["SalesTransaction"][]) => {
+  return transactions.reduce((prev, current) => {
+    if (current.transactionType === "sell")
+      (prev += current.total_amount)
+    if (current.transactionType === "refund") {
+      (prev -= current.total_amount)
+    }
+    return prev;
+  }, 0);
+}
+
 export const dashboardStats = async (_req: Request, res: Response) => {
   // Statistiques principales
   const stats = {} as stats;
@@ -68,6 +80,10 @@ export const dashboardStats = async (_req: Request, res: Response) => {
     where: { status: "available" },
   });
 
+  //FIXME buggie at the end of the month
+  const today = new Date()
+  const lastMonthToday = new Date(new Date().setMonth(today.getMonth() - 1));
+  const lastMonthFirstDay = new Date(new Date(lastMonthToday).setDate(1));
   // 3. Articles vendus ce mois - vérifier d'abord les transactions
   const currentMonth = new Date().toISOString().slice(0, 7); // Format YYYY-MM
   const month_transactions = await SalesTransaction.findAll({
@@ -79,10 +95,7 @@ export const dashboardStats = async (_req: Request, res: Response) => {
     return prev + (current.items?.reduce((p, v) => p + (v.TransactionItem?.quantity ?? 0), 0) ?? 0)
   }, 0);
 
-  stats.totalRevenue = month_transactions.reduce(
-    (prev, current) => (prev += current.total_amount),
-    0,
-  );
+  stats.totalRevenue = profit(month_transactions);//TODO ignorer les refunds ? //TODO duplicate
 
   // 5. Dons en attente
   stats.pendingDonations = await Donation.count({
@@ -106,28 +119,17 @@ export const dashboardStats = async (_req: Request, res: Response) => {
   });
 
   // 8. Nombre d'utilisateurs actifs
-  stats.usersCount = await User.count();
+  stats.usersCount = await User.count({ where: { isActive: true } });
 
   // 9. Chiffre d'affaires du mois dernier pour comparaison
-  const lastMonth = new Date();
-  lastMonth.setMonth(lastMonth.getMonth() - 1);
-  const lastMonthStr = lastMonth.toISOString().slice(0, 7);
-
-  // Utiliser les transactions de vente
   const lastMonthRevenueResult = await SalesTransaction.findAll({
-    where: { createdAt: { [Op.between]: [lastMonthStr, currentMonth] } },
+    where: { createdAt: { [Op.between]: [lastMonthFirstDay.toISOString().slice(0, 10), lastMonthToday.toISOString().slice(0, 10)] } },
   });
-  stats.lastMonthRevenue = lastMonthRevenueResult.reduce(
-    (prev, current) => (prev += current.total_amount),
-    0,
-  );
+  stats.lastMonthRevenue = profit(lastMonthRevenueResult);
 
   stats.lastMonthSales = lastMonthRevenueResult.length;
 
-  stats.thisMonthRevenue = month_transactions.reduce(
-    (prev, current) => (prev += current.total_amount),
-    0,
-  );
+  stats.thisMonthRevenue = profit(month_transactions);
   stats.thisMonthSales = month_transactions.length;
 
   res.json({
@@ -276,6 +278,10 @@ export const dashboardStoreStats = async (_req: Request, res: Response) => {
 
   const storesStats = [];
 
+  const today = new Date()
+  const lastMonthToday = new Date(new Date().setMonth(today.getMonth() - 1));
+  const lastMonthFirstDay = new Date(new Date(lastMonthToday).setDate(1));
+
   const currentMonth = new Date().toISOString().slice(0, 7); // Format YYYY-MM
 
   const lastMonth = new Date();
@@ -297,28 +303,43 @@ export const dashboardStoreStats = async (_req: Request, res: Response) => {
           },
           required: true,
         },
+        {
+          model: LabeledItem,
+          as: "items",
+        }
       ],
     });
 
     const currentMonthSales = month_transactions.length;
 
-    const currentRevenue = month_transactions.reduce(
-      (prev, current) => (prev += current.total_amount),
-      0,
-    );
+
+
+    const currentRevenue = profit(month_transactions);
 
     // Utiliser les transactions de vente
     const lastMonthRevenueResult = await SalesTransaction.findAll({
-      where: { createdAt: { [Op.between]: [lastMonthStr, currentMonth] } },
+      where: {
+        createdAt:
+        {
+          [Op.between]:
+            [
+              lastMonthFirstDay.toISOString().slice(0, 10),
+              lastMonthToday.toISOString().slice(0, 10)
+            ]
+        }
+      },
     });
-    const lastMonthRevenue = lastMonthRevenueResult.reduce(
-      (prev, current) => (prev += current.total_amount),
-      0,
-    );
+    const lastMonthRevenue = profit(lastMonthRevenueResult);
 
     const sessions = await CashSession.count({
       where: {
-        createdAt: { [Op.between]: [lastMonthStr, currentMonth] },
+        createdAt: {
+          [Op.between]:
+          [
+            lastMonthFirstDay.toISOString().slice(0, 10),
+            lastMonthToday.toISOString().slice(0, 10)
+          ]
+        },
       },
       include: [
         {
@@ -359,7 +380,7 @@ export const dashboardStoreStats = async (_req: Request, res: Response) => {
         currentMonth: {
           transactions: currentMonthSales,
           revenue: currentRevenue,
-          averageTransaction: 0,
+          averageTransaction: currentRevenue / currentMonthSales,
           sessions: sessions,
         },
         lastMonth: {
@@ -368,6 +389,9 @@ export const dashboardStoreStats = async (_req: Request, res: Response) => {
         },
         items: {
           available: 0, // Temporairement fixé à 0
+          sold: month_transactions.reduce((prev, current) => {
+            return prev + (current.items?.reduce((p, v) => p + (v.TransactionItem?.quantity ?? 0), 0) ?? 0)
+          }, 0),
         },
         growth: {
           revenue: revenueGrowth,
