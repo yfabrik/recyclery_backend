@@ -80,13 +80,13 @@ const dataSchema = z.object({
   global_promotion: z.coerce.number().min(0, "La promotion globale doit être supérieure à 0").nullish(),
   global_promotion_type: z.enum(["percent", "fixed"], "Type de promotion globale invalide").nullish(),
 }).superRefine((data, ctx) => {
-  
+
   if (data.global_promotion && !data.global_promotion_type) {
     ctx.addIssue({ code: "custom", message: "global_promotion_type est requis" });
   }
   if (data.global_promotion_type && data.global_promotion) {
-    if(data.global_promotion_type === "percent" && data.global_promotion > 100) 
-    ctx.addIssue({ code: "custom", message: "La promotion globale doit être entre 0 et 100" });
+    if (data.global_promotion_type === "percent" && data.global_promotion > 100)
+      ctx.addIssue({ code: "custom", message: "La promotion globale doit être entre 0 et 100" });
   }
 });
 type Data = z.infer<typeof dataSchema>;
@@ -225,7 +225,7 @@ export const listTransactions = async (req: Request, res: Response) => {
   const filter = filterSchema.parse(req.query);
 
   const where: ModelWhere<typeof SalesTransaction> = {};
-  // if(filter.transaction_number) where.id={[Op.like]:+filter.transaction_number}
+  if(filter.transaction_number) where.id={[Op.like]:+filter.transaction_number}
   // if (filter.store_id) where.recyclery_id = filter.store_id;
 
   const dateRange = formatWhereDateRange(filter.date_from, filter.date_to);
@@ -583,17 +583,17 @@ export const createRefund = async (
         include: [{ model: LabeledItem, as: "items" }],
       },
       { model: LabeledItem, as: "items" },
-      { model: TransactionGlobalPromotion, as:"globalPromotions" }
+      { model: TransactionGlobalPromotion, as: "globalPromotions" }
     ],
   });
   if (!parent)
     throw new createHttpError.NotFound("transaction parent pas trouvé");
   const parentRefunds = parent.refunds ?? [];
   const parentItems = parent.items ?? [];
-  const parentPromoValue =  parent.total_amount_before_promotion-parent.total_amount ;
+  const parentPromoValue = parent.total_amount_before_promotion - parent.total_amount;
   const parentItemsCount = parentItems.reduce((prev, current) => prev + (current.TransactionItem?.quantity ?? 0), 0);
   const globalPromoPerItem = parentPromoValue / parentItemsCount;
-  
+
 
   //item total price / item quatity
   // miss global prom
@@ -624,12 +624,12 @@ export const createRefund = async (
         throw new createHttpError.InternalServerError(
           "transaction item relation manquante",
         );
-      if (alreadyRefunded &&( item.quantity- alreadyRefunded  > c.TransactionItem.quantity || item.quantity- alreadyRefunded  < 0))
+      if (alreadyRefunded && (item.quantity - alreadyRefunded > c.TransactionItem.quantity || item.quantity - alreadyRefunded < 0))
         throw new createHttpError.BadRequest(
           "peut pas rembourser plus d'objects que vendu",
         );
-        const toRefundquantity = item.quantity - alreadyRefunded;
-      const toRefundNow =( c.TransactionItem.total_price/ c.TransactionItem.quantity - globalPromoPerItem) * toRefundquantity
+      const toRefundquantity = item.quantity - alreadyRefunded;
+      const toRefundNow = (c.TransactionItem.total_price / c.TransactionItem.quantity - globalPromoPerItem) * toRefundquantity
 
       const alreadyRefundedPrice = parentRefunds.reduce((prev, current) => {
         const items = current.items?.filter((i) => i.barcode == item.barcode);
