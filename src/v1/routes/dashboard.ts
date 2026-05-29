@@ -5,6 +5,7 @@ import {
   dashboardCharts,
   dashboardStats,
   dashboardStoreStats,
+  StoreHistoryStats,
 } from "../controllers/dashboard.js";
 
 export const router = Router();
@@ -20,3 +21,5 @@ router.get("/charts", asyncHandler(dashboardCharts));
 
 // Route pour récupérer les statistiques par magasin
 router.get("/stores-stats", asyncHandler(dashboardStoreStats));
+
+router.get("/store-history/:id", asyncHandler(StoreHistoryStats))

@@ -1,8 +1,10 @@
 import type { Request, Response } from "express";
 import { Op } from "sequelize";
 
-import db from "../../models/index.js";
+import createHttpError from "http-errors";
 import type { Models } from "../../models/db-types.js";
+import db from "../../models/index.js";
+import { idSchema } from "../../services/zod.js";
 
 const {
   LabeledItem,
@@ -268,6 +270,125 @@ export const dashboardCharts = async (_req: Request, res: Response) => {
   });
 };
 
+const statsMonth = async (store: Models["Recyclery"], theToday: Date = new Date()) => {
+  const today = theToday
+  const firstDayOfMonth = new Date(new Date(today).setDate(1))
+  const todayLastMonth = new Date(new Date(today).setMonth(today.getMonth() - 1))
+  const firstDayOfLastMonth = new Date(new Date(todayLastMonth).setDate(1))
+
+  const caissesId = store.caisses?.map((caisse) => caisse.id);
+
+  const month_transactions = await SalesTransaction.findAll({
+    where: {
+      createdAt: {
+        [Op.between]: [
+          firstDayOfMonth.toISOString().slice(0, 10),
+          today.toISOString().slice(0, 10),
+        ]
+      },
+    },
+    include: [
+      {
+        model: CashSession,
+        where: {
+          cash_register_id: { [Op.in]: caissesId },
+        },
+        required: true,
+      },
+      {
+        model: LabeledItem,
+        as: "items",
+      }
+    ],
+  });
+
+  const currentMonthSales = month_transactions.length;
+
+
+
+  const currentRevenue = profit(month_transactions);
+
+  // Utiliser les transactions de vente
+  const lastMonthRevenueResult = await SalesTransaction.findAll({
+    where: {
+      createdAt:
+      {
+        [Op.between]:
+          [
+            firstDayOfLastMonth.toISOString().slice(0, 10),
+            todayLastMonth.toISOString().slice(0, 10)
+          ]
+      }
+    },
+    include: [
+      {
+        model: CashSession,
+        where: {
+          cash_register_id: { [Op.in]: caissesId },
+        },
+        required: true,
+      },
+      {
+        model: LabeledItem,
+        as: "items",
+      }
+    ],
+  });
+  const lastMonthRevenue = profit(lastMonthRevenueResult);
+
+  const sessions = await CashSession.count({
+    where: {
+      createdAt: {
+        [Op.between]: [
+          firstDayOfMonth.toISOString().slice(0, 10),
+          today.toISOString().slice(0, 10),
+        ]
+      },
+    },
+    include: [
+      {
+        model: CashRegister,
+        where: { recyclery_id: store.id },
+        required: true,
+      },
+    ],
+  });
+
+  // Calculer l'évolution par rapport au mois dernier
+  const revenueGrowth =
+    lastMonthRevenue > 0
+      ? ((currentRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+      : 0;
+
+  return ({
+    currentMonth: {
+      transactions: currentMonthSales,
+      revenue: currentRevenue,
+      averageTransaction: currentRevenue / currentMonthSales,
+      sessions: sessions,
+      start: firstDayOfMonth,
+      end: today
+    },
+    lastMonth: {
+      transactions: lastMonthRevenueResult.length,
+      revenue: lastMonthRevenue,
+      start: firstDayOfLastMonth,
+      end: todayLastMonth
+    },
+    items: {
+      available: 0, // Temporairement fixé à 0
+      sold: month_transactions.reduce((prev, current) => {
+        return prev + (current.items?.reduce((p, v) => p + (v.TransactionItem?.quantity ?? 0), 0) ?? 0)
+      }, 0),
+    },
+    growth: {
+      revenue: revenueGrowth,
+
+
+    },
+  });
+}
+
 export const dashboardStoreStats = async (_req: Request, res: Response) => {
   // Récupérer tous les magasins actifs
   const stores = await Recyclery.findAll({
@@ -278,131 +399,15 @@ export const dashboardStoreStats = async (_req: Request, res: Response) => {
 
   const storesStats = [];
 
-  const today = new Date()
-  const lastMonthToday = new Date(new Date().setMonth(today.getMonth() - 1));
-  const lastMonthFirstDay = new Date(new Date(lastMonthToday).setDate(1));
-
-  const currentMonth = new Date().toISOString().slice(0, 7); // Format YYYY-MM
-
-  const lastMonth = new Date();
-  lastMonth.setMonth(lastMonth.getMonth() - 1);
-  const lastMonthStr = lastMonth.toISOString().slice(0, 7);
-
   for (const store of stores) {
-    // Statistiques des ventes du mois en cours
-    const caissesId = store.caisses?.map((caisse) => caisse.id);
-    const month_transactions = await SalesTransaction.findAll({
-      where: {
-        createdAt: { [Op.gt]: currentMonth },
-      },
-      include: [
-        {
-          model: CashSession,
-          where: {
-            cash_register_id: { [Op.in]: caissesId },
-          },
-          required: true,
-        },
-        {
-          model: LabeledItem,
-          as: "items",
-        }
-      ],
-    });
-
-    const currentMonthSales = month_transactions.length;
-
-
-
-    const currentRevenue = profit(month_transactions);
-
-    // Utiliser les transactions de vente
-    const lastMonthRevenueResult = await SalesTransaction.findAll({
-      where: {
-        createdAt:
-        {
-          [Op.between]:
-            [
-              lastMonthFirstDay.toISOString().slice(0, 10),
-              lastMonthToday.toISOString().slice(0, 10)
-            ]
-        }
-      },
-    });
-    const lastMonthRevenue = profit(lastMonthRevenueResult);
-
-    const sessions = await CashSession.count({
-      where: {
-        createdAt: {
-          [Op.between]:
-          [
-            lastMonthFirstDay.toISOString().slice(0, 10),
-            lastMonthToday.toISOString().slice(0, 10)
-          ]
-        },
-      },
-      include: [
-        {
-          model: CashRegister,
-          where: { recyclery_id: store.id },
-          required: true,
-        },
-      ],
-    });
-
-    // Ventes des 7 derniers jours
-    // const weeklySales = await database.query(`
-    //       SELECT
-    //         DATE(created_at) as date,
-    //         COUNT(*) as sales_count,
-    //         COALESCE(SUM(total_amount), 0) as revenue
-    //       FROM sales_transactions
-    //       WHERE store_id = ?
-    //       AND DATE(created_at) >= DATE('now', '-7 days')
-    //       GROUP BY DATE(created_at)
-    //       ORDER BY date
-    //     `, [store.id]);
-
-    // Calculer l'évolution par rapport au mois dernier
-
-    const revenueGrowth =
-      lastMonthRevenue > 0
-        ? ((currentRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
-        : 0;
-
     storesStats.push({
       id: store.id,
       name: store.name,
       address: store.address,
       phone: store.phone,
       email: store.email,
-      stats: {
-        currentMonth: {
-          transactions: currentMonthSales,
-          revenue: currentRevenue,
-          averageTransaction: currentRevenue / currentMonthSales,
-          sessions: sessions,
-        },
-        lastMonth: {
-          transactions: lastMonthRevenueResult.length,
-          revenue: lastMonthRevenue,
-        },
-        items: {
-          available: 0, // Temporairement fixé à 0
-          sold: month_transactions.reduce((prev, current) => {
-            return prev + (current.items?.reduce((p, v) => p + (v.TransactionItem?.quantity ?? 0), 0) ?? 0)
-          }, 0),
-        },
-        growth: {
-          revenue: revenueGrowth,
-        },
-        // weeklyData: weeklySales.map(day => ({
-        //   date: day.date,
-        //   sales: day.sales_count,
-        //   revenue: parseFloat(day.revenue || 0)
-        // }))
-      },
-    });
+      stats: await statsMonth(store)
+    })
   }
 
   res.json({
@@ -410,3 +415,34 @@ export const dashboardStoreStats = async (_req: Request, res: Response) => {
     stores: storesStats,
   });
 };
+
+
+
+export const StoreHistoryStats = async (req: Request, res: Response) => {
+  const id = idSchema("store id requis").parse(req.params.id)
+
+
+  const store = await Recyclery.findByPk(id, { include: [{ model: CashRegister, as: "caisses" }] })
+  if (!store) throw new createHttpError.NotFound("magasin pas trouvé")
+
+  const storeStat = []
+  for (let index = 0; index < 12; index++) {
+    const today = new Date;
+    today.setMonth(today.getMonth() - index)
+    storeStat.push(await statsMonth(store, today))
+  }
+
+  res.json({
+    success: true,
+    data: {
+      id: store.id,
+      name: store.name,
+      address: store.address,
+      phone: store.phone,
+      email: store.email,
+      stats: storeStat
+    }
+  })
+
+
+}
