@@ -155,7 +155,7 @@ type QuarterCategoryBreakdown = {
 };
 
 type QuarterInBreakdown = QuarterCategoryBreakdown & {
-  by_soure_type: Record<ArrivalSourceType, QuarterCategoryBreakdown>;
+  by_source_type: Record<ArrivalSourceType, QuarterCategoryBreakdown>;
 };
 
 type SellCategoryBreakdown = Omit<WeightedCategory, "weight_kg"> & {
@@ -437,7 +437,7 @@ export const getQuarterStatIn = async (
             weight_kg: 0,
             subcategories: [],
           })) ?? [],
-        by_soure_type: {
+        by_source_type: {
           point: {
             total_weight_kg: 0,
             categories: [],
@@ -483,7 +483,7 @@ export const getQuarterStatIn = async (
         }
         const sourceType = row.source_type;
         if (sourceType != null) {
-          const sourceTypeRecord = quarter.by_soure_type[sourceType];
+          const sourceTypeRecord = quarter.by_source_type[sourceType];
           sourceTypeRecord.total_weight_kg += row.weight_kg;
           const category = sourceTypeRecord.categories.find(
             (c) => c.id === catId,
