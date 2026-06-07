@@ -63,7 +63,7 @@ const itemSchema = z.object({
   bundleQuantity: z.coerce.number().nullish(),
 });
 const paymentLineSchema = z.object({
-  method: z.enum(["cash", "card", "check", "giftcard"]),
+  method: z.enum(["cash", "card", "check", "giftcard","transfer"]),
   amount: z.coerce.number("montant requis").positive(),
   gift_card_code: z.string().trim().min(1).nullish(),
 });
@@ -210,7 +210,7 @@ export const listTransactions = async (req: Request, res: Response) => {
     session: idSchema().optional(),
     payment_method: z
       .enum(
-        ["cash", "check", "card", "giftcard", "mixed"],
+        ["cash", "check", "card", "giftcard", "mixed","transfer"],
         "methode de payment inconnue",
       )
       .optional(),
@@ -564,10 +564,10 @@ export const createRefund = async (
     cash_session_id: idSchema(),
     total_amount: z.coerce.number("argent requis"),
     payment_method: z
-      .enum(["cash", "card", "check", "giftcard"])
+      .enum(["cash", "card", "check", "giftcard","transfer"])
       .default("cash"),
     refund_method: z
-      .enum(["cash", "card", "check", "giftcard"])
+      .enum(["cash", "card", "check", "giftcard","transfer"])
       .default("cash"),
     gift_card_code: z.string().trim().min(1).nullish(),
     refund_reason: z.string("refund raison requis"),
@@ -886,7 +886,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
     sessions_count: number | string;
   };
   type PaymentMethodRow = {
-    payment_method: "cash" | "card" | "check" | "giftcard" | "mixed";
+    payment_method: "cash" | "card" | "check" | "giftcard" | "mixed"|"transfer";
     total: number | string;
     count: number | string;
   };
