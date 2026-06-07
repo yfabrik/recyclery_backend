@@ -1,6 +1,7 @@
 import {
   col,
   fn,
+  Op,
   type Includeable,
 } from "sequelize";
 
@@ -22,6 +23,7 @@ const {
   SalesTransaction,
   LabeledItem,
   Category,
+  TransactionPayment
 } = db;
 
 // 🧠 GET /cash-sessions
@@ -159,15 +161,55 @@ export const closeCashSession = async (
   if (!session)
     throw new createHttpError[404]("Session not found or already closed");
 
+  // const sales = await TransactionPayment.findAll({
+  //   where: { method: "cash" },
+  //   include: [{
+  //     model: SalesTransaction,
+  //     where: { cash_session_id: id },
+  //     required: true,
+  //     attributes:[]
+  //   }],
+  //   attributes: [
+  //     [fn("COALESCE", fn("SUM", col("amount")), 0), "total_sales"],
+  //   ],
+  //   raw: true,
+  //   // nest: true
+  // })as unknown as{total_sales:number}[];
+  // const sales = await SalesTransaction.findAll({
+  //   where: { cash_session_id: id, payment_method: "cash" },
+  //   attributes: [
+  //     [fn("COALESCE", fn("SUM", col("total_amount")), 0), "total_sales"],
+  //   ],
+  //   raw: true,
+  // })as unknown as{total_sales:number}[];
   const sales = await SalesTransaction.findAll({
-    where: { cash_session_id: id, payment_method: "cash" },
-    attributes: [
-      [fn("COALESCE", fn("SUM", col("total_amount")), 0), "total_sales"],
-    ],
-    raw: true,
-  })as unknown as{total_sales:number}[];
+    where: {
+      payment_method: ["cash", "mixed"],
+      cash_session_id: id
 
-  const totalSales = parseFloat(String(sales[0]?.total_sales ?? 0));
+    }, include: [{
+      model: TransactionPayment,
+      as: "payments",
+    }]
+  })
+
+  //TODO le calcul est similaire dans le front, faut verifier clean le calcul et merge dans utils
+  const totalSales = sales.reduce((prev, current) => {
+    if (current.payment_method == "cash")
+      return current.transactionType == "sell" ?
+        prev + current.total_amount :
+        prev - current.total_amount
+    if (!current.payments || current.payments.filter(payment => payment.method == "cash").length == 0)
+      return prev
+
+    const cashPayment = current.payments.reduce((acc, pay) => pay.method == "cash" ? acc : acc - pay.amount, current.total_amount)
+    return current.transactionType == "sell" ?
+      prev + cashPayment :
+      prev - cashPayment
+
+  }, 0)
+
+  // const totalSales = parseFloat(String(sales[0]?.total_sales ?? 0));
   const expected = session.opening_amount + totalSales;
   const difference = data.closing_amount - expected;
 
