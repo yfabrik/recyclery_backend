@@ -99,6 +99,10 @@ export const listSchedules = async (req: Request, res: Response) => {
     where.category = filter.category;
     // include.push({ model: Recyclery })
   }
+    if (filter.category == "custom") {
+    where.category = filter.category;
+    // include.push({ model: Recyclery })
+  }
 
   const schedules = await TaskSchedule.findAll({
     where,
