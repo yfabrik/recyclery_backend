@@ -8,7 +8,7 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
       },
       weight: {
         type: Sequelize.DECIMAL(10, 2),
@@ -35,28 +35,28 @@ module.exports = {
         defaultValue: "received",
       },
       category_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
         references: {
           model: "Categories",
           key: "id",
         },
       },
       subcategory_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
         references: {
           model: "Categories",
           key: "id",
         },
       },
       collection_point_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
         references: {
           model: "CollectionPoints",
           key: "id",
         },
       },
       processed_by: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
         references: {
           model: "Users",
           key: "id",

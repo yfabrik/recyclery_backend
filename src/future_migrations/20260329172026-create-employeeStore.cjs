@@ -5,14 +5,14 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("employee_store", {
       employeeId: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
         references: {
           model: "Employees",
           key: "id",
         },
       },
       recycleryId: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
         references: {
           model: "Recycleries",
           key: "id",

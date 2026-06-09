@@ -8,7 +8,7 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
       },
       name: {
         type: Sequelize.STRING,
@@ -51,7 +51,7 @@ module.exports = {
         defaultValue: true,
       },
       recyclery_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
         references: {
           model: "Recycleries",
           key: "id",

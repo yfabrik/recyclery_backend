@@ -8,7 +8,7 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
       },
       total_amount: {
         type: Sequelize.DECIMAL(10, 2),
@@ -37,14 +37,14 @@ module.exports = {
         defaultValue: "completed",
       },
       cash_session_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
         references: {
           model: "CashSessions",
           key: "id",
         },
       },
       created_by: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
         references: {
           model: "Users",
           key: "id",

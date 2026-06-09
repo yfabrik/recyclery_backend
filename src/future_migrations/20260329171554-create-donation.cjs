@@ -8,7 +8,7 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
       },
       donor_name: {
         type: Sequelize.STRING,
@@ -33,14 +33,14 @@ module.exports = {
         defaultValue: "pending",
       },
       recyclery_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
         references: {
           model: "Recycleries",
           key: "id",
         },
       },
       received_by: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
         references: {
           model: "Users",
           key: "id",

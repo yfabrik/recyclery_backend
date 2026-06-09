@@ -8,7 +8,7 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
       },
       startDate: {
         type: Sequelize.DATEONLY,
@@ -28,7 +28,7 @@ module.exports = {
         defaultValue: 0,
       },
       category_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED,
         references: {
           model: "Categories",
           key: "id",
