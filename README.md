@@ -4,6 +4,10 @@ Backend API for managing recyclerie (thrift store / recycling center) operations
 
 Built with **Express 5**, **Sequelize**, and **TypeScript** (ESM).
 
+# Recyclerie Backend
+
+![tests](https://github.com/yfabrik/recyclerie_backend/actions/workflows/test.yml/badge.svg)
+
 ## Requirements
 
 - [Node.js](https://nodejs.org/) **22+** (see `.nvmrc`; use `nvm use` if you use nvm)
