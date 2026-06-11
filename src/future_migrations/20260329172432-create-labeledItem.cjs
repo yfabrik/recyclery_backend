@@ -16,6 +16,7 @@ module.exports = {
       weight: {
         type: Sequelize.DECIMAL(10, 2),
         defaultValue: 0,
+        allowNull: false,
       },
       price: {
         type: Sequelize.DECIMAL(10, 2),
@@ -27,10 +28,12 @@ module.exports = {
       condition_state: {
         type: Sequelize.ENUM("excellent", "good", "fair", "poor"),
         defaultValue: "good",
+        allowNull: false,
       },
       status: {
         type: Sequelize.ENUM("available", "sold"),
         defaultValue: "available",
+        allowNull: false,
       },
       category_id: {
         type: Sequelize.INTEGER.UNSIGNED,

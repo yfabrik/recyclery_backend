@@ -13,6 +13,7 @@ module.exports = {
       name: {
         type: Sequelize.STRING,
         unique: true,
+        allowNull: false,
       },
       address: {
         type: Sequelize.TEXT,
@@ -42,6 +43,7 @@ module.exports = {
           "other",
         ),
         defaultValue: "standard",
+        allowNull: false,
       },
       notes: {
         type: Sequelize.TEXT,
@@ -49,6 +51,7 @@ module.exports = {
       is_active: {
         type: Sequelize.BOOLEAN,
         defaultValue: true,
+        allowNull: false,
       },
       recyclery_id: {
         type: Sequelize.INTEGER.UNSIGNED,
@@ -67,7 +70,8 @@ module.exports = {
       },
     });
   },
-  async down(queryInterface, Sequelize) {
+
+  async down(queryInterface) {
     await queryInterface.dropTable("CollectionPoints");
   },
 };

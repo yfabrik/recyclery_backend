@@ -13,6 +13,7 @@ module.exports = {
       disposal_date: {
         type: Sequelize.DATE,
         allowNull: false,
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
       disposal_type: {
         type: Sequelize.ENUM("eco_organism", "landfill", "recycling", "other"),

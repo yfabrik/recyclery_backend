@@ -4,35 +4,40 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("transaction_items", {
-      id: {
-        allowNull: false,
-        autoIncrement: true,
-        primaryKey: true,
-        type: Sequelize.INTEGER.UNSIGNED,
-      },
       transaction_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
+        primaryKey: true,
         references: {
           model: "SalesTransactions",
           key: "id",
         },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       },
       labeled_item_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
+        primaryKey: true,
         references: {
           model: "LabeledItems",
           key: "id",
         },
+        onDelete: "SET NULL",
+        onUpdate: "CASCADE",
       },
       name: {
         type: Sequelize.STRING,
+        allowNull: false,
       },
-
       price: {
-        type: Sequelize.DECIMAL(10, 2),
+        type: Sequelize.DECIMAL,
+        allowNull: false,
       },
       quantity: {
         type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
       },
       promotionValue: {
         type: Sequelize.DECIMAL(5, 2),
@@ -47,7 +52,6 @@ module.exports = {
         type: Sequelize.DECIMAL(10, 2),
         allowNull: true,
       },
-
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -58,7 +62,8 @@ module.exports = {
       },
     });
   },
-  async down(queryInterface, Sequelize) {
+
+  async down(queryInterface) {
     await queryInterface.dropTable("transaction_items");
   },
 };

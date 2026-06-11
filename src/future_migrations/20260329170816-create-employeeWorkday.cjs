@@ -12,18 +12,22 @@ module.exports = {
       },
       day_of_week: {
         type: Sequelize.STRING,
+        allowNull: false,
       },
       time_slot: {
         type: Sequelize.STRING,
       },
       is_working: {
         type: Sequelize.BOOLEAN,
+        allowNull: false,
       },
       start_time: {
         type: Sequelize.TIME,
+        allowNull: false,
       },
       end_time: {
-        type: Sequelize.STRING,
+        type: Sequelize.TIME,
+        allowNull: false,
       },
       week: {
         type: Sequelize.STRING,
@@ -33,10 +37,13 @@ module.exports = {
       },
       employee_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
         references: {
           model: "Employees",
           key: "id",
         },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       },
       createdAt: {
         allowNull: false,
@@ -47,9 +54,15 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.addIndex("EmployeeWorkdays", ["employee_id"]);
+    await queryInterface.addIndex("EmployeeWorkdays", [
+      "employee_id",
+      "day_of_week",
+    ]);
   },
 
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     await queryInterface.dropTable("EmployeeWorkdays");
   },
 };

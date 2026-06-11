@@ -16,6 +16,8 @@ module.exports = {
           model: "Recycleries",
           key: "id",
         },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       },
       collection_point_id: {
         type: Sequelize.INTEGER.UNSIGNED,
@@ -23,10 +25,13 @@ module.exports = {
           model: "CollectionPoints",
           key: "id",
         },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       },
       is_recurring: {
         type: Sequelize.BOOLEAN,
         defaultValue: true,
+        allowNull: false,
       },
       recurrence_pattern: {
         type: Sequelize.ENUM("daily", "weekly", "monthly"),
@@ -64,12 +69,16 @@ module.exports = {
       },
       scheduled_date: {
         type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
       start_time: {
         type: Sequelize.DATE,
+        allowNull: false,
       },
       end_time: {
         type: Sequelize.DATE,
+        allowNull: false,
       },
       createdAt: {
         allowNull: false,
@@ -80,8 +89,14 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.addIndex("TaskSchedules", ["store_id"]);
+    await queryInterface.addIndex("TaskSchedules", ["scheduled_date"]);
+    await queryInterface.addIndex("TaskSchedules", ["status"]);
+    await queryInterface.addIndex("TaskSchedules", ["category"]);
   },
-  async down(queryInterface, Sequelize) {
+
+  async down(queryInterface) {
     await queryInterface.dropTable("TaskSchedules");
   },
 };

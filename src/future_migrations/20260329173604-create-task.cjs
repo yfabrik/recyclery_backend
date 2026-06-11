@@ -16,6 +16,8 @@ module.exports = {
           model: "TaskSchedules",
           key: "id",
         },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       },
       store_id: {
         type: Sequelize.INTEGER.UNSIGNED,
@@ -23,6 +25,8 @@ module.exports = {
           model: "Recycleries",
           key: "id",
         },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       },
       collection_point_id: {
         type: Sequelize.INTEGER.UNSIGNED,
@@ -30,9 +34,12 @@ module.exports = {
           model: "CollectionPoints",
           key: "id",
         },
+        onDelete: "SET NULL",
+        onUpdate: "CASCADE",
       },
       name: {
         type: Sequelize.STRING,
+        allowNull: false,
       },
       description: {
         type: Sequelize.TEXT,
@@ -58,12 +65,15 @@ module.exports = {
       },
       scheduled_date: {
         type: Sequelize.DATE,
+        allowNull: false,
       },
       start_time: {
         type: Sequelize.DATE,
+        allowNull: false,
       },
       end_time: {
         type: Sequelize.DATE,
+        allowNull: false,
       },
       notes: {
         type: Sequelize.TEXT,
@@ -80,8 +90,13 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.addIndex("Tasks", ["schedule_id"]);
+    await queryInterface.addIndex("Tasks", ["scheduled_date"]);
+    await queryInterface.addIndex("Tasks", ["status"]);
   },
-  async down(queryInterface, Sequelize) {
+
+  async down(queryInterface) {
     await queryInterface.dropTable("Tasks");
   },
 };

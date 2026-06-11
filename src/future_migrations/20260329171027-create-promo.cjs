@@ -16,11 +16,12 @@ module.exports = {
       },
       endDate: {
         type: Sequelize.DATEONLY,
-        allowNull: false,
+        allowNull: true,
       },
       isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true,
+        allowNull: false,
       },
       promotionValue: {
         type: Sequelize.DECIMAL(5, 2),

@@ -13,18 +13,21 @@ module.exports = {
       username: {
         type: Sequelize.STRING,
         unique: true,
+        allowNull: false,
       },
       email: {
         type: Sequelize.STRING,
         unique: true,
+        allowNull: false,
       },
       password: {
         type: Sequelize.STRING,
-        allowNull: true, //TODO really ?
+        allowNull: true,
       },
       role: {
-        type: Sequelize.STRING,
+        type: Sequelize.ENUM("admin", "manager", "employee"),
         defaultValue: "employee",
+        allowNull: false,
       },
       phone: {
         type: Sequelize.STRING,
@@ -32,6 +35,7 @@ module.exports = {
       isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true,
+        allowNull: false,
       },
       last_login: {
         type: Sequelize.DATE,
@@ -47,7 +51,7 @@ module.exports = {
     });
   },
 
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     await queryInterface.dropTable("Users");
   },
 };

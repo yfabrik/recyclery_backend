@@ -17,6 +17,7 @@ module.exports = {
       is_active: {
         type: Sequelize.BOOLEAN,
         defaultValue: true,
+        allowNull: false,
       },
       recyclery_id: {
         type: Sequelize.INTEGER.UNSIGNED,

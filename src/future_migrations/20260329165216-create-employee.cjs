@@ -21,6 +21,7 @@ module.exports = {
       isActive: {
         type: Sequelize.BOOLEAN,
         defaultValue: true,
+        allowNull: false,
       },
       phone: {
         type: Sequelize.STRING,
@@ -37,9 +38,13 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.addIndex("Employees", ["nom", "prenom"], {
+      unique: true,
+    });
   },
 
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     await queryInterface.dropTable("Employees");
   },
 };

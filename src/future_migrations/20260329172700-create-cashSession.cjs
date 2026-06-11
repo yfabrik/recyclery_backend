@@ -37,6 +37,7 @@ module.exports = {
       status: {
         type: Sequelize.ENUM("open", "close"),
         defaultValue: "open",
+        allowNull: false,
       },
       notes: {
         type: Sequelize.TEXT,

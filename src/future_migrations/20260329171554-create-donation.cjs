@@ -27,10 +27,12 @@ module.exports = {
       },
       weight: {
         type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
       },
       status: {
         type: Sequelize.ENUM("pending", "accepted", "rejected"),
         defaultValue: "pending",
+        allowNull: false,
       },
       recyclery_id: {
         type: Sequelize.INTEGER.UNSIGNED,
@@ -48,6 +50,8 @@ module.exports = {
       },
       received_at: {
         type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
       createdAt: {
         allowNull: false,
@@ -59,7 +63,8 @@ module.exports = {
       },
     });
   },
-  async down(queryInterface, Sequelize) {
+
+  async down(queryInterface) {
     await queryInterface.dropTable("Donations");
   },
 };
