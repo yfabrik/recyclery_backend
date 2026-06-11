@@ -225,7 +225,7 @@ export const listTransactions = async (req: Request, res: Response) => {
   const filter = filterSchema.parse(req.query);
 
   const where: ModelWhere<typeof SalesTransaction> = {};
-  if(filter.transaction_number) where.id={[Op.like]:+filter.transaction_number}
+  if (filter.transaction_number) where.id = Number(filter.transaction_number);
   // if (filter.store_id) where.recyclery_id = filter.store_id;
 
   const dateRange = formatWhereDateRange(filter.date_from, filter.date_to);
