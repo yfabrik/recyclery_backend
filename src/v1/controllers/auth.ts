@@ -5,12 +5,12 @@ import jwt from "jsonwebtoken";
 import { Op } from "sequelize";
 import * as z from "zod";
 
+import { getJwtSecret } from "../../config/jwt.js";
 import db from "../../models/index.js";
 import { idSchema } from "../../services/zod.js";
 import type { RequestWithUser } from "./types.ts";
 
 const { User } = db;
-const jwtSecret = process.env.JWT_SECRET ?? "dev-secret";
 
 export const register = async (req: Request, res: Response) => {
   const dataSchema = z.object({
@@ -49,7 +49,7 @@ export const register = async (req: Request, res: Response) => {
       role: user.role,
       // recyclery_id: user.recyclery_id,
     },
-    jwtSecret,
+    getJwtSecret(),
     { expiresIn: "24h" },
   );
 
@@ -91,7 +91,7 @@ export const login = async (req: Request, res: Response) => {
 
   user.last_login = new Date();
   await user.save();
-  const token = jwt.sign({ id: user.id }, jwtSecret, {
+  const token = jwt.sign({ id: user.id }, getJwtSecret(), {
     expiresIn: "24h",
   });
 

@@ -1,5 +1,6 @@
 import createHttpError from "http-errors";
 import jwt, { type JwtPayload } from "jsonwebtoken";
+import { getJwtSecret } from "../config/jwt.js";
 import db from "../models/index.js";
 import type { RequestHandler } from "express";
 import type { RequestWithUser } from "../v1/controllers/types.js";
@@ -25,10 +26,7 @@ export const authenticateToken: RequestHandler = async (req, _res, next) => {
     }
 
     // Vérifier le token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "adapemont-secret-key",
-    )as Token;
+    const decoded = jwt.verify(token, getJwtSecret()) as Token;
 
     const userId = decoded.id;
 

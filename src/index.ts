@@ -1,6 +1,9 @@
+import "dotenv/config";
+import { assertJwtSecretConfigured } from "./config/jwt.js";
 import express from "express";
 import db from "./models/index.js";
-import "dotenv/config";
+
+assertJwtSecretConfigured();
 import helmet from "helmet";
 import cron from "node-cron";
 import { generateFutureTasks } from "./services/taskGenerator.js";
