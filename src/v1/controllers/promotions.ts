@@ -54,10 +54,13 @@ export const listPromotions = async (_req: Request, res: Response) => {
 export const createPromotion = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
   const { stores, ...promotionData } = data;
-  const promo = await Promotion.create(promotionData);
-  if (Array.isArray(stores)) {
-    await promo.setStores(stores);
-  }
+  const promo = await db.sequelize.transaction(async (t) => {
+    const created = await Promotion.create(promotionData, { transaction: t });
+    if (Array.isArray(stores)) {
+      await created.setStores(stores, { transaction: t });
+    }
+    return created;
+  });
   await promo.reload({
     include: [
       {
@@ -76,13 +79,15 @@ export const updatePromotion = async (req: Request, res: Response) => {
   const promo = await Promotion.findByPk(id);
   if (!promo) throw new createHttpError.NotFound("promo pas trouvé");
   const { stores, ...promotionData } = data;
-  await promo.update(promotionData);
-  if (Array.isArray(stores)) {
-    await promo.setStores(stores);
-  }
-  if (stores === null) {
-    await promo.setStores([]);
-  }
+  await db.sequelize.transaction(async (t) => {
+    await promo.update(promotionData, { transaction: t });
+    if (Array.isArray(stores)) {
+      await promo.setStores(stores, { transaction: t });
+    }
+    if (stores === null) {
+      await promo.setStores([], { transaction: t });
+    }
+  });
   await promo.reload({
     include: [
       {

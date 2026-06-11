@@ -261,10 +261,11 @@ export const findSchedule = async (req: Request, res: Response) => {
 
 export const createSchedule = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
-
-  const schedule = await TaskSchedule.create({
-    ...data,
-    name: data.name ?? data.category,
+  const schedule = await db.sequelize.transaction(async (t) => {
+    return TaskSchedule.create(
+      { ...data, name: data.name ?? data.category },
+      { transaction: t },
+    );
   });
 
   res.status(201).json({
@@ -285,7 +286,12 @@ export const updateSchedule = async (req: Request, res: Response) => {
   if (!existingSchedules) throw new createHttpError[404]("Planning non trouvé");
 
   if (!data.name) data.name = data.category;
-  await existingSchedules.update({ ...data, name: data.name ?? data.category });
+  await db.sequelize.transaction(async (t) => {
+    await existingSchedules.update(
+      { ...data, name: data.name ?? data.category },
+      { transaction: t },
+    );
+  });
 
   res.json({
     success: true,
@@ -298,7 +304,9 @@ export const deleteSchedule = async (req: Request, res: Response) => {
 
   const scheduleToDelete = await TaskSchedule.findByPk(id);
   if (!scheduleToDelete) throw new createHttpError[404]("Planning non trouvé");
-  await scheduleToDelete.destroy();
+  await db.sequelize.transaction(async (t) => {
+    await scheduleToDelete.destroy({ transaction: t });
+  });
 
   res.json({
     success: true,

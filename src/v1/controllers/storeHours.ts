@@ -171,18 +171,22 @@ export const addHoraire = async (req: Request, res: Response) => {
 
   if (!store) throw new createHttpError.NotFound("magasin pas trouvé");
 
-  const horaires = await TaskSchedule.create({
-    name: "vente-" + store.name,
-
-    category: "vente",
-    priority: "low",
-    recurrence_pattern: "weekly",
-    scheduled_date: data.day_of_week,
-    start_time: new Date(data.start_time),
-    end_time: new Date(data.end_time),
-    notes: null,
-    status: "a",
-    store_id: data.store_id,
+  const horaires = await db.sequelize.transaction(async (t) => {
+    return TaskSchedule.create(
+      {
+        name: "vente-" + store.name,
+        category: "vente",
+        priority: "low",
+        recurrence_pattern: "weekly",
+        scheduled_date: data.day_of_week,
+        start_time: new Date(data.start_time),
+        end_time: new Date(data.end_time),
+        notes: null,
+        status: "a",
+        store_id: data.store_id,
+      },
+      { transaction: t },
+    );
   });
 
   res.json({
@@ -200,17 +204,20 @@ export const updateHoraire = async (req: Request, res: Response) => {
   });
   if (!schedule) throw new createHttpError.NotFound("horaires pas trouvé");
 
-  await schedule.update({
-    name: "vente-" + schedule.Recyclery?.name,
-    // name: "vente-" + data.day_of_week + " " + data.store_id,
-    // recurrence_pattern: "weekly",
-    scheduled_date: data.day_of_week,
-    start_time: new Date(data.start_time),
-    end_time: new Date(data.end_time),
-    notes: null,
-    status: "a",
-    store_id: data.store_id,
-    is_recurring: data.is_recurring,
+  await db.sequelize.transaction(async (t) => {
+    await schedule.update(
+      {
+        name: "vente-" + schedule.Recyclery?.name,
+        scheduled_date: data.day_of_week,
+        start_time: new Date(data.start_time),
+        end_time: new Date(data.end_time),
+        notes: null,
+        status: "a",
+        store_id: data.store_id,
+        is_recurring: data.is_recurring,
+      },
+      { transaction: t },
+    );
   });
 
   res.json({

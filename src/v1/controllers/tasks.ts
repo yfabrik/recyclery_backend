@@ -177,11 +177,9 @@ export const createTask = async (req: Request, res: Response) => {
     name = store.name + "-" + name;
   }
 
-  let schedule = null;
   if (data.recurrence_pattern) {
-    schedule = await TaskSchedule.create({
-      ...data,
-      name,
+    const schedule = await db.sequelize.transaction(async (t) => {
+      return TaskSchedule.create({ ...data, name }, { transaction: t });
     });
     const task = await schedule.getTasks();
 

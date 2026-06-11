@@ -80,12 +80,14 @@ export const detailEcoOrganism = async (req: Request, res: Response) => {
 
 export const createEcoOrganism = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
+  const { inCategories, sellCategories, ...ecoData } = data;
 
-  const created = await EcoOrganism.create({
-    ...data,
+  const created = await db.sequelize.transaction(async (t) => {
+    const eco = await EcoOrganism.create(ecoData, { transaction: t });
+    await eco.setInCategories(inCategories, { transaction: t });
+    await eco.setSellCategories(sellCategories, { transaction: t });
+    return eco;
   });
-  await created.setInCategories(data.inCategories);
-  await created.setSellCategories(data.sellCategories);
   res.status(201).json({
     message: "Éco-organisme créé avec succès",
     eco_organism_id: created.id,
@@ -99,11 +101,12 @@ export const updateEcoOrganism = async (req: Request, res: Response) => {
 
   const eco_organism = await EcoOrganism.findByPk(id);
   if (!eco_organism) throw new createHttpError[404]("eco organisme pas trouvé");
-  await eco_organism.update({
-    ...data,
+  const { inCategories, sellCategories, ...ecoData } = data;
+  await db.sequelize.transaction(async (t) => {
+    await eco_organism.update(ecoData, { transaction: t });
+    await eco_organism.setInCategories(inCategories, { transaction: t });
+    await eco_organism.setSellCategories(sellCategories, { transaction: t });
   });
-  await eco_organism.setInCategories(data.inCategories);
-  await eco_organism.setSellCategories(data.sellCategories);
   res.json({ message: "Éco-organisme mis à jour avec succès", eco_organism });
 };
 

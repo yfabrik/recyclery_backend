@@ -101,14 +101,19 @@ export const createPointPrecense = async (req: Request, res: Response) => {
 
   if (!point) throw new createHttpError.NotFound("point pas trouvé");
 
-  const presence = await TaskSchedule.create({
-    ...data,
-    name: point.name,
-    category: "point",
-    scheduled_date: data.day_of_week,
-    recurrence_pattern: "weekly",
-    collection_point_id: data.collection_point_id,
-    store_id: point.recyclery_id,
+  const presence = await db.sequelize.transaction(async (t) => {
+    return TaskSchedule.create(
+      {
+        ...data,
+        name: point.name,
+        category: "point",
+        scheduled_date: data.day_of_week,
+        recurrence_pattern: "weekly",
+        collection_point_id: data.collection_point_id,
+        store_id: point.recyclery_id,
+      },
+      { transaction: t },
+    );
   });
 
   res.json({
@@ -128,10 +133,15 @@ export const updatePointPrecense = async (req: Request, res: Response) => {
     throw new createHttpError.NotFound("Jours de présence non trouvés");
 
   const { day_of_week, is_present, ...rest } = data;
-  await existing.update({
-    ...rest,
-    is_recurring: is_present,
-    scheduled_date: day_of_week,
+  await db.sequelize.transaction(async (t) => {
+    await existing.update(
+      {
+        ...rest,
+        is_recurring: is_present,
+        scheduled_date: day_of_week,
+      },
+      { transaction: t },
+    );
   });
 
   res.json({

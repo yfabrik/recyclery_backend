@@ -126,7 +126,7 @@ export default class CollectionPoint extends Model<
       {
         sequelize, modelName: "CollectionPoint", hooks: {
           afterUpdate: async (instance, options) => {
-
+//y'a globalement le meme hook dans recyclery.ts
             if (!instance.changed("name") && !instance.changed("is_active") && !instance.changed("recyclery_id")) return
             const propagateUpdates = async (transaction: Transaction) => {
               for (const schedule of await instance.getTaskSchedules({ transaction: transaction ?? null })) {

@@ -298,55 +298,65 @@ export const patchCategory = async (req: Request, res: Response) => {
   const parent = category?.parent;
   const subcategories = category?.subcategories;
 
-  if (typeof data.in == "boolean")
-    if (data.in) {
-      category.IO |= IOValues.IN;
-      if (parent) {
-        parent.IO |= IOValues.IN;
-        await parent.save();
+  await db.sequelize.transaction(async (t) => {
+    if (typeof data.in == "boolean")
+      if (data.in) {
+        category.IO |= IOValues.IN;
+        if (parent) {
+          parent.IO |= IOValues.IN;
+          await parent.save({ transaction: t });
+        }
+      } else {
+        category.IO &= ~IOValues.IN;
+        if (subcategories?.length) {
+          await Promise.all(
+            subcategories.map(async (cat) => {
+              cat.IO &= ~IOValues.IN;
+              await cat.save({ transaction: t });
+            }),
+          );
+        }
       }
-    } else {
-      category.IO &= ~IOValues.IN;
-      subcategories?.map(async (cat) => {
-        cat.IO &= ~IOValues.IN;
-        await cat.save();
-      });
-    }
-  if (typeof data.out == "boolean")
-    if (data.out) {
-      category.IO |= IOValues.OUT;
-      if (parent) {
-        parent.IO |= IOValues.OUT;
-        await parent.save();
+    if (typeof data.out == "boolean")
+      if (data.out) {
+        category.IO |= IOValues.OUT;
+        if (parent) {
+          parent.IO |= IOValues.OUT;
+          await parent.save({ transaction: t });
+        }
+      } else {
+        category.IO &= ~IOValues.OUT;
+        if (subcategories?.length) {
+          await Promise.all(
+            subcategories.map(async (cat) => {
+              cat.IO &= ~IOValues.OUT;
+              await cat.save({ transaction: t });
+            }),
+          );
+        }
       }
-    } else {
-      category.IO &= ~IOValues.OUT;
-      subcategories?.map(async (cat) => {
-        cat.IO &= ~IOValues.OUT;
-        await cat.save();
-      });
-    }
 
-  if (typeof data.sell == "boolean")
-    if (data.sell) {
-      category.IO |= IOValues.SELL;
-      if (parent) {
-        parent.IO |= IOValues.SELL;
-        await parent.save();
+    if (typeof data.sell == "boolean")
+      if (data.sell) {
+        category.IO |= IOValues.SELL;
+        if (parent) {
+          parent.IO |= IOValues.SELL;
+          await parent.save({ transaction: t });
+        }
+      } else {
+        category.IO &= ~IOValues.SELL;
+        if (subcategories?.length) {
+          await Promise.all(
+            subcategories.map(async (cat) => {
+              cat.IO &= ~IOValues.SELL;
+              await cat.save({ transaction: t });
+            }),
+          );
+        }
       }
-    } else {
-      category.IO &= ~IOValues.SELL;
-      subcategories?.map(async (cat) => {
-        cat.IO &= ~IOValues.SELL;
-        await cat.save();
-      });
-    }
 
-  // data.in ? (category.IO |= IOValues.IN) : (category.IO &= ~IOValues.IN);
-  // if (typeof data.out == "boolean")
-  //   data.out ? (category.IO |= IOValues.OUT) : (category.IO &= ~IOValues.OUT);
-
-  await category.save();
+    await category.save({ transaction: t });
+  });
   res.json({
     success: true,
     message: "Catégorie mise à jour avec succès",
