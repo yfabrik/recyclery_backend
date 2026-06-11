@@ -23,7 +23,8 @@ const {
   SalesTransaction,
   LabeledItem,
   Category,
-  TransactionPayment
+  TransactionPayment,
+  TransactionGlobalPromotion
 } = db;
 
 // 🧠 GET /cash-sessions
@@ -240,7 +241,10 @@ export const getSessionById = async (req: Request, res: Response) => {
         include: [{ model: Recyclery, attributes: ["name"] }],
       },
       { model: User, attributes: ["username"] },
-      { model: SalesTransaction },
+      { model: SalesTransaction ,include:[ 
+{ model: TransactionPayment, as: "payments" },
+{ model: TransactionGlobalPromotion,   as: "globalPromotions" }
+]},
     ],
   });
 
