@@ -1,10 +1,9 @@
+import type { Request, Response } from "express";
 import createHttpError from "http-errors";
 import z from "zod";
 import { idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
-import type { Request, Response } from "express";
-
-import db from "../../models/index.js";
 import type { ModelWhere } from "../../models/db-types.js";
+import db from "../../models/index.js";
 
 const { CollectionPoint, TaskSchedule, Recyclery } = db;
 
@@ -25,14 +24,15 @@ const dataSchema = z.object({
       "hospital",
       "other",
     ])
-    .optional().default("standard"),
+    .optional()
+    .default("standard"),
   notes: z.string().nullish().prefault(null),
   recyclery_id: idSchema().nullish().prefault(null),
   is_active: z.coerce.boolean().optional().default(true),
 });
 
 export const listCollectionPoints = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["horaires"];
+  const ALLOWED_INCLUDES = ["horaires"] as const;
   const filterSchema = z.object({
     active_only: z.coerce.boolean().optional(),
     include: z
@@ -46,14 +46,6 @@ export const listCollectionPoints = async (req: Request, res: Response) => {
   const where: ModelWhere<typeof CollectionPoint> = {};
   if (typeof filter.active_only == "boolean")
     where.is_active = filter.active_only;
-
-  // const include=[]
-  // if (filter.include.includes("horaires"))
-  //   include.push({
-  //     model: TaskSchedule,
-  //     as: "horaires",
-  //     required: false
-  //   })
 
   const collection_points = await CollectionPoint.findAll({
     where,
@@ -100,52 +92,22 @@ export const updateCollectionPoint = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
   const id = idSchema().parse(req.params.id);
 
-  const point = await CollectionPoint.findByPk(id, {
-    // include: [
-    //   {
-    //     model: TaskSchedule,
-    //   },
-    // ],
-  });
+  const point = await CollectionPoint.findByPk(id, {});
 
   // Vérifier si le point existe
   if (!point) throw new createHttpError[404]("Point de collecte non trouvé");
 
-  //update les task schedule associé
+  await db.sequelize.transaction(async (t) => {
+    //presence updated in hook
+    await point.update(
+      {
+        ...data,
+      },
+      { transaction: t },
+    );
 
-  // const t = await db.sequelize.transaction()
-
-  //TODO FIXME IMPORTANT URGENT make transaction work
-  await db.sequelize.transaction(async t => {
-    await point.update({
-      ...data,
-    }, { transaction: t });
-
-    await point.reload({ transaction: t })
-  })
-  // try {
-  //   if (
-  //     data.is_active != point.is_active ||
-  //     data.recyclery_id != point.recyclery_id ||
-  //     data.name != point.name
-  //   )
-  //     for (const schedule of point?.TaskSchedules || []) {
-  //       await schedule.update({
-  //         is_recurring: data.is_active,
-  //         store_id: data.recyclery_id,
-  //         name: data.name,
-  //       });
-  //     }
-
-  //   await point.update({
-  //     ...data,
-  //   });
-
-  //   // await t.commit()
-  // } catch (err) {
-  //   // await t.rollback()
-  //   throw err;
-  // }
+    await point.reload({ transaction: t });
+  });
 
   res.json({
     success: true,

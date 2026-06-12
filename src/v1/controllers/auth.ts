@@ -18,7 +18,7 @@ export const register = async (req: Request, res: Response) => {
     email: z.email("email requis"),
     password: z.string("password requis"),
     role: z
-      .enum(["employee", "manager", "admin"])
+      .enum(["employee", "manager", "admin"]) //TODO match USER roles
       .optional()
       .default("employee"),
     recyclery_id: idSchema().optional(),
@@ -26,7 +26,7 @@ export const register = async (req: Request, res: Response) => {
 
   const data = dataSchema.parse(req.body);
 
-  //FIXME
+  //FIXME dans hook create ?
   const existingUser = await User.findOne({
     where: { [Op.or]: [{ email: data.email }, { username: data.username }] },
   });

@@ -12,7 +12,7 @@ import {
   type InferAttributes,
   type InferCreationAttributes,
   type NonAttribute,
-  type Sequelize
+  type Sequelize,
 } from "sequelize";
 import type CashSession from "./cashsession.ts";
 import type { ModelStatics } from "./db-types.ts";
@@ -76,33 +76,32 @@ export default class CashRegister extends Model<
         modelName: "CashRegister",
         indexes: [
           { fields: ["recyclery_id"] },
-          { fields: ["recyclery_id", "name"], unique: true },//=> enforce unique constraint
+          { fields: ["recyclery_id", "name"], unique: true }, //=> enforce unique constraint
         ],
         hooks: {
-
           // Vérifier qu'une autre caisse avec ce nom n'existe pas dans le même magasin
           // beforeUpdate: async (caisse, options) => {
-            // const Registrer = caisse.sequelize.models.CashRegister as ModelStatic<CashRegister> | undefined
-            // if (!Registrer) {
-            //   logger.error(`Task model not found for schedule ${caisse.id}`);
-            //   return;
-            // }
+          // const Registrer = caisse.sequelize.models.CashRegister as ModelStatic<CashRegister> | undefined
+          // if (!Registrer) {
+          //   logger.error(`Task model not found for schedule ${caisse.id}`);
+          //   return;
+          // }
 
-            // const duplicateRegister = await Registrer.findOne({
-            //   where: {
-            //     [Op.and]: [
-            //       { name: caisse.name },
-            //       { recyclery_id: caisse.recyclery_id },
-            //       { id: { [Op.ne]: caisse.id } }, // Exclude current record
-            //     ],
-            //   },
-            // });
+          // const duplicateRegister = await Registrer.findOne({
+          //   where: {
+          //     [Op.and]: [
+          //       { name: caisse.name },
+          //       { recyclery_id: caisse.recyclery_id },
+          //       { id: { [Op.ne]: caisse.id } }, // Exclude current record
+          //     ],
+          //   },
+          // });
 
-            // if (duplicateRegister) {
-            //   throw new createHttpError.Conflict(
-            //     "Une autre caisse avec ce nom existe déjà dans ce magasin",
-            //   );
-            // }
+          // if (duplicateRegister) {
+          //   throw new createHttpError.Conflict(
+          //     "Une autre caisse avec ce nom existe déjà dans ce magasin",
+          //   );
+          // }
           // },
           beforeDestroy: async (caisse) => {
             const sessions = await caisse.countSessions({

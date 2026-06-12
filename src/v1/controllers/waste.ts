@@ -1,11 +1,6 @@
 import type { Request, Response } from "express";
 import createHttpError from "http-errors";
-import {
-  col,
-  fn,
-  literal,
-
-} from "sequelize";
+import { col, fn, literal } from "sequelize";
 import z from "zod";
 
 import { formatWhereDateRange } from "../../helpers.js";
@@ -24,7 +19,7 @@ const dataSchema = z
     eco_organism_id: idSchema().nullish().prefault(null),
     disposal_type: z.enum(["eco_organism", "landfill", "recycling", "other"], {
       message: "type de sortie requis",
-    }),
+    }), //TODO type enum
     weight_kg: z.coerce.number().positive("poid requis"),
     volume_m3: z.coerce.number().nonnegative().nullish().prefault(null),
     transport_method: z.string().nullish().prefault(null),
@@ -108,10 +103,7 @@ export const detailWaste = async (req: Request, res: Response) => {
   res.json({ disposal: waste });
 };
 
-export const createWaste = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const createWaste = async (req: RequestWithUser, res: Response) => {
   const data = dataSchema.parse(req.body);
 
   const waste = await WasteDisposal.create({
@@ -134,18 +126,6 @@ export const updateWaste = async (req: Request, res: Response) => {
   const waste = await WasteDisposal.findByPk(id);
   if (!waste) throw createHttpError[404];
   await waste.update({ ...data });
-  // waste.disposal_date = disposal_date;
-  // waste.disposal_type = disposal_type;
-  // waste.category_id = category_id;
-  // waste.subcategory_id = subcategory_id;
-  // waste.eco_organism_id = eco_organism_id;
-  // waste.weight_kg = weight_kg;
-  // waste.volume_m3 = volume_m3;
-  // waste.transport_method = transport_method;
-  // waste.transport_company = transport_company;
-  // waste.transport_cost = transport_cost;
-  // waste.notes = notes;
-  // await waste.save();
 
   res.json({ message: "Sortie de déchets mise à jour avec succès" });
 };

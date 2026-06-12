@@ -51,7 +51,9 @@ export default class GiftCard extends Model<
   declare issuedTransaction?: NonAttribute<SalesTransaction | null>;
   declare issuedRefundTransaction?: NonAttribute<SalesTransaction | null>;
   declare createdBy?: NonAttribute<User | null>;
-  declare transactions?: NonAttribute<Array<SalesTransaction & { GiftCardTransaction: GiftCardTransaction }>>;
+  declare transactions?: NonAttribute<
+    Array<SalesTransaction & { GiftCardTransaction: GiftCardTransaction }>
+  >;
   declare movements?: NonAttribute<GiftCardTransaction[]>;
   declare paymentUsages?: NonAttribute<TransactionPayment[]>;
 

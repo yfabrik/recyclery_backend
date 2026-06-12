@@ -1,7 +1,6 @@
 import z from "zod";
 import type { ZodTypeAny } from "zod/v3";
 
-
 export const nullishToNull = (schema: ZodTypeAny) =>
   schema.nullish().transform((val) => val ?? null);
 

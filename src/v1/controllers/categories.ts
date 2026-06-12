@@ -82,7 +82,7 @@ const filterPromotionsForStore = (
 };
 
 export const listCategories = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["category", "parent", "promo"];
+  const ALLOWED_INCLUDES = ["category", "parent", "promo"] as const;
   const filtersSchema = z.object({
     include: z
       .string()
@@ -131,6 +131,7 @@ export const listCategories = async (req: Request, res: Response) => {
     include.push({ ...includePromo });
   }
 
+  //TODO can do better
   if (filters.in) where.IO = literal(`Category.IO & ${IOValues.IN} != 0`);
   if (filters.out) where.IO = literal(`Category.IO & ${IOValues.OUT} != 0`);
   if (filters.sell) where.IO = literal(`Category.IO & ${IOValues.SELL} != 0`);
@@ -194,22 +195,6 @@ export const listCategories = async (req: Request, res: Response) => {
     categories,
   });
 };
-// /**
-//  *@deprecated
-//  * @param {import("express").Request} req
-//  * @param {import("express").Response} res
-//  */
-// export const listSubcategories = async (req, res) => {
-//   logger.info("called list subcategorie REMAKE");
-//   const subcategories = await Category.findAll({
-//     where: { parent_id: { [Op.gt]: 0 } },
-//   });
-
-//   res.json({
-//     success: true,
-//     subcategories,
-//   });
-// };
 
 export const createCategorie = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
@@ -297,7 +282,7 @@ export const patchCategory = async (req: Request, res: Response) => {
   if (!category) throw new createHttpError.NotFound("categorie non trouvé");
   const parent = category?.parent;
   const subcategories = category?.subcategories;
-
+  //TODO can do better
   await db.sequelize.transaction(async (t) => {
     if (typeof data.in == "boolean")
       if (data.in) {

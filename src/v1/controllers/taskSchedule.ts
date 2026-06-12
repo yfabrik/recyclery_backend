@@ -1,11 +1,5 @@
 import createHttpError from "http-errors";
-import {
-  col,
-  fn,
-  literal,
-  Op,
-
-} from "sequelize";
+import { col, fn, literal, Op } from "sequelize";
 import * as z from "zod";
 import { idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
@@ -26,7 +20,7 @@ const dataSchema = z.object({
   store_id: idSchema().nullish().prefault(null),
   collection_point_id: idSchema().nullish().prefault(null),
   recurrence_pattern: z
-    .enum(["daily", "weekly", "monthly"])
+    .enum(["daily", "weekly", "monthly"]) //TODO type enum
     .nullish()
     .prefault(null),
   is_recurring: z.coerce.boolean().default(true),
@@ -99,95 +93,13 @@ export const listSchedules = async (req: Request, res: Response) => {
     where.category = filter.category;
     // include.push({ model: Recyclery })
   }
-    if (filter.category == "custom") {
+  if (filter.category == "custom") {
     where.category = filter.category;
     // include.push({ model: Recyclery })
   }
 
   const schedules = await TaskSchedule.findAll({
     where,
-
-    // attributes: {
-    // include: [
-    //   // task_name
-    //   [
-    //     literal(`
-    //   CASE
-    //     WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture magasin'
-    //     WHEN "Task"."name" IS NULL THEN 'Tâche sans nom'
-    //     ELSE "Task"."name"
-    //   END
-    // `),
-    //     "task_name",
-    //   ],
-
-    //   // task_description
-    //   [
-    //     literal(`
-    //   CASE
-    //     WHEN "TaskSchedule"."task_id" IS NULL THEN "TaskSchedule"."notes"
-    //     WHEN "Task"."description" IS NULL THEN "TaskSchedule"."notes"
-    //     ELSE "Task"."description"
-    //   END
-    // `),
-    //     "task_description",
-    //   ],
-
-    //   // task_category
-    //   [
-    //     literal(`
-    //   CASE
-    //     WHEN "TaskSchedule"."task_id" IS NULL THEN 'Ouverture'
-    //     WHEN "Task"."category" IS NULL THEN 'collection_operations'
-    //     ELSE "Task"."category"
-    //   END
-    // `),
-    //     "task_category",
-    //   ],
-
-    //   // task_priority
-    //   [
-    //     literal(`
-    //   CASE
-    //     WHEN "TaskSchedule"."task_id" IS NULL THEN 'medium'
-    //     WHEN "Task"."priority" IS NULL THEN 'high'
-    //     ELSE "Task"."priority"
-    //   END
-    // `),
-    //     "task_priority",
-    //   ],
-
-    //   // estimated_duration
-    //   [
-    //     literal(`
-    //   CASE
-    //     WHEN "TaskSchedule"."task_id" IS NULL THEN 480
-    //     WHEN "Task"."estimated_duration" IS NULL THEN 480
-    //     ELSE "Task"."estimated_duration"
-    //   END
-    // `),
-    //     "estimated_duration",
-    //   ],
-
-    //   // employee_name
-    //   // [
-    //   //   fn("COALESCE", col("User.username"), "Utilisateur inconnu"),
-    //   //   "employee_name",
-    //   // ],
-
-    //   // // employee_email
-    //   // [col("User.email"), "employee_email"],
-
-    //   // // employee_phone
-    //   // [col("User.phone"), "employee_phone"],
-
-    //   // // store_name
-    //   // [
-    //   //   fn("COALESCE", col("Recyclery.name"), "Magasin inconnu"),
-    //   //   "store_name",
-    //   // ],
-    // ],
-    // },
 
     include,
 
@@ -197,26 +109,6 @@ export const listSchedules = async (req: Request, res: Response) => {
     ],
   });
 
-  // Récupérer les employés assignés à chaque tâche du planning
-  // for (let schedule of schedules) {
-  //     const assignedEmployees = await User.findAll({
-  //         include: [
-  //             {
-  //                 model: TaskSchedule,
-  //                 required: true, // INNER JOIN
-  //                 where: {
-  //                     assigned_to: schedule.id,
-  //                 },
-  //             },
-  //         ],
-  //     });
-
-  // schedule.assigned_employees = assignedEmployees;
-
-  // Log pour déboguer
-  // }
-
-  // Logs de débogage pour diagnostiquer le problème
   const result = schedules.map((s) => {
     return {
       ...s.get({ plain: true }),
@@ -315,7 +207,7 @@ export const deleteSchedule = async (req: Request, res: Response) => {
 };
 
 export const getEmployeeSchedule = async (req: Request, res: Response) => {
-  const employee_id = idSchema().parse(req.params.employee_id);
+  // const employee_id = idSchema().parse(req.params.employee_id);
 
   const { start_date, end_date } = z
     .object({

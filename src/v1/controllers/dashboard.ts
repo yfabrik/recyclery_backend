@@ -61,14 +61,13 @@ type stats = {
 
 const profit = (transactions: Models["SalesTransaction"][]) => {
   return transactions.reduce((prev, current) => {
-    if (current.transactionType === "sell")
-      (prev += current.total_amount)
+    if (current.transactionType === "sell") prev += current.total_amount;
     if (current.transactionType === "refund") {
-      (prev -= current.total_amount)
+      prev -= current.total_amount;
     }
     return prev;
   }, 0);
-}
+};
 
 export const dashboardStats = async (_req: Request, res: Response) => {
   // Statistiques principales
@@ -83,21 +82,27 @@ export const dashboardStats = async (_req: Request, res: Response) => {
   });
 
   //FIXME buggie at the end of the month
-  const today = new Date()
+  const today = new Date();
   const lastMonthToday = new Date(new Date().setMonth(today.getMonth() - 1));
   const lastMonthFirstDay = new Date(new Date(lastMonthToday).setDate(1));
   // 3. Articles vendus ce mois - vérifier d'abord les transactions
   const currentMonth = new Date().toISOString().slice(0, 7); // Format YYYY-MM
   const month_transactions = await SalesTransaction.findAll({
     where: { createdAt: { [Op.gt]: currentMonth } },
-    include: [{ model: LabeledItem, as: "items" }]
+    include: [{ model: LabeledItem, as: "items" }],
   });
 
   stats.soldThisMonth = month_transactions.reduce((prev, current) => {
-    return prev + (current.items?.reduce((p, v) => p + (v.TransactionItem?.quantity ?? 0), 0) ?? 0)
+    return (
+      prev +
+      (current.items?.reduce(
+        (p, v) => p + (v.TransactionItem?.quantity ?? 0),
+        0,
+      ) ?? 0)
+    );
   }, 0);
 
-  stats.totalRevenue = profit(month_transactions);//TODO ignorer les refunds ? //TODO duplicate
+  stats.totalRevenue = profit(month_transactions); //TODO ignorer les refunds ? //TODO duplicate
 
   // 5. Dons en attente
   stats.pendingDonations = await Donation.count({
@@ -125,7 +130,14 @@ export const dashboardStats = async (_req: Request, res: Response) => {
 
   // 9. Chiffre d'affaires du mois dernier pour comparaison
   const lastMonthRevenueResult = await SalesTransaction.findAll({
-    where: { createdAt: { [Op.between]: [lastMonthFirstDay.toISOString().slice(0, 10), lastMonthToday.toISOString().slice(0, 10)] } },
+    where: {
+      createdAt: {
+        [Op.between]: [
+          lastMonthFirstDay.toISOString().slice(0, 10),
+          lastMonthToday.toISOString().slice(0, 10),
+        ],
+      },
+    },
   });
   stats.lastMonthRevenue = profit(lastMonthRevenueResult);
 
@@ -270,11 +282,16 @@ export const dashboardCharts = async (_req: Request, res: Response) => {
   });
 };
 
-const statsMonth = async (store: Models["Recyclery"], theToday: Date = new Date()) => {
-  const today = theToday
-  const firstDayOfMonth = new Date(new Date(today).setDate(1))
-  const todayLastMonth = new Date(new Date(today).setMonth(today.getMonth() - 1))
-  const firstDayOfLastMonth = new Date(new Date(todayLastMonth).setDate(1))
+const statsMonth = async (
+  store: Models["Recyclery"],
+  theToday: Date = new Date(),
+) => {
+  const today = theToday;
+  const firstDayOfMonth = new Date(new Date(today).setDate(1));
+  const todayLastMonth = new Date(
+    new Date(today).setMonth(today.getMonth() - 1),
+  );
+  const firstDayOfLastMonth = new Date(new Date(todayLastMonth).setDate(1));
 
   const caissesId = store.caisses?.map((caisse) => caisse.id);
 
@@ -284,7 +301,7 @@ const statsMonth = async (store: Models["Recyclery"], theToday: Date = new Date(
         [Op.between]: [
           firstDayOfMonth.toISOString().slice(0, 10),
           today.toISOString().slice(0, 10),
-        ]
+        ],
       },
     },
     include: [
@@ -298,27 +315,23 @@ const statsMonth = async (store: Models["Recyclery"], theToday: Date = new Date(
       {
         model: LabeledItem,
         as: "items",
-      }
+      },
     ],
   });
 
   const currentMonthSales = month_transactions.length;
-
-
 
   const currentRevenue = profit(month_transactions);
 
   // Utiliser les transactions de vente
   const lastMonthRevenueResult = await SalesTransaction.findAll({
     where: {
-      createdAt:
-      {
-        [Op.between]:
-          [
-            firstDayOfLastMonth.toISOString().slice(0, 10),
-            todayLastMonth.toISOString().slice(0, 10)
-          ]
-      }
+      createdAt: {
+        [Op.between]: [
+          firstDayOfLastMonth.toISOString().slice(0, 10),
+          todayLastMonth.toISOString().slice(0, 10),
+        ],
+      },
     },
     include: [
       {
@@ -331,7 +344,7 @@ const statsMonth = async (store: Models["Recyclery"], theToday: Date = new Date(
       {
         model: LabeledItem,
         as: "items",
-      }
+      },
     ],
   });
   const lastMonthRevenue = profit(lastMonthRevenueResult);
@@ -342,7 +355,7 @@ const statsMonth = async (store: Models["Recyclery"], theToday: Date = new Date(
         [Op.between]: [
           firstDayOfMonth.toISOString().slice(0, 10),
           today.toISOString().slice(0, 10),
-        ]
+        ],
       },
     },
     include: [
@@ -360,34 +373,38 @@ const statsMonth = async (store: Models["Recyclery"], theToday: Date = new Date(
       ? ((currentRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
       : 0;
 
-  return ({
+  return {
     currentMonth: {
       transactions: currentMonthSales,
       revenue: currentRevenue,
       averageTransaction: currentRevenue / currentMonthSales,
       sessions: sessions,
       start: firstDayOfMonth,
-      end: today
+      end: today,
     },
     lastMonth: {
       transactions: lastMonthRevenueResult.length,
       revenue: lastMonthRevenue,
       start: firstDayOfLastMonth,
-      end: todayLastMonth
+      end: todayLastMonth,
     },
     items: {
       available: 0, // Temporairement fixé à 0
       sold: month_transactions.reduce((prev, current) => {
-        return prev + (current.items?.reduce((p, v) => p + (v.TransactionItem?.quantity ?? 0), 0) ?? 0)
+        return (
+          prev +
+          (current.items?.reduce(
+            (p, v) => p + (v.TransactionItem?.quantity ?? 0),
+            0,
+          ) ?? 0)
+        );
       }, 0),
     },
     growth: {
       revenue: revenueGrowth,
-
-
     },
-  });
-}
+  };
+};
 
 export const dashboardStoreStats = async (_req: Request, res: Response) => {
   // Récupérer tous les magasins actifs
@@ -406,8 +423,8 @@ export const dashboardStoreStats = async (_req: Request, res: Response) => {
       address: store.address,
       phone: store.phone,
       email: store.email,
-      stats: await statsMonth(store)
-    })
+      stats: await statsMonth(store),
+    });
   }
 
   res.json({
@@ -416,20 +433,19 @@ export const dashboardStoreStats = async (_req: Request, res: Response) => {
   });
 };
 
-
-
 export const StoreHistoryStats = async (req: Request, res: Response) => {
-  const id = idSchema("store id requis").parse(req.params.id)
+  const id = idSchema("store id requis").parse(req.params.id);
 
+  const store = await Recyclery.findByPk(id, {
+    include: [{ model: CashRegister, as: "caisses" }],
+  });
+  if (!store) throw new createHttpError.NotFound("magasin pas trouvé");
 
-  const store = await Recyclery.findByPk(id, { include: [{ model: CashRegister, as: "caisses" }] })
-  if (!store) throw new createHttpError.NotFound("magasin pas trouvé")
-
-  const storeStat = []
+  const storeStat = [];
   for (let index = 0; index < 12; index++) {
-    const today = new Date;
-    today.setMonth(today.getMonth() - index)
-    storeStat.push(await statsMonth(store, today))
+    const today = new Date();
+    today.setMonth(today.getMonth() - index);
+    storeStat.push(await statsMonth(store, today));
   }
 
   res.json({
@@ -440,9 +456,7 @@ export const StoreHistoryStats = async (req: Request, res: Response) => {
       address: store.address,
       phone: store.phone,
       email: store.email,
-      stats: storeStat
-    }
-  })
-
-
-}
+      stats: storeStat,
+    },
+  });
+};

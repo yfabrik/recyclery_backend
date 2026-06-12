@@ -9,7 +9,7 @@ import {
   recreditGiftCard,
 } from "../../services/giftCards.js";
 import type { Request, Response } from "express";
-import { Op} from "sequelize";
+import { Op } from "sequelize";
 
 import db from "../../models/index.js";
 import { type ModelWhere, type RequestWithUser } from "./types.js";
@@ -78,10 +78,7 @@ export const listGiftCards = async (req: Request, res: Response) => {
   });
 };
 
-export const createGiftCard = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const createGiftCard = async (req: RequestWithUser, res: Response) => {
   const data = issueSchema.parse(req.body);
   const card = await issueGiftCard({
     code: data.code,

@@ -53,7 +53,9 @@ export default class Recyclery extends Model<
   declare LabeledItems?: NonAttribute<LabeledItem[]>;
   declare Donations?: NonAttribute<Donation[]>;
   declare Tasks?: NonAttribute<Task[]>;
-  declare employees?: NonAttribute<Array<Employee & { EmployeeStore: NonAttribute<EmployeeStore> }>>;
+  declare employees?: NonAttribute<
+    Array<Employee & { EmployeeStore: NonAttribute<EmployeeStore> }>
+  >;
   declare manager?: NonAttribute<User | null>;
   declare caisses?: NonAttribute<CashRegister[]>;
   declare CollectionPoints?: NonAttribute<CollectionPoint[]>;
@@ -89,7 +91,7 @@ export default class Recyclery extends Model<
     CashRegister,
     CashRegister["id"]
   >;
-  declare createCaisse: HasManyCreateAssociationMixin<CashRegister>
+  declare createCaisse: HasManyCreateAssociationMixin<CashRegister>;
 
   declare getCollectionPoints: HasManyGetAssociationsMixin<CollectionPoint>;
   declare addCollectionPoint: HasManyAddAssociationMixin<
@@ -177,7 +179,8 @@ export default class Recyclery extends Model<
         indexes: [{ fields: ["is_active"] }, { fields: ["manager_id"] }],
         hooks: {
           afterUpdate: async (instance, options) => {
-            if (!instance.changed("name") && !instance.changed("is_active")) return
+            if (!instance.changed("name") && !instance.changed("is_active"))
+              return;
 
             const run = async (tx: Transaction) => {
               const schedules = await instance.getTaskSchedules({

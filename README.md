@@ -29,23 +29,23 @@ The server listens on **http://0.0.0.0:5000**. API routes are under `/api`.
 
 Copy [`.env.example`](.env.example) to `.env`. The app **will not start** without `JWT_SECRET`.
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `JWT_SECRET` | Yes | Secret for signing JWT tokens |
-| `NODE_ENV` | No | `development` (default), `test`, or `production` |
-| `DB_URL` | Production | Database connection string (see `config/config.json`) |
-| `DEFAULT_USERNAME` | No | Bootstrap admin username when DB is empty |
-| `DEFAULT_MAIL` | No | Bootstrap admin email |
-| `DEFAULT_PASS` | No | Bootstrap admin password |
-| `RATE_LIMIT_WINDOW_MS` | No | Rate limit window in ms (default: 15 min) |
-| `RATE_LIMIT_MAX_REQUESTS` | No | Max requests per IP per window (default: 1000) |
-| `RATE_LIMIT_WHITELIST` | No | Comma-separated IPs exempt from rate limiting |
+| Variable                  | Required   | Description                                           |
+| ------------------------- | ---------- | ----------------------------------------------------- |
+| `JWT_SECRET`              | Yes        | Secret for signing JWT tokens                         |
+| `NODE_ENV`                | No         | `development` (default), `test`, or `production`      |
+| `DB_URL`                  | Production | Database connection string (see `config/config.json`) |
+| `DEFAULT_USERNAME`        | No         | Bootstrap admin username when DB is empty             |
+| `DEFAULT_MAIL`            | No         | Bootstrap admin email                                 |
+| `DEFAULT_PASS`            | No         | Bootstrap admin password                              |
+| `RATE_LIMIT_WINDOW_MS`    | No         | Rate limit window in ms (default: 15 min)             |
+| `RATE_LIMIT_MAX_REQUESTS` | No         | Max requests per IP per window (default: 1000)        |
+| `RATE_LIMIT_WHITELIST`    | No         | Comma-separated IPs exempt from rate limiting         |
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server with hot reload (`tsx --watch`) |
+| Command        | Description                                      |
+| -------------- | ------------------------------------------------ |
+| `npm run dev`  | Start dev server with hot reload (`tsx --watch`) |
 | `npm run jest` | Run tests (in-memory SQLite, `force: true` sync) |
 
 ## Database

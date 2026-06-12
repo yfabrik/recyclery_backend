@@ -3,12 +3,7 @@ import { basename as _basename, dirname, join } from "path";
 import { env as _env } from "process";
 import { Sequelize, type Options } from "sequelize";
 import { fileURLToPath, pathToFileURL } from "url";
-import type {
-  DB,
-  ModelModule,
-  ModelName,
-  ModelStatics
-} from "./db-types.ts";
+import type { DB, ModelModule, ModelName, ModelStatics } from "./db-types.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,7 +32,8 @@ const files = readdirSync(__dirname).filter((file) => {
   if (!file.endsWith(runtimeModelExtension)) return false;
   if (file === basename) return false;
   if (file === "db-types.js" || file === "db-types.ts") return false;
-  if (file === "index.js" || file === "index.ts" || file.startsWith("index.")) return false;
+  if (file === "index.js" || file === "index.ts" || file.startsWith("index."))
+    return false;
   if (file.indexOf(".test.ts") !== -1 || file.indexOf(".test.js") !== -1)
     return false;
   return true;

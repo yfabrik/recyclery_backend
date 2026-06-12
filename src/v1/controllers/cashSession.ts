@@ -1,16 +1,11 @@
-import {
-  col,
-  fn,
-  Op,
-  type Includeable,
-} from "sequelize";
+import { col, fn, type Includeable } from "sequelize";
 
+import type { Request, Response } from "express";
 import createHttpError from "http-errors";
 import * as z from "zod";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
 import { listCaisses } from "./cashRegister.js";
-import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
 import type { ModelWhere, RequestWithUser } from "./types.js";
@@ -24,7 +19,7 @@ const {
   LabeledItem,
   Category,
   TransactionPayment,
-  TransactionGlobalPromotion
+  TransactionGlobalPromotion,
 } = db;
 
 // 🧠 GET /cash-sessions
@@ -32,7 +27,7 @@ export const listCashSessions = async (req: Request, res: Response) => {
   const filterSchema = z.object({
     store_id: z.coerce.number().positive().optional(),
     user_id: z.coerce.number().positive().optional(),
-    status: z.enum(["open", "close"]).optional(),
+    status: z.enum(["open", "close"]).optional(), //TODO use type from model
   });
   const data = filterSchema.parse(req.query);
 
@@ -77,10 +72,7 @@ export const listCashSessions = async (req: Request, res: Response) => {
 };
 
 // 🧠 GET /cash-sessions/active
-export const getActiveSession = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const getActiveSession = async (req: RequestWithUser, res: Response) => {
   const userId = req.user.id;
   const session = await CashSession.findOne({
     where: {
@@ -111,10 +103,7 @@ export const getActiveSession = async (
 };
 
 // 🧠 POST /cash-sessions/open
-export const openCashSession = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const openCashSession = async (req: RequestWithUser, res: Response) => {
   const dataSchema = z.object({
     cash_register_id: idSchema("caisse requise"),
     store_id: idSchema("magasin requis"),
@@ -128,8 +117,12 @@ export const openCashSession = async (
   const existing = await CashSession.findOne({
     where: { user_id: userId, status: "open" },
   });
-  if (existing) throw new createHttpError.Conflict("Already open session");
+  if (existing)
+    throw new createHttpError.Conflict("user already have opened session");
 
+  //TODO check if cashregister work only if it is a real one
+  // could do cashregister.createSession ?
+  // no need for store_id ?
   const session = await CashSession.create({
     user_id: userId,
     ...data,
@@ -139,15 +132,11 @@ export const openCashSession = async (
     success: true,
     session,
     session_id: session.id,
-    // session_number: sessionNumber,
   });
 };
 
 // 🧠 PUT /cash-sessions/:id/close
-export const closeCashSession = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const closeCashSession = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const dataSchema = z.object({
     closing_amount: z.coerce.number().positive("argent requis"),
@@ -186,29 +175,36 @@ export const closeCashSession = async (
   const sales = await SalesTransaction.findAll({
     where: {
       payment_method: ["cash", "mixed"],
-      cash_session_id: id
-
-    }, include: [{
-      model: TransactionPayment,
-      as: "payments",
-    }]
-  })
+      cash_session_id: id,
+    },
+    include: [
+      {
+        model: TransactionPayment,
+        as: "payments",
+      },
+    ],
+  });
 
   //TODO le calcul est similaire dans le front, faut verifier clean le calcul et merge dans utils
   const totalSales = sales.reduce((prev, current) => {
     if (current.payment_method == "cash")
-      return current.transactionType == "sell" ?
-        prev + current.total_amount :
-        prev - current.total_amount
-    if (!current.payments || current.payments.filter(payment => payment.method == "cash").length == 0)
-      return prev
+      return current.transactionType == "sell"
+        ? prev + current.total_amount
+        : prev - current.total_amount;
+    if (
+      !current.payments ||
+      current.payments.filter((payment) => payment.method == "cash").length == 0
+    )
+      return prev;
 
-    const cashPayment = current.payments.reduce((acc, pay) => pay.method == "cash" ? acc : acc - pay.amount, current.total_amount)
-    return current.transactionType == "sell" ?
-      prev + cashPayment :
-      prev - cashPayment
-
-  }, 0)
+    const cashPayment = current.payments.reduce(
+      (acc, pay) => (pay.method == "cash" ? acc : acc - pay.amount),
+      current.total_amount,
+    );
+    return current.transactionType == "sell"
+      ? prev + cashPayment
+      : prev - cashPayment;
+  }, 0);
 
   // const totalSales = parseFloat(String(sales[0]?.total_sales ?? 0));
   const expected = session.opening_amount + totalSales;
@@ -241,34 +237,22 @@ export const getSessionById = async (req: Request, res: Response) => {
         include: [{ model: Recyclery, attributes: ["name"] }],
       },
       { model: User, attributes: ["username"] },
-      { model: SalesTransaction ,include:[ 
-{ model: TransactionPayment, as: "payments" },
-{ model: TransactionGlobalPromotion,   as: "globalPromotions" }
-]},
+      {
+        model: SalesTransaction,
+        include: [
+          { model: TransactionPayment, as: "payments" },
+          { model: TransactionGlobalPromotion, as: "globalPromotions" },
+          { model: LabeledItem, as: "items" },
+        ],
+      },
     ],
   });
 
   if (!session) throw new createHttpError.NotFound("session pas trouvé");
 
-  // transactions with joined transaction_lines (transaction_items) info
-  // const transactions = await SalesTransaction.findAll({
-  //   where: { cash_session_id: id },
-  //   include: [
-  //     {
-  //       model: LabeledItem,
-  //       as: "items",
-  //     },
-  //   ],
-  //   order: [["createdAt", "DESC"]],
-  // });
-
   res.json({
     success: true,
     session,
-    // {
-    //   ...session.toJSON(),
-    //   transactions
-    // }
   });
 };
 

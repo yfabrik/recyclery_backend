@@ -165,7 +165,7 @@ describe("categories controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         categories: expect.arrayContaining([
-          expect.objectContaining({parent_id:expect.anything()})
+          expect.objectContaining({ parent_id: expect.anything() }),
         ]),
         success: true,
       }),

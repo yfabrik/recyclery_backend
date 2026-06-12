@@ -19,7 +19,7 @@ export default class TransactionPayment extends Model<
   InferCreationAttributes<TransactionPayment>
 > {
   declare id: CreationOptional<number>;
-  declare method: "cash" | "card" | "check" | "giftcard"|"transfer";
+  declare method: "cash" | "card" | "check" | "giftcard" | "transfer";
   declare amount: number;
   declare metadata: CreationOptional<Record<string, unknown> | null>;
   declare createdAt: CreationOptional<Date>;
@@ -55,7 +55,7 @@ export default class TransactionPayment extends Model<
           autoIncrement: true,
         },
         method: {
-          type: DataTypes.ENUM("cash", "card", "check", "giftcard","transfer"),
+          type: DataTypes.ENUM("cash", "card", "check", "giftcard", "transfer"),
           allowNull: false,
         },
         amount: {

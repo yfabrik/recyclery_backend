@@ -1,9 +1,6 @@
 import type { Request, Response } from "express";
 import createHttpError from "http-errors";
-import {
-  Op,
-  type Includeable,
-} from "sequelize";
+import { Op, type Includeable } from "sequelize";
 import * as z from "zod";
 
 import { formatWhereDateRange } from "../../helpers.js";
@@ -50,7 +47,7 @@ const dataSchema = z.object({
 });
 
 export const listTasks = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["user", "store"];
+  const ALLOWED_INCLUDES = ["user", "store"] as const;
   const includeSchema = z.object({
     include: z
       .string()
@@ -58,7 +55,7 @@ export const listTasks = async (req: Request, res: Response) => {
       .transform((val) => (val ? val.split(",") : []))
       .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
     category: z
-      .enum(["point", "vente", "collection", "custom"])
+      .enum(["point", "vente", "collection", "custom"]) //TODO type enum
       .nullable()
       .optional()
       .default(
@@ -149,15 +146,15 @@ export const detailTask = async (req: Request, res: Response) => {
   if (!tasks) throw new createHttpError[404]("Tâche non trouvée");
 
   // Parser les champs JSON
-  const task = {
-    ...tasks,
-    required_skills: tasks?.required_skills
-      ? JSON.parse(tasks.required_skills)
-      : [],
-    equipment_needed: tasks?.equipment_needed
-      ? JSON.parse(tasks.equipment_needed)
-      : [],
-  };
+  // const task = {
+  //   ...tasks,
+  //   required_skills: tasks?.required_skills
+  //     ? JSON.parse(tasks.required_skills)
+  //     : [],
+  //   equipment_needed: tasks?.equipment_needed
+  //     ? JSON.parse(tasks.equipment_needed)
+  //     : [],
+  // };
 
   res.json({
     success: true,

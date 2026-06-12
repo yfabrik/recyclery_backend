@@ -31,7 +31,7 @@ const dataSchema = z.object({
 });
 
 export const listEcoOrganism = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["waste", "incategories", "sellcategories"];
+  const ALLOWED_INCLUDES = ["waste", "incategories", "sellcategories"] as const;
   const filterSchema = z.object({
     active: z.coerce.boolean().optional(),
     include: z
@@ -55,19 +55,6 @@ export const listEcoOrganism = async (req: Request, res: Response) => {
 
   res.json({ eco_organisms });
 };
-/**
- * @deprecated
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- */
-// export const listActiveEcoOrganism = async (req, res) => {
-//   logger.warn("use list active eco organise TO REMOVE");
-//   req.query.active = "true";
-//   return listEcoOrganism(req, res);
-//   // const eco_organisms = await EcoOrganism.findAll({ where: { is_active } });
-
-//   // res.json({ eco_organisms });
-// };
 
 export const detailEcoOrganism = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
@@ -173,9 +160,18 @@ type QuarterSellBreakdown = {
   categories: SellCategoryBreakdown[];
 };
 
-type QuarterOutByEcoOrgMap = Map<EcoOrgId, Record<quarterLabel, QuarterCategoryBreakdown>>;
-type QuarterInByEcoOrgMap = Map<EcoOrgId, Record<quarterLabel, QuarterInBreakdown>>;
-type QuarterSellByEcoOrgMap = Map<EcoOrgId, Record<quarterLabel, QuarterSellBreakdown>>;
+type QuarterOutByEcoOrgMap = Map<
+  EcoOrgId,
+  Record<quarterLabel, QuarterCategoryBreakdown>
+>;
+type QuarterInByEcoOrgMap = Map<
+  EcoOrgId,
+  Record<quarterLabel, QuarterInBreakdown>
+>;
+type QuarterSellByEcoOrgMap = Map<
+  EcoOrgId,
+  Record<quarterLabel, QuarterSellBreakdown>
+>;
 
 type EcoOrgQuarterStatsResponse = Pick<
   InstanceType<typeof EcoOrganism>,
@@ -298,7 +294,10 @@ export const getQuarterStatOut = async (
         raw: true,
       })) as unknown as WasteQuarterRow[];
 
-      let byEcoOrg = new Map<EcoOrgId, Record<quarterLabel, QuarterCategoryBreakdown>>();
+      let byEcoOrg = new Map<
+        EcoOrgId,
+        Record<quarterLabel, QuarterCategoryBreakdown>
+      >();
 
       for (const row of rows) {
         const ecoOrgId = row.eco_organism_id;
@@ -590,10 +589,7 @@ export const getQuarterStatSell = async (
 
   const byEcoOrg = new Map() as QuarterSellByEcoOrgMap;
   for (const ecoOrg of sellCategoryLinks) {
-    const quarterRecord = {} as Record<
-      quarterLabel,
-      QuarterSellBreakdown
-    >;
+    const quarterRecord = {} as Record<quarterLabel, QuarterSellBreakdown>;
     for (const range of quarterRanges) {
       quarterRecord[range.label] = {
         total_weight_kg: 0,

@@ -123,11 +123,12 @@ const PERMISSIONS = {
 type UserRole = keyof typeof PERMISSIONS;
 type PermissionMethod = keyof ReturnType<typeof modulePerms>;
 
-
 export const hasPermissions: RequestHandler = (req, _res, next) => {
   const requestWithUser = req as RequestWithUser;
   const user = requestWithUser.user;
-  const module = req.originalUrl.split("/")[2]!.split("?")[0] as keyof typeof PERMISSIONS["admin"];
+  const module = req.originalUrl
+    .split("/")[2]!
+    .split("?")[0] as keyof (typeof PERMISSIONS)["admin"];
 
   if (!user) throw new createHttpError.Unauthorized("user not found");
   let method: PermissionMethod;

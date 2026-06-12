@@ -4,7 +4,7 @@ import type { Models } from "../models/db-types.js";
 
 const { CashRegister, CashSession, Recyclery } = db;
 
-export const listCaisses = async (store_id:Models["Recyclery"]["id"]) => {
+export const listCaisses = async (store_id: Models["Recyclery"]["id"]) => {
   const registers = await CashRegister.findAll({
     attributes: [
       "id",
@@ -41,13 +41,12 @@ export const listCaisses = async (store_id:Models["Recyclery"]["id"]) => {
   return registers;
 };
 
-
 /**
  * @deprecated ?? used nowhere
- * @param user_id 
- * @returns 
+ * @param user_id
+ * @returns
  */
-export const findOpenSession = (user_id:Models["User"]["id"]) => {
+export const findOpenSession = (user_id: Models["User"]["id"]) => {
   const existingSession = CashSession.findAll({
     where: { user_id: user_id, status: "open" },
   });

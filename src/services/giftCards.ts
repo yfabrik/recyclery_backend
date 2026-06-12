@@ -55,7 +55,7 @@ type GiftCreate = {
   note?: string | null;
   recipientName?: string | null;
   recipientEmail?: string | null;
-  metadata?: Record<string,unknown> | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 export const issueGiftCard = async ({
@@ -144,8 +144,8 @@ type GiftCharge = {
   giftCardId: InstanceType<typeof GiftCard>["id"];
   salesTransactionId: InstanceType<typeof SalesTransaction>["id"];
   amount: number | string;
-  createdBy: InstanceType<typeof User>["id"] ;
-  metadata?: Record<string,unknown> | null;
+  createdBy: InstanceType<typeof User>["id"];
+  metadata?: Record<string, unknown> | null;
 };
 export const chargeGiftCard = async ({
   giftCardId,

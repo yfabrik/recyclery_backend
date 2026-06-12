@@ -45,7 +45,7 @@ router.get(
       params: req.params,
       referer: req?.headers?.referer,
     });
-    const { scheduleId } = req.params;
+    // const { scheduleId } = req.params;
 
     // const query = `
     //   SELECT u.id, u.username, u.role, u.email

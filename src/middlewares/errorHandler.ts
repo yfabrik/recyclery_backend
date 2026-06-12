@@ -10,9 +10,15 @@ import { ZodError } from "zod";
 import type { ErrorRequestHandler } from "express";
 const { JsonWebTokenError, NotBeforeError, TokenExpiredError } = jwt;
 
-
-export const errorHandler: ErrorRequestHandler = (err:unknown, req, res, _next) => {
-  const requestWithUser = req as typeof req & { user?: { id?: string | number } };
+export const errorHandler: ErrorRequestHandler = (
+  err: unknown,
+  req,
+  res,
+  _next,
+) => {
+  const requestWithUser = req as typeof req & {
+    user?: { id?: string | number };
+  };
   const errorLike = (typeof err === "object" && err !== null ? err : {}) as {
     message?: string;
     status?: number;

@@ -37,7 +37,9 @@ export default class Employee extends Model<
   declare updatedAt: CreationOptional<Date>;
 
   declare EmployeeWorkdays?: NonAttribute<EmployeeWorkdays[]>;
-  declare stores?: NonAttribute<Array<Recyclery &{EmployeeStore:NonAttribute<EmployeeStore>}>>;
+  declare stores?: NonAttribute<
+    Array<Recyclery & { EmployeeStore: NonAttribute<EmployeeStore> }>
+  >;
   declare Tasks?: NonAttribute<Task[]>;
   declare TaskSchedules?: NonAttribute<TaskSchedule[]>;
   declare skills?: NonAttribute<Skill[]>;
@@ -143,9 +145,9 @@ export default class Employee extends Model<
       {
         sequelize,
         modelName: "Employee",
-        indexes:[ 
-          { fields: ["nom", "prenom"], unique: true },//=> enforce unique constraint
-        ]
+        indexes: [
+          { fields: ["nom", "prenom"], unique: true }, //=> enforce unique constraint
+        ],
       },
     );
   }

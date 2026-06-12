@@ -124,17 +124,29 @@ export default class CollectionPoint extends Model<
         updatedAt: DataTypes.DATE,
       },
       {
-        sequelize, modelName: "CollectionPoint", hooks: {
+        sequelize,
+        modelName: "CollectionPoint",
+        hooks: {
           afterUpdate: async (instance, options) => {
-//y'a globalement le meme hook dans recyclery.ts
-            if (!instance.changed("name") && !instance.changed("is_active") && !instance.changed("recyclery_id")) return
+            //y'a globalement le meme hook dans recyclery.ts
+            if (
+              !instance.changed("name") &&
+              !instance.changed("is_active") &&
+              !instance.changed("recyclery_id")
+            )
+              return;
             const propagateUpdates = async (transaction: Transaction) => {
-              for (const schedule of await instance.getTaskSchedules({ transaction: transaction ?? null })) {
-                await schedule.update({
-                  is_recurring: instance.is_active,
-                  store_id: instance.recyclery_id,
-                  name: instance.name,
-                }, { transaction });
+              for (const schedule of await instance.getTaskSchedules({
+                transaction: transaction ?? null,
+              })) {
+                await schedule.update(
+                  {
+                    is_recurring: instance.is_active,
+                    store_id: instance.recyclery_id,
+                    name: instance.name,
+                  },
+                  { transaction },
+                );
               }
             };
 
@@ -143,11 +155,12 @@ export default class CollectionPoint extends Model<
               return;
             }
 
-            await instance.sequelize.transaction(async t => {
+            await instance.sequelize.transaction(async (t) => {
               await propagateUpdates(t);
             });
-          }
-        }
-      })
+          },
+        },
+      },
+    );
   }
 }

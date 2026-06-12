@@ -97,7 +97,7 @@ export default class TaskSchedule extends Model<
     this.belongsTo(models.CollectionPoint, {
       foreignKey: "collection_point_id",
     });
-    this.belongsToMany(models.Employee, { through: "employee_schedule" });
+    this.belongsToMany(models.Employee, { through: "employee_schedule" }); //TODO really GOOD ?
   }
 
   static initModel(sequelize: Sequelize) {
@@ -147,8 +147,7 @@ export default class TaskSchedule extends Model<
       schedule: TaskSchedule,
       tasksToCreate: InferCreationAttributes<Task>[],
       reason = "",
-      options?: CreateOptions<TaskSchedule>
-
+      options?: CreateOptions<TaskSchedule>,
     ) => {
       if (tasksToCreate.length === 0) return;
       const Task = schedule.sequelize.models.Task as ModelStatic<Task>;
@@ -156,7 +155,9 @@ export default class TaskSchedule extends Model<
         logger.error(`Task model not found for schedule ${schedule.id}`);
         return;
       }
-      await Task.bulkCreate(tasksToCreate, { transaction: options?.transaction ?? null });
+      await Task.bulkCreate(tasksToCreate, {
+        transaction: options?.transaction ?? null,
+      });
       const reasonText = reason ? ` ${reason}` : "";
       logger.info(
         `Created ${tasksToCreate.length} task(s) for schedule ${schedule.id}${reasonText} with pattern ${schedule.recurrence_pattern || "none"}`,
@@ -180,14 +181,14 @@ export default class TaskSchedule extends Model<
       futureTasks: Task[],
       scheduleId: TaskSchedule["id"],
       reason: string,
-      options?: CreateOptions<TaskSchedule>
-
+      options?: CreateOptions<TaskSchedule>,
     ) => {
       if (futureTasks.length === 0) return;
       await Task.destroy({
         where: {
           id: { [Op.in]: futureTasks.map((t) => t.id) },
-        }, transaction: options?.transaction ?? null
+        },
+        transaction: options?.transaction ?? null,
       });
       logger.info(
         `Deleted ${futureTasks.length} future task(s) for schedule ${scheduleId} because ${reason}`,
@@ -198,7 +199,7 @@ export default class TaskSchedule extends Model<
       Task: ModelStatic<Task>,
       schedule: TaskSchedule,
       now: Date,
-      options?: InstanceUpdateOptions<TaskSchedule>
+      options?: InstanceUpdateOptions<TaskSchedule>,
     ) => {
       const fieldsToUpdate: Partial<InferAttributes<Task>> = {};
       const updatableFields = [
@@ -271,7 +272,7 @@ export default class TaskSchedule extends Model<
           schedule_id: schedule.id,
           scheduled_date: { [Op.gte]: now },
         },
-        transaction: options?.transaction ?? null
+        transaction: options?.transaction ?? null,
       });
       const updatedCount = result[0];
       if (updatedCount > 0) {
@@ -307,7 +308,11 @@ export default class TaskSchedule extends Model<
         hourly_rate: DataTypes.DECIMAL,
         notes: DataTypes.TEXT,
         status: DataTypes.STRING,
-        scheduled_date: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+        scheduled_date: {
+          type: DataTypes.DATE,
+          allowNull: false,
+          defaultValue: DataTypes.NOW,
+        },
         start_time: { type: DataTypes.DATE, allowNull: false },
         end_time: { type: DataTypes.DATE, allowNull: false },
         // @ts-expect-error  sequelize virtual marqued as nonattribute
@@ -346,7 +351,7 @@ export default class TaskSchedule extends Model<
               baseDate,
               isRecurring,
               schedule,
-            )
+            );
             await createTasksFrom(schedule, tasksToCreate, "", options);
           },
           beforeUpdate: async (data) => {
@@ -379,7 +384,7 @@ export default class TaskSchedule extends Model<
                 futureTasks,
                 schedule.id,
                 "is_recurring changed to false",
-                options
+                options,
               );
               return;
             }
@@ -398,7 +403,7 @@ export default class TaskSchedule extends Model<
                 schedule,
                 tasksToCreate,
                 "because is_recurring changed to true with pattern",
-                options
+                options,
               );
               return;
             }
@@ -408,7 +413,7 @@ export default class TaskSchedule extends Model<
                 futureTasks,
                 schedule.id,
                 `${patternChanged ? "recurrence_pattern" : "scheduled_date"} changed`,
-                options
+                options,
               );
               if (isRecurring) {
                 const baseDate = new Date(schedule.scheduled_date || now);
@@ -421,7 +426,7 @@ export default class TaskSchedule extends Model<
                   schedule,
                   tasksToCreate,
                   `with new ${patternChanged ? "recurrence_pattern" : "scheduled_date"}`,
-                  options
+                  options,
                 );
               }
               return;
@@ -441,7 +446,7 @@ export default class TaskSchedule extends Model<
                     schedule_id: schedule.id,
                     scheduled_date: { [Op.lt]: now },
                   },
-                  transaction: options.transaction ?? null
+                  transaction: options.transaction ?? null,
                 },
               );
               const updatedCount = result[0];

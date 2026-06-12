@@ -1,12 +1,7 @@
 import createHttpError from "http-errors";
 
 import { findUserByEmail } from "../../services/users.js";
-import {
-  col,
-  fn,
-  Op,
-  type Includeable,
-} from "sequelize";
+import { col, fn, Op, type Includeable } from "sequelize";
 import * as z from "zod";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
@@ -80,11 +75,11 @@ export const findUserById = async (req: Request, res: Response) => {
 
 export const createUser = async (req: Request, res: Response) => {
   const dataSchema = z.object({
-    username: z.string("Nom d'utilisateur obligatoire"),
+    username: z.string("Nom d'utilisateur obligatoire").trim().nonempty(),
     email: z.email(" email obligatoire"),
     password: z.string(" mot de passe  obligatoire"),
     role: z
-      .enum(["employee", "manager", "admin"])
+      .enum(["employee", "manager", "admin"]) //TODO type enum
       .optional()
       .default("employee"),
     managedStores: z.array(idSchema()).nullish(),
@@ -120,10 +115,10 @@ export const createUser = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const dataSchema = z.object({
-    username: z.string("Nom d'utilisateur obligatoire"),
+    username: z.string("Nom d'utilisateur obligatoire").trim().nonempty(),
     email: z.email(" email obligatoire"),
     role: z
-      .enum(["employee", "manager", "admin"])
+      .enum(["employee", "manager", "admin"]) //TODO type enum
       .optional()
       .default("employee"),
     managedStores: z.array(idSchema()).nullish(),

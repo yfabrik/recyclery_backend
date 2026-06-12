@@ -7,7 +7,7 @@ type AsyncMiddleware<TReq extends Request = Request> = (
   next: NextFunction,
 ) => Promise<unknown> | unknown;
 
-export const asyncHandler = <TReq extends Request = Request>(
-  fn: AsyncMiddleware<TReq>,
-): RequestHandler => (req, res, next) =>
-  Promise.resolve(fn(req as TReq, res, next)).catch(next);
+export const asyncHandler =
+  <TReq extends Request = Request>(fn: AsyncMiddleware<TReq>): RequestHandler =>
+  (req, res, next) =>
+    Promise.resolve(fn(req as TReq, res, next)).catch(next);

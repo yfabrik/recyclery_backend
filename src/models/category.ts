@@ -147,8 +147,8 @@ export default class Category extends Model<
         modelName: "Category",
         indexes: [
           { fields: ["parent_id"] },
-          { fields: ["parent_id", "name"], unique: true },//=> enforce unique constraint],
-        ]
+          { fields: ["parent_id", "name"], unique: true }, //=> enforce unique constraint],
+        ],
       },
     );
   }

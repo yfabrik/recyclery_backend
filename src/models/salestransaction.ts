@@ -34,7 +34,13 @@ export default class SalesTransaction extends Model<
   declare id: CreationOptional<number>;
   declare total_amount_before_promotion: number;
   declare total_amount: number;
-  declare payment_method: "cash" | "card" | "check" | "giftcard" | "mixed"|"transfer";
+  declare payment_method:
+    | "cash"
+    | "card"
+    | "check"
+    | "giftcard"
+    | "mixed"
+    | "transfer";
   declare transactionType: "sell" | "refund";
   declare payment_amount: number;
   declare customer_name: CreationOptional<string | null>;
@@ -56,9 +62,13 @@ export default class SalesTransaction extends Model<
 
   declare User?: NonAttribute<User>;
   declare CashSession?: NonAttribute<CashSession>;
-  declare items?: Array<LabeledItem & { TransactionItem?: NonAttribute<TransactionItem> }>
+  declare items?: Array<
+    LabeledItem & { TransactionItem?: NonAttribute<TransactionItem> }
+  >;
   declare refunds?: NonAttribute<SalesTransaction[]>;
-  declare giftCards?: NonAttribute<Array<GiftCard & { GiftCardTransaction: NonAttribute<GiftCardTransaction> }>>;
+  declare giftCards?: NonAttribute<
+    Array<GiftCard & { GiftCardTransaction: NonAttribute<GiftCardTransaction> }>
+  >;
   declare giftCardMovements?: NonAttribute<GiftCardTransaction[]>;
   declare payments?: NonAttribute<TransactionPayment[]>;
   declare issuedGiftCards?: NonAttribute<GiftCard[]>;
@@ -181,7 +191,14 @@ export default class SalesTransaction extends Model<
           allowNull: false,
         },
         payment_method: {
-          type: DataTypes.ENUM("cash", "card", "check", "giftcard", "mixed","transfer"),
+          type: DataTypes.ENUM(
+            "cash",
+            "card",
+            "check",
+            "giftcard",
+            "mixed",
+            "transfer",
+          ),
           allowNull: false,
         },
         transactionType: {

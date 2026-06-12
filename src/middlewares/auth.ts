@@ -7,13 +7,12 @@ import type { RequestWithUser } from "../v1/controllers/types.js";
 
 const { User } = db;
 
-type Token = JwtPayload &{
+type Token = JwtPayload & {
   id: number;
   username: string;
   email: string;
   role: "employee" | "admin" | "manager";
 };
-
 
 export const authenticateToken: RequestHandler = async (req, _res, next) => {
   const requestWithUser = req as RequestWithUser;

@@ -94,7 +94,7 @@ describe("collection schedule controller functions", () => {
     const req = {
       query: {},
       user: { id: 1, role: "admin" },
-      params:{ active:true}
+      params: { active: true },
     };
 
     const res = {
@@ -102,7 +102,7 @@ describe("collection schedule controller functions", () => {
       status: jest.fn().mockReturnThis(),
     };
 
-     await listEcoOrganism(req, res);
+    await listEcoOrganism(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({

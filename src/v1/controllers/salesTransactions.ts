@@ -1,11 +1,5 @@
 import createHttpError from "http-errors";
-import {
-  col,
-  fn,
-  literal,
-  Op,
-  type Includeable
-} from "sequelize";
+import { col, fn, literal, Op, type Includeable } from "sequelize";
 import z from "zod";
 
 import type { Request, Response } from "express";
@@ -20,8 +14,9 @@ import { idSchema, postalSchema } from "../../services/zod.js";
 import db from "../../models/index.js";
 
 import { formatWhereDateRange } from "../../helpers.js";
-import { type ModelWhere, type RequestWithUser } from "./types.js";
 import TransactionGlobalPromotion from "../../models/transactionGlobalPromotion.js";
+import { type ModelWhere, type RequestWithUser } from "./types.js";
+import type { ModelClass } from "../../models/db-types.js";
 
 const {
   CashSession,
@@ -63,32 +58,47 @@ const itemSchema = z.object({
   bundleQuantity: z.coerce.number().nullish(),
 });
 const paymentLineSchema = z.object({
-  method: z.enum(["cash", "card", "check", "giftcard","transfer"]),
+  method: z.enum(["cash", "card", "check", "giftcard", "transfer"]), //TODO type enum
   amount: z.coerce.number("montant requis").positive(),
   gift_card_code: z.string().trim().min(1).nullish(),
 });
-const dataSchema = z.object({
-  cash_session_id: idSchema("sesions requis"),
-  total_amount: z.coerce.number("argent requis"),
-  total_amount_before_promotion: z.coerce.number("argent requis"),
-  // payment_method: z.enum(["cash", "card", "check"]).default("cash"),
-  payment_amount: z.coerce.number("argent requis"),
-  payments: z.array(paymentLineSchema).optional(),
-  customer_postal_code: postalSchema().nullish(),
-  items: z.array(itemSchema),
-  change_amount: z.coerce.number().optional(),
-  global_promotion: z.coerce.number().min(0, "La promotion globale doit être supérieure à 0").nullish(),
-  global_promotion_type: z.enum(["percent", "fixed"], "Type de promotion globale invalide").nullish(),
-}).superRefine((data, ctx) => {
-
-  if (data.global_promotion && !data.global_promotion_type) {
-    ctx.addIssue({ code: "custom", message: "global_promotion_type est requis" });
-  }
-  if (data.global_promotion_type && data.global_promotion) {
-    if (data.global_promotion_type === "percent" && data.global_promotion > 100)
-      ctx.addIssue({ code: "custom", message: "La promotion globale doit être entre 0 et 100" });
-  }
-});
+const dataSchema = z
+  .object({
+    cash_session_id: idSchema("sesions requis"),
+    total_amount: z.coerce.number("argent requis"),
+    total_amount_before_promotion: z.coerce.number("argent requis"),
+    // payment_method: z.enum(["cash", "card", "check"]).default("cash"),
+    payment_amount: z.coerce.number("argent requis"),
+    payments: z.array(paymentLineSchema).optional(),
+    customer_postal_code: postalSchema().nullish(),
+    items: z.array(itemSchema),
+    change_amount: z.coerce.number().optional(),
+    global_promotion: z.coerce
+      .number()
+      .min(0, "La promotion globale doit être supérieure à 0")
+      .nullish(),
+    global_promotion_type: z
+      .enum(["percent", "fixed"], "Type de promotion globale invalide")
+      .nullish(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.global_promotion && !data.global_promotion_type) {
+      ctx.addIssue({
+        code: "custom",
+        message: "global_promotion_type est requis",
+      });
+    }
+    if (data.global_promotion_type && data.global_promotion) {
+      if (
+        data.global_promotion_type === "percent" &&
+        data.global_promotion > 100
+      )
+        ctx.addIssue({
+          code: "custom",
+          message: "La promotion globale doit être entre 0 et 100",
+        });
+    }
+  });
 type Data = z.infer<typeof dataSchema>;
 type CartItem = z.infer<typeof itemSchema>;
 
@@ -98,17 +108,14 @@ interface GlobalPromotionInput {
   type: GlobalPromotionType;
   value: number;
 }
-const toAmount = (value?: number | string | null) => Number.parseFloat(String(value ?? 0));
+const toAmount = (value?: number | string | null) =>
+  Number.parseFloat(String(value ?? 0));
 
-const amountsEqual = (a: number | string, b: number | string) => Math.abs(toAmount(a) - toAmount(b)) < 0.001;
+const amountsEqual = (a: number | string, b: number | string) =>
+  Math.abs(toAmount(a) - toAmount(b)) < 0.001;
 
 const getCartTotal = (cart: CartItem[]) => {
-  return cart.reduce(
-    (prev, current) =>
-    (prev +=
-      getCartLinePrice(current)),
-    0,
-  );
+  return cart.reduce((prev, current) => (prev += getCartLinePrice(current)), 0);
 };
 
 const getGlobalPromotionDiscount = (
@@ -195,14 +202,14 @@ const normalizePayments = (data: Data) => {
 };
 
 export const listTransactions = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["refund", "items", "payments"];
+  const ALLOWED_INCLUDES = ["refund", "items", "payments"] as const;
   const filterSchema = z.object({
     store_id: z.preprocess(
       (val) => (val === "" ? undefined : val),
       idSchema().optional().nullable(),
     ),
     period: z.string().optional(),
-    type: z.enum(["sell", "refund"], "type de transaction inconnu").optional(),
+    type: z.enum(["sell", "refund"], "type de transaction inconnu").optional(), //TODO type enum
     date_from: z.coerce.date().optional(),
     date_to: z.coerce.date().optional(),
     limit: z.coerce.number().positive().optional(),
@@ -210,10 +217,10 @@ export const listTransactions = async (req: Request, res: Response) => {
     session: idSchema().optional(),
     payment_method: z
       .enum(
-        ["cash", "check", "card", "giftcard", "mixed","transfer"],
+        ["cash", "check", "card", "giftcard", "mixed", "transfer"],
         "methode de payment inconnue",
       )
-      .optional(),
+      .optional(), //TODO type ENUM
     transaction_number: z.string().optional(),
     page: z.coerce.number().positive().optional(),
     include: z
@@ -267,7 +274,7 @@ export const listTransactions = async (req: Request, res: Response) => {
     {
       model: TransactionGlobalPromotion,
       as: "globalPromotions",
-    }
+    },
   ];
   if (filter.include.includes("payments"))
     include.push({
@@ -386,18 +393,17 @@ export const createTransaction = async (
         // change_amount: data.change_amount,
         // global_promotion: data.global_promotion ?? null,
         // global_promotion_type: data.global_promotion_type ?? null,
-
       },
       { transaction: t },
     );
     if (data.global_promotion) {
-      await sale.createGlobalPromotion({
-
-        value: data.global_promotion,
-        type: data.global_promotion_type ?? "percent",
-
-      }, { transaction: t })
-
+      await sale.createGlobalPromotion(
+        {
+          value: data.global_promotion,
+          type: data.global_promotion_type ?? "percent",
+        },
+        { transaction: t },
+      );
     }
     for await (const item of data.items) {
       if (isNaN(+item.barcode)) {
@@ -509,7 +515,7 @@ export const createTransaction = async (
         {
           model: TransactionPayment,
           as: "payments",
-        }
+        },
       ],
       transaction: t,
     });
@@ -541,10 +547,7 @@ export const createTransaction = async (
   });
 };
 
-export const createRefund = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const createRefund = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const refundItemSchema = z.object({
     name: z.string(),
@@ -564,10 +567,10 @@ export const createRefund = async (
     cash_session_id: idSchema(),
     total_amount: z.coerce.number("argent requis"),
     payment_method: z
-      .enum(["cash", "card", "check", "giftcard","transfer"])
+      .enum(["cash", "card", "check", "giftcard", "transfer"])
       .default("cash"),
     refund_method: z
-      .enum(["cash", "card", "check", "giftcard","transfer"])
+      .enum(["cash", "card", "check", "giftcard", "transfer"])
       .default("cash"),
     gift_card_code: z.string().trim().min(1).nullish(),
     refund_reason: z.string("refund raison requis"),
@@ -583,17 +586,20 @@ export const createRefund = async (
         include: [{ model: LabeledItem, as: "items" }],
       },
       { model: LabeledItem, as: "items" },
-      { model: TransactionGlobalPromotion, as: "globalPromotions" }
+      { model: TransactionGlobalPromotion, as: "globalPromotions" },
     ],
   });
   if (!parent)
     throw new createHttpError.NotFound("transaction parent pas trouvé");
   const parentRefunds = parent.refunds ?? [];
   const parentItems = parent.items ?? [];
-  const parentPromoValue = parent.total_amount_before_promotion - parent.total_amount;
-  const parentItemsCount = parentItems.reduce((prev, current) => prev + (current.TransactionItem?.quantity ?? 0), 0);
+  const parentPromoValue =
+    parent.total_amount_before_promotion - parent.total_amount;
+  const parentItemsCount = parentItems.reduce(
+    (prev, current) => prev + (current.TransactionItem?.quantity ?? 0),
+    0,
+  );
   const globalPromoPerItem = parentPromoValue / parentItemsCount;
-
 
   //item total price / item quatity
   // miss global prom
@@ -614,27 +620,39 @@ export const createRefund = async (
       const alreadyRefunded = parentRefunds.reduce((prev, current) => {
         const items = current.items?.filter((i) => i.barcode == item.barcode);
         prev +=
-          items?.reduce((p, v) => (p += v.TransactionItem?.quantity ?? 0), 0) || 0;
+          items?.reduce((p, v) => (p += v.TransactionItem?.quantity ?? 0), 0) ||
+          0;
         return prev;
       }, 0);
       //test que le compte d'object deborde pas
       const c = parentItems.find((i) => i.barcode === item.barcode);
-      if (!c) throw new createHttpError.NotFound("item non trouvé dans la vente");
+      if (!c)
+        throw new createHttpError.NotFound("item non trouvé dans la vente");
       if (!c.TransactionItem)
         throw new createHttpError.InternalServerError(
           "transaction item relation manquante",
         );
-      if (alreadyRefunded && (item.quantity - alreadyRefunded > c.TransactionItem.quantity || item.quantity - alreadyRefunded < 0))
+      if (
+        alreadyRefunded &&
+        (item.quantity - alreadyRefunded > c.TransactionItem.quantity ||
+          item.quantity - alreadyRefunded < 0)
+      )
         throw new createHttpError.BadRequest(
           "peut pas rembourser plus d'objects que vendu",
         );
       const toRefundquantity = item.quantity - alreadyRefunded;
-      const toRefundNow = (c.TransactionItem.total_price / c.TransactionItem.quantity - globalPromoPerItem) * toRefundquantity
+      const toRefundNow =
+        (c.TransactionItem.total_price / c.TransactionItem.quantity -
+          globalPromoPerItem) *
+        toRefundquantity;
 
       const alreadyRefundedPrice = parentRefunds.reduce((prev, current) => {
         const items = current.items?.filter((i) => i.barcode == item.barcode);
         prev +=
-          items?.reduce((p, v) => (p += v.TransactionItem?.total_price ?? 0), 0) || 0;
+          items?.reduce(
+            (p, v) => (p += v.TransactionItem?.total_price ?? 0),
+            0,
+          ) || 0;
         return prev;
       }, 0);
       // const toRefundNow = parent.items?.find((i) => i.barcode == item.barcode)?.TransactionItem?.total_price ??0 - alreadyRefundedPrice;
@@ -661,7 +679,14 @@ export const createRefund = async (
   // });
 
   const result = await db.sequelize.transaction(async (t) => {
-    let refundGiftCard: null | { id: number; code: string; status: string; initial_value?: number; current_balance?: number; type: "recredit_existing" | "issued_new" } = null;
+    let refundGiftCard: null | {
+      id: number;
+      code: string;
+      status: string;
+      initial_value?: number;
+      current_balance?: number;
+      type: "recredit_existing" | "issued_new";
+    } = null;
 
     const total_amount = refunded.reduce(
       (prev, current) => (prev += current.toRefundNow),
@@ -821,17 +846,6 @@ export const listRefunds = async (req: Request, res: Response) => {
     ],
   });
 
-  // const refunds = await Refund.findAll({
-  //   where: { transaction_id: id },
-  //   include: [{ model: SalesTransaction }],
-  // });
-  // if (!refunds[0]) {
-  //   return res.status(404).json({
-  //     success: false,
-  //     message: "Transaction non trouvée",
-  //   });
-  // }
-
   res.json({
     success: true,
     refunds: refunds?.refunds,
@@ -864,7 +878,6 @@ export const transactionsStats = async (req: Request, res: Response) => {
       ],
     });
   }
-  // where.store_id = filter.store_id;
 
   const { date_from, date_to } = filter;
   const dateRange = formatWhereDateRange(date_from, date_to);
@@ -886,7 +899,9 @@ export const transactionsStats = async (req: Request, res: Response) => {
     sessions_count: number | string;
   };
   type PaymentMethodRow = {
-    payment_method: "cash" | "card" | "check" | "giftcard" | "mixed"|"transfer";
+    payment_method: InstanceType<
+      ModelClass<"SalesTransaction">
+    >["payment_method"]; //TODO remake with helper
     total: number | string;
     count: number | string;
   };
@@ -1042,23 +1057,17 @@ export const transactionsStats = async (req: Request, res: Response) => {
       ...statsRow,
       total_refunded: 0,
       payment_methods: methods ?? [],
-      by_day:
-        byDay.map(
-          (row) => ({
-            date: row.date,
-            transaction_count: Number(row.transaction_count ?? 0),
-            total_amount: parseFloat(String(row.total_amount ?? 0)),
-          }),
-        ),
-      by_category:
-        byCategory.map(
-          (row) => ({
-            category_id: row.category_id,
-            category_name: row.category_name ?? null,
-            total_quantity: Number(row.total_quantity ?? 0),
-            total_price_sum: parseFloat(String(row.total_price_sum ?? 0)),
-          }),
-        ),
+      by_day: byDay.map((row) => ({
+        date: row.date,
+        transaction_count: Number(row.transaction_count ?? 0),
+        total_amount: parseFloat(String(row.total_amount ?? 0)),
+      })),
+      by_category: byCategory.map((row) => ({
+        category_id: row.category_id,
+        category_name: row.category_name ?? null,
+        total_quantity: Number(row.total_quantity ?? 0),
+        total_price_sum: parseFloat(String(row.total_price_sum ?? 0)),
+      })),
       // total_sales_before_refunds: parseFloat(
       //   stats[0].total_sales_before_refunds || 0,
       // ),

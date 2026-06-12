@@ -29,7 +29,6 @@ export const listEmployeeStore = async (_req: Request, res: Response) => {
 
 export const getEmployeeStoreById = async (req: Request, res: Response) => {
   const params = z.object({
-    // id: idSchema("recyclerie id requis"),
     employeeId: idSchema("employee id requis"),
   });
   const { employeeId } = params.parse(req.params);
@@ -42,7 +41,6 @@ export const getEmployeeStoreById = async (req: Request, res: Response) => {
         through: {
           attributes: ["is_primary"],
         },
-        // through: { attributes: ["is_primary"] },
       },
     ],
   });
@@ -171,7 +169,9 @@ export const removeEmployeeStore = async (req: Request, res: Response) => {
     // await employee.setStores([]);
     EmployeeStore.destroy({ where: { employeeId: data.employeeId } });
   }
-  const emplo = await Employee.findByPk(data.employeeId, { include: [{ model: Recyclery, as: "stores" }] });
+  const emplo = await Employee.findByPk(data.employeeId, {
+    include: [{ model: Recyclery, as: "stores" }],
+  });
   console.log(emplo);
 
   res.json({

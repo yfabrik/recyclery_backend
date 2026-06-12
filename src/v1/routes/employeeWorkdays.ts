@@ -6,6 +6,7 @@ import {
   createEmployeeWorkdays,
   listEmployeeWorkdays,
 } from "../controllers/employeeWorkdays.js";
+import { idSchema } from "../../services/zod.js";
 
 const { EmployeeWorkdays, Employee } = db;
 export const router = Router();
@@ -85,7 +86,7 @@ router.post(
       notes,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Jour de travail créé avec succès",
       workday_id: result.id,
@@ -104,7 +105,7 @@ router.put(
       referer: req?.headers?.referer,
     });
 
-    const { id } = req.params;
+    const id = idSchema().parse(req.params.id);
     const { is_working, start_time, end_time, notes } = req.body;
 
     const result = await EmployeeWorkdays.findByPk(id);
@@ -121,7 +122,7 @@ router.put(
       (result.notes = notes || null),
       await result.save());
 
-    res.json({
+    return res.json({
       success: true,
       message: "Jour de travail mis à jour avec succès",
       workday: result,
@@ -150,7 +151,7 @@ router.delete(
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: "Jour de travail supprimé avec succès",
     });

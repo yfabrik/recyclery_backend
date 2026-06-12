@@ -1,12 +1,5 @@
 import createHttpError from "http-errors";
-import {
-  col,
-  fn,
-  literal,
-  Op,
-  where,
-
-} from "sequelize";
+import { col, fn, literal, Op, where } from "sequelize";
 import * as z from "zod";
 import { listCaisses } from "../../services/caisse.js";
 import { idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
@@ -28,7 +21,10 @@ const {
 } = db;
 
 const dataSchema = z.object({
-  name: z.string("Le nom de la recyclerie est requis"),
+  name: z
+    .string("Le nom de la recyclerie est requis")
+    .trim()
+    .nonempty("nom requis"),
   address: z.string().nullish().prefault(null),
   phone: phoneSchema().nullish().prefault(null),
   email: z.email().nullish().prefault(null),
@@ -39,7 +35,7 @@ const dataSchema = z.object({
 });
 
 export const listRecycleries = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["employees", "horaires", "caisses"];
+  const ALLOWED_INCLUDES = ["employees", "horaires", "caisses"] as const;
   const filterSchema = z.object({
     include: z
       .string()
@@ -136,28 +132,14 @@ export const updateRecyclerie = async (req: Request, res: Response) => {
   });
   if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
 
-  //TODO FIXME IMPORTANT URGENT make transaction work
-  // try {
-  // if (data.is_active != recyclerie.is_active || data.name != recyclerie.name)
-  //   for (const schedule of recyclerie.TaskSchedules || []) {
-  //     await schedule.update({
-  //       is_recurring: data.is_active,
-  //       name: "vente-"+data.name,
-  //     });
-  //   }
-
-  await db.sequelize.transaction(async t => {
-    await recyclerie.update({
-      ...data,
-    }, { transaction: t });
-  })
-
-
-  // await t.commit()
-  // } catch (err) {
-  //   // await t.rollback()
-  //   throw err;
-  // }
+  await db.sequelize.transaction(async (t) => {
+    await recyclerie.update(
+      {
+        ...data,
+      },
+      { transaction: t },
+    );
+  });
 
   res.json({
     success: true,
@@ -175,11 +157,7 @@ export const deleteRecyclerie = async (req: Request, res: Response) => {
   await recyclerie.destroy();
   res.json({ message: "Recyclerie supprimée avec succès" });
 };
-/**
- *
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- */
+
 export const listCaissesRecyclerie = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
@@ -203,9 +181,9 @@ export const recycleryStats = async (req: Request, res: Response) => {
     },
     raw: true,
   });
-
+  //y'a des truc similmaire dans dashboard ?
   const startOfMonth = new Date(new Date().setDate(1));
-  const salesResult = await SalesTransaction.findOne({
+  const salesResult = (await SalesTransaction.findOne({
     attributes: [
       [fn("COUNT", col("SalesTransaction.id")), "monthly_sales"],
       [
@@ -232,13 +210,16 @@ export const recycleryStats = async (req: Request, res: Response) => {
       createdAt: { [Op.gte]: startOfMonth },
     },
     raw: true,
-  }) as { monthly_sales?: number | string; monthly_revenue?: number | string } | null
+  })) as {
+    monthly_sales?: number | string;
+    monthly_revenue?: number | string;
+  } | null;
 
   const sales = salesResult
     ? {
-      monthly_sales: Number(salesResult.monthly_sales ?? 0),
-      monthly_revenue: Number(salesResult.monthly_revenue ?? 0),
-    }
+        monthly_sales: Number(salesResult.monthly_sales ?? 0),
+        monthly_revenue: Number(salesResult.monthly_revenue ?? 0),
+      }
     : { monthly_sales: 0, monthly_revenue: 0 };
 
   res.json({

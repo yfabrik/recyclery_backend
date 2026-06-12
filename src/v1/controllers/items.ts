@@ -1,15 +1,8 @@
-import createHttpError from "http-errors";
-import {
-  col,
-  fn,
-  literal,
-  Op,
-
-} from "sequelize";
-import z from "zod";
-import logger from "../../services/logger.js";
-import { idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
+import createHttpError from "http-errors";
+import { col, fn, literal, Op } from "sequelize";
+import z from "zod";
+import { idSchema } from "../../services/zod.js";
 
 import db from "../../models/index.js";
 import type { ModelWhere, RequestWithUser } from "./types.js";
@@ -46,18 +39,18 @@ export const listLabeledItem = async (req: Request, res: Response) => {
 
   const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
-      ...filter,
-      [Op.or]: [
-        // { name: likeQuery },
-        { description: likeQuery },
-        { id: likeQuery },
-      ],
-    }
+        ...filter,
+        [Op.or]: [
+          // { name: likeQuery },
+          { description: likeQuery },
+          { id: likeQuery },
+        ],
+      }
     : { ...filter };
   const pagination = {} as { limit: number; offset: number };
   if (page) {
-    pagination.limit = 50
-    pagination.offset = (page - 1) * 50
+    pagination.limit = 50;
+    pagination.offset = (page - 1) * 50;
   }
 
   const labeledItems = await LabeledItem.findAndCountAll({
@@ -92,17 +85,14 @@ export const listLabeledItem = async (req: Request, res: Response) => {
   });
 };
 /**
- * @deprecated
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-export const getItemFromBarcode = async (req:Request, res:Response) => {
-  logger.warn("used getItemFromBarcode TO REMOVE");
-  const  barcode =idSchema().parse(req.params.barcode);
+export const getItemFromBarcode = async (req: Request, res: Response) => {
+  const barcode = idSchema().parse(req.params.barcode);
   const item = await LabeledItem.findOne({ where: { id: barcode } });
 
-  if (!item) throw new createHttpError[404]("Article non trouvé"); //TODO barcode as query param
-
+  if (!item) throw new createHttpError[404]("Article non trouvé");
   res.json({ success: true, item });
 };
 
@@ -133,10 +123,7 @@ export const createLabeledItem = async (
   });
 };
 
-export const updateItem = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const updateItem = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
   const data = dataSchema.parse(req.body);
@@ -162,10 +149,7 @@ export const deleteLabeledItem = async (req: Request, res: Response) => {
   res.json({ success: true, message: "Article supprimé avec succès" });
 };
 
-export const tagItemAsSell = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const tagItemAsSell = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const item = await LabeledItem.findByPk(id);
   if (!item || item.status == "available")
@@ -192,13 +176,13 @@ export const itemsStats = async (req: Request, res: Response) => {
 
   const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
-      ...filter,
-      [Op.or]: [
-        // { name: likeQuery },
-        { description: likeQuery },
-        { id: likeQuery },
-      ],
-    }
+        ...filter,
+        [Op.or]: [
+          // { name: likeQuery },
+          { description: likeQuery },
+          { id: likeQuery },
+        ],
+      }
     : { ...filter };
 
   const stats = await LabeledItem.findAll({

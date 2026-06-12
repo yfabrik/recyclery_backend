@@ -100,9 +100,7 @@ try {
   const csvContent = [csvHeaders.join(","), ...csvRows].join("\n");
   await writeFile(outputPath, csvContent, "utf8");
 
-  console.log(
-    `Exported ${arrivals.length} arrivals to ${outputPath}`,
-  );
+  console.log(`Exported ${arrivals.length} arrivals to ${outputPath}`);
 } finally {
   await sequelize.close();
 }

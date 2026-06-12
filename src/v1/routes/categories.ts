@@ -72,5 +72,4 @@ router.get("/icons", (_req, res) => {
   });
 });
 
-
 router.patch("/:id", asyncHandler(patchCategory));

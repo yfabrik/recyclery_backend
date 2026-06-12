@@ -1,10 +1,6 @@
 import type { Request, Response } from "express";
 import createHttpError from "http-errors";
-import {
-  col,
-  fn,
-  literal,
-} from "sequelize";
+import { col, fn, literal } from "sequelize";
 import * as z from "zod";
 
 import { formatWhereDateRange } from "../../helpers.js";
@@ -21,15 +17,13 @@ const dataSchema = z
     subcategory_id: idSchema().nullish().prefault(null),
     weight: z.coerce.number().positive("poids requis"),
     arrival_date: z.coerce.date("date d'arrivage requis"),
-    arrival_time: z.coerce
-      .date(" date d'arrivage requis")
-      .transform((val) =>
-        val.toLocaleTimeString(undefined, {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      ),
-    source_type: z.enum(["point", "apport", "house_clearance"]),
+    arrival_time: z.coerce.date(" date d'arrivage requis").transform((val) =>
+      val.toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    ),
+    source_type: z.enum(["point", "apport", "house_clearance"]), //TODO match ARRIVAL source type
     source_details: z.string().nullish().prefault(null),
     collection_point_id: idSchema().nullish().prefault(null),
     collection_point_name: z.string().nullish().prefault(null),
@@ -48,11 +42,11 @@ const dataSchema = z
 
 const filterSchema = z.object({
   category_id: idSchema().optional(),
-  source_type: z.enum(["point", "apport", "house_clearance"]).optional(),
+  source_type: z.enum(["point", "apport", "house_clearance"]).optional(), //TODO match ARRIVAL source type
   status: z.enum(["received"]).optional(),
   date_from: z.coerce.date().optional(),
   date_to: z.coerce.date().optional(),
-  page: z.coerce.number().positive().optional(),
+  page: z.coerce.number().positive().optional(), //TODO make a correct pagination object
 });
 
 export const listArrivals = async (req: Request, res: Response) => {
@@ -92,10 +86,7 @@ export const listArrivals = async (req: Request, res: Response) => {
   });
 };
 
-export const detailArrival = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const detailArrival = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const arrival = await Arrival.findByPk(id, {
     include: [
@@ -112,18 +103,16 @@ export const detailArrival = async (
   });
 };
 
-export const createArrival = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const createArrival = async (req: RequestWithUser, res: Response) => {
   const data = dataSchema.parse(req.body);
-  const category = await Category.findByPk(data.subcategory_id ?? data.category_id); //TODO filter par type de category need only IO.in ?
+  const category = await Category.findByPk(
+    data.subcategory_id ?? data.category_id,
+  ); //TODO filter par type de category need only IO.in ?
   // Vérifier si la catégorie existe
   if (!category) throw new createHttpError[404]("Catégorie non trouvée");
 
   const arrival = await Arrival.create({
     ...data,
-    // category_id: category.id,
     processed_by: req.user.id,
   });
 
@@ -134,10 +123,7 @@ export const createArrival = async (
   });
 };
 
-export const updateArrival = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const updateArrival = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
 
@@ -147,7 +133,6 @@ export const updateArrival = async (
   if (!arrival) throw new createHttpError[404]("Arrivage non trouvé");
   await arrival.update({
     ...data,
-    // category_id: data.subcategory_id ?? data.category_id,
   });
 
   res.json({
@@ -156,10 +141,7 @@ export const updateArrival = async (
   });
 };
 
-export const deleteArrival = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const deleteArrival = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const arrival = await Arrival.destroy({ where: { id } });
   // Vérifier si l'arrivage existe
@@ -170,10 +152,7 @@ export const deleteArrival = async (
   });
 };
 
-export const statsSummary = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const statsSummary = async (req: RequestWithUser, res: Response) => {
   const filterSchema = z.object({
     date_from: z.coerce.date().optional(),
     date_to: z.coerce.date().optional(),
@@ -245,6 +224,7 @@ export const statsSummary = async (
   });
 };
 
+//pas sur de l'utilité de la fn
 export const statsByCategories = async (req: Request, res: Response) => {
   const filterSchema = z.object({
     date_from: z.coerce.date().optional(),

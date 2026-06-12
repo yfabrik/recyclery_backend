@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "tsx --watch src/index.ts",
+    "lint": "eslint .",
     "jest": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.cjs --runInBand",
     "mocha": "mocha",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.cjs --runInBand --coverage=false"

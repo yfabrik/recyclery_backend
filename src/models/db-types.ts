@@ -2,7 +2,7 @@ import {
   type Attributes,
   type ModelStatic,
   type Sequelize,
-  type WhereOptions
+  type WhereOptions,
 } from "sequelize";
 import type Arrival from "./arrival.js";
 import type CashRegister from "./cashregister.ts";
@@ -84,7 +84,8 @@ export type DB = ModelStatics & {
   Sequelize: typeof import("sequelize");
 };
 
-
-export type ModelWhere<M extends ModelClass> = WhereOptions<Attributes<InstanceType<M>>>
+export type ModelWhere<M extends ModelClass> = WhereOptions<
+  Attributes<InstanceType<M>>
+>;
 
 // const a :WWW<Arrival>

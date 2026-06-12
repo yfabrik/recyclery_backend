@@ -51,10 +51,7 @@ export const listCaisses = async (req: Request, res: Response) => {
     ],
     where,
     group: ["CashRegister.id", "Recyclery.name"],
-    order: [
-      // ["recyclery_id", "ASC"],
-      ["name", "ASC"],
-    ],
+    order: [["name", "ASC"]],
   });
 
   res.json({
@@ -90,6 +87,7 @@ export const detailCaisse = async (req: Request, res: Response) => {
     return latest;
   }, null);
 
+  //TODO not clean ?
   res.json({
     success: true,
     data: {
@@ -115,27 +113,11 @@ export const createCaisse = async (req: Request, res: Response) => {
   const store = await Recyclery.findByPk(data.store_id);
   if (!store) throw new createHttpError.NotFound("Magasin non trouvé");
 
-  // Vérifier qu'une caisse avec ce nom n'existe pas déjà dans ce magasin
-  // const existingRegister = await CashRegister.findOne({
-  //   where: { [Op.and]: [{ name: data.name }, { recyclery_id: data.store_id }] },
-  // });
-
-  // if (existingRegister)
-  //   throw new createHttpError.Conflict(
-  //     "Une caisse avec ce nom existe déjà dans ce magasin",
-  //   );
-
+  //unique constraint unique name per store enforced in model
   const result = await store.createCaisse({
     name: data.name,
     is_active: data.is_active,
   });
-
-  // Créer la caisse
-  // const result = await CashRegister.create({
-  //   name: data.name,
-  //   is_active: data.is_active,
-  //   recyclery_id: data.store_id,
-  // });
 
   res.status(201).json({
     success: true,

@@ -9,7 +9,7 @@ import {
   type InferAttributes,
   type InferCreationAttributes,
   type Sequelize,
-  type WhereOptions
+  type WhereOptions,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
 import type Employee from "./employee.js";
@@ -53,7 +53,6 @@ export default class EmployeeStore extends Model<
 
     return this.init(
       {
-
         is_primary: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
@@ -79,7 +78,7 @@ export default class EmployeeStore extends Model<
         indexes: [
           { fields: ["employeeId"] },
           { fields: ["recycleryId"] },
-          { fields: ["employeeId", "recycleryId"], unique: true },//already set by PK
+          { fields: ["employeeId", "recycleryId"], unique: true }, //already set by PK
           {
             unique: true,
             fields: ["employeeId"],

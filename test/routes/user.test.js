@@ -12,8 +12,8 @@
 //     next();
 //   },
 // }));
-describe.skip('my test suite', () => {
-  test('does something', () => {
+describe.skip("my test suite", () => {
+  test("does something", () => {
     // ...
   });
 });

@@ -1,9 +1,5 @@
 import createHttpError from "http-errors";
-import {
-  col,
-  fn,
-  literal,
-} from "sequelize";
+import { col, fn, literal } from "sequelize";
 import z from "zod";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
@@ -29,7 +25,7 @@ const dataSchema = z.object({
 export const listDons = async (req: Request, res: Response) => {
   const filterSchema = z.object({
     recyclery_id: idSchema().optional(),
-    status: z.enum(["pending", "accepted", "rejected"]).optional(),
+    status: z.enum(["pending", "accepted", "rejected"]).optional(), //TODO base it on enum from model
   });
   const filter = filterSchema.parse(req.query);
 
@@ -52,10 +48,7 @@ export const listDons = async (req: Request, res: Response) => {
   res.json({ donations });
 };
 
-export const createDon = async (
-  req: RequestWithUser,
-  res: Response,
-) => {
+export const createDon = async (req: RequestWithUser, res: Response) => {
   //TODO c'est au form de faire le tri et d'envoyer donor contact correctement
   // const donorContact = z.union([z.email(), z.string().regex(/^(0|(\+[0-9]{2}[. -]?))[1-9]([. -]?[0-9][0-9]){4}$/)]).optional().parse(req.body?.donor_contact)
 
