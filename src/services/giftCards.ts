@@ -7,6 +7,7 @@ import {
 } from "sequelize";
 import db from "../models/index.js";
 import type SalesTransaction from "../models/salestransaction.js";
+import { findByPkOrThrow } from "./sequelize.js";
 
 const { GiftCard, GiftCardTransaction, User, sequelize } = db;
 
@@ -17,8 +18,12 @@ const getGiftCardBalanceInTx = async (
   giftCardId: InstanceType<typeof GiftCard>["id"],
   transaction: Transaction,
 ) => {
-  const giftCard = await GiftCard.findByPk(giftCardId, { transaction });
-  if (!giftCard) throw new createHttpError.NotFound("gift card not found");
+  const giftCard = await findByPkOrThrow(
+    GiftCard,
+    giftCardId,
+    "gift card not found",
+    { transaction },
+  );
 
   const movementSum =
     (await GiftCardTransaction.sum("amount", {
@@ -204,8 +209,12 @@ export const recreditGiftCard = async ({
   }
 
   const run = async (transaction: Transaction) => {
-    const giftCard = await GiftCard.findByPk(giftCardId, { transaction });
-    if (!giftCard) throw new createHttpError.NotFound("gift card not found");
+    const giftCard = await findByPkOrThrow(
+      GiftCard,
+      giftCardId,
+      "gift card not found",
+      { transaction },
+    );
     assertGiftCardUsable(giftCard);
 
     return GiftCardTransaction.create(

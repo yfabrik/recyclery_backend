@@ -1,6 +1,7 @@
 import createHttpError from "http-errors";
 
 import { findUserByEmail } from "../../services/users.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import { col, fn, Op, type Includeable } from "sequelize";
 import * as z from "zod";
 import { USER_ROLES } from "../../constants/dbEnums.js";
@@ -61,13 +62,12 @@ export const listUsers = async (req: Request, res: Response) => {
 
 export const findUserById = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const user = await User.findByPk(id, {
+  const user = await findByPkOrThrow(User, id, "Utilisateur non trouvé", {
     include: [
       // { model: Recyclery, as: "stores", required: false },
       { model: Recyclery, as: "managedStores", required: false },
     ],
   });
-  if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
 
   res.json({
     success: true,
@@ -126,8 +126,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
   const data = dataSchema.parse(req.body);
 
-  const user = await User.findByPk(id);
-  if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
+  const user = await findByPkOrThrow(User, id, "Utilisateur non trouvé");
   const { managedStores, ...userData } = data;
   await db.sequelize.transaction(async (t) => {
     await user.update(userData, { transaction: t });
@@ -145,8 +144,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
 export const deleteUser = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const user = await User.findByPk(id);
-  if (!user) throw new createHttpError.NotFound("utilisateur non trouvé");
+  const user = await findByPkOrThrow(User, id, "utilisateur non trouvé");
   await user.destroy();
   res.json({
     success: true,
@@ -199,8 +197,11 @@ export const updatePassword = async (req: Request, res: Response) => {
   });
 
   const data = dataSchema.parse(req.body);
-  const user = await User.scope("withPassword").findByPk(id);
-  if (!user) throw new createHttpError.NotFound("utilisateur non trouvé");
+  const user = await findByPkOrThrow(
+    User.scope("withPassword"),
+    id,
+    "utilisateur non trouvé",
+  );
   // const isValidPassword = await bcrypt.compare(
   //   data.currentPassword,
   //   user.password_hash,

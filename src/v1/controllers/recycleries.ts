@@ -1,8 +1,8 @@
-import createHttpError from "http-errors";
 import { col, fn, literal, Op, where } from "sequelize";
 import * as z from "zod";
 import { listCaisses } from "../../services/caisse.js";
 import { idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
@@ -97,7 +97,7 @@ export const listRecycleries = async (req: Request, res: Response) => {
 
 export const detailRecyclerie = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const recyclerie = await Recyclery.findByPk(id, {
+  const recyclerie = await findByPkOrThrow(Recyclery, id, "Recyclerie non trouvée", {
     include: [
       { model: CashRegister, as: "caisses" },
       { model: User, as: "manager" },
@@ -125,12 +125,16 @@ export const updateRecyclerie = async (req: Request, res: Response) => {
 
   const data = dataSchema.parse(req.body);
 
-  const recyclerie = await Recyclery.findByPk(id, {
-    include: [
-      { model: TaskSchedule, where: { category: "vente" }, required: false },
-    ],
-  });
-  if (!recyclerie) throw new createHttpError.NotFound("recyclerie non trouvé");
+  const recyclerie = await findByPkOrThrow(
+    Recyclery,
+    id,
+    "recyclerie non trouvé",
+    {
+      include: [
+        { model: TaskSchedule, where: { category: "vente" }, required: false },
+      ],
+    },
+  );
 
   await db.sequelize.transaction(async (t) => {
     await recyclerie.update(
@@ -152,8 +156,11 @@ export const updateRecyclerie = async (req: Request, res: Response) => {
 export const deleteRecyclerie = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const recyclerie = await Recyclery.findByPk(id);
-  if (!recyclerie) throw new createHttpError.NotFound("Recyclerie non trouvée");
+  const recyclerie = await findByPkOrThrow(
+    Recyclery,
+    id,
+    "Recyclerie non trouvée",
+  );
   await recyclerie.destroy();
   res.json({ message: "Recyclerie supprimée avec succès" });
 };

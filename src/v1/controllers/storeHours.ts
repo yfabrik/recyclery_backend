@@ -3,6 +3,7 @@ import * as z from "zod";
 import { FRENCH_WEEKDAYS } from "../../constants/dbEnums.js";
 import logger from "../../services/logger.js";
 import { enumSchema, idSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 
 import { deleteSchedule } from "./taskSchedule.js";
 import type { Request, Response } from "express";
@@ -149,7 +150,7 @@ export const horairesMagasin = async (req: Request, res: Response) => {
 export const addHoraire = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
 
-  const store = await Recyclery.findByPk(data.store_id, {
+  const store = await findByPkOrThrow(Recyclery, data.store_id, "magasin pas trouvé", {
     include: [
       {
         model: TaskSchedule,
@@ -159,8 +160,6 @@ export const addHoraire = async (req: Request, res: Response) => {
       },
     ],
   });
-
-  if (!store) throw new createHttpError.NotFound("magasin pas trouvé");
 
   const horaires = await db.sequelize.transaction(async (t) => {
     return TaskSchedule.create(
@@ -190,10 +189,14 @@ export const addHoraire = async (req: Request, res: Response) => {
 export const updateHoraire = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
   const id = idSchema().parse(req.params.id);
-  const schedule = await TaskSchedule.findByPk(id, {
-    include: [{ model: Recyclery, required: false }],
-  });
-  if (!schedule) throw new createHttpError.NotFound("horaires pas trouvé");
+  const schedule = await findByPkOrThrow(
+    TaskSchedule,
+    id,
+    "horaires pas trouvé",
+    {
+      include: [{ model: Recyclery, required: false }],
+    },
+  );
 
   await db.sequelize.transaction(async (t) => {
     await schedule.update(

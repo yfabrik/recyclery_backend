@@ -1,6 +1,6 @@
 import z from "zod";
 import { idSchema } from "../../services/zod.js";
-import createHttpError from "http-errors";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
@@ -76,8 +76,7 @@ export const createPromotion = async (req: Request, res: Response) => {
 export const updatePromotion = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
   const id = idSchema().parse(req.params.id);
-  const promo = await Promotion.findByPk(id);
-  if (!promo) throw new createHttpError.NotFound("promo pas trouvé");
+  const promo = await findByPkOrThrow(Promotion, id, "promo pas trouvé");
   const { stores, ...promotionData } = data;
   await db.sequelize.transaction(async (t) => {
     await promo.update(promotionData, { transaction: t });
@@ -102,8 +101,7 @@ export const updatePromotion = async (req: Request, res: Response) => {
 
 export const deletePromotion = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const promo = await Promotion.findByPk(id);
-  if (!promo) throw new createHttpError.NotFound("promo pas trouvé");
+  const promo = await findByPkOrThrow(Promotion, id, "promo pas trouvé");
   await promo.destroy();
   return res.json({ success: true, message: "promo supprimé" });
 };

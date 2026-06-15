@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import createHttpError from "http-errors";
 import { col, fn, literal } from "sequelize";
 import z from "zod";
 
@@ -8,6 +7,7 @@ import { WASTE_DISPOSAL_TYPES } from "../../constants/dbEnums.js";
 
 import db from "../../models/index.js";
 import { enumSchema, idSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import { type ModelWhere, type RequestWithUser } from "./types.js";
 
 const { Category, EcoOrganism, User, WasteDisposal } = db;
@@ -87,16 +87,20 @@ export const listWaste = async (req: Request, res: Response) => {
 
 export const detailWaste = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const waste = await WasteDisposal.findByPk(id, {
-    include: [
-      { model: Category, as: "category" },
-      { model: Category, as: "subcategory" },
-      { model: EcoOrganism, as: "eco_organism" },
-      { model: User },
-    ],
-  });
+  const waste = await findByPkOrThrow(
+    WasteDisposal,
+    id,
+    "Sortie de déchets non trouvée",
+    {
+      include: [
+        { model: Category, as: "category" },
+        { model: Category, as: "subcategory" },
+        { model: EcoOrganism, as: "eco_organism" },
+        { model: User },
+      ],
+    },
+  );
 
-  if (!waste) throw new createHttpError[404]("Sortie de déchets non trouvée");
   res.json({ disposal: waste });
 };
 
@@ -120,8 +124,11 @@ export const updateWaste = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
 
-  const waste = await WasteDisposal.findByPk(id);
-  if (!waste) throw createHttpError[404];
+  const waste = await findByPkOrThrow(
+    WasteDisposal,
+    id,
+    "Sortie de déchets non trouvée",
+  );
   await waste.update({ ...data });
 
   res.json({ message: "Sortie de déchets mise à jour avec succès" });
@@ -129,9 +136,11 @@ export const updateWaste = async (req: Request, res: Response) => {
 
 export const deleteWaste = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const toDelete = await WasteDisposal.findByPk(id);
-  if (!toDelete)
-    throw new createHttpError[404]("Sortie de déchets non trouvée");
+  const toDelete = await findByPkOrThrow(
+    WasteDisposal,
+    id,
+    "Sortie de déchets non trouvée",
+  );
   await toDelete.destroy();
 
   res.json({ message: "Sortie de déchets supprimée avec succès" });

@@ -10,6 +10,7 @@ import {
   recreditGiftCard,
 } from "../../services/giftCards.js";
 import { idSchema, postalSchema, enumSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import {
   PAYMENT_METHODS,
   PROMOTION_TYPES,
@@ -328,44 +329,49 @@ export const listTransactions = async (req: Request, res: Response) => {
 
 export const getTransaction = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const transaction = await SalesTransaction.findByPk(id, {
-    include: [
-      {
-        model: LabeledItem,
-        as: "items",
-        include: [
-          { model: Category, as: "category" },
-          { model: Category, as: "subcategory" },
-        ],
-      },
-      { model: TransactionPayment, as: "payments" },
-      {
-        model: CashSession,
-        include: [
-          {
-            model: CashRegister,
-            include: [{ model: Recyclery }],
-          },
-          {
-            model: User,
-          },
-        ],
-      },
-      {
-        model: User,
-      },
-      { model: GiftCard, as: "giftCards" },
-      {
-        model: SalesTransaction,
-        as: "refunds",
-        include: [
-          { model: LabeledItem, as: "items" },
-          { model: TransactionPayment, as: "payments" },
-        ],
-      },
-      { model: TransactionGlobalPromotion, as: "globalPromotions" },
-    ],
-  });
+  const transaction = await findByPkOrThrow(
+    SalesTransaction,
+    id,
+    "transaction non trouvée",
+    {
+      include: [
+        {
+          model: LabeledItem,
+          as: "items",
+          include: [
+            { model: Category, as: "category" },
+            { model: Category, as: "subcategory" },
+          ],
+        },
+        { model: TransactionPayment, as: "payments" },
+        {
+          model: CashSession,
+          include: [
+            {
+              model: CashRegister,
+              include: [{ model: Recyclery }],
+            },
+            {
+              model: User,
+            },
+          ],
+        },
+        {
+          model: User,
+        },
+        { model: GiftCard, as: "giftCards" },
+        {
+          model: SalesTransaction,
+          as: "refunds",
+          include: [
+            { model: LabeledItem, as: "items" },
+            { model: TransactionPayment, as: "payments" },
+          ],
+        },
+        { model: TransactionGlobalPromotion, as: "globalPromotions" },
+      ],
+    },
+  );
   res.json({ success: true, transaction });
 };
 
@@ -376,8 +382,11 @@ export const createTransaction = async (
   const data = dataSchema.parse(req.body);
   validateSaleAmounts(data);
   const payments = normalizePayments(data);
-  const session = await CashSession.findByPk(data.cash_session_id);
-  if (!session) throw new createHttpError[404]("session non trouvé");
+  const session = await findByPkOrThrow(
+    CashSession,
+    data.cash_session_id,
+    "session non trouvé",
+  );
 
   const result = await db.sequelize.transaction(async (t) => {
     // const uniqueMethods = [...new Set(payments.map((p) => p.method))];
@@ -436,8 +445,11 @@ export const createTransaction = async (
           },
         );
       } else {
-        const i = await LabeledItem.findByPk(+item.barcode);
-        if (!i) throw new createHttpError.NotFound("item not found");
+        const i = await findByPkOrThrow(
+          LabeledItem,
+          +item.barcode,
+          "item not found",
+        );
         await i.update(
           {
             // sold_at: new Date(),
@@ -578,20 +590,23 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
     items: z.array(refundItemSchema),
   });
 
-  const parent = await SalesTransaction.findByPk(id, {
-    include: [
-      {
-        model: SalesTransaction,
-        as: "refunds",
-        required: false,
-        include: [{ model: LabeledItem, as: "items" }],
-      },
-      { model: LabeledItem, as: "items" },
-      { model: TransactionGlobalPromotion, as: "globalPromotions" },
-    ],
-  });
-  if (!parent)
-    throw new createHttpError.NotFound("transaction parent pas trouvé");
+  const parent = await findByPkOrThrow(
+    SalesTransaction,
+    id,
+    "transaction parent pas trouvé",
+    {
+      include: [
+        {
+          model: SalesTransaction,
+          as: "refunds",
+          required: false,
+          include: [{ model: LabeledItem, as: "items" }],
+        },
+        { model: LabeledItem, as: "items" },
+        { model: TransactionGlobalPromotion, as: "globalPromotions" },
+      ],
+    },
+  );
   const parentRefunds = parent.refunds ?? [];
   const parentItems = parent.items ?? [];
   const parentPromoValue =
@@ -711,11 +726,11 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
       { transaction: t },
     );
     for await (const item of refunded) {
-      const i = await LabeledItem.findByPk(
+      const i = await findByPkOrThrow(
+        LabeledItem,
         +item.barcode,
-        // { transaction: t }
+        "item non trouvé",
       );
-      if (!i) throw new createHttpError.NotFound("item non trouvé");
       await refund.addItem(i, {
         through: {
           name: item.name,
@@ -835,21 +850,26 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
 
 export const listRefunds = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const refunds = await SalesTransaction.findByPk(id, {
-    include: [
-      {
-        model: SalesTransaction,
-        as: "refunds",
-        required: false,
-        include: [{ model: LabeledItem, as: "items" }],
-      },
-      { model: LabeledItem, as: "items" },
-    ],
-  });
+  const refunds = await findByPkOrThrow(
+    SalesTransaction,
+    id,
+    "transaction non trouvée",
+    {
+      include: [
+        {
+          model: SalesTransaction,
+          as: "refunds",
+          required: false,
+          include: [{ model: LabeledItem, as: "items" }],
+        },
+        { model: LabeledItem, as: "items" },
+      ],
+    },
+  );
 
   res.json({
     success: true,
-    refunds: refunds?.refunds,
+    refunds: refunds.refunds,
     ref: refunds,
   });
 };

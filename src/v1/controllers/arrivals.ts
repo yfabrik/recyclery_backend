@@ -9,6 +9,7 @@ import {
   ARRIVAL_STATUSES,
 } from "../../constants/dbEnums.js";
 import { enumSchema, idSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { ModelWhere, RequestWithUser } from "./types.ts";
 
 import db from "../../models/index.js";
@@ -99,7 +100,7 @@ export const listArrivals = async (req: Request, res: Response) => {
 
 export const detailArrival = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const arrival = await Arrival.findByPk(id, {
+  const arrival = await findByPkOrThrow(Arrival, id, "Arrivage non trouvé", {
     include: [
       { model: Category, as: "categorie" },
       { model: Category, as: "subcategorie" },
@@ -107,7 +108,6 @@ export const detailArrival = async (req: RequestWithUser, res: Response) => {
       { model: CollectionPoint },
     ],
   });
-  if (!arrival) throw new createHttpError[404]("Arrivage non trouvé");
   res.json({
     success: true,
     arrival: arrival,
@@ -116,11 +116,11 @@ export const detailArrival = async (req: RequestWithUser, res: Response) => {
 
 export const createArrival = async (req: RequestWithUser, res: Response) => {
   const data = dataSchema.parse(req.body);
-  const category = await Category.findByPk(
+  await findByPkOrThrow(
+    Category,
     data.subcategory_id ?? data.category_id,
-  ); //TODO filter par type de category need only IO.in ?
-  // Vérifier si la catégorie existe
-  if (!category) throw new createHttpError[404]("Catégorie non trouvée");
+    "Catégorie non trouvée",
+  );
 
   const arrival = await Arrival.create({
     ...data,
@@ -138,10 +138,7 @@ export const updateArrival = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
 
-  const arrival = await Arrival.findByPk(id);
-  // Vérifier si l'arrivage existe
-
-  if (!arrival) throw new createHttpError[404]("Arrivage non trouvé");
+  const arrival = await findByPkOrThrow(Arrival, id, "Arrivage non trouvé");
   await arrival.update({
     ...data,
   });

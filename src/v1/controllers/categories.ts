@@ -2,6 +2,7 @@ import createHttpError from "http-errors";
 import { literal, Op, type Includeable } from "sequelize";
 import * as z from "zod";
 import { idSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
@@ -220,8 +221,7 @@ export const createCategorie = async (req: Request, res: Response) => {
 
 export const deleteCategorie = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const toDelete = await Category.findByPk(id);
-  if (!toDelete) throw new createHttpError[404]("Catégorie non trouvée");
+  const toDelete = await findByPkOrThrow(Category, id, "Catégorie non trouvée");
   await toDelete.destroy();
   res.json({
     success: true,
@@ -233,10 +233,7 @@ export const updateCategorie = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
 
-  const category = await Category.findByPk(id);
-
-  // Vérifier si la catégorie existe
-  if (!category) throw new createHttpError[404]("Catégorie non trouvée");
+  const category = await findByPkOrThrow(Category, id, "Catégorie non trouvée");
 
   // Vérifier si le nouveau nom n'est pas déjà utilisé
   const existingCategory = await findExistingCategory(
@@ -266,7 +263,7 @@ export const patchCategory = async (req: Request, res: Response) => {
   });
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
-  const category = await Category.findByPk(id, {
+  const category = await findByPkOrThrow(Category, id, "categorie non trouvé", {
     include: [
       {
         model: Category,
@@ -278,8 +275,6 @@ export const patchCategory = async (req: Request, res: Response) => {
       },
     ],
   });
-
-  if (!category) throw new createHttpError.NotFound("categorie non trouvé");
   const parent = category?.parent;
   const subcategories = category?.subcategories;
   //TODO can do better

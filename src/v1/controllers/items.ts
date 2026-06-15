@@ -4,6 +4,7 @@ import { col, fn, literal, Op } from "sequelize";
 import z from "zod";
 import { CONDITION_STATES } from "../../constants/dbEnums.js";
 import { enumSchema, idSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 
 import db from "../../models/index.js";
 import type { ModelWhere, RequestWithUser } from "./types.js";
@@ -129,8 +130,7 @@ export const updateItem = async (req: RequestWithUser, res: Response) => {
 
   const data = dataSchema.parse(req.body);
 
-  const item = await LabeledItem.findByPk(id);
-  if (!item) throw new createHttpError[404]("item non trouvé");
+  const item = await findByPkOrThrow(LabeledItem, id, "item non trouvé");
   await item.update({
     ...data,
     condition_state: data.condition_state ?? item.condition_state,
@@ -142,9 +142,7 @@ export const updateItem = async (req: RequestWithUser, res: Response) => {
 
 export const deleteLabeledItem = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const toDelete = await LabeledItem.findByPk(id);
-
-  if (!toDelete) throw new createHttpError[404]("Article non trouvé");
+  const toDelete = await findByPkOrThrow(LabeledItem, id, "Article non trouvé");
   await toDelete.destroy();
 
   res.json({ success: true, message: "Article supprimé avec succès" });
@@ -152,8 +150,8 @@ export const deleteLabeledItem = async (req: Request, res: Response) => {
 
 export const tagItemAsSell = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const item = await LabeledItem.findByPk(id);
-  if (!item || item.status == "available")
+  const item = await findByPkOrThrow(LabeledItem, id, "Article non trouvé");
+  if (item.status == "available")
     throw new createHttpError[404]("Article non trouvé");
   await item.update({
     status: "sold",

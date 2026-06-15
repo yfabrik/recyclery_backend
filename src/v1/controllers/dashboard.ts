@@ -1,10 +1,9 @@
 import type { Request, Response } from "express";
 import { Op } from "sequelize";
-
-import createHttpError from "http-errors";
 import type { Models } from "../../models/db-types.js";
 import db from "../../models/index.js";
 import { idSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 
 const {
   LabeledItem,
@@ -436,10 +435,9 @@ export const dashboardStoreStats = async (_req: Request, res: Response) => {
 export const StoreHistoryStats = async (req: Request, res: Response) => {
   const id = idSchema("store id requis").parse(req.params.id);
 
-  const store = await Recyclery.findByPk(id, {
+  const store = await findByPkOrThrow(Recyclery, id, "magasin pas trouvé", {
     include: [{ model: CashRegister, as: "caisses" }],
   });
-  if (!store) throw new createHttpError.NotFound("magasin pas trouvé");
 
   const storeStat = [];
   for (let index = 0; index < 12; index++) {

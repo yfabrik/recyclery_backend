@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
-import createHttpError from "http-errors";
 import z from "zod";
 import { COLLECTION_POINT_TYPES } from "../../constants/dbEnums.js";
 import { enumSchema, idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { ModelWhere } from "../../models/db-types.js";
 import db from "../../models/index.js";
 
@@ -53,11 +53,14 @@ export const listCollectionPoints = async (req: Request, res: Response) => {
 export const detailCollectionPoint = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const point = await CollectionPoint.findByPk(id, {
-    include: [{ model: Recyclery }, { model: TaskSchedule }],
-  });
-
-  if (!point) throw new createHttpError[404]("Point de collecte non trouvé");
+  const point = await findByPkOrThrow(
+    CollectionPoint,
+    id,
+    "Point de collecte non trouvé",
+    {
+      include: [{ model: Recyclery }, { model: TaskSchedule }],
+    },
+  );
 
   res.json({
     success: true,
@@ -83,10 +86,11 @@ export const updateCollectionPoint = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
   const id = idSchema().parse(req.params.id);
 
-  const point = await CollectionPoint.findByPk(id, {});
-
-  // Vérifier si le point existe
-  if (!point) throw new createHttpError[404]("Point de collecte non trouvé");
+  const point = await findByPkOrThrow(
+    CollectionPoint,
+    id,
+    "Point de collecte non trouvé",
+  );
 
   await db.sequelize.transaction(async (t) => {
     //presence updated in hook
@@ -109,9 +113,11 @@ export const updateCollectionPoint = async (req: Request, res: Response) => {
 
 export const deleteCollectionPoint = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const point = await CollectionPoint.findByPk(id);
-  // Vérifier si le point existe
-  if (!point) throw new createHttpError[404]("Point de collecte non trouvé");
+  const point = await findByPkOrThrow(
+    CollectionPoint,
+    id,
+    "Point de collecte non trouvé",
+  );
   await point.destroy();
 
   res.json({

@@ -1,6 +1,6 @@
-import createHttpError from "http-errors";
 import z from "zod";
 import { idSchema, phoneSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
@@ -37,7 +37,7 @@ export const listEmployees = async (_req: Request, res: Response) => {
 
 export const detailEmployee = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const data = await Employee.findByPk(id, {
+  const data = await findByPkOrThrow(Employee, id, "employée pas trouvé", {
     include: [
       {
         model: Recyclery,
@@ -77,8 +77,7 @@ export const createEmployee = async (req: Request, res: Response) => {
 export const updateEmployee = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
-  const employee = await Employee.findByPk(id);
-  if (!employee) throw new createHttpError.NotFound("employée pas trouvé");
+  const employee = await findByPkOrThrow(Employee, id, "employée pas trouvé");
   await employee.update({
     ...data,
     isActive: data.isActive ?? employee.isActive,
@@ -92,8 +91,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
 
 export const deleteEmployee = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const employee = await Employee.findByPk(id);
-  if (!employee) throw new createHttpError.NotFound("employée pas trouvé");
+  const employee = await findByPkOrThrow(Employee, id, "employée pas trouvé");
   await employee.destroy();
   res.json({
     success: true,
@@ -103,9 +101,8 @@ export const deleteEmployee = async (req: Request, res: Response) => {
 
 export const updateEmployeeSkills = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const employee = await Employee.findByPk(id);
+  const employee = await findByPkOrThrow(Employee, id, "employée pas trouvé");
   const dataSchema = z.object({ skills: z.array(idSchema()) });
-  if (!employee) throw new createHttpError.NotFound("employée pas trouvé");
   const data = dataSchema.parse(req.body);
   await employee.setSkills(data.skills);
   res.json({

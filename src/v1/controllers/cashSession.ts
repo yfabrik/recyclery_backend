@@ -6,6 +6,7 @@ import * as z from "zod";
 import logger from "../../services/logger.js";
 import { CASH_SESSION_STATUSES } from "../../constants/dbEnums.js";
 import { enumSchema, idSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import { listCaisses } from "./cashRegister.js";
 
 import db from "../../models/index.js";
@@ -230,7 +231,7 @@ export const closeCashSession = async (req: RequestWithUser, res: Response) => {
 export const getSessionById = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const session = await CashSession.findByPk(id, {
+  const session = await findByPkOrThrow(CashSession, id, "session pas trouvé", {
     include: [
       {
         model: CashRegister,
@@ -248,8 +249,6 @@ export const getSessionById = async (req: Request, res: Response) => {
       },
     ],
   });
-
-  if (!session) throw new createHttpError.NotFound("session pas trouvé");
 
   res.json({
     success: true,

@@ -1,8 +1,8 @@
-import createHttpError from "http-errors";
 import { col, fn, literal } from "sequelize";
 import z from "zod";
 import { DONATION_STATUSES } from "../../constants/dbEnums.js";
 import { enumSchema, idSchema, phoneSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
@@ -82,8 +82,7 @@ export const updateDon = async (req: Request, res: Response) => {
   // const donor_email = isEmail ? data.donor_contact : null;
   // const donor_phone = !isEmail ? data.donor_contact : null;
 
-  const donation = await Donation.findByPk(id);
-  if (!donation) throw new createHttpError.NotFound("donation non trouvé");
+  const donation = await findByPkOrThrow(Donation, id, "donation non trouvé");
 
   // donation.donor_name = data.donor_name;
   // donation.donor_phone = donor_phone || null;
@@ -102,8 +101,7 @@ export const updateDon = async (req: Request, res: Response) => {
 
 export const deleteDon = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const don = await Donation.findByPk(id);
-  if (!don) throw new createHttpError.NotFound("don non trouvé");
+  const don = await findByPkOrThrow(Donation, id, "don non trouvé");
   await don.destroy();
   return res.json({ success: true, message: "Don supprimé avec succès" });
 };

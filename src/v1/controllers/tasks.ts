@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import createHttpError from "http-errors";
 import { Op, type Includeable } from "sequelize";
 import * as z from "zod";
 
@@ -10,6 +9,7 @@ import {
   TASK_CATEGORIES,
 } from "../../constants/dbEnums.js";
 import { enumSchema, idSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { ModelWhere } from "../../models/db-types.ts";
 
 import db from "../../models/index.js";
@@ -140,9 +140,7 @@ export const listTasks = async (req: Request, res: Response) => {
 
 export const detailTask = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const tasks = await Task.findByPk(id);
-
-  if (!tasks) throw new createHttpError[404]("Tâche non trouvée");
+  const tasks = await findByPkOrThrow(Task, id, "Tâche non trouvée");
 
   // Parser les champs JSON
   // const task = {
@@ -166,8 +164,7 @@ export const createTask = async (req: Request, res: Response) => {
   let name = data.name ?? data.category;
   let store;
   if (data.store_id) {
-    store = await Recyclery.findByPk(data.store_id);
-    if (!store) throw new createHttpError.NotFound("magasin non trouvé");
+    store = await findByPkOrThrow(Recyclery, data.store_id, "magasin non trouvé");
   }
   if (store && data.category == "custom") {
     name = store.name + "-" + name;
@@ -205,15 +202,16 @@ export const updateTask = async (req: Request, res: Response) => {
 
   const data = dataSchema.parse(req.body);
   // Vérifier que la tâche existe
-  const existing = await Task.findByPk(id);
-
-  if (!existing) throw new createHttpError[404]("Tâche non trouvée");
+  const existing = await findByPkOrThrow(Task, id, "Tâche non trouvée");
 
   let name = data.name ?? data.category;
 
   if (data.store_id && data.category == "custom") {
-    const store = await Recyclery.findByPk(data.store_id);
-    if (!store) throw new createHttpError.NotFound("magasin non trouvé");
+    const store = await findByPkOrThrow(
+      Recyclery,
+      data.store_id,
+      "magasin non trouvé",
+    );
     name = store.name + "-" + name;
   }
 
@@ -232,8 +230,7 @@ export const updateTask = async (req: Request, res: Response) => {
 export const deleteTask = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const existing = await Task.findByPk(id);
-  if (!existing) throw new createHttpError[404]("Tâche non trouvée");
+  const existing = await findByPkOrThrow(Task, id, "Tâche non trouvée");
   await existing.destroy();
 
   res.json({
@@ -246,8 +243,9 @@ export const getUsersFromTask = async (req: Request, res: Response) => {
   //TODO use the detail task with query param ?
   const taskId = idSchema().parse(req.params.taskId);
 
-  const tasks = await Task.findByPk(taskId, { include: [{ model: Employee }] });
-  if (!tasks) throw new createHttpError.NotFound("tache non trouvé");
+  const tasks = await findByPkOrThrow(Task, taskId, "tache non trouvé", {
+    include: [{ model: Employee }],
+  });
   res.json({
     success: true,
     employees: tasks.Employees,
@@ -258,16 +256,13 @@ export const addUserToTask = async (req: Request, res: Response) => {
   const taskId = idSchema().parse(req.params.taskId);
   const employee_id = idSchema("ID employé requis").parse(req.body.employee_id);
 
-  const task = await Task.findByPk(taskId);
+  const task = await findByPkOrThrow(Task, taskId, "Tâche non trouvée");
 
-  // Vérifier que la tâche existe
-
-  if (!task) throw new createHttpError[404]("Tâche non trouvée");
-
-  // Vérifier que l'employé existe
-  const employee = await Employee.findByPk(employee_id);
-
-  if (!employee) throw new createHttpError[404]("Employé non trouvé");
+  const employee = await findByPkOrThrow(
+    Employee,
+    employee_id,
+    "Employé non trouvé",
+  );
 
   //FIXME
   // if (task.hasUser(employee))
@@ -288,8 +283,7 @@ export const removeUserFromTask = async (req: Request, res: Response) => {
   const employeeId = idSchema().parse(req.params.employeeId);
   const taskId = idSchema().parse(req.params.taskId);
 
-  const task = await Task.findByPk(taskId);
-  if (!task) throw new createHttpError[404]("Tâche non trouvée");
+  const task = await findByPkOrThrow(Task, taskId, "Tâche non trouvée");
   await task.removeEmployee(employeeId);
 
   res.json({

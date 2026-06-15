@@ -1,8 +1,8 @@
-import createHttpError from "http-errors";
 import { col, fn } from "sequelize";
 import * as z from "zod";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
@@ -65,7 +65,7 @@ export const listCaisses = async (req: Request, res: Response) => {
 export const detailCaisse = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const register = await CashRegister.findByPk(id, {
+  const register = await findByPkOrThrow(CashRegister, id, "Caisse non trouvée", {
     include: [
       {
         model: CashSession,
@@ -77,9 +77,7 @@ export const detailCaisse = async (req: Request, res: Response) => {
     order: [[{ model: CashSession, as: "sessions" }, "createdAt", "DESC"]],
   });
 
-  if (!register) throw new createHttpError.NotFound("Caisse non trouvée");
-
-  const sessions = register.sessions!; //TODO better ?
+  const sessions = register.sessions!;
 
   const lastSession = sessions.reduce<Date | null>((latest, session) => {
     const createdAt = session.createdAt;
@@ -110,8 +108,7 @@ export const createCaisse = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
 
   // Vérifier que le magasin existe
-  const store = await Recyclery.findByPk(data.store_id);
-  if (!store) throw new createHttpError.NotFound("Magasin non trouvé");
+  const store = await findByPkOrThrow(Recyclery, data.store_id, "Magasin non trouvé");
 
   //unique constraint unique name per store enforced in model
   const result = await store.createCaisse({
@@ -137,11 +134,11 @@ export const updateCaisse = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
 
   // Vérifier que la caisse existe
-  const existingRegister = await CashRegister.findByPk(id);
-
-  if (!existingRegister) {
-    throw new createHttpError.NotFound("Caisse non trouvée");
-  }
+  const existingRegister = await findByPkOrThrow(
+    CashRegister,
+    id,
+    "Caisse non trouvée",
+  );
   await existingRegister.update({ ...data });
 
   res.json({
@@ -154,11 +151,11 @@ export const updateCaisse = async (req: Request, res: Response) => {
 export const deleteCaisse = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   // Vérifier que la caisse existe
-  const existingRegister = await CashRegister.findByPk(id);
-
-  if (!existingRegister) {
-    throw new createHttpError.NotFound("Caisse non trouvée");
-  }
+  const existingRegister = await findByPkOrThrow(
+    CashRegister,
+    id,
+    "Caisse non trouvée",
+  );
 
   await existingRegister.destroy();
 

@@ -5,6 +5,7 @@ import * as z from "zod";
 import db from "../../models/index.js";
 import { FRENCH_WEEKDAYS } from "../../constants/dbEnums.js";
 import { enumSchema, idSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 
 import { detailTask } from "./tasks.js";
 
@@ -84,13 +85,16 @@ export const detailPointPrecense = async (req: Request, res: Response) => {
 export const createPointPrecense = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
 
-  const point = await CollectionPoint.findByPk(data.collection_point_id, {
-    include: [
-      { model: TaskSchedule, where: { category: "point" }, required: false },
-    ],
-  });
-
-  if (!point) throw new createHttpError.NotFound("point pas trouvé");
+  const point = await findByPkOrThrow(
+    CollectionPoint,
+    data.collection_point_id,
+    "point pas trouvé",
+    {
+      include: [
+        { model: TaskSchedule, where: { category: "point" }, required: false },
+      ],
+    },
+  );
 
   const presence = await db.sequelize.transaction(async (t) => {
     return TaskSchedule.create(
@@ -118,10 +122,11 @@ export const createPointPrecense = async (req: Request, res: Response) => {
 export const updatePointPrecense = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
   const id = idSchema().parse(req.params.id);
-  const existing = await TaskSchedule.findByPk(id);
-
-  if (!existing)
-    throw new createHttpError.NotFound("Jours de présence non trouvés");
+  const existing = await findByPkOrThrow(
+    TaskSchedule,
+    id,
+    "Jours de présence non trouvés",
+  );
 
   const { day_of_week, is_present, ...rest } = data;
   await db.sequelize.transaction(async (t) => {

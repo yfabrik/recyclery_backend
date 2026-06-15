@@ -1,9 +1,9 @@
-import createHttpError from "http-errors";
 import { col, fn, literal, Op, type Includeable } from "sequelize";
 import z from "zod";
 
 import type { Request, Response } from "express";
 import { idSchema, phoneSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 
 import type { ModelWhere } from "../../models/db-types.js";
 import db from "../../models/index.js";
@@ -58,9 +58,11 @@ export const listEcoOrganism = async (req: Request, res: Response) => {
 
 export const detailEcoOrganism = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const eco_organism = await EcoOrganism.findByPk(id);
-
-  if (!eco_organism) throw new createHttpError[404]("Éco-organisme non trouvé");
+  const eco_organism = await findByPkOrThrow(
+    EcoOrganism,
+    id,
+    "Éco-organisme non trouvé",
+  );
 
   res.json({ eco_organism });
 };
@@ -86,8 +88,11 @@ export const updateEcoOrganism = async (req: Request, res: Response) => {
 
   const data = dataSchema.parse(req.body);
 
-  const eco_organism = await EcoOrganism.findByPk(id);
-  if (!eco_organism) throw new createHttpError[404]("eco organisme pas trouvé");
+  const eco_organism = await findByPkOrThrow(
+    EcoOrganism,
+    id,
+    "eco organisme pas trouvé",
+  );
   const { inCategories, sellCategories, ...ecoData } = data;
   await db.sequelize.transaction(async (t) => {
     await eco_organism.update(ecoData, { transaction: t });
@@ -99,8 +104,11 @@ export const updateEcoOrganism = async (req: Request, res: Response) => {
 
 export const deleteEcoOrganism = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const ecoOrg = await EcoOrganism.findByPk(id);
-  if (!ecoOrg) throw new createHttpError.NotFound("organisme pas trouvé");
+  const ecoOrg = await findByPkOrThrow(
+    EcoOrganism,
+    id,
+    "organisme pas trouvé",
+  );
 
   // const waste = await ecoOrg.countWasteDisposals() //TODO
 

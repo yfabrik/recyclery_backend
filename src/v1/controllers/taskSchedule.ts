@@ -6,6 +6,7 @@ import {
   TASK_CATEGORIES,
 } from "../../constants/dbEnums.js";
 import { enumSchema, idSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
@@ -129,24 +130,27 @@ export const listSchedules = async (req: Request, res: Response) => {
 export const findSchedule = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const schedules = await TaskSchedule.findByPk(id, {
-    attributes: {
-      include: [
-        [
-          fn("COALESCE", col("Employee.nom"), "Utilisateur inconnu"),
-          "employee_name",
+  const schedules = await findByPkOrThrow(
+    TaskSchedule,
+    id,
+    "Planning non trouvé",
+    {
+      attributes: {
+        include: [
+          [
+            fn("COALESCE", col("Employee.nom"), "Utilisateur inconnu"),
+            "employee_name",
+          ],
         ],
+      },
+      include: [
+        { model: Employee },
+        {
+          model: Task,
+        },
       ],
     },
-    include: [
-      { model: Employee },
-      {
-        model: Task,
-      },
-    ],
-  });
-
-  if (!schedules) throw new createHttpError.NotFound("Planning non trouvé");
+  );
 
   res.json({
     success: true,
@@ -176,9 +180,11 @@ export const updateSchedule = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
 
   // Vérifier que le planning existe
-  const existingSchedules = await TaskSchedule.findByPk(id);
-
-  if (!existingSchedules) throw new createHttpError[404]("Planning non trouvé");
+  const existingSchedules = await findByPkOrThrow(
+    TaskSchedule,
+    id,
+    "Planning non trouvé",
+  );
 
   if (!data.name) data.name = data.category;
   await db.sequelize.transaction(async (t) => {
@@ -197,8 +203,11 @@ export const updateSchedule = async (req: Request, res: Response) => {
 export const deleteSchedule = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const scheduleToDelete = await TaskSchedule.findByPk(id);
-  if (!scheduleToDelete) throw new createHttpError[404]("Planning non trouvé");
+  const scheduleToDelete = await findByPkOrThrow(
+    TaskSchedule,
+    id,
+    "Planning non trouvé",
+  );
   await db.sequelize.transaction(async (t) => {
     await scheduleToDelete.destroy({ transaction: t });
   });
@@ -248,11 +257,9 @@ export const addEmployeeToSchedule = async (req: Request, res: Response) => {
   const employee_id = idSchema("ID employé requis").parse(req.body.employee_id);
 
   // Vérifier que la tâche du planning existe et récupérer ses détails
-  const task = await Task.findByPk(scheduleId, {
+  const task = await findByPkOrThrow(Task, scheduleId, "Tâche du planning non trouvée", {
     include: [{ model: Employee }],
   });
-
-  if (!task) throw new createHttpError[404]("Tâche du planning non trouvée");
 
   const currentSchedule = task;
 
@@ -312,10 +319,12 @@ export const removeEmployeeFromSchedule = async (
   );
   const employeeId = idSchema("ID employé requis").parse(req.params.employeeId);
 
-  const result = await Task.findByPk(scheduleId, {
-    include: [{ model: Employee }],
-  });
-  if (!result) throw new createHttpError[404]("Assignation non trouvée");
+  const result = await findByPkOrThrow(
+    Task,
+    scheduleId,
+    "Assignation non trouvée",
+    { include: [{ model: Employee }] },
+  );
 
   await result.removeEmployee(employeeId);
   // const result = await TaskSchedule.destroy({
@@ -332,11 +341,9 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
   const scheduleId = idSchema().parse(req.params.scheduleId);
 
   // Récupérer les détails de la tâche
-  const schedule = await Task.findByPk(scheduleId, {
+  const schedule = await findByPkOrThrow(Task, scheduleId, "Tâche non trouvée", {
     include: [{ model: Employee }],
   });
-
-  if (!schedule) throw new createHttpError[404]("Tâche non trouvée");
 
   const currentSchedule = schedule;
 

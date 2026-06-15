@@ -1,6 +1,6 @@
-import createHttpError from "http-errors";
 import z from "zod";
 import { idSchema } from "../../services/zod.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 import type { Includeable } from "sequelize";
 
@@ -33,19 +33,22 @@ export const getEmployeeStoreById = async (req: Request, res: Response) => {
   });
   const { employeeId } = params.parse(req.params);
 
-  const employee = await Employee.findByPk(employeeId, {
-    include: [
-      {
-        model: Recyclery,
-        as: "stores",
-        through: {
-          attributes: ["is_primary"],
+  const employee = await findByPkOrThrow(
+    Employee,
+    employeeId,
+    "Utilisateur non trouvé",
+    {
+      include: [
+        {
+          model: Recyclery,
+          as: "stores",
+          through: {
+            attributes: ["is_primary"],
+          },
         },
-      },
-    ],
-  });
-
-  if (!employee) throw new createHttpError.NotFound("Utilisateur non trouvé");
+      ],
+    },
+  );
 
   const stores = employee?.stores || [];
   const assignments = stores.map((s) => {
@@ -89,7 +92,7 @@ export const assignUserToStore = async (req: Request, res: Response) => {
   const data = dataSchema.parse(req.body);
 
   // Vérifier que l'employé et le magasin existent
-  const employee = await Employee.findByPk(data.employee_id, {
+  const employee = await findByPkOrThrow(Employee, data.employee_id, "Employé non trouvé", {
     include: [
       {
         model: Recyclery,
@@ -97,11 +100,7 @@ export const assignUserToStore = async (req: Request, res: Response) => {
       },
     ],
   });
-
-  if (!employee) throw new createHttpError[404]("Employé non trouvé");
-  const store = await Recyclery.findByPk(data.store_id);
-
-  if (!store) throw new createHttpError[404]("Magasin non trouvé");
+  const store = await findByPkOrThrow(Recyclery, data.store_id, "Magasin non trouvé");
 
   await sequelize.transaction(async (t) => {
     // Si c'est une affectation principale, retirer le statut principal des autres affectations de cet employé
@@ -152,17 +151,18 @@ export const removeEmployeeStore = async (req: Request, res: Response) => {
   });
   const data = dataSchema.parse(req.params);
 
-  const employee = await Employee.findByPk(data.employeeId);
-  if (!employee) {
-    throw new createHttpError[404]("Employé non trouvé");
-  }
+  const employee = await findByPkOrThrow(
+    Employee,
+    data.employeeId,
+    "Employé non trouvé",
+  );
 
   if (data.store_id) {
-    // Remove specific store assignment
-    const store = await Recyclery.findByPk(data.store_id);
-    if (!store) {
-      throw new createHttpError[404]("Magasin non trouvé");
-    }
+    const store = await findByPkOrThrow(
+      Recyclery,
+      data.store_id,
+      "Magasin non trouvé",
+    );
     await employee.removeStore(store);
   } else {
     // Remove all store assignments
