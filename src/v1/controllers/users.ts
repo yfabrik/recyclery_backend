@@ -3,7 +3,8 @@ import createHttpError from "http-errors";
 import { findUserByEmail } from "../../services/users.js";
 import { col, fn, Op, type Includeable } from "sequelize";
 import * as z from "zod";
-import { idSchema, phoneSchema } from "../../services/zod.js";
+import { USER_ROLES } from "../../constants/dbEnums.js";
+import { enumSchema, idSchema, phoneSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
@@ -18,7 +19,8 @@ export const listUsers = async (req: Request, res: Response) => {
     role: z
       .string()
       .optional()
-      .transform((val) => (val ? val.split(",") : [])),
+      .transform((val) => (val ? val.split(",") : []))
+      .pipe(z.array(enumSchema(USER_ROLES))),
     active: z.coerce.boolean().optional(),
     include: z
       .string()
@@ -78,10 +80,7 @@ export const createUser = async (req: Request, res: Response) => {
     username: z.string("Nom d'utilisateur obligatoire").trim().nonempty(),
     email: z.email(" email obligatoire"),
     password: z.string(" mot de passe  obligatoire"),
-    role: z
-      .enum(["employee", "manager", "admin"]) //TODO type enum
-      .optional()
-      .default("employee"),
+    role: enumSchema(USER_ROLES).optional().default("employee"),
     managedStores: z.array(idSchema()).nullish(),
     phone: phoneSchema().nullish().prefault(null),
     // contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
@@ -118,10 +117,7 @@ export const updateUser = async (req: Request, res: Response) => {
   const dataSchema = z.object({
     username: z.string("Nom d'utilisateur obligatoire").trim().nonempty(),
     email: z.email(" email obligatoire"),
-    role: z
-      .enum(["employee", "manager", "admin"]) //TODO type enum
-      .optional()
-      .default("employee"),
+    role: enumSchema(USER_ROLES).optional().default("employee"),
     managedStores: z.array(idSchema()).nullish(),
     phone: phoneSchema().nullish().prefault(null),
     // contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?

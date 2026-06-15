@@ -4,7 +4,8 @@ import type { Request, Response } from "express";
 import createHttpError from "http-errors";
 import * as z from "zod";
 import logger from "../../services/logger.js";
-import { idSchema } from "../../services/zod.js";
+import { CASH_SESSION_STATUSES } from "../../constants/dbEnums.js";
+import { enumSchema, idSchema } from "../../services/zod.js";
 import { listCaisses } from "./cashRegister.js";
 
 import db from "../../models/index.js";
@@ -27,7 +28,7 @@ export const listCashSessions = async (req: Request, res: Response) => {
   const filterSchema = z.object({
     store_id: z.coerce.number().positive().optional(),
     user_id: z.coerce.number().positive().optional(),
-    status: z.enum(["open", "close"]).optional(), //TODO use type from model
+    status: enumSchema(CASH_SESSION_STATUSES).optional(),
   });
   const data = filterSchema.parse(req.query);
 

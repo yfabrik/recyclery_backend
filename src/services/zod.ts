@@ -18,3 +18,8 @@ export const postalSchema = (message?: string) =>
 
 export const idSchema = (message?: string) =>
   z.coerce.number({ message }).positive({ message });
+
+export const enumSchema = <const T extends readonly [string, ...string[]]>(
+  values: T,
+  message?: string,
+) => (message ? z.enum(values, message) : z.enum(values));

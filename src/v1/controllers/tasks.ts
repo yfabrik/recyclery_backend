@@ -5,7 +5,11 @@ import * as z from "zod";
 
 import { formatWhereDateRange } from "../../helpers.js";
 
-import { idSchema } from "../../services/zod.js";
+import {
+  RECURRENCE_PATTERNS,
+  TASK_CATEGORIES,
+} from "../../constants/dbEnums.js";
+import { enumSchema, idSchema } from "../../services/zod.js";
 import type { ModelWhere } from "../../models/db-types.ts";
 
 import db from "../../models/index.js";
@@ -15,10 +19,7 @@ const { Task, TaskSchedule, Employee, Recyclery } = db;
 const dataSchema = z.object({
   name: z.string("Nom requis"),
   description: z.string().nullish().prefault(null),
-  category: z.enum(
-    ["point", "vente", "collection", "custom"],
-    "categorie requise",
-  ),
+  category: enumSchema(TASK_CATEGORIES, "categorie requise"),
   priority: z.string("priorité requis"),
   // estimated_duration: z.coerce.number().nullish(),
   required_skills: z
@@ -34,8 +35,7 @@ const dataSchema = z.object({
     .transform((val) => JSON.stringify(val)),
   // hourly_rate: z.coerce.number().nullish(),
   is_recurring: z.coerce.boolean().optional(),
-  recurrence_pattern: z
-    .enum(["daily", "weekly", "monthly"])
+  recurrence_pattern: enumSchema(RECURRENCE_PATTERNS, "récurrence invalide")
     .nullish()
     .prefault(null),
   assigned_to: idSchema().nullish(),
@@ -54,8 +54,7 @@ export const listTasks = async (req: Request, res: Response) => {
       .optional()
       .transform((val) => (val ? val.split(",") : []))
       .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
-    category: z
-      .enum(["point", "vente", "collection", "custom"]) //TODO type enum
+    category: enumSchema(TASK_CATEGORIES)
       .nullable()
       .optional()
       .default(

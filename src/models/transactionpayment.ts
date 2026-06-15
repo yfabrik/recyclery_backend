@@ -13,13 +13,14 @@ import {
 import type { ModelStatics } from "./db-types.ts";
 import type GiftCard from "./giftcard.ts";
 import type SalesTransaction from "./salestransaction.ts";
+import { PAYMENT_METHODS, type PaymentMethod } from "../constants/dbEnums.js";
 
 export default class TransactionPayment extends Model<
   InferAttributes<TransactionPayment>,
   InferCreationAttributes<TransactionPayment>
 > {
   declare id: CreationOptional<number>;
-  declare method: "cash" | "card" | "check" | "giftcard" | "transfer";
+  declare method: PaymentMethod;
   declare amount: number;
   declare metadata: CreationOptional<Record<string, unknown> | null>;
   declare createdAt: CreationOptional<Date>;
@@ -55,7 +56,7 @@ export default class TransactionPayment extends Model<
           autoIncrement: true,
         },
         method: {
-          type: DataTypes.ENUM("cash", "card", "check", "giftcard", "transfer"),
+          type: DataTypes.ENUM(...PAYMENT_METHODS),
           allowNull: false,
         },
         amount: {

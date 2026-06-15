@@ -15,17 +15,16 @@ import type { ModelStatics } from "./db-types.ts";
 import type GiftCard from "./giftcard.ts";
 import type SalesTransaction from "./salestransaction.ts";
 import type User from "./user.ts";
+import {
+  GIFT_CARD_TRANSACTION_TYPES,
+  type GiftCardTransactionType,
+} from "../constants/dbEnums.js";
 
 export default class GiftCardTransaction extends Model<
   InferAttributes<GiftCardTransaction>,
   InferCreationAttributes<GiftCardTransaction>
 > {
-  declare type:
-    | "issue"
-    | "charge"
-    | "refund_recredit"
-    | "manual_adjustment"
-    | "expire";
+  declare type: GiftCardTransactionType;
   declare amount: number;
   declare occurred_at: CreationOptional<Date>;
   declare metadata: CreationOptional<Record<string, unknown> | null>;
@@ -72,13 +71,7 @@ export default class GiftCardTransaction extends Model<
           primaryKey: true,
         },
         type: {
-          type: DataTypes.ENUM(
-            "issue",
-            "charge",
-            "refund_recredit",
-            "manual_adjustment",
-            "expire",
-          ),
+          type: DataTypes.ENUM(...GIFT_CARD_TRANSACTION_TYPES),
           allowNull: false,
         },
         amount: {

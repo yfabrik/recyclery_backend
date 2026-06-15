@@ -18,6 +18,10 @@ import type { ModelStatics } from "./db-types.ts";
 import type Recyclery from "./recyclery.ts";
 import type Task from "./task.ts";
 import type TaskSchedule from "./taskschedule.ts";
+import {
+  COLLECTION_POINT_TYPES,
+  type CollectionPointType,
+} from "../constants/dbEnums.js";
 
 export default class CollectionPoint extends Model<
   InferAttributes<CollectionPoint>,
@@ -31,9 +35,7 @@ export default class CollectionPoint extends Model<
   declare contact_person: CreationOptional<string | null>;
   declare contact_phone: CreationOptional<string | null>;
   declare contact_email: CreationOptional<string | null>;
-  declare type: CreationOptional<
-    "standard" | "entreprise" | "association" | "school" | "hospital" | "other"
-  >;
+  declare type: CreationOptional<CollectionPointType>;
   declare notes: CreationOptional<string | null>;
   declare is_active: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
@@ -103,14 +105,7 @@ export default class CollectionPoint extends Model<
           allowNull: true,
         },
         type: {
-          type: DataTypes.ENUM(
-            "standard",
-            "entreprise",
-            "association",
-            "school",
-            "hospital",
-            "other",
-          ),
+          type: DataTypes.ENUM(...COLLECTION_POINT_TYPES),
           defaultValue: "standard",
           allowNull: false,
         },

@@ -1,5 +1,9 @@
 import z from "zod";
-import { idSchema } from "../../services/zod.js";
+import {
+  EMPLOYEE_DAYS_OF_WEEK,
+  TIME_SLOTS,
+} from "../../constants/dbEnums.js";
+import { enumSchema, idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
 import db from "../../models/index.js";
 import createHttpError from "http-errors";
@@ -21,16 +25,8 @@ export const listEmployeeWorkdays = async (req: Request, res: Response) => {
 
 export const createEmployeeWorkdays = async (req: Request, res: Response) => {
   const dataSchema = z.object({
-    day_of_week: z.enum([
-      "monday",
-      "tuesday",
-      "wednesday",
-      "thursday",
-      "friday",
-      "saturday",
-      "sunday",
-    ]),
-    time_slot: z.enum(["morning", "afternoon"]),
+    day_of_week: enumSchema(EMPLOYEE_DAYS_OF_WEEK, "jour requis"),
+    time_slot: enumSchema(TIME_SLOTS, "créneau requis"),
     is_working: z.boolean(),
     start_time: z.iso.time(),
     end_time: z.iso.time(),

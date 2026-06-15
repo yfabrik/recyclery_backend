@@ -18,6 +18,7 @@ import type Donation from "./donation.ts";
 import type LabeledItem from "./labeleditem.ts";
 import type Recyclery from "./recyclery.ts";
 import type SalesTransaction from "./salestransaction.ts";
+import { USER_ROLES, type UserRole } from "../constants/dbEnums.js";
 
 export default class User extends Model<
   InferAttributes<User>,
@@ -28,7 +29,7 @@ export default class User extends Model<
   declare email: string;
   declare password_hash: string | null;
   declare password: string | undefined;
-  declare role: CreationOptional<"admin" | "manager" | "employee">;
+  declare role: CreationOptional<UserRole>;
   declare phone: CreationOptional<string | null>;
   declare isActive: CreationOptional<boolean>;
   declare last_login: CreationOptional<Date | null>;
@@ -114,7 +115,7 @@ export default class User extends Model<
           },
         },
         role: {
-          type: DataTypes.ENUM("admin", "manager", "employee"),
+          type: DataTypes.ENUM(...USER_ROLES),
           defaultValue: "employee",
           allowNull: false,
         },

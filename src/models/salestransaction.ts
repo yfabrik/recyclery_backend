@@ -26,6 +26,14 @@ import type TransactionPayment from "./transactionpayment.ts";
 import type User from "./user.ts";
 import type TransactionItem from "./transactionitem.js";
 import type TransactionGlobalPromotion from "./transactionGlobalPromotion.js";
+import {
+  SALES_PAYMENT_METHODS,
+  SALES_TRANSACTION_STATUSES,
+  TRANSACTION_TYPES,
+  type SalesPaymentMethod,
+  type SalesTransactionStatus,
+  type TransactionType,
+} from "../constants/dbEnums.js";
 
 export default class SalesTransaction extends Model<
   InferAttributes<SalesTransaction>,
@@ -34,19 +42,13 @@ export default class SalesTransaction extends Model<
   declare id: CreationOptional<number>;
   declare total_amount_before_promotion: number;
   declare total_amount: number;
-  declare payment_method:
-    | "cash"
-    | "card"
-    | "check"
-    | "giftcard"
-    | "mixed"
-    | "transfer";
-  declare transactionType: "sell" | "refund";
+  declare payment_method: SalesPaymentMethod;
+  declare transactionType: TransactionType;
   declare payment_amount: number;
   declare customer_name: CreationOptional<string | null>;
   declare customer_email: CreationOptional<string | null>;
   declare customer_postal_code: CreationOptional<string | null>;
-  declare status: CreationOptional<"pending" | "completed" | "cancelled">;
+  declare status: CreationOptional<SalesTransactionStatus>;
 
   // declare global_promotion: number | null;
   // declare global_promotion_type: "percent" | "fixed" | null;
@@ -191,18 +193,11 @@ export default class SalesTransaction extends Model<
           allowNull: false,
         },
         payment_method: {
-          type: DataTypes.ENUM(
-            "cash",
-            "card",
-            "check",
-            "giftcard",
-            "mixed",
-            "transfer",
-          ),
+          type: DataTypes.ENUM(...SALES_PAYMENT_METHODS),
           allowNull: false,
         },
         transactionType: {
-          type: DataTypes.ENUM("sell", "refund"),
+          type: DataTypes.ENUM(...TRANSACTION_TYPES),
           defaultValue: "sell",
           allowNull: false,
         },
@@ -241,7 +236,7 @@ export default class SalesTransaction extends Model<
         customer_email: DataTypes.STRING,
         customer_postal_code: DataTypes.STRING,
         status: {
-          type: DataTypes.ENUM("pending", "completed", "cancelled"),
+          type: DataTypes.ENUM(...SALES_TRANSACTION_STATUSES),
           defaultValue: "completed",
           allowNull: false,
         },

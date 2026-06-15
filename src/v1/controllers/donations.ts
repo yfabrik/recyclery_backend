@@ -1,7 +1,8 @@
 import createHttpError from "http-errors";
 import { col, fn, literal } from "sequelize";
 import z from "zod";
-import { idSchema, phoneSchema } from "../../services/zod.js";
+import { DONATION_STATUSES } from "../../constants/dbEnums.js";
+import { enumSchema, idSchema, phoneSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
@@ -18,14 +19,14 @@ const dataSchema = z.object({
   estimated_value: z.coerce
     .number()
     .nonnegative("valeur doit etre un nombre valide"),
-  weight: z.coerce.number().nonnegative(),
-  status: z.enum(["pending", "accepted", "rejected"]).optional(),
+  weight: z.coerce.number().nonnegative("poids requis"),
+  status: enumSchema(DONATION_STATUSES).optional(),
 });
 
 export const listDons = async (req: Request, res: Response) => {
   const filterSchema = z.object({
     recyclery_id: idSchema().optional(),
-    status: z.enum(["pending", "accepted", "rejected"]).optional(), //TODO base it on enum from model
+    status: enumSchema(DONATION_STATUSES).optional(),
   });
   const filter = filterSchema.parse(req.query);
 

@@ -9,7 +9,13 @@ import {
   issueGiftCard,
   recreditGiftCard,
 } from "../../services/giftCards.js";
-import { idSchema, postalSchema } from "../../services/zod.js";
+import { idSchema, postalSchema, enumSchema } from "../../services/zod.js";
+import {
+  PAYMENT_METHODS,
+  PROMOTION_TYPES,
+  SALES_PAYMENT_METHODS,
+  TRANSACTION_TYPES,
+} from "../../constants/dbEnums.js";
 
 import db from "../../models/index.js";
 
@@ -46,19 +52,19 @@ export const getCartLinePrice = (line: CartItem) => {
 };
 
 const itemSchema = z.object({
-  name: z.string(),
+  name: z.string("nom requis"),
   price: z.coerce.number("prix requis").positive(),
   quantity: z.coerce.number().positive().default(1),
   category_id: idSchema(),
   subcategory_id: idSchema().nullish(),
   weight: z.coerce.number("poid requis").nonnegative(),
-  barcode: z.string(),
+  barcode: z.string("code-barres requis"),
   promotion: z.coerce.number().min(0).max(100).nullish(),
   bundlePrice: z.coerce.number().nullish(),
   bundleQuantity: z.coerce.number().nullish(),
 });
 const paymentLineSchema = z.object({
-  method: z.enum(["cash", "card", "check", "giftcard", "transfer"]), //TODO type enum
+  method: enumSchema(PAYMENT_METHODS, "mode de paiement requis"),
   amount: z.coerce.number("montant requis").positive(),
   gift_card_code: z.string().trim().min(1).nullish(),
 });
@@ -77,9 +83,10 @@ const dataSchema = z
       .number()
       .min(0, "La promotion globale doit être supérieure à 0")
       .nullish(),
-    global_promotion_type: z
-      .enum(["percent", "fixed"], "Type de promotion globale invalide")
-      .nullish(),
+    global_promotion_type: enumSchema(
+      PROMOTION_TYPES,
+      "Type de promotion globale invalide",
+    ).nullish(),
   })
   .superRefine((data, ctx) => {
     if (data.global_promotion && !data.global_promotion_type) {
@@ -209,18 +216,16 @@ export const listTransactions = async (req: Request, res: Response) => {
       idSchema().optional().nullable(),
     ),
     period: z.string().optional(),
-    type: z.enum(["sell", "refund"], "type de transaction inconnu").optional(), //TODO type enum
+    type: enumSchema(TRANSACTION_TYPES, "type de transaction inconnu").optional(),
     date_from: z.coerce.date().optional(),
     date_to: z.coerce.date().optional(),
     limit: z.coerce.number().positive().optional(),
     offset: z.coerce.number().nonnegative().default(0),
     session: idSchema().optional(),
-    payment_method: z
-      .enum(
-        ["cash", "check", "card", "giftcard", "mixed", "transfer"],
-        "methode de payment inconnue",
-      )
-      .optional(), //TODO type ENUM
+    payment_method: enumSchema(
+      SALES_PAYMENT_METHODS,
+      "methode de payment inconnue",
+    ).optional(),
     transaction_number: z.string().optional(),
     page: z.coerce.number().positive().optional(),
     include: z
@@ -550,13 +555,13 @@ export const createTransaction = async (
 export const createRefund = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const refundItemSchema = z.object({
-    name: z.string(),
+    name: z.string("nom requis"),
     price: z.coerce.number("prix requis").positive(),
     quantity: z.coerce.number().positive().default(1),
     category_id: idSchema(),
     subcategory_id: idSchema().nullish(),
     weight: z.coerce.number("poid requis").nonnegative(),
-    barcode: z.string(),
+    barcode: z.string("code-barres requis"),
     promotion: z.coerce.number().min(0).max(100).nullish(),
     bundlePrice: z.coerce.number().nullish(),
     bundleQuantity: z.coerce.number().nullish(),
@@ -566,12 +571,8 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
   const refundDataSchema = z.object({
     cash_session_id: idSchema(),
     total_amount: z.coerce.number("argent requis"),
-    payment_method: z
-      .enum(["cash", "card", "check", "giftcard", "transfer"])
-      .default("cash"),
-    refund_method: z
-      .enum(["cash", "card", "check", "giftcard", "transfer"])
-      .default("cash"),
+    payment_method: enumSchema(PAYMENT_METHODS).default("cash"),
+    refund_method: enumSchema(PAYMENT_METHODS).default("cash"),
     gift_card_code: z.string().trim().min(1).nullish(),
     refund_reason: z.string("refund raison requis"),
     items: z.array(refundItemSchema),

@@ -1,6 +1,7 @@
 import z from "zod";
 import createHttpError from "http-errors";
-import { idSchema } from "../../services/zod.js";
+import { GIFT_CARD_STATUSES } from "../../constants/dbEnums.js";
+import { enumSchema, idSchema } from "../../services/zod.js";
 import {
   chargeGiftCard,
   findGiftCardByCode,
@@ -35,9 +36,7 @@ const movementSchema = z.object({
 });
 
 const listSchema = z.object({
-  status: z
-    .enum(["active", "partially_used", "redeemed", "expired", "cancelled"])
-    .optional(),
+  status: enumSchema(GIFT_CARD_STATUSES).optional(),
   code: z.string().trim().optional(),
   limit: z.coerce.number().positive().max(200).default(50),
   offset: z.coerce.number().nonnegative().default(0),

@@ -7,6 +7,7 @@ import {
   type Sequelize,
 } from "sequelize";
 import type { Models } from "./db-types.ts";
+import { TASK_CATEGORIES, type TaskCategory } from "../constants/dbEnums.js";
 
 export default class TaskTemplate extends Model<
   InferAttributes<TaskTemplate>,
@@ -15,7 +16,7 @@ export default class TaskTemplate extends Model<
   declare id: CreationOptional<number>;
   declare name: string | null;
   declare description: string | null;
-  declare category: "vente" | "point" | "collection" | "custom";
+  declare category: TaskCategory;
   declare scheduled_date: Date | null;
   declare start_time: string | null;
   declare end_time: string | null;
@@ -42,7 +43,7 @@ export default class TaskTemplate extends Model<
         name: DataTypes.STRING,
         description: DataTypes.TEXT,
         category: {
-          type: DataTypes.ENUM("vente", "point", "collection", "custom"),
+          type: DataTypes.ENUM(...TASK_CATEGORIES),
           allowNull: false,
         },
         scheduled_date: DataTypes.DATE,

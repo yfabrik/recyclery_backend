@@ -19,6 +19,12 @@ import type Recyclery from "./recyclery.ts";
 import type SalesTransaction from "./salestransaction.ts";
 import type User from "./user.ts";
 import type TransactionItem from "./transactionitem.js";
+import {
+  CONDITION_STATES,
+  LABELED_ITEM_STATUSES,
+  type ConditionState,
+  type LabeledItemStatus,
+} from "../constants/dbEnums.js";
 
 export default class LabeledItem extends Model<
   InferAttributes<LabeledItem>,
@@ -30,10 +36,8 @@ export default class LabeledItem extends Model<
   declare weight: number;
   declare price: number;
   declare cost: CreationOptional<number | null>;
-  declare condition_state: CreationOptional<
-    "excellent" | "good" | "fair" | "poor"
-  >;
-  declare status: CreationOptional<"available" | "sold">;
+  declare condition_state: CreationOptional<ConditionState>;
+  declare status: CreationOptional<LabeledItemStatus>;
 
   declare category_id: ForeignKey<Category["id"]>;
   declare subcategory_id: ForeignKey<Category["id"] | null>;
@@ -130,12 +134,12 @@ export default class LabeledItem extends Model<
         },
         cost: { type: DataTypes.DECIMAL(10, 2) },
         condition_state: {
-          type: DataTypes.ENUM("excellent", "good", "fair", "poor"),
+          type: DataTypes.ENUM(...CONDITION_STATES),
           defaultValue: "good",
           allowNull: false,
         },
         status: {
-          type: DataTypes.ENUM("available", "sold"),
+          type: DataTypes.ENUM(...LABELED_ITEM_STATUSES),
           defaultValue: "available",
           allowNull: false,
         },

@@ -1,7 +1,8 @@
 import type { Request, Response } from "express";
 import createHttpError from "http-errors";
 import z from "zod";
-import { idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
+import { COLLECTION_POINT_TYPES } from "../../constants/dbEnums.js";
+import { enumSchema, idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
 import type { ModelWhere } from "../../models/db-types.js";
 import db from "../../models/index.js";
 
@@ -15,17 +16,7 @@ const dataSchema = z.object({
   contact_person: z.string().nullish().prefault(null),
   contact_phone: phoneSchema().nullish().prefault(null),
   contact_email: z.email().nullish().prefault(null),
-  type: z
-    .enum([
-      "standard",
-      "entreprise",
-      "association",
-      "school",
-      "hospital",
-      "other",
-    ])
-    .optional()
-    .default("standard"),
+  type: enumSchema(COLLECTION_POINT_TYPES).optional().default("standard"),
   notes: z.string().nullish().prefault(null),
   recyclery_id: idSchema().nullish().prefault(null),
   is_active: z.coerce.boolean().optional().default(true),

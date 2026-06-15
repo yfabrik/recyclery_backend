@@ -1,7 +1,11 @@
 import createHttpError from "http-errors";
 import { col, fn, literal, Op } from "sequelize";
 import * as z from "zod";
-import { idSchema } from "../../services/zod.js";
+import {
+  RECURRENCE_PATTERNS,
+  TASK_CATEGORIES,
+} from "../../constants/dbEnums.js";
+import { enumSchema, idSchema } from "../../services/zod.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
@@ -15,12 +19,11 @@ const dataSchema = z.object({
   scheduled_date: z.coerce.date("date requis"),
   start_time: z.coerce.date("heure de debut requis"),
   end_time: z.coerce.date("heure de fin requis"),
-  category: z.enum(["vente", "point", "collection", "custom"]),
+  category: enumSchema(TASK_CATEGORIES, "catégorie requise"),
   notes: z.string().nullish().prefault(null),
   store_id: idSchema().nullish().prefault(null),
   collection_point_id: idSchema().nullish().prefault(null),
-  recurrence_pattern: z
-    .enum(["daily", "weekly", "monthly"]) //TODO type enum
+  recurrence_pattern: enumSchema(RECURRENCE_PATTERNS, "récurrence invalide")
     .nullish()
     .prefault(null),
   is_recurring: z.coerce.boolean().default(true),

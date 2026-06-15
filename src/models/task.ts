@@ -19,6 +19,7 @@ import type { ModelStatics } from "./db-types.ts";
 import type Employee from "./employee.ts";
 import type Recyclery from "./recyclery.ts";
 import type TaskSchedule from "./taskschedule.ts";
+import { TASK_CATEGORIES, type TaskCategory } from "../constants/dbEnums.js";
 
 export default class Task extends Model<
   InferAttributes<Task>,
@@ -27,7 +28,7 @@ export default class Task extends Model<
   declare id: CreationOptional<number>;
   declare name: string;
   declare description: CreationOptional<string | null>;
-  declare category: "vente" | "point" | "collection" | "custom";
+  declare category: TaskCategory;
   declare priority: CreationOptional<string | null>;
   declare required_skills: CreationOptional<string | null>;
   declare location: CreationOptional<string | null>;
@@ -101,7 +102,7 @@ export default class Task extends Model<
         name: { type: DataTypes.STRING, allowNull: false },
         description: DataTypes.TEXT,
         category: {
-          type: DataTypes.ENUM("vente", "point", "collection", "custom"),
+          type: DataTypes.ENUM(...TASK_CATEGORIES),
           allowNull: false,
         },
         priority: DataTypes.STRING,

@@ -14,6 +14,10 @@ import type Category from "./category.ts";
 import type { ModelStatics } from "./db-types.ts";
 import type EcoOrganism from "./ecoorganism.ts";
 import type User from "./user.ts";
+import {
+  WASTE_DISPOSAL_TYPES,
+  type WasteDisposalType,
+} from "../constants/dbEnums.js";
 
 export default class WasteDisposal extends Model<
   InferAttributes<WasteDisposal>,
@@ -21,7 +25,7 @@ export default class WasteDisposal extends Model<
 > {
   declare id: CreationOptional<number>;
   declare disposal_date: CreationOptional<Date>;
-  declare disposal_type: "eco_organism" | "landfill" | "recycling" | "other";
+  declare disposal_type: WasteDisposalType;
   declare weight_kg: number;
   declare volume_m3: CreationOptional<number | null>;
   declare transport_method: CreationOptional<string | null>;
@@ -86,12 +90,7 @@ export default class WasteDisposal extends Model<
           defaultValue: DataTypes.NOW,
         },
         disposal_type: {
-          type: DataTypes.ENUM(
-            "eco_organism",
-            "landfill",
-            "recycling",
-            "other",
-          ),
+          type: DataTypes.ENUM(...WASTE_DISPOSAL_TYPES),
           allowNull: false,
         },
         weight_kg: { type: DataTypes.DECIMAL(10, 2), allowNull: false },

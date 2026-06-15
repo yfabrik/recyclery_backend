@@ -30,6 +30,12 @@ import type { ModelStatics } from "./db-types.ts";
 import type Employee from "./employee.ts";
 import type Recyclery from "./recyclery.ts";
 import type Task from "./task.ts";
+import {
+  RECURRENCE_PATTERNS,
+  TASK_CATEGORIES,
+  type RecurrencePattern,
+  type TaskCategory,
+} from "../constants/dbEnums.js";
 
 export default class TaskSchedule extends Model<
   InferAttributes<TaskSchedule>,
@@ -37,10 +43,10 @@ export default class TaskSchedule extends Model<
 > {
   declare id: CreationOptional<number>;
   declare is_recurring: CreationOptional<boolean>;
-  declare recurrence_pattern: "daily" | "weekly" | "monthly" | null;
+  declare recurrence_pattern: RecurrencePattern | null;
   declare name: string;
   declare description: CreationOptional<string | null>;
-  declare category: "vente" | "point" | "collection" | "custom";
+  declare category: TaskCategory;
   declare priority: CreationOptional<string | null>;
   declare required_skills: CreationOptional<string | null>;
   declare location: CreationOptional<string | null>;
@@ -294,11 +300,11 @@ export default class TaskSchedule extends Model<
           defaultValue: true,
           allowNull: false,
         },
-        recurrence_pattern: DataTypes.ENUM("daily", "weekly", "monthly"),
+        recurrence_pattern: DataTypes.ENUM(...RECURRENCE_PATTERNS),
         name: DataTypes.STRING,
         description: DataTypes.TEXT,
         category: {
-          type: DataTypes.ENUM("vente", "point", "collection", "custom"),
+          type: DataTypes.ENUM(...TASK_CATEGORIES),
           allowNull: false,
         },
         priority: DataTypes.STRING,

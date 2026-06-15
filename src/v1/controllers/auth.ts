@@ -6,8 +6,9 @@ import { Op } from "sequelize";
 import * as z from "zod";
 
 import { getJwtSecret } from "../../config/jwt.js";
+import { USER_ROLES } from "../../constants/dbEnums.js";
 import db from "../../models/index.js";
-import { idSchema } from "../../services/zod.js";
+import { enumSchema, idSchema } from "../../services/zod.js";
 import type { RequestWithUser } from "./types.ts";
 
 const { User } = db;
@@ -17,10 +18,7 @@ export const register = async (req: Request, res: Response) => {
     username: z.string("Nom d'utilisateur requis"),
     email: z.email("email requis"),
     password: z.string("password requis"),
-    role: z
-      .enum(["employee", "manager", "admin"]) //TODO match USER roles
-      .optional()
-      .default("employee"),
+    role: enumSchema(USER_ROLES).optional().default("employee"),
     recyclery_id: idSchema().optional(),
   });
 

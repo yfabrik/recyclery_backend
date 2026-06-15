@@ -4,9 +4,10 @@ import { col, fn, literal } from "sequelize";
 import z from "zod";
 
 import { formatWhereDateRange } from "../../helpers.js";
+import { WASTE_DISPOSAL_TYPES } from "../../constants/dbEnums.js";
 
 import db from "../../models/index.js";
-import { idSchema } from "../../services/zod.js";
+import { enumSchema, idSchema } from "../../services/zod.js";
 import { type ModelWhere, type RequestWithUser } from "./types.js";
 
 const { Category, EcoOrganism, User, WasteDisposal } = db;
@@ -17,9 +18,7 @@ const dataSchema = z
     category_id: idSchema("categorie requis"),
     subcategory_id: idSchema().nullish().prefault(null),
     eco_organism_id: idSchema().nullish().prefault(null),
-    disposal_type: z.enum(["eco_organism", "landfill", "recycling", "other"], {
-      message: "type de sortie requis",
-    }), //TODO type enum
+    disposal_type: enumSchema(WASTE_DISPOSAL_TYPES, "type de sortie requis"),
     weight_kg: z.coerce.number().positive("poid requis"),
     volume_m3: z.coerce.number().nonnegative().nullish().prefault(null),
     transport_method: z.string().nullish().prefault(null),
@@ -42,9 +41,7 @@ export const listWaste = async (req: Request, res: Response) => {
     category_id: idSchema().nullish(),
     subcategory_id: idSchema().nullish(),
     eco_organism_id: idSchema().nullish(),
-    disposal_type: z
-      .enum(["eco_organism", "landfill", "recycling", "other"])
-      .nullish(),
+    disposal_type: enumSchema(WASTE_DISPOSAL_TYPES).nullish(),
     date_from: z.coerce.date().optional(),
     date_to: z.coerce.date().optional(),
     page: z.coerce.number().optional().default(1),

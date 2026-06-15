@@ -12,6 +12,7 @@ import {
 } from "sequelize";
 import type { ModelStatics } from "./db-types.ts";
 import type SalesTransaction from "./salestransaction.ts";
+import { PROMOTION_TYPES, type PromotionType } from "../constants/dbEnums.js";
 
 export default class TransactionGlobalPromotion extends Model<
   InferAttributes<TransactionGlobalPromotion>,
@@ -20,7 +21,7 @@ export default class TransactionGlobalPromotion extends Model<
   declare id: CreationOptional<number>;
 
   declare value: number;
-  declare type: "percent" | "fixed";
+  declare type: PromotionType;
 
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -53,7 +54,7 @@ export default class TransactionGlobalPromotion extends Model<
           defaultValue: 0,
         },
         type: {
-          type: DataTypes.ENUM("percent", "fixed"),
+          type: DataTypes.ENUM(...PROMOTION_TYPES),
           allowNull: false,
           defaultValue: "percent",
         },

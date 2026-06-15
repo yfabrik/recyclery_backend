@@ -17,6 +17,10 @@ import type CashRegister from "./cashregister.ts";
 import type { ModelStatics } from "./db-types.ts";
 import type SalesTransaction from "./salestransaction.ts";
 import type User from "./user.ts";
+import {
+  CASH_SESSION_STATUSES,
+  type CashSessionStatus,
+} from "../constants/dbEnums.js";
 
 export default class CashSession extends Model<
   InferAttributes<CashSession>,
@@ -27,7 +31,7 @@ export default class CashSession extends Model<
   declare closing_amount: CreationOptional<number | null>;
   declare expected_amount: CreationOptional<number | null>;
   declare difference_amount: NonAttribute<number>;
-  declare status: CreationOptional<"open" | "close">;
+  declare status: CreationOptional<CashSessionStatus>;
   declare notes: CreationOptional<string | null>;
   declare closed_at: CreationOptional<Date | null>;
   declare createdAt: CreationOptional<Date>;
@@ -82,7 +86,7 @@ export default class CashSession extends Model<
           },
         },
         status: {
-          type: DataTypes.ENUM("open", "close"),
+          type: DataTypes.ENUM(...CASH_SESSION_STATUSES),
           defaultValue: "open",
           allowNull: false,
         },

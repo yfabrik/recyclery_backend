@@ -2,7 +2,8 @@ import type { Request, Response } from "express";
 import createHttpError from "http-errors";
 import { col, fn, literal, Op } from "sequelize";
 import z from "zod";
-import { idSchema } from "../../services/zod.js";
+import { CONDITION_STATES } from "../../constants/dbEnums.js";
+import { enumSchema, idSchema } from "../../services/zod.js";
 
 import db from "../../models/index.js";
 import type { ModelWhere, RequestWithUser } from "./types.js";
@@ -17,7 +18,7 @@ const dataSchema = z.object({
   weight: z.coerce.number().nonnegative("poid requis").default(0),
   price: z.coerce.number().nonnegative("prix requis"),
   cost: z.coerce.number().nonnegative().nullish().prefault(null),
-  condition_state: z.enum(["excellent", "good", "fair", "poor"]).optional(),
+  condition_state: enumSchema(CONDITION_STATES).optional(),
   location: z.string().nullish(),
   arrival_id: idSchema().nullish(),
   purchase_price: z.coerce.number().nonnegative().nullish(),

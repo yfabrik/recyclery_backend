@@ -1,7 +1,8 @@
 import createHttpError from "http-errors";
 import * as z from "zod";
+import { FRENCH_WEEKDAYS } from "../../constants/dbEnums.js";
 import logger from "../../services/logger.js";
-import { idSchema } from "../../services/zod.js";
+import { enumSchema, idSchema } from "../../services/zod.js";
 
 import { deleteSchedule } from "./taskSchedule.js";
 import type { Request, Response } from "express";
@@ -13,17 +14,7 @@ const { TaskSchedule, Recyclery } = db;
 
 const dataSchema = z.object({
   store_id: idSchema("ID du magasin et jour de la semaine sont obligatoires"),
-  day_of_week: z
-    .enum([
-      "Lundi",
-      "Mardi",
-      "Mercredi",
-      "Jeudi",
-      "Vendredi",
-      "Samedi",
-      "Dimanche",
-    ])
-    .transform((val) => getDateFromDay(val)),
+  day_of_week: enumSchema(FRENCH_WEEKDAYS).transform((val) => getDateFromDay(val)),
 
   is_recurring: z.coerce.boolean().default(true),
   start_time: z.union([

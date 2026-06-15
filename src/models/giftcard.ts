@@ -20,6 +20,7 @@ import type GiftCardTransaction from "./giftcardtransaction.ts";
 import type SalesTransaction from "./salestransaction.ts";
 import type TransactionPayment from "./transactionpayment.ts";
 import type User from "./user.ts";
+import { GIFT_CARD_STATUSES, type GiftCardStatus } from "../constants/dbEnums.js";
 
 export default class GiftCard extends Model<
   InferAttributes<GiftCard>,
@@ -29,9 +30,7 @@ export default class GiftCard extends Model<
   declare code: string;
   declare initial_value: number;
   declare expires_at: CreationOptional<Date | null>;
-  declare status: CreationOptional<
-    "active" | "partially_used" | "redeemed" | "expired" | "cancelled"
-  >;
+  declare status: CreationOptional<GiftCardStatus>;
   declare currency: CreationOptional<string>;
   declare issued_at: CreationOptional<Date>;
   declare note: CreationOptional<string | null>;
@@ -149,13 +148,7 @@ export default class GiftCard extends Model<
         },
         expires_at: { type: DataTypes.DATE, allowNull: true },
         status: {
-          type: DataTypes.ENUM(
-            "active",
-            "partially_used",
-            "redeemed",
-            "expired",
-            "cancelled",
-          ),
+          type: DataTypes.ENUM(...GIFT_CARD_STATUSES),
           allowNull: false,
           defaultValue: "active",
         },

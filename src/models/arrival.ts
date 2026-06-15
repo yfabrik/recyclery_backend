@@ -14,6 +14,12 @@ import type Category from "./category.ts";
 import type CollectionPoint from "./collectionpoint.ts";
 import type { ModelStatics } from "./db-types.ts";
 import type User from "./user.ts";
+import {
+  ARRIVAL_SOURCE_TYPES,
+  ARRIVAL_STATUSES,
+  type ArrivalSourceType,
+  type ArrivalStatus,
+} from "../constants/dbEnums.js";
 
 export default class Arrival extends Model<
   InferAttributes<Arrival>,
@@ -23,10 +29,10 @@ export default class Arrival extends Model<
   declare weight: number;
   declare arrival_date: Date;
   declare arrival_time: string | null;
-  declare source_type: "point" | "apport" | "house_clearance";
+  declare source_type: ArrivalSourceType;
   declare source_details: CreationOptional<string | null>;
   declare notes: CreationOptional<string | null>;
-  declare status: CreationOptional<"received">;
+  declare status: CreationOptional<ArrivalStatus>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -86,13 +92,13 @@ export default class Arrival extends Model<
         },
         arrival_time: DataTypes.TIME,
         source_type: {
-          type: DataTypes.ENUM("point", "apport", "house_clearance"),
+          type: DataTypes.ENUM(...ARRIVAL_SOURCE_TYPES),
           allowNull: false,
         },
         source_details: DataTypes.TEXT,
         notes: DataTypes.TEXT,
         status: {
-          type: DataTypes.ENUM("received"),
+          type: DataTypes.ENUM(...ARRIVAL_STATUSES),
           defaultValue: "received",
           allowNull: false,
         },

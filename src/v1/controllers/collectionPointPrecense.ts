@@ -3,7 +3,8 @@ import createHttpError from "http-errors";
 import * as z from "zod";
 
 import db from "../../models/index.js";
-import { idSchema } from "../../services/zod.js";
+import { FRENCH_WEEKDAYS } from "../../constants/dbEnums.js";
+import { enumSchema, idSchema } from "../../services/zod.js";
 
 import { detailTask } from "./tasks.js";
 
@@ -43,17 +44,7 @@ const dataSchema = z.object({
     "ID du point de collecte et jour de la semaine sont obligatoires",
   ),
   store_id: idSchema().nullish().prefault(null),
-  day_of_week: z
-    .enum([
-      "Lundi",
-      "Mardi",
-      "Mercredi",
-      "Jeudi",
-      "Vendredi",
-      "Samedi",
-      "Dimanche",
-    ])
-    .transform((val) => getDateFromDay(val)),
+  day_of_week: enumSchema(FRENCH_WEEKDAYS).transform((val) => getDateFromDay(val)),
   is_open: z.coerce.boolean().default(true),
   start_time: z.union([
     z.iso.time().transform((val) => {

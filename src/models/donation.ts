@@ -13,6 +13,7 @@ import {
 import type { ModelStatics } from "./db-types.ts";
 import type Recyclery from "./recyclery.ts";
 import type User from "./user.ts";
+import { DONATION_STATUSES, type DonationStatus } from "../constants/dbEnums.js";
 
 export default class Donation extends Model<
   InferAttributes<Donation>,
@@ -24,7 +25,7 @@ export default class Donation extends Model<
   declare donor_email: CreationOptional<string | null>;
   declare item_description: CreationOptional<string | null>;
   declare estimated_value: CreationOptional<number | null>;
-  declare status: CreationOptional<"pending" | "accepted" | "rejected">;
+  declare status: CreationOptional<DonationStatus>;
   declare received_at: CreationOptional<Date>;
   declare donorContact: NonAttribute<string | null>;
   declare weight: CreationOptional<number>;
@@ -72,7 +73,7 @@ export default class Donation extends Model<
         item_description: DataTypes.TEXT,
         estimated_value: DataTypes.DECIMAL(10, 2),
         status: {
-          type: DataTypes.ENUM("pending", "accepted", "rejected"),
+          type: DataTypes.ENUM(...DONATION_STATUSES),
           defaultValue: "pending",
           allowNull: false,
         },

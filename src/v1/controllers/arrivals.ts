@@ -4,7 +4,11 @@ import { col, fn, literal } from "sequelize";
 import * as z from "zod";
 
 import { formatWhereDateRange } from "../../helpers.js";
-import { idSchema } from "../../services/zod.js";
+import {
+  ARRIVAL_SOURCE_TYPES,
+  ARRIVAL_STATUSES,
+} from "../../constants/dbEnums.js";
+import { enumSchema, idSchema } from "../../services/zod.js";
 import type { ModelWhere, RequestWithUser } from "./types.ts";
 
 import db from "../../models/index.js";
@@ -23,7 +27,7 @@ const dataSchema = z
         minute: "2-digit",
       }),
     ),
-    source_type: z.enum(["point", "apport", "house_clearance"]), //TODO match ARRIVAL source type
+    source_type: enumSchema(ARRIVAL_SOURCE_TYPES, "type de source requis"),
     source_details: z.string().nullish().prefault(null),
     collection_point_id: idSchema().nullish().prefault(null),
     collection_point_name: z.string().nullish().prefault(null),
@@ -42,8 +46,8 @@ const dataSchema = z
 
 const filterSchema = z.object({
   category_id: idSchema().optional(),
-  source_type: z.enum(["point", "apport", "house_clearance"]).optional(), //TODO match ARRIVAL source type
-  status: z.enum(["received"]).optional(),
+  source_type: enumSchema(ARRIVAL_SOURCE_TYPES).optional(),
+  status: enumSchema(ARRIVAL_STATUSES).optional(),
   date_from: z.coerce.date().optional(),
   date_to: z.coerce.date().optional(),
   page: z.coerce.number().positive().optional(),
