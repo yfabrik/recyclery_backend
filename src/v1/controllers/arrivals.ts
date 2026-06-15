@@ -46,7 +46,8 @@ const filterSchema = z.object({
   status: z.enum(["received"]).optional(),
   date_from: z.coerce.date().optional(),
   date_to: z.coerce.date().optional(),
-  page: z.coerce.number().positive().optional(), //TODO make a correct pagination object
+  page: z.coerce.number().positive().optional(),
+  collection_point_id: idSchema().optional(),
 });
 
 export const listArrivals = async (req: Request, res: Response) => {
@@ -61,6 +62,12 @@ export const listArrivals = async (req: Request, res: Response) => {
     pagination.limit = 50;
     pagination.offset = (page - 1) * pagination.limit;
   }
+  const whereCollectionPoint: ModelWhere<typeof CollectionPoint> = {};
+  if (rest.collection_point_id && rest.source_type == "point") {
+    whereCollectionPoint.id = rest.collection_point_id;
+  }
+  console.log(whereCollectionPoint);
+  console.log(rest)
 
   const arrivals = await Arrival.findAndCountAll({
     where,
@@ -68,7 +75,7 @@ export const listArrivals = async (req: Request, res: Response) => {
       { model: Category, as: "categorie" },
       { model: Category, as: "subcategorie" },
       { model: User },
-      { model: CollectionPoint },
+      { model: CollectionPoint,where: whereCollectionPoint },
     ],
     order: [["createdAt", "DESC"]],
     ...pagination,

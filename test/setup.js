@@ -2,6 +2,8 @@ const originalWarn = console.warn;
 let db;
 
 beforeAll(async () => {
+  process.env.JWT_SECRET ??= "test-secret-key-for-jwt";
+
   console.warn = (...args) => {
     const message = args.map((arg) => String(arg ?? "")).join(" ");
     if (

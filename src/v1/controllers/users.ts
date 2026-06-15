@@ -96,14 +96,15 @@ export const createUser = async (req: Request, res: Response) => {
       "Un utilisateur avec cet email existe déjà",
     );
 
-  const user = await User.create({
-    ...data,
-    // password: data.password
+  const { managedStores, ...userData } = data;
+  const user = await db.sequelize.transaction(async (t) => {
+    const created = await User.create(userData, { transaction: t });
+    if (managedStores) {
+      //TODO check role ?
+      await created.addManagedStores(managedStores, { transaction: t });
+    }
+    return created;
   });
-
-  if (data.managedStores)
-    //TODO check role ?
-    await user.addManagedStores(data.managedStores); //TODO setmanagerStores ?
 
   res.json({
     success: true,
@@ -131,10 +132,13 @@ export const updateUser = async (req: Request, res: Response) => {
 
   const user = await User.findByPk(id);
   if (!user) throw new createHttpError.NotFound("Utilisateur non trouvé");
-  await user.update({
-    ...data,
+  const { managedStores, ...userData } = data;
+  await db.sequelize.transaction(async (t) => {
+    await user.update(userData, { transaction: t });
+    if (managedStores) {
+      await user.setManagedStores(managedStores, { transaction: t });
+    }
   });
-  if (data.managedStores) await user.setManagedStores(data.managedStores);
 
   res.json({
     success: true,

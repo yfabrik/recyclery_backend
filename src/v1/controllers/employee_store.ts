@@ -167,7 +167,7 @@ export const removeEmployeeStore = async (req: Request, res: Response) => {
   } else {
     // Remove all store assignments
     // await employee.setStores([]);
-    EmployeeStore.destroy({ where: { employeeId: data.employeeId } });
+    await EmployeeStore.destroy({ where: { employeeId: data.employeeId } });
   }
   const emplo = await Employee.findByPk(data.employeeId, {
     include: [{ model: Recyclery, as: "stores" }],
