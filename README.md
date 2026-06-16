@@ -6,7 +6,7 @@ Built with **Express 5**, **Sequelize**, and **TypeScript** (ESM).
 
 # Recyclerie Backend
 
-![tests](https://github.com/yfabrik/recyclerie_backend/actions/workflows/test.yml/badge.svg)
+![tests](https://github.com/yfabrik/recyclery_backend/actions/workflows/unit-test.yml/badge.svg)
 
 ## Requirements
 
