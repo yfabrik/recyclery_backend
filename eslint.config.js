@@ -2,8 +2,8 @@ import js from "@eslint/js";
 import globals from "globals";
 import json from "@eslint/json";
 import { defineConfig, globalIgnores } from "eslint/config";
-// import { jest } from "eslint-plugin-jest";
-import tseslint from 'typescript-eslint'
+import jest from "eslint-plugin-jest";
+import tseslint from "typescript-eslint";
 
 
 export default defineConfig([
@@ -30,19 +30,22 @@ export default defineConfig([
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
-    ]
+    ],
   },
   {
-    "overrides": [
-      {
-        "files": ["tests/**/*"],
-        "plugins": ["jest"],
-        "env": {
-          "jest/globals": true
-        }
-      }
-    ]
-  }
+    files: ["test/**/*.{js,mjs,cjs,ts}"],
+    plugins: { jest },
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.jest,
+      },
+    },
+    rules: {
+      ...jest.configs["flat/recommended"].rules,
+      "jest/prefer-expect-assertions": "off",
+    },
+  },
   // {
   //   files: ["test/**"],
   //   ...jest.configs["flat/recommended"],
