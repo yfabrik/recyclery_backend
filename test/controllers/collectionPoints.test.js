@@ -7,6 +7,7 @@ import {
   listCollectionPoints,
   updateCollectionPoint,
 } from "../../src/v1/controllers/collectionPoints";
+import { makeReq, makeRes } from "./helpers.js";
 const { User } = db;
 
 beforeAll(async () => {
@@ -61,7 +62,40 @@ describe("collection points controller functions", () => {
     );
   });
 
-  it("should create another point with same email when no unique constraint", async () => {
+  it("rejects duplicate collection point name", async () => {
+    const res = makeRes();
+    await expect(
+      createCollectionPoint(
+        makeReq({
+          body: {
+            name: "Point de collecte Centre-ville",
+            address: "dup addr",
+            city: "Orgelet",
+            postal_code: "39270",
+          },
+        }),
+        res,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("trims collection point name on create", async () => {
+    const res = makeRes();
+    await createCollectionPoint(
+      makeReq({
+        body: {
+          name: "  Trimmed Point  ",
+          address: "12 Rue",
+          city: "Orgelet",
+          postal_code: "39270",
+        },
+      }),
+      res,
+    );
+    expect(res.json.mock.calls[0][0].collection_point.name).toBe("Trimmed Point");
+  });
+
+  it("should create another point with different name", async () => {
     const body = {
       name: "Autre point",
       address: "12 Rue Autre",

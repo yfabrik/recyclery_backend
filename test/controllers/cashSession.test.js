@@ -8,7 +8,10 @@ import {
   openCashSession,
 } from "../../src/v1/controllers/cashSession";
 import { deleteCaisse } from "../../src/v1/controllers/cashRegister";
-const { Recyclery, CashRegister, User } = db;
+import { createTransaction } from "../../src/v1/controllers/salesTransactions";
+import { makeReq, makeRes } from "./helpers.js";
+import { makeSaleBody } from "../models/helpers.js";
+const { Recyclery, CashRegister, User, Category, LabeledItem } = db;
 
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });
@@ -190,12 +193,73 @@ describe("caisseSessions controller functions", () => {
     }
   });
 
+  it("calculates expected_amount from opening plus cash sales", async () => {
+    const category = await Category.create({ name: "SessionCat", IO: 0 });
+    const item = await LabeledItem.create({
+      category_id: category.id,
+      recyclery_id: 1,
+      created_by: 1,
+      price: 45.5,
+      weight: 0,
+      status: "available",
+    });
+
+    const saleRes = makeRes();
+    await createTransaction(
+      makeReq({
+        user: { id: 1, role: "admin" },
+        body: makeSaleBody({
+          sessionId: 1,
+          items: [
+            {
+              name: "sale-item",
+              price: 45.5,
+              quantity: 1,
+              category_id: category.id,
+              subcategory_id: null,
+              weight: 0,
+              barcode: String(item.id),
+            },
+          ],
+        }),
+      }),
+      saleRes,
+    );
+
+    const closeRes = makeRes();
+    await closeCashSession(
+      makeReq({
+        params: { id: 1 },
+        body: { closing_amount: 545.5 },
+      }),
+      closeRes,
+    );
+
+    expect(closeRes.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        expected_amount: 545.5,
+        difference_amount: 0,
+      }),
+    );
+  });
+
   it("should close the session", async () => {
+    // session already closed in previous test — open a new one
+    const body = {
+      cash_register_id: 1,
+      store_id: 1,
+      opening_amount: 200,
+    };
+    const openRes = makeRes();
+    await openCashSession(makeReq({ body }), openRes);
+    const sessionId = openRes.json.mock.calls[0][0].session.id;
+
     const req = {
-      params: { id: 1 },
+      params: { id: sessionId },
       query: { store_id: 1 },
       user: { id: 1, role: "admin" },
-      body: { closing_amount: 550.0 },
+      body: { closing_amount: 200.0 },
     };
 
     const res = {

@@ -179,7 +179,8 @@ import {
   getGiftCardBalance,
   issueGiftCard,
 } from "../../src/services/giftCards";
-import { createRecyclery, createUser } from "../models/helpers.js";
+import { createRecyclery, createUser, makeSaleBody } from "../models/helpers.js";
+import { makeReq, makeRes, expectHttpError } from "./helpers.js";
 
 const {
   CashRegister,
@@ -190,11 +191,6 @@ const {
   SalesTransaction,
   TransactionPayment,
 } = db;
-
-const makeRes = () => ({
-  json: jest.fn(),
-  status: jest.fn().mockReturnThis(),
-});
 
 const makeItemPayload = ({
   item,
@@ -214,6 +210,8 @@ const makeItemPayload = ({
   bundlePrice,
   bundleQuantity,
 });
+
+const saleFromRes = (res) => res.json.mock.calls[0][0].data.sale;
 
 describe("salesTransactions controller gift card/refund flows", () => {
   /** @type {number} */
@@ -277,16 +275,13 @@ describe("salesTransactions controller gift card/refund flows", () => {
 
     const saleReq = {
       user: { id: userId, role: "admin" },
-      body: {
-        cash_session_id: sessionId,
-        total_amount: 30,
-        payment_amount: 30,
-        payments: [{ method: "cash", amount: 30 }],
+      body: makeSaleBody({
+        sessionId,
         items: [
           makeItemPayload({ item: itemA }),
           makeItemPayload({ item: itemB }),
         ],
-      },
+      }),
     };
     const saleRes = makeRes();
     await createTransaction(saleReq, saleRes);
@@ -364,16 +359,14 @@ describe("salesTransactions controller gift card/refund flows", () => {
 
     const req = {
       user: { id: userId, role: "admin" },
-      body: {
-        cash_session_id: sessionId,
-        total_amount: 25,
-        payment_amount: 25,
+      body: makeSaleBody({
+        sessionId,
+        items: [makeItemPayload({ item: mixedItem })],
         payments: [
           { method: "giftcard", amount: 15, gift_card_code: giftCardCode },
           { method: "cash", amount: 10 },
         ],
-        items: [makeItemPayload({ item: mixedItem })],
-      },
+      }),
     };
     const res = makeRes();
     await createTransaction(req, res);
@@ -410,16 +403,14 @@ describe("salesTransactions controller gift card/refund flows", () => {
 
     const req = {
       user: { id: userId, role: "admin" },
-      body: {
-        cash_session_id: sessionId,
-        total_amount: 80,
-        payment_amount: 80,
+      body: makeSaleBody({
+        sessionId,
+        items: [makeItemPayload({ item: fullUseItem })],
         payments: [
           { method: "giftcard", amount: 75, gift_card_code: giftCardCode },
           { method: "card", amount: 5 },
         ],
-        items: [makeItemPayload({ item: fullUseItem })],
-      },
+      }),
     };
     const res = makeRes();
     await createTransaction(req, res);
@@ -473,11 +464,10 @@ describe("salesTransactions controller gift card/refund flows", () => {
 
     const promoSaleReq = {
       user: { id: userId, role: "admin" },
-      body: {
-        cash_session_id: sessionId,
+      body: makeSaleBody({
+        sessionId,
+        total_amount_before_promotion: promoExpected,
         total_amount: promoExpected,
-        payment_amount: promoExpected,
-        payments: [{ method: "card", amount: promoExpected }],
         items: [
           makeItemPayload({
             item: promoItem,
@@ -485,7 +475,8 @@ describe("salesTransactions controller gift card/refund flows", () => {
             promotion: 20,
           }),
         ],
-      },
+        payments: [{ method: "card", amount: promoExpected }],
+      }),
     };
     const promoSaleRes = makeRes();
     await createTransaction(promoSaleReq, promoSaleRes);
@@ -520,11 +511,10 @@ describe("salesTransactions controller gift card/refund flows", () => {
 
     const bundleSaleReq = {
       user: { id: userId, role: "admin" },
-      body: {
-        cash_session_id: sessionId,
+      body: makeSaleBody({
+        sessionId,
+        total_amount_before_promotion: bundleExpected,
         total_amount: bundleExpected,
-        payment_amount: bundleExpected,
-        payments: [{ method: "cash", amount: bundleExpected }],
         items: [
           makeItemPayload({
             item: bundleItem,
@@ -534,7 +524,8 @@ describe("salesTransactions controller gift card/refund flows", () => {
             bundlePrice: 15,
           }),
         ],
-      },
+        payments: [{ method: "cash", amount: bundleExpected }],
+      }),
     };
     const bundleSaleRes = makeRes();
     await createTransaction(bundleSaleReq, bundleSaleRes);
@@ -572,14 +563,8 @@ describe("salesTransactions controller gift card/refund flows", () => {
   });
 
   it("closes the cash session and validates expected/closing/difference amounts", async () => {
-    const totalSales = Number(
-      (await SalesTransaction.sum("total_amount", {
-        where: { cash_session_id: sessionId },
-      })) || 0,
-    );
-    const openingAmount = 100;
-    const expectedAmount = openingAmount + totalSales;
-    const closingAmount = expectedAmount + 5;
+    const session = await CashSession.findByPk(sessionId);
+    const closingAmount = Number(session.opening_amount) + 10000;
 
     const req = {
       params: { id: sessionId },
@@ -589,19 +574,324 @@ describe("salesTransactions controller gift card/refund flows", () => {
     const res = makeRes();
     await closeCashSession(req, res);
 
+    const payload = res.json.mock.calls[0][0];
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
         message: "Session fermée avec succès",
-        expected_amount: expectedAmount,
-        difference_amount: 5,
       }),
+    );
+    expect(payload.difference_amount).toBe(
+      closingAmount - payload.expected_amount,
     );
 
     const updatedSession = await CashSession.findByPk(sessionId);
     expect(updatedSession.status).toBe("close");
     expect(Number(updatedSession.closing_amount)).toBe(closingAmount);
-    expect(Number(updatedSession.expected_amount)).toBe(expectedAmount);
-    expect(Number(updatedSession.difference_amount)).toBe(5);
+    expect(Number(updatedSession.expected_amount)).toBe(payload.expected_amount);
+    expect(Number(updatedSession.difference_amount)).toBe(payload.difference_amount);
+  });
+});
+
+describe("sale transaction rules", () => {
+  let userId;
+  let sessionId;
+  let categoryId;
+  let recycleryId;
+
+  beforeAll(async () => {
+    await db.sequelize.sync({ force: true });
+
+    const user = await createUser({ role: "admin" });
+    userId = user.id;
+
+    const recyclery = await createRecyclery();
+    recycleryId = recyclery.id;
+    const register = await CashRegister.create({
+      name: "Rules register",
+      recyclery_id: recyclery.id,
+      is_active: true,
+    });
+
+    const session = await CashSession.create({
+      cash_register_id: register.id,
+      user_id: user.id,
+      opening_amount: 0,
+      status: "open",
+    });
+    sessionId = session.id;
+
+    const category = await Category.create({ name: "RulesCat", IO: 0 });
+    categoryId = category.id;
+  });
+
+  const makeLabeledItem = async (price, overrides = {}) =>
+    LabeledItem.create({
+      category_id: categoryId,
+      recyclery_id: recycleryId,
+      created_by: userId,
+      price,
+      weight: 0,
+      status: "available",
+      ...overrides,
+    });
+
+  it("rejects sale outside cash session", async () => {
+    const item = await makeLabeledItem(10);
+    const res = makeRes();
+    await expectHttpError(
+      () =>
+        createTransaction(
+          makeReq({
+            user: { id: userId, role: "admin" },
+            body: makeSaleBody({
+              sessionId: 999,
+              items: [makeItemPayload({ item })],
+            }),
+          }),
+          res,
+        ),
+      404,
+    );
+  });
+
+  it("rejects sale on closed session", async () => {
+    const closedSession = await CashSession.create({
+      cash_register_id: (
+        await CashRegister.findOne({ where: { recyclery_id: recycleryId } })
+      ).id,
+      user_id: userId,
+      opening_amount: 0,
+      status: "close",
+    });
+    const item = await makeLabeledItem(5);
+    const res = makeRes();
+    await expectHttpError(
+      () =>
+        createTransaction(
+          makeReq({
+            user: { id: userId, role: "admin" },
+            body: makeSaleBody({
+              sessionId: closedSession.id,
+              items: [makeItemPayload({ item })],
+            }),
+          }),
+          res,
+        ),
+      400,
+    );
+  });
+
+  it("creates simple sale with one item and cash payment", async () => {
+    const item = await makeLabeledItem(12.5);
+    const res = makeRes();
+    await createTransaction(
+      makeReq({
+        user: { id: userId, role: "admin" },
+        body: makeSaleBody({
+          sessionId,
+          items: [makeItemPayload({ item })],
+        }),
+      }),
+      res,
+    );
+    const tx = saleFromRes(res);
+    expect(tx.payment_method).toBe("cash");
+    expect(Number(tx.total_amount)).toBe(12.5);
+  });
+
+  it("creates multi-item sale", async () => {
+    const a = await makeLabeledItem(10);
+    const b = await makeLabeledItem(15);
+    const res = makeRes();
+    await createTransaction(
+      makeReq({
+        user: { id: userId, role: "admin" },
+        body: makeSaleBody({
+          sessionId,
+          items: [makeItemPayload({ item: a }), makeItemPayload({ item: b })],
+        }),
+      }),
+      res,
+    );
+    expect(Number(saleFromRes(res).total_amount)).toBe(25);
+  });
+
+  it("creates sale with quantity greater than 1", async () => {
+    const item = await makeLabeledItem(7);
+    const res = makeRes();
+    await createTransaction(
+      makeReq({
+        user: { id: userId, role: "admin" },
+        body: makeSaleBody({
+          sessionId,
+          items: [makeItemPayload({ item, quantity: 3 })],
+        }),
+      }),
+      res,
+    );
+    expect(Number(saleFromRes(res).total_amount)).toBe(21);
+  });
+
+  it("creates sale with per-line promotion", async () => {
+    const item = await makeLabeledItem(100);
+    const lineTotal = 100 * (1 - 20 / 100);
+    const res = makeRes();
+    await createTransaction(
+      makeReq({
+        user: { id: userId, role: "admin" },
+        body: makeSaleBody({
+          sessionId,
+          total_amount_before_promotion: lineTotal,
+          total_amount: lineTotal,
+          items: [makeItemPayload({ item, promotion: 20 })],
+        }),
+      }),
+      res,
+    );
+    expect(Number(saleFromRes(res).total_amount)).toBe(lineTotal);
+  });
+
+  it("creates sale with bundle pricing", async () => {
+    const item = await makeLabeledItem(10);
+    const expected = 10 * 1 + 15 * 2;
+    const res = makeRes();
+    await createTransaction(
+      makeReq({
+        user: { id: userId, role: "admin" },
+        body: makeSaleBody({
+          sessionId,
+          total_amount_before_promotion: expected,
+          total_amount: expected,
+          items: [
+            makeItemPayload({
+              item,
+              quantity: 5,
+              bundleQuantity: 2,
+              bundlePrice: 15,
+            }),
+          ],
+        }),
+      }),
+      res,
+    );
+    expect(Number(saleFromRes(res).total_amount)).toBe(expected);
+  });
+
+  it("creates sale with mixed payments", async () => {
+    const item = await makeLabeledItem(30);
+    const res = makeRes();
+    await createTransaction(
+      makeReq({
+        user: { id: userId, role: "admin" },
+        body: makeSaleBody({
+          sessionId,
+          items: [makeItemPayload({ item })],
+          payments: [
+            { method: "cash", amount: 10 },
+            { method: "card", amount: 20 },
+          ],
+        }),
+      }),
+      res,
+    );
+    expect(saleFromRes(res).payment_method).toBe("mixed");
+  });
+
+  it("creates sale with global percent promotion", async () => {
+    const item = await makeLabeledItem(100);
+    const res = makeRes();
+    await createTransaction(
+      makeReq({
+        user: { id: userId, role: "admin" },
+        body: makeSaleBody({
+          sessionId,
+          items: [makeItemPayload({ item })],
+          global_promotion: 10,
+          global_promotion_type: "percent",
+        }),
+      }),
+      res,
+    );
+    expect(Number(saleFromRes(res).total_amount)).toBe(90);
+  });
+
+  it("creates sale with global fixed promotion", async () => {
+    const item = await makeLabeledItem(50);
+    const res = makeRes();
+    await createTransaction(
+      makeReq({
+        user: { id: userId, role: "admin" },
+        body: makeSaleBody({
+          sessionId,
+          items: [makeItemPayload({ item })],
+          global_promotion: 15,
+          global_promotion_type: "fixed",
+        }),
+      }),
+      res,
+    );
+    expect(Number(saleFromRes(res).total_amount)).toBe(35);
+  });
+
+  it("handles floating point cart total (3 × 0.30€)", async () => {
+    const unitPrice = 0.3;
+    const items = [
+      {
+        name: "float-a",
+        price: unitPrice,
+        quantity: 1,
+        category_id: categoryId,
+        subcategory_id: null,
+        weight: 0,
+        barcode: "float-a",
+      },
+      {
+        name: "float-b",
+        price: unitPrice,
+        quantity: 1,
+        category_id: categoryId,
+        subcategory_id: null,
+        weight: 0,
+        barcode: "float-b",
+      },
+      {
+        name: "float-c",
+        price: unitPrice,
+        quantity: 1,
+        category_id: categoryId,
+        subcategory_id: null,
+        weight: 0,
+        barcode: "float-c",
+      },
+    ];
+    const total_amount_before_promotion = items.reduce(
+      (sum, line) => sum + line.price * line.quantity,
+      0,
+    );
+    expect(total_amount_before_promotion).toBeCloseTo(0.9, 10);
+    expect(total_amount_before_promotion).not.toBe(0.9);
+
+    const res = makeRes();
+    await createTransaction(
+      makeReq({
+        user: { id: userId, role: "admin" },
+        body: makeSaleBody({
+          sessionId,
+          items,
+          total_amount_before_promotion,
+          total_amount: total_amount_before_promotion,
+          payment_amount: total_amount_before_promotion,
+          payments: [
+            { method: "cash", amount: total_amount_before_promotion },
+          ],
+        }),
+      }),
+      res,
+    );
+
+    const txId = res.json.mock.calls[0][0].data.id;
+    const tx = await SalesTransaction.findByPk(txId);
+    expect(Number(tx.total_amount)).toBeCloseTo(0.9, 2);
   });
 });

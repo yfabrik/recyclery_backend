@@ -116,6 +116,9 @@ export const openCashSession = async (req: RequestWithUser, res: Response) => {
   const data = dataSchema.parse(req.body);
 
   const userId = req.user.id;
+  await findByPkOrThrow(Recyclery, data.store_id, "Magasin non trouvé");
+  await findByPkOrThrow(CashRegister, data.cash_register_id, "Caisse non trouvée");
+
   const existing = await CashSession.findOne({
     where: { user_id: userId, status: "open" },
   });

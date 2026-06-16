@@ -8,7 +8,8 @@ import {
   listArrivals,
   updateArrival,
 } from "../../src/v1/controllers/arrivals";
-const { Recyclery, Category, User, CollectionPoint } = db;
+import { makeReq, makeRes, expectHttpError } from "./helpers.js";
+const { Recyclery, Category, User, CollectionPoint, Arrival } = db;
 
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });
@@ -87,6 +88,7 @@ describe("arrival controller functions", () => {
     const arrivalTime = new Date("2026-01-28T14:15:00Z");
     const body = {
       category_id: 1,
+      subcategory_id: 2,
       weight: 8.2,
       arrival_date: arrivalDate,
       arrival_time: arrivalTime,
@@ -302,5 +304,88 @@ describe("arrival controller functions", () => {
         success: true,
       }),
     );
+  });
+
+  it("rejects arrival without subcategory when parent has children", async () => {
+    const res = makeRes();
+    await expectHttpError(
+      () =>
+        createArrival(
+          makeReq({
+            body: {
+              category_id: 1,
+              weight: 5,
+              arrival_date: new Date("2026-02-01"),
+              arrival_time: new Date("2026-02-01T10:00:00"),
+              source_type: "apport",
+            },
+          }),
+          res,
+        ),
+      400,
+    );
+  });
+
+  it("rejects point source without collection_point_id", async () => {
+    const res = makeRes();
+    await expect(
+      createArrival(
+        makeReq({
+          body: {
+            category_id: 1,
+            subcategory_id: 2,
+            weight: 5,
+            arrival_date: new Date("2026-02-01"),
+            arrival_time: new Date("2026-02-01T10:00:00"),
+            source_type: "point",
+          },
+        }),
+        res,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("rejects point source with fake collection_point_id", async () => {
+    const res = makeRes();
+    await expectHttpError(
+      () =>
+        createArrival(
+          makeReq({
+            body: {
+              category_id: 1,
+              subcategory_id: 2,
+              weight: 5,
+              arrival_date: new Date("2026-02-01"),
+              arrival_time: new Date("2026-02-01T10:00:00"),
+              source_type: "point",
+              collection_point_id: 999,
+            },
+          }),
+          res,
+        ),
+      404,
+    );
+  });
+
+  it("clears collection_point_id when source is not point", async () => {
+    const res = makeRes();
+    await createArrival(
+      makeReq({
+        body: {
+          category_id: 1,
+          subcategory_id: 2,
+          weight: 3,
+          arrival_date: new Date("2026-02-02"),
+          arrival_time: new Date("2026-02-02T10:00:00"),
+          source_type: "apport",
+          collection_point_id: 1,
+        },
+      }),
+      res,
+    );
+    const arrival = await Arrival.findByPk(
+      res.json.mock.calls[0][0].arrival.id,
+    );
+    expect(arrival.collection_point_id).toBeNull();
   });
 });

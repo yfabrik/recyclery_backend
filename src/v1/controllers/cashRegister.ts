@@ -101,7 +101,7 @@ export const detailCaisse = async (req: Request, res: Response) => {
 
 export const createCaisse = async (req: Request, res: Response) => {
   const dataSchema = z.object({
-    name: z.string("Nom obligatoire"),
+    name: z.string("Nom obligatoire").trim().min(1, "Nom obligatoire"),
     store_id: z.coerce.number("magasin obligatoire"),
     is_active: z.coerce.boolean().optional().default(true),
   });
@@ -128,7 +128,7 @@ export const updateCaisse = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
   const dataSchema = z.object({
-    name: z.string("Nom obligatoire"),
+    name: z.string("Nom obligatoire").trim().min(1, "Nom obligatoire"),
     is_active: z.coerce.boolean().optional().default(true),
   });
   const data = dataSchema.parse(req.body);

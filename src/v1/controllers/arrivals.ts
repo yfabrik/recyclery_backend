@@ -114,14 +114,55 @@ export const detailArrival = async (req: RequestWithUser, res: Response) => {
   });
 };
 
-export const createArrival = async (req: RequestWithUser, res: Response) => {
-  const data = dataSchema.parse(req.body);
-  await findByPkOrThrow(
+const normalizeArrivalPayload = async (
+  data: z.infer<typeof dataSchema>,
+) => {
+  const category = await findByPkOrThrow(
     Category,
-    data.subcategory_id ?? data.category_id,
+    data.category_id,
     "Catégorie non trouvée",
   );
+  const subCount = await Category.count({
+    where: { parent_id: category.id },
+  });
+  if (subCount > 0 && !data.subcategory_id) {
+    throw new createHttpError.BadRequest(
+      "sous-catégorie requise pour cette catégorie",
+    );
+  }
+  if (data.subcategory_id) {
+    await findByPkOrThrow(
+      Category,
+      data.subcategory_id,
+      "Sous-catégorie non trouvée",
+    );
+  }
 
+  if (data.source_type === "point") {
+    await findByPkOrThrow(
+      CollectionPoint,
+      data.collection_point_id!,
+      "Point de collecte non trouvé",
+    );
+    return data;
+  }
+
+  return {
+    ...data,
+    collection_point_id: null,
+    collection_point_name: null,
+    collection_point_address: null,
+  };
+};
+
+export const createArrival = async (req: RequestWithUser, res: Response) => {
+  const data = await normalizeArrivalPayload(dataSchema.parse(req.body));
+  // const data = dataSchema.parse(req.body);
+  // await findByPkOrThrow(
+  //   Category,
+  //   data.subcategory_id ?? data.category_id,
+  //   "Catégorie non trouvée",
+  // );
   const arrival = await Arrival.create({
     ...data,
     processed_by: req.user.id,
@@ -136,7 +177,7 @@ export const createArrival = async (req: RequestWithUser, res: Response) => {
 
 export const updateArrival = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const data = dataSchema.parse(req.body);
+  const data = await normalizeArrivalPayload(dataSchema.parse(req.body));
 
   const arrival = await findByPkOrThrow(Arrival, id, "Arrivage non trouvé");
   await arrival.update({

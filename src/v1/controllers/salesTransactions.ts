@@ -387,6 +387,9 @@ export const createTransaction = async (
     data.cash_session_id,
     "session non trouvé",
   );
+  if (session.status !== "open") {
+    throw new createHttpError.BadRequest("session fermée ou invalide");
+  }
 
   const result = await db.sequelize.transaction(async (t) => {
     // const uniqueMethods = [...new Set(payments.map((p) => p.method))];
@@ -631,6 +634,15 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
   const data = refundDataSchema.parse(req.body);
   data.refund_method = data.payment_method;
 
+  const session = await findByPkOrThrow(
+    CashSession,
+    data.cash_session_id,
+    "session non trouvé",
+  );
+  if (session.status !== "open") {
+    throw new createHttpError.BadRequest("session fermée ou invalide");
+  }
+
   const refunded = data.items
     .map((item) => {
       const alreadyRefunded = parentRefunds.reduce((prev, current) => {
@@ -648,14 +660,12 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
         throw new createHttpError.InternalServerError(
           "transaction item relation manquante",
         );
-      if (
-        alreadyRefunded &&
-        (item.quantity - alreadyRefunded > c.TransactionItem.quantity ||
-          item.quantity - alreadyRefunded < 0)
-      )
+      const soldQty = c.TransactionItem.quantity;
+      if (item.quantity > soldQty - alreadyRefunded) {
         throw new createHttpError.BadRequest(
           "peut pas rembourser plus d'objects que vendu",
         );
+      }
       const toRefundquantity = item.quantity - alreadyRefunded;
       const toRefundNow =
         (c.TransactionItem.total_price / c.TransactionItem.quantity -

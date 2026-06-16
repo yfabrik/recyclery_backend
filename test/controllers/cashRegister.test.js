@@ -7,7 +7,9 @@ import {
   listCaisses,
   updateCaisse,
 } from "../../src/v1/controllers/cashRegister";
-const { Recyclery } = db;
+import { createRecyclery, createUser } from "../models/helpers.js";
+import { makeReq, makeRes } from "./helpers.js";
+const { Recyclery, CashRegister, CashSession } = db;
 
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });
@@ -172,5 +174,53 @@ describe("caisses controller functions", () => {
         message: "Caisse supprimée avec succès",
       }),
     );
+  });
+
+  it("allows same register name in a different store", async () => {
+    const store2 = await createRecyclery({ name: "Second Store" });
+    const res = makeRes();
+    await createCaisse(
+      makeReq({
+        body: { name: "Caisse Principale", store_id: store2.id },
+      }),
+      res,
+    );
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json.mock.calls[0][0].data.name).toBe("Caisse Principale");
+  });
+
+  it("keeps sessions when register is updated", async () => {
+    const user = await createUser();
+    const store = await Recyclery.create({
+      name: "Store Sessions",
+      address: "addr",
+      email: "sessions@test.com",
+    });
+    const register = await CashRegister.create({
+      name: "Session Register",
+      recyclery_id: store.id,
+      is_active: true,
+    });
+    await CashSession.create({
+      cash_register_id: register.id,
+      user_id: user.id,
+      opening_amount: 100,
+      status: "open",
+    });
+
+    const res = makeRes();
+    await updateCaisse(
+      makeReq({
+        params: { id: register.id },
+        body: { name: "Renamed Register", is_active: true },
+      }),
+      res,
+    );
+
+    const reloaded = await CashRegister.findByPk(register.id, {
+      include: [{ model: CashSession, as: "sessions" }],
+    });
+    expect(reloaded.sessions).toHaveLength(1);
+    expect(reloaded.name).toBe("Renamed Register");
   });
 });

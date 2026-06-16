@@ -11,7 +11,7 @@ import type { ModelWhere, Models } from "../../models/db-types.js";
 const { Category, Recyclery, Promotion } = db;
 
 const dataSchema = z.object({
-  name: z.string("Le nom est requis"),
+  name: z.string("Le nom est requis").trim().min(1, "Le nom est requis"),
   description: z.string().nullish().prefault(null),
   icon: z.string().nullish().prefault(null), //TODO should be enum with list of icon
   parent_id: idSchema().nullish().prefault(null),

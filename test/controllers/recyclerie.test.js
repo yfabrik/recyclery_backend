@@ -7,6 +7,7 @@ import {
   listRecycleries,
   updateRecyclerie,
 } from "../../src/v1/controllers/recycleries";
+import { makeReq, makeRes } from "./helpers.js";
 
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });
@@ -107,6 +108,37 @@ describe("recyclery controller functions", () => {
     );
   });
 
+  it("rejects duplicate store name", async () => {
+    const res = makeRes();
+    await expect(
+      createRecyclerie(
+        makeReq({
+          body: {
+            name: "updated",
+            address: "dup",
+            email: "dup@test.com",
+          },
+        }),
+        res,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("trims store name on create", async () => {
+    const res = makeRes();
+    await createRecyclerie(
+      makeReq({
+        body: {
+          name: "  Trim Recyclerie  ",
+          address: "addr",
+          email: "trim2@test.com",
+        },
+      }),
+      res,
+    );
+    expect(res.json.mock.calls[0][0].recyclery.name).toBe("Trim Recyclerie");
+  });
+
   it("should delete recyclery", async () => {
     const req = {
       query: {},
@@ -135,10 +167,8 @@ describe("recyclery controller functions", () => {
       json: jest.fn(),
     };
 
-    await detailRecyclerie(req, res);
-
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ store: null }),
-    );
+    await expect(detailRecyclerie(req, res)).rejects.toMatchObject({
+      status: 404,
+    });
   });
 });

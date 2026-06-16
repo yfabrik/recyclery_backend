@@ -6,7 +6,12 @@ import {
   detailPointPrecense,
   listPointPrecense,
 } from "../../src/v1/controllers/collectionPointPrecense";
-const { User, CollectionPoint, Recyclery } = db;
+import {
+  deleteCollectionPoint,
+  updateCollectionPoint,
+} from "../../src/v1/controllers/collectionPoints";
+import { makeReq, makeRes, expectHttpError } from "./helpers.js";
+const { User, CollectionPoint, Recyclery, TaskSchedule } = db;
 
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });
@@ -127,5 +132,104 @@ describe("collection schedule controller functions", () => {
         success: true,
       }),
     );
+  });
+
+  it("rejects presence with fake collection point", async () => {
+    const res = makeRes();
+    await expectHttpError(
+      () =>
+        createPointPrecense(
+          makeReq({
+            body: {
+              collection_point_id: 999,
+              store_id: 1,
+              day_of_week: "Mardi",
+              is_present: true,
+              start_time: "09:00",
+              end_time: "12:00",
+            },
+          }),
+          res,
+        ),
+      404,
+    );
+  });
+
+  it("updates presence name when collection point is renamed", async () => {
+    const point = await CollectionPoint.create({
+      name: "Rename Point",
+      address: "addr",
+      city: "city",
+      postal_code: "39000",
+      recyclery_id: 1,
+    });
+
+    const createRes = makeRes();
+    await createPointPrecense(
+      makeReq({
+        body: {
+          collection_point_id: point.id,
+          store_id: 1,
+          day_of_week: "Mercredi",
+          is_present: true,
+          start_time: "10:00",
+          end_time: "11:00",
+        },
+      }),
+      createRes,
+    );
+    const scheduleId = createRes.json.mock.calls[0][0].presence.id;
+
+    const updateRes = makeRes();
+    await updateCollectionPoint(
+      makeReq({
+        params: { id: point.id },
+        body: {
+          name: "Renamed Point",
+          address: "addr",
+          city: "city",
+          postal_code: "39000",
+        },
+      }),
+      updateRes,
+    );
+
+    const schedule = await TaskSchedule.findByPk(scheduleId);
+    expect(schedule.name).toBe("Renamed Point");
+  });
+
+  it("deletes presence schedules when collection point is deleted", async () => {
+    const point = await CollectionPoint.create({
+      name: "Delete Point",
+      address: "addr",
+      city: "city",
+      postal_code: "39000",
+      recyclery_id: 1,
+    });
+
+    const createRes = makeRes();
+    await createPointPrecense(
+      makeReq({
+        body: {
+          collection_point_id: point.id,
+          store_id: 1,
+          day_of_week: "Jeudi",
+          is_present: true,
+          start_time: "14:00",
+          end_time: "16:00",
+        },
+      }),
+      createRes,
+    );
+    const scheduleId = createRes.json.mock.calls[0][0].presence.id;
+
+    const delRes = makeRes();
+    await deleteCollectionPoint(
+      makeReq({ params: { id: point.id } }),
+      delRes,
+    );
+
+    const schedule = await TaskSchedule.findByPk(scheduleId);
+    expect(schedule).toBeNull();
   });
 });
