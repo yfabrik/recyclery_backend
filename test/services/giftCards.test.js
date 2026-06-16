@@ -26,6 +26,7 @@ const createSaleTransaction = async ({ userId }) => {
     payment_method: "cash",
     payment_amount: 10,
     total_amount: 10,
+    total_amount_before_promotion:10
   });
 };
 

@@ -24,6 +24,7 @@ describe("SalesTransaction Model", () => {
         total_amount: 25.5,
         payment_amount: 30,
         status: "completed",
+        total_amount_before_promotion:25.5,
       });
       expect(tx.id).toBeDefined();
       expect(Number(tx.total_amount)).toBe(25.5);
@@ -50,6 +51,7 @@ describe("SalesTransaction Model", () => {
         total_amount: 10,
         payment_amount: 10,
         status: "pending",
+        total_amount_before_promotion:10
       });
       const found = await SalesTransaction.findByPk(created.id);
       expect(found).not.toBeNull();
@@ -75,6 +77,7 @@ describe("SalesTransaction Model", () => {
         total_amount: 15,
         payment_amount: 15,
         status: "pending",
+        total_amount_before_promotion:15
       });
       await created.update({ status: "completed" });
       const reloaded = await SalesTransaction.findByPk(created.id);
@@ -99,6 +102,7 @@ describe("SalesTransaction Model", () => {
         payment_method: "cash",
         total_amount: 20,
         payment_amount: 20,
+        total_amount_before_promotion:20
       });
       const id = created.id;
       await created.destroy();
