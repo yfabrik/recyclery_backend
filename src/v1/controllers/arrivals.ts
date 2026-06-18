@@ -13,6 +13,7 @@ import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { ModelWhere, RequestWithUser } from "./types.ts";
 
 import db from "../../models/index.js";
+import logger from "../../services/logger.js";
 
 const { Arrival, Category, CollectionPoint, User } = db;
 
@@ -71,8 +72,6 @@ export const listArrivals = async (req: Request, res: Response) => {
   if (rest.collection_point_id && rest.source_type == "point") {
     whereCollectionPoint.id = rest.collection_point_id;
   }
-  console.log(whereCollectionPoint);
-  console.log(rest)
 
   const arrivals = await Arrival.findAndCountAll({
     where,
@@ -80,7 +79,7 @@ export const listArrivals = async (req: Request, res: Response) => {
       { model: Category, as: "categorie" },
       { model: Category, as: "subcategorie" },
       { model: User },
-      { model: CollectionPoint,where: whereCollectionPoint },
+      { model: CollectionPoint, where: whereCollectionPoint, required: false },
     ],
     order: [["createdAt", "DESC"]],
     ...pagination,
@@ -114,9 +113,7 @@ export const detailArrival = async (req: RequestWithUser, res: Response) => {
   });
 };
 
-const normalizeArrivalPayload = async (
-  data: z.infer<typeof dataSchema>,
-) => {
+const normalizeArrivalPayload = async (data: z.infer<typeof dataSchema>) => {
   const category = await findByPkOrThrow(
     Category,
     data.category_id,
@@ -167,7 +164,9 @@ export const createArrival = async (req: RequestWithUser, res: Response) => {
     ...data,
     processed_by: req.user.id,
   });
-
+  logger.info(
+    `new arrival ${arrival.id}:${arrival.weight}kg, ${arrival.source_type},by ${req.user.username}`,
+  );
   res.status(201).json({
     success: true,
     message: "Arrivage créé avec succès",
