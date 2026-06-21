@@ -4,26 +4,26 @@ import z from "zod";
 
 import type { Request, Response } from "express";
 import {
-  chargeGiftCard,
-  findGiftCardByCode,
-  issueGiftCard,
-  recreditGiftCard,
-} from "../../services/giftCards.js";
-import { idSchema, postalSchema, enumSchema } from "../../services/zod.js";
-import { findByPkOrThrow } from "../../services/sequelize.js";
-import {
   PAYMENT_METHODS,
   PROMOTION_TYPES,
   SALES_PAYMENT_METHODS,
   TRANSACTION_TYPES,
 } from "../../constants/dbEnums.js";
+import {
+  chargeGiftCard,
+  findGiftCardByCode,
+  issueGiftCard,
+  recreditGiftCard,
+} from "../../services/giftCards.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
+import { enumSchema, idSchema, postalSchema } from "../../services/zod.js";
 
 import db from "../../models/index.js";
 
 import { formatWhereDateRange } from "../../helpers.js";
+import type { ModelClass } from "../../models/db-types.js";
 import TransactionGlobalPromotion from "../../models/transactionGlobalPromotion.js";
 import { type ModelWhere, type RequestWithUser } from "./types.js";
-import type { ModelClass } from "../../models/db-types.js";
 
 const {
   CashSession,
@@ -1163,3 +1163,171 @@ export const transactionStatsPostalCode = async (
     postal_codes: postalStats,
   });
 };
+
+export const updateTransaction = async (req: RequestWithUser, res: Response) => {
+  const id = idSchema().parse(req.params.id);
+  const data = dataSchema.parse(req.body)
+  validateSaleAmounts(data)
+
+  const transaction = await findByPkOrThrow(SalesTransaction, id, "transaction non trouvé", {
+    include: [{
+      model: CashSession,
+      where: {
+        status: "open",
+        user_id: req.user.id
+      },
+    },
+    { model: TransactionPayment, as: "payments" },
+    { model: LabeledItem, as: "items" },
+    { model: TransactionGlobalPromotion, as: "globalPromotions" }
+    ],
+  })
+  if (transaction.transactionType != "sell") throw new createHttpError.BadRequest("pas fait pour les refunds")
+
+  const result = await db.sequelize.transaction(async (t) => {
+
+    //update payments
+    const oldPayments = transaction.payments ?? []
+    const newPayments = data.payments ?? []
+
+    const edit = oldPayments.filter(o => !newPayments.find(n => o.amount == n.amount && o.method == n.method))
+    const edit2 = newPayments.filter(o => !oldPayments.find(n => o.amount == n.amount && o.method == n.method))
+    for (const e of edit) {
+      if (e.method == "giftcard") {
+        await e.getGiftCard()
+        await recreditGiftCard(
+          {
+            giftCardId: e.gift_card_id!,
+            salesTransactionId: e.sales_transaction_id,
+            amount: e.amount,
+            createdBy: req.user.id,
+            metadata: { source: "cancel_recredit" },
+            transaction: t
+          }
+        )
+        //TODO refund giftcard ,ot sure if it is clean
+      }
+      await e.destroy({ transaction: t }) //remove les payments qui n'existent plus
+    }
+    for (const e of edit2) {
+      //create giftcard payment
+      if (e.method == "giftcard") {
+        const giftCardCode = e.gift_card_code;
+        if (!giftCardCode) {
+          throw new createHttpError.BadRequest(
+            "gift_card_code est requis pour un paiement giftcard",
+          );
+        }
+        const giftCard = await findGiftCardByCode(giftCardCode, {
+          transaction: t,
+        });
+        if (!giftCard) {
+          throw new createHttpError.NotFound("gift card introuvable");
+        }
+        await chargeGiftCard({
+          giftCardId: giftCard.id,
+          salesTransactionId: id,
+          amount: e.amount,
+          createdBy: req.user.id,
+          metadata: { source: "sale_payment" },
+          transaction: t,
+        });
+      }
+      await transaction.createPayment({ ...e }, { transaction: t }) // add new payments
+    }
+    const storedMethod =
+      newPayments && newPayments.length === 1
+        ? (newPayments[0]?.method ?? "mixed")
+        : "mixed";
+
+    //update Promotion
+    if (data.global_promotion && data.global_promotion_type) {
+      if (transaction.globalPromotions?.length === 0 || !transaction.globalPromotions)
+        await transaction.createGlobalPromotion({ value: data.global_promotion, type: data.global_promotion_type }, { transaction: t })
+      else
+        await transaction.globalPromotions[0]?.update({ value: data.global_promotion, type: data.global_promotion_type }, { transaction: t })
+    }
+
+    //items
+    const currentItems = data.items ?? []
+    const prevItems = transaction.items ?? []
+    //line removed
+    const removed = prevItems.filter(prev => !currentItems.find(c => c.barcode === prev.barcode))
+    for (const r of removed) {
+      await r.TransactionItem?.destroy({ transaction: t })
+      await r.update({ status: "available" }, { transaction: t })
+      // r.status = "available"
+      // r.save({ transaction: t })
+    }
+    //quantity changed
+    for (const i of prevItems) {
+      const current = currentItems.find(c => c.barcode === i.barcode)
+      console.log("items", i.TransactionItem?.quantity, current?.quantity)
+      if (current && i.TransactionItem && current.quantity != i.TransactionItem?.quantity) {
+        await i.TransactionItem.update({
+          quantity: current.quantity
+        }, { transaction: t })
+
+      }
+    }
+
+    transaction.update({
+      customer_postal_code: data.customer_postal_code ?? null,
+      payment_method: storedMethod,
+      payment_amount: newPayments.reduce((prev, current) => prev + current.amount, 0),
+      total_amount: data.total_amount,
+      total_amount_before_promotion: data.total_amount_before_promotion,
+
+    }, { transaction: t })
+
+    return await transaction.reload({
+      include: [
+        { model: CashSession },
+        { model: TransactionPayment, as: "payments" },
+        { model: LabeledItem, as: "items" },
+        { model: TransactionGlobalPromotion, as: "globalPromotions" }
+      ]
+    })
+
+  })
+
+  res.json({
+    success: true,
+    message: " transaction mise à jour",
+    data: result
+
+  })
+}
+
+export const removeTransaction = async (req: RequestWithUser, res: Response) => {
+  const id = idSchema().parse(req.params.id);
+  //TODO change status for items, ensure payments deleted,
+  //TODO send 403 if transaction exist but where fail ???
+  const toDelete = await findByPkOrThrow(SalesTransaction, id, "transaction non trouvé", {
+    include: [{
+      model: CashSession,
+      where: {
+        status: "open",
+        user_id: req.user.id
+      }
+    },
+    { model: SalesTransaction, as: "refunds" },
+    { model: GiftCard,as:"giftCards"}
+    ]
+  })
+
+  // const toDelete2 = await findByPkOrThrow(SalesTransaction, id, "transaction non trouvé", {
+  //   include: [{
+  //     model: CashSession,
+  //   },
+  //   { model: SalesTransaction, as: "refunds" }
+  //   ]
+  // })
+  // if (toDelete2.CashSession?.status != "open" && toDelete2.CashSession?.user_id != req.user.id && toDelete2.refunds && toDelete2.refunds?.length > 0)
+  //   throw new createHttpError.Forbidden("trop tard pour modifier")
+  await toDelete.destroy()
+
+  res.json({
+    success: true
+  })
+}
