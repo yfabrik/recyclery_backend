@@ -7,37 +7,10 @@ import {
 } from "sequelize";
 import db from "../models/index.js";
 import type SalesTransaction from "../models/salestransaction.js";
+import { getGiftCardBalanceInTx, toAmount } from "./giftCardLedger.js";
 import { findByPkOrThrow } from "./sequelize.js";
 
 const { GiftCard, GiftCardTransaction, User, sequelize } = db;
-
-const toAmount = (value?: number | string | null) =>
-  Number.parseFloat(String(value ?? 0));
-
-const getGiftCardBalanceInTx = async (
-  giftCardId: InstanceType<typeof GiftCard>["id"],
-  transaction: Transaction,
-) => {
-  const giftCard = await findByPkOrThrow(
-    GiftCard,
-    giftCardId,
-    "gift card not found",
-    { transaction },
-  );
-
-  const movementSum =
-    (await GiftCardTransaction.sum("amount", {
-      where: { gift_card_id: giftCardId },
-      transaction,
-    })) || 0;
-
-  return {
-    giftCard,
-    initialValue: toAmount(giftCard.initial_value),
-    movementSum: toAmount(movementSum),
-    currentBalance: toAmount(giftCard.initial_value) + toAmount(movementSum),
-  };
-};
 
 const assertGiftCardUsable = (giftCard: InstanceType<typeof GiftCard>) => {
   if (giftCard.status === "cancelled") {
