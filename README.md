@@ -100,6 +100,15 @@ test/                   # Jest unit tests
 config/config.json      # Sequelize per-environment config
 ```
 
+## TypeScript model typing convention
+
+In services/controllers, use the `Models` map from `src/models/db-types.ts`:
+
+- Instance type: `Models["GiftCard"]`
+- Field/ID type: `Models["GiftCard"]["id"]`
+
+Prefer this over `InstanceType<typeof Model>` in app-layer code so typing stays consistent and discoverable.
+
 ## Further reading
 
 - [`TS_MODEL_MIGRATION_STATUS.md`](TS_MODEL_MIGRATION_STATUS.md) — TypeScript model migration notes

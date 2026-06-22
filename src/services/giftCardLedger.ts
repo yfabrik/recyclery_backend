@@ -1,5 +1,6 @@
 import type { Transaction } from "sequelize";
 import type { GiftCardStatus } from "../constants/dbEnums.js";
+import type { Models } from "../models/db-types.js";
 import GiftCard from "../models/giftcard.js";
 import { findByPkOrThrow } from "./sequelize.js";
 
@@ -7,7 +8,7 @@ export const toAmount = (value?: number | string | null) =>
   Number.parseFloat(String(value ?? 0));
 
 export const getGiftCardBalanceInTx = async (
-  giftCardId: InstanceType<typeof GiftCard>["id"],
+  giftCardId: Models["GiftCard"]["id"],
   transaction: Transaction | null,
 ) => {
   const queryOptions = transaction ? { transaction } : {};
@@ -41,7 +42,7 @@ export const getGiftCardBalanceInTx = async (
 };
 
 export const computeGiftCardStatus = (
-  giftCard: InstanceType<typeof GiftCard>,
+  giftCard: Models["GiftCard"],
   initialValue: number,
   movementSum: number,
 ): GiftCardStatus => {
@@ -58,7 +59,7 @@ export const computeGiftCardStatus = (
 };
 
 export const syncGiftCardStatus = async (
-  giftCardId: InstanceType<typeof GiftCard>["id"],
+  giftCardId: Models["GiftCard"]["id"],
   transaction: Transaction | null,
 ) => {
   const { giftCard, initialValue, movementSum } = await getGiftCardBalanceInTx(

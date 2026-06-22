@@ -21,7 +21,7 @@ import { enumSchema, idSchema, postalSchema } from "../../services/zod.js";
 import db from "../../models/index.js";
 
 import { formatWhereDateRange } from "../../helpers.js";
-import type { ModelClass } from "../../models/db-types.js";
+import type { Models } from "../../models/db-types.js";
 import TransactionGlobalPromotion from "../../models/transactionGlobalPromotion.js";
 import { type ModelWhere, type RequestWithUser } from "./types.js";
 
@@ -934,9 +934,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
     sessions_count: number | string;
   };
   type PaymentMethodRow = {
-    payment_method: InstanceType<
-      ModelClass<"SalesTransaction">
-    >["payment_method"]; //TODO remake with helper
+    payment_method: Models["SalesTransaction"]["payment_method"];
     total: number | string;
     count: number | string;
   };

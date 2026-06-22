@@ -5,7 +5,7 @@ import type { Request, Response } from "express";
 import { idSchema, phoneSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 
-import type { ModelWhere } from "../../models/db-types.js";
+import type { ModelWhere, Models } from "../../models/db-types.js";
 import db from "../../models/index.js";
 
 const {
@@ -128,8 +128,8 @@ export const deleteEcoOrganism = async (req: Request, res: Response) => {
 };
 
 type quarterLabel = `${number}-T${1 | 2 | 3 | 4}`;
-type EcoOrgId = InstanceType<typeof EcoOrganism>["id"];
-type ArrivalSourceType = InstanceType<typeof Arrival>["source_type"];
+type EcoOrgId = Models["EcoOrganism"]["id"];
+type ArrivalSourceType = Models["Arrival"]["source_type"];
 
 type QuarterRange = {
   start: Date;
@@ -139,8 +139,8 @@ type QuarterRange = {
 };
 
 type WeightedCategory = {
-  id: InstanceType<typeof Category>["id"];
-  name: InstanceType<typeof Category>["name"];
+  id: Models["Category"]["id"];
+  name: Models["Category"]["name"];
   weight_kg: number;
 };
 
@@ -182,7 +182,7 @@ type QuarterSellByEcoOrgMap = Map<
 >;
 
 type EcoOrgQuarterStatsResponse = Pick<
-  InstanceType<typeof EcoOrganism>,
+  Models["EcoOrganism"],
   "id" | "name" | "description" | "is_active"
 > & {
   quarters: {
@@ -258,18 +258,16 @@ export const quartersDateRanges = (startDate: Date, quarterCount = 4) => {
 };
 
 type WasteQuarterRow = {
-  eco_organism_id: NonNullable<
-    InstanceType<typeof WasteDisposal>["eco_organism_id"]
-  >;
-  category_id: InstanceType<typeof WasteDisposal>["category_id"];
-  subcategory_id: InstanceType<typeof WasteDisposal>["subcategory_id"] | null;
+  eco_organism_id: NonNullable<Models["WasteDisposal"]["eco_organism_id"]>;
+  category_id: Models["WasteDisposal"]["category_id"];
+  subcategory_id: Models["WasteDisposal"]["subcategory_id"] | null;
   category_name: string;
   subcategory_name: string | null;
   weight_kg: number; // SUM(DECIMAL) usually comes back as string in Sequelize
 };
 
 type arrivalQuarterRow = Omit<WasteQuarterRow, "eco_organism_id"> & {
-  source_type: InstanceType<typeof Arrival>["source_type"];
+  source_type: Models["Arrival"]["source_type"];
 };
 
 type sellQuarterRow = Omit<WasteQuarterRow, "eco_organism_id"> & {
@@ -390,7 +388,7 @@ export const getQuarterStatOut = async (
  */
 export const getQuarterStatIn = async (
   quarterRanges: QuarterRange[],
-  // ecoOrganisms: InstanceType<typeof EcoOrganism>[],
+  // ecoOrganisms: Models["EcoOrganism"][],
 ): Promise<QuarterInByEcoOrgMap> => {
   //all eco org avec leur incategories
   const inCategoryLinks = await EcoOrganism.findAll({
