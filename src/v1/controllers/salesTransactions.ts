@@ -1211,20 +1211,6 @@ export const updateTransaction = async (
     );
     for (const e of edit) {
       //in HOOK on delete, remove giftcard transaction too
-      // if (e.method == "giftcard") {
-      //   await e.getGiftCard()
-      //   await recreditGiftCard(
-      //     {
-      //       giftCardId: e.gift_card_id!,
-      //       salesTransactionId: e.sales_transaction_id,
-      //       amount: e.amount,
-      //       createdBy: req.user.id,
-      //       metadata: { source: "cancel_recredit" },
-      //       transaction: t
-      //     }
-      //   )
-      //   //TODO refund giftcard ,ot sure if it is clean
-      // }
       await e.destroy({ transaction: t }); //remove les payments qui n'existent plus
     }
     for (const e of edit2) {
@@ -1285,8 +1271,6 @@ export const updateTransaction = async (
     for (const r of removed) {
       await r.TransactionItem?.destroy({ transaction: t });
       await r.update({ status: "available" }, { transaction: t });
-      // r.status = "available"
-      // r.save({ transaction: t })
     }
     //quantity changed
     for (const i of prevItems) {
@@ -1343,34 +1327,36 @@ export const removeTransaction = async (
   const id = idSchema().parse(req.params.id);
   //TODO change status for items, ensure payments deleted,
   //TODO send 403 if transaction exist but where fail ???
-  const toDelete = await findByPkOrThrow(
-    SalesTransaction,
-    id,
-    "transaction non trouvé",
-    {
-      include: [
-        {
-          model: CashSession,
-          where: {
-            status: "open",
-            user_id: req.user.id,
-          },
-        },
-        { model: SalesTransaction, as: "refunds" },
-        { model: GiftCard, as: "giftCards" },
-      ],
-    },
-  );
-
-  // const toDelete2 = await findByPkOrThrow(SalesTransaction, id, "transaction non trouvé", {
-  //   include: [{
-  //     model: CashSession,
+  // const toDelete = await findByPkOrThrow(
+  //   SalesTransaction,
+  //   id,
+  //   "transaction non trouvé",
+  //   {
+  //     include: [
+  //       {
+  //         model: CashSession,
+  //         where: {
+  //           status: "open",
+  //           user_id: req.user.id,
+  //         },
+  //       },
+  //       { model: SalesTransaction, as: "refunds" },
+  //       { model: GiftCard, as: "giftCards" },
+  //     ],
   //   },
-  //   { model: SalesTransaction, as: "refunds" }
-  //   ]
-  // })
-  // if (toDelete2.CashSession?.status != "open" && toDelete2.CashSession?.user_id != req.user.id && toDelete2.refunds && toDelete2.refunds?.length > 0)
-  //   throw new createHttpError.Forbidden("trop tard pour modifier")
+  // );
+
+  const toDelete = await findByPkOrThrow(SalesTransaction, id, "transaction non trouvé", {
+    include: [{
+      model: CashSession,
+    },
+    { model: SalesTransaction, as: "refunds" }
+    ]
+  })
+  if (toDelete.CashSession?.status != "open" && toDelete.CashSession?.user_id != req.user.id)
+    throw new createHttpError.Forbidden("trop tard pour modifier")
+  if(toDelete.refunds && toDelete.refunds?.length > 0)
+    throw new createHttpError.Forbidden("transaction a deja ete remboursee")
   await toDelete.destroy();
 
   res.json({
