@@ -217,7 +217,10 @@ export const listTransactions = async (req: Request, res: Response) => {
       idSchema().optional().nullable(),
     ),
     period: z.string().optional(),
-    type: enumSchema(TRANSACTION_TYPES, "type de transaction inconnu").optional(),
+    type: enumSchema(
+      TRANSACTION_TYPES,
+      "type de transaction inconnu",
+    ).optional(),
     date_from: z.coerce.date().optional(),
     date_to: z.coerce.date().optional(),
     limit: z.coerce.number().positive().optional(),
@@ -661,7 +664,8 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
           "transaction item relation manquante",
         );
       const soldQty = c.TransactionItem.quantity;
-      if (item.quantity > soldQty - alreadyRefunded) {
+      
+      if (soldQty - alreadyRefunded < 0 && item.quantity > soldQty) {
         throw new createHttpError.BadRequest(
           "peut pas rembourser plus d'objects que vendu",
         );
@@ -1164,34 +1168,49 @@ export const transactionStatsPostalCode = async (
   });
 };
 
-export const updateTransaction = async (req: RequestWithUser, res: Response) => {
+export const updateTransaction = async (
+  req: RequestWithUser,
+  res: Response,
+) => {
   const id = idSchema().parse(req.params.id);
-  const data = dataSchema.parse(req.body)
-  validateSaleAmounts(data)
+  const data = dataSchema.parse(req.body);
+  validateSaleAmounts(data);
 
-  const transaction = await findByPkOrThrow(SalesTransaction, id, "transaction non trouvé", {
-    include: [{
-      model: CashSession,
-      where: {
-        status: "open",
-        user_id: req.user.id
-      },
+  const transaction = await findByPkOrThrow(
+    SalesTransaction,
+    id,
+    "transaction non trouvé",
+    {
+      include: [
+        {
+          model: CashSession,
+          where: {
+            status: "open",
+            user_id: req.user.id,
+          },
+        },
+        { model: TransactionPayment, as: "payments" },
+        { model: LabeledItem, as: "items" },
+        { model: TransactionGlobalPromotion, as: "globalPromotions" },
+      ],
     },
-    { model: TransactionPayment, as: "payments" },
-    { model: LabeledItem, as: "items" },
-    { model: TransactionGlobalPromotion, as: "globalPromotions" }
-    ],
-  })
-  if (transaction.transactionType != "sell") throw new createHttpError.BadRequest("pas fait pour les refunds")
+  );
+  if (transaction.transactionType != "sell")
+    throw new createHttpError.BadRequest("pas fait pour les refunds");
 
   const result = await db.sequelize.transaction(async (t) => {
-
     //update payments
-    const oldPayments = transaction.payments ?? []
-    const newPayments = data.payments ?? []
+    const oldPayments = transaction.payments ?? [];
+    const newPayments = data.payments ?? [];
 
-    const edit = oldPayments.filter(o => !newPayments.find(n => o.amount == n.amount && o.method == n.method))
-    const edit2 = newPayments.filter(o => !oldPayments.find(n => o.amount == n.amount && o.method == n.method))
+    const edit = oldPayments.filter(
+      (o) =>
+        !newPayments.find((n) => o.amount == n.amount && o.method == n.method),
+    );
+    const edit2 = newPayments.filter(
+      (o) =>
+        !oldPayments.find((n) => o.amount == n.amount && o.method == n.method),
+    );
     for (const e of edit) {
       //in HOOK on delete, remove giftcard transaction too
       // if (e.method == "giftcard") {
@@ -1208,7 +1227,7 @@ export const updateTransaction = async (req: RequestWithUser, res: Response) => 
       //   )
       //   //TODO refund giftcard ,ot sure if it is clean
       // }
-      await e.destroy({ transaction: t }) //remove les payments qui n'existent plus
+      await e.destroy({ transaction: t }); //remove les payments qui n'existent plus
     }
     for (const e of edit2) {
       //create giftcard payment
@@ -1234,7 +1253,7 @@ export const updateTransaction = async (req: RequestWithUser, res: Response) => 
           transaction: t,
         });
       }
-      await transaction.createPayment({ ...e }, { transaction: t }) // add new payments
+      await transaction.createPayment({ ...e }, { transaction: t }); // add new payments
     }
     const storedMethod =
       newPayments && newPayments.length === 1
@@ -1243,78 +1262,107 @@ export const updateTransaction = async (req: RequestWithUser, res: Response) => 
 
     //update Promotion
     if (data.global_promotion && data.global_promotion_type) {
-      if (transaction.globalPromotions?.length === 0 || !transaction.globalPromotions)
-        await transaction.createGlobalPromotion({ value: data.global_promotion, type: data.global_promotion_type }, { transaction: t })
+      if (
+        transaction.globalPromotions?.length === 0 ||
+        !transaction.globalPromotions
+      )
+        await transaction.createGlobalPromotion(
+          { value: data.global_promotion, type: data.global_promotion_type },
+          { transaction: t },
+        );
       else
-        await transaction.globalPromotions[0]?.update({ value: data.global_promotion, type: data.global_promotion_type }, { transaction: t })
+        await transaction.globalPromotions[0]?.update(
+          { value: data.global_promotion, type: data.global_promotion_type },
+          { transaction: t },
+        );
     }
 
     //items
-    const currentItems = data.items ?? []
-    const prevItems = transaction.items ?? []
+    const currentItems = data.items ?? [];
+    const prevItems = transaction.items ?? [];
     //line removed
-    const removed = prevItems.filter(prev => !currentItems.find(c => c.barcode === prev.barcode))
+    const removed = prevItems.filter(
+      (prev) => !currentItems.find((c) => c.barcode === prev.barcode),
+    );
     for (const r of removed) {
-      await r.TransactionItem?.destroy({ transaction: t })
-      await r.update({ status: "available" }, { transaction: t })
+      await r.TransactionItem?.destroy({ transaction: t });
+      await r.update({ status: "available" }, { transaction: t });
       // r.status = "available"
       // r.save({ transaction: t })
     }
     //quantity changed
     for (const i of prevItems) {
-      const current = currentItems.find(c => c.barcode === i.barcode)
-      if (current && i.TransactionItem && current.quantity != i.TransactionItem?.quantity) {
-        await i.TransactionItem.update({
-          quantity: current.quantity
-        }, { transaction: t })
-
+      const current = currentItems.find((c) => c.barcode === i.barcode);
+      if (
+        current &&
+        i.TransactionItem &&
+        current.quantity != i.TransactionItem?.quantity
+      ) {
+        await i.TransactionItem.update(
+          {
+            quantity: current.quantity,
+          },
+          { transaction: t },
+        );
       }
     }
 
-    transaction.update({
-      customer_postal_code: data.customer_postal_code ?? null,
-      payment_method: storedMethod,
-      payment_amount: newPayments.reduce((prev, current) => prev + current.amount, 0),
-      total_amount: data.total_amount,
-      total_amount_before_promotion: data.total_amount_before_promotion,
-
-    }, { transaction: t })
+    transaction.update(
+      {
+        customer_postal_code: data.customer_postal_code ?? null,
+        payment_method: storedMethod,
+        payment_amount: newPayments.reduce(
+          (prev, current) => prev + current.amount,
+          0,
+        ),
+        total_amount: data.total_amount,
+        total_amount_before_promotion: data.total_amount_before_promotion,
+      },
+      { transaction: t },
+    );
 
     return await transaction.reload({
       include: [
         { model: CashSession },
         { model: TransactionPayment, as: "payments" },
         { model: LabeledItem, as: "items" },
-        { model: TransactionGlobalPromotion, as: "globalPromotions" }
-      ]
-    })
-
-  })
+        { model: TransactionGlobalPromotion, as: "globalPromotions" },
+      ],
+    });
+  });
 
   res.json({
     success: true,
     message: " transaction mise à jour",
-    data: result
+    data: result,
+  });
+};
 
-  })
-}
-
-export const removeTransaction = async (req: RequestWithUser, res: Response) => {
+export const removeTransaction = async (
+  req: RequestWithUser,
+  res: Response,
+) => {
   const id = idSchema().parse(req.params.id);
   //TODO change status for items, ensure payments deleted,
   //TODO send 403 if transaction exist but where fail ???
-  const toDelete = await findByPkOrThrow(SalesTransaction, id, "transaction non trouvé", {
-    include: [{
-      model: CashSession,
-      where: {
-        status: "open",
-        user_id: req.user.id
-      }
+  const toDelete = await findByPkOrThrow(
+    SalesTransaction,
+    id,
+    "transaction non trouvé",
+    {
+      include: [
+        {
+          model: CashSession,
+          where: {
+            status: "open",
+            user_id: req.user.id,
+          },
+        },
+        { model: SalesTransaction, as: "refunds" },
+        { model: GiftCard, as: "giftCards" },
+      ],
     },
-    { model: SalesTransaction, as: "refunds" },
-    { model: GiftCard,as:"giftCards"}
-    ]
-  })
+  );
 
   // const toDelete2 = await findByPkOrThrow(SalesTransaction, id, "transaction non trouvé", {
   //   include: [{
@@ -1325,9 +1373,9 @@ export const removeTransaction = async (req: RequestWithUser, res: Response) => 
   // })
   // if (toDelete2.CashSession?.status != "open" && toDelete2.CashSession?.user_id != req.user.id && toDelete2.refunds && toDelete2.refunds?.length > 0)
   //   throw new createHttpError.Forbidden("trop tard pour modifier")
-  await toDelete.destroy()
+  await toDelete.destroy();
 
   res.json({
-    success: true
-  })
-}
+    success: true,
+  });
+};
