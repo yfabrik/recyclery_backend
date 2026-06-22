@@ -10,7 +10,7 @@ import db from "../models/index.js";
 import { getGiftCardBalanceInTx, toAmount } from "./giftCardLedger.js";
 import { findByPkOrThrow } from "./sequelize.js";
 
-const { GiftCard, GiftCardTransaction, sequelize } = db;
+const { GiftCard, GiftCardTransaction, CashSession, SalesTransaction, sequelize } = db;
 
 const assertGiftCardUsable = (giftCard: Models["GiftCard"]) => {
   if (giftCard.status === "cancelled") {
@@ -55,14 +55,43 @@ export const issueGiftCard = async ({
       "initial gift card value must be >= 0",
     );
   }
-  const linkedTransactionId = issuedTransactionId || issuedRefundTransactionId;
+  let linkedTransactionId = issuedTransactionId || issuedRefundTransactionId;
   if (!linkedTransactionId) {
-    throw new createHttpError.BadRequest(
-      "gift card issuance requires a linked sales transaction id",
-    );
+    const openedSession = await CashSession.findOne({
+      where: {
+        status: "open",
+        user_id: createdBy,
+      },
+    });
+    if (!openedSession)
+      throw new createHttpError.BadRequest(
+        "gift card issuance requires a linked sales transaction id",
+      );
+
   }
 
   const run = async (transaction: Transaction) => {
+    if (!linkedTransactionId) {
+      //TODO a refaire
+      const openedSession = await CashSession.findOne({
+        where: {
+          status: "open",
+          user_id: createdBy,
+        },
+      });
+      if (!openedSession) throw new createHttpError.BadRequest(
+        "gift card issuance requires a linked sales transaction id",
+      );
+      linkedTransactionId = (await SalesTransaction.create({
+        cash_session_id: openedSession.id,
+        payment_method: "cash",
+        created_by: createdBy,
+        total_amount_before_promotion: amount,
+        total_amount: amount,
+        payment_amount: amount,
+        transactionType: "sell",
+      }, { transaction })).id;
+    }
     const giftCard = await GiftCard.create(
       {
         code,
