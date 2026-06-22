@@ -1193,20 +1193,21 @@ export const updateTransaction = async (req: RequestWithUser, res: Response) => 
     const edit = oldPayments.filter(o => !newPayments.find(n => o.amount == n.amount && o.method == n.method))
     const edit2 = newPayments.filter(o => !oldPayments.find(n => o.amount == n.amount && o.method == n.method))
     for (const e of edit) {
-      if (e.method == "giftcard") {
-        await e.getGiftCard()
-        await recreditGiftCard(
-          {
-            giftCardId: e.gift_card_id!,
-            salesTransactionId: e.sales_transaction_id,
-            amount: e.amount,
-            createdBy: req.user.id,
-            metadata: { source: "cancel_recredit" },
-            transaction: t
-          }
-        )
-        //TODO refund giftcard ,ot sure if it is clean
-      }
+      //in HOOK on delete, remove giftcard transaction too
+      // if (e.method == "giftcard") {
+      //   await e.getGiftCard()
+      //   await recreditGiftCard(
+      //     {
+      //       giftCardId: e.gift_card_id!,
+      //       salesTransactionId: e.sales_transaction_id,
+      //       amount: e.amount,
+      //       createdBy: req.user.id,
+      //       metadata: { source: "cancel_recredit" },
+      //       transaction: t
+      //     }
+      //   )
+      //   //TODO refund giftcard ,ot sure if it is clean
+      // }
       await e.destroy({ transaction: t }) //remove les payments qui n'existent plus
     }
     for (const e of edit2) {
@@ -1262,7 +1263,6 @@ export const updateTransaction = async (req: RequestWithUser, res: Response) => 
     //quantity changed
     for (const i of prevItems) {
       const current = currentItems.find(c => c.barcode === i.barcode)
-      console.log("items", i.TransactionItem?.quantity, current?.quantity)
       if (current && i.TransactionItem && current.quantity != i.TransactionItem?.quantity) {
         await i.TransactionItem.update({
           quantity: current.quantity

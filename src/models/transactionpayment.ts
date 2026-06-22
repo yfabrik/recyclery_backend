@@ -77,6 +77,23 @@ export default class TransactionPayment extends Model<
           { fields: ["method"] },
           { fields: ["gift_card_id"] },
         ],
+        hooks: {
+          afterDestroy: async (instance, option) => {
+            //TRIGGERED when editing payemnts
+            //remove giftcard transaction if there is one
+            const t = option.transaction ?? null;
+            const gift = await instance.getGiftCard({ transaction: t });
+            if (!gift) return;
+            const transaction = await instance.getSalesTransaction({
+              transaction: t,
+            });
+            const cardPayments = await transaction.getGiftCardMovements({
+              where: { gift_card_id: instance.gift_card_id },
+              transaction: t,
+            });
+            if (cardPayments[0]) await cardPayments[0].destroy({ transaction: t });
+          },
+        },
       },
     );
   }
