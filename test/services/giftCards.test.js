@@ -47,7 +47,7 @@ describe("giftCards service", () => {
 
     const balance = await getGiftCardBalance(card.id);
     expect(balance.giftCard.id).toBe(card.id);
-    expect(balance.currentBalance).toBe(100);
+    expect(balance.currentBalance).toBe(50);
   });
 
   it("charges and recredits gift card correctly", async () => {
@@ -74,7 +74,7 @@ describe("giftCards service", () => {
     expect(card.status).toBe("partially_used");
 
     let balance = await getGiftCardBalance(card.id);
-    expect(balance.currentBalance).toBe(48);
+    expect(balance.currentBalance).toBe(18);
 
     await recreditGiftCard({
       giftCardId: card.id,
@@ -87,7 +87,7 @@ describe("giftCards service", () => {
     expect(card.status).toBe("partially_used");
 
     balance = await getGiftCardBalance(card.id);
-    expect(balance.currentBalance).toBe(55);
+    expect(balance.currentBalance).toBe(25);
   });
 
   it("updates status when charge movements are removed", async () => {
@@ -109,6 +109,10 @@ describe("giftCards service", () => {
       amount: 3,
       createdBy: user.id,
     });
+
+    let balance0 = await getGiftCardBalance(card.id);
+    expect(balance0.currentBalance).toBe(7);
+
     const secondCharge = await chargeGiftCard({
       giftCardId: card.id,
       salesTransactionId: secondUsageTx.id,
@@ -116,14 +120,23 @@ describe("giftCards service", () => {
       createdBy: user.id,
     });
 
+    let balance = await getGiftCardBalance(card.id);
+    expect(balance.currentBalance).toBe(0);
+
     await card.reload();
     expect(card.status).toBe("redeemed");
 
     await secondCharge.destroy();
+    balance = await getGiftCardBalance(card.id);
+    expect(balance.currentBalance).toBe(7);
+
     await card.reload();
     expect(card.status).toBe("partially_used");
 
     await firstCharge.destroy();
+    balance = await getGiftCardBalance(card.id);
+    expect(balance.currentBalance).toBe(10);
+
     await card.reload();
     expect(card.status).toBe("active");
   });

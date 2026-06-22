@@ -37,7 +37,8 @@ export const getGiftCardBalanceInTx = async (
     giftCard,
     initialValue,
     movementSum: normalizedMovementSum,
-    currentBalance: initialValue + normalizedMovementSum,
+    // Ledger is source of truth: issue movement seeds initial value.
+    currentBalance: normalizedMovementSum,
   };
 };
 
