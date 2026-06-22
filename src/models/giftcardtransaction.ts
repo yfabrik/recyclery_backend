@@ -1,6 +1,7 @@
 import {
   DataTypes,
   Model,
+  Transaction,
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
@@ -11,14 +12,50 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { ModelStatics } from "./db-types.ts";
-import type GiftCard from "./giftcard.ts";
-import type SalesTransaction from "./salestransaction.ts";
-import type User from "./user.ts";
 import {
   GIFT_CARD_TRANSACTION_TYPES,
+  type GiftCardStatus,
   type GiftCardTransactionType,
 } from "../constants/dbEnums.js";
+// import { getGiftCardBalance } from "../services/giftCards.js";
+import type { ModelStatics } from "./db-types.ts";
+import GiftCard from "./giftcard.js";
+import type SalesTransaction from "./salestransaction.ts";
+import type User from "./user.ts";
+import { findByPkOrThrow } from "../services/sequelize.js";
+
+//FIXME import giftcard service crash the app (loop import fail ?)
+const toAmount = (value?: number | string | null) =>
+  Number.parseFloat(String(value ?? 0));
+
+const getGiftCardBalanceInTx = async (
+  giftCardId: InstanceType<typeof GiftCard>["id"],
+  transaction: Transaction | null,
+) => {
+  const giftCard = await findByPkOrThrow(
+    GiftCard,
+    giftCardId,
+    "gift card not found",
+    { transaction },
+  );
+
+  const GiftCardTransactionModel = giftCard.sequelize.models.GiftCard as
+    | ModelStatic<GiftCardTransaction>
+    | undefined;
+  if (!GiftCardTransactionModel) throw new Error("fuck you");
+  const movementSum =
+    (await GiftCardTransactionModel.sum("amount", {
+      where: { gift_card_id: giftCardId },
+      transaction,
+    })) || 0;
+
+  return {
+    giftCard,
+    initialValue: toAmount(giftCard.initial_value),
+    movementSum: toAmount(movementSum),
+    currentBalance: toAmount(giftCard.initial_value) + toAmount(movementSum),
+  };
+};
 
 export default class GiftCardTransaction extends Model<
   InferAttributes<GiftCardTransaction>,
@@ -56,7 +93,6 @@ export default class GiftCardTransaction extends Model<
     });
     this.belongsTo(models.User, { as: "createdBy", foreignKey: "created_by" });
   }
-
   static initModel(sequelize: Sequelize) {
     return this.init(
       {
@@ -108,29 +144,84 @@ export default class GiftCardTransaction extends Model<
               | ModelStatic<GiftCard>
               | undefined;
             if (!GiftCardModel) throw new Error("GiftCard model not found");
-            const giftCard = await GiftCardModel.findByPk(
-              movement.gift_card_id,
-              {
-                transaction: options.transaction ?? null,
-                include: [{ model: GiftCardTransaction, as: "movements" }],
-              },
+            await GiftCardModel.findByPk(movement.gift_card_id, {
+              transaction: options.transaction ?? null,
+              include: [{ model: GiftCardTransaction, as: "movements" }],
+            });
+            // if (!giftCard) throw new Error("Gift card not found");
+            // let newStatus = giftCard.status;
+            // const amount = Math.abs(Number(movement.amount));
+            // const currentValue = giftCard.current_value ?? 0;
+            // if (movement.type === "charge") {
+            //   if (amount - currentValue < 0) {
+            //     newStatus = "partially_used";
+            //   }
+            //   if (amount - currentValue >= 0) {
+            //     newStatus = "redeemed";
+            //   }
+            //   await giftCard.update(
+            //     { status: newStatus },
+            //     { transaction: options.transaction ?? null },
+            //   );
+            // }
+          },
+
+          //TODO MERGE BOTH create and destroy
+          afterCreate: async (instance, options) => {
+            console.log("gift transac create", instance);
+            const giftCard = await instance.getGiftCard();
+            const transacs = await giftCard.getMovements();
+            console.log("tamerelapute",transacs)
+            const movementSum = transacs.reduce(
+              (prev, current) => prev + current.amount,
+              0,
             );
-            if (!giftCard) throw new Error("Gift card not found");
-            let newStatus = giftCard.status;
-            const amount = Math.abs(Number(movement.amount));
-            const currentValue = giftCard.current_value ?? 0;
-            if (movement.type === "charge") {
-              if (amount - currentValue < 0) {
-                newStatus = "partially_used";
-              }
-              if (amount - currentValue >= 0) {
-                newStatus = "redeemed";
-              }
-              await giftCard.update(
-                { status: newStatus },
-                { transaction: options.transaction ?? null },
+            const initialValue = giftCard.initial_value;
+            // const { giftCard, currentBalance, initialValue, movementSum } =
+            //   await getGiftCardBalanceInTx(
+            //     instance.gift_card_id,
+            //     options.transaction ?? null,
+            //   );
+            console.log(giftCard, initialValue, movementSum);
+            // pas la peine d'update le status si expired
+            let newStatus = giftCard.status as GiftCardStatus;
+            console.log("new", newStatus);
+            if (giftCard.expires_at && giftCard.expires_at < new Date())
+              newStatus = "expired";
+            if (movementSum > 0 && movementSum < initialValue)
+              newStatus = "partially_used";
+            if (movementSum <= 0) newStatus = "redeemed";
+
+            console.log("new,new", newStatus);
+
+            await giftCard.update(
+              { status: newStatus },
+              { transaction: options.transaction ?? null },
+            );
+          },
+          afterDestroy: async (instance, options) => {
+            console.log("gift transac destroy");
+            const { giftCard, initialValue, movementSum } =
+              await getGiftCardBalanceInTx(
+                instance.gift_card_id,
+                options.transaction ?? null,
               );
-            }
+            // pas la peine d'update le status si expired
+            let newStatus = giftCard.status as GiftCardStatus;
+            console.log("new", newStatus);
+
+            if (giftCard.expires_at && giftCard.expires_at < new Date())
+              newStatus = "expired";
+            if (movementSum > 0 && movementSum < initialValue)
+              newStatus = "partially_used";
+            if (movementSum > 0 && movementSum >= initialValue)
+              newStatus = "redeemed";
+            console.log("new,new", newStatus);
+
+            await giftCard.update(
+              { status: newStatus },
+              { transaction: options.transaction ?? null },
+            );
           },
         },
       },
