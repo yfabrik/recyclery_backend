@@ -8,6 +8,11 @@ import {
   ARRIVAL_SOURCE_TYPES,
   ARRIVAL_STATUSES,
 } from "../../constants/dbEnums.js";
+import {
+  buildPaginationMeta,
+  buildUnpaginatedMeta,
+  parsePaginationQuery,
+} from "../../services/pagination.js";
 import { enumSchema, idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { ModelWhere, RequestWithUser } from "./types.ts";
@@ -52,22 +57,17 @@ const filterSchema = z.object({
   status: enumSchema(ARRIVAL_STATUSES).optional(),
   date_from: z.coerce.date().optional(),
   date_to: z.coerce.date().optional(),
-  page: z.coerce.number().positive().optional(),
   collection_point_id: idSchema().optional(),
 });
 
 export const listArrivals = async (req: Request, res: Response) => {
-  const { date_from, date_to, page, ...rest } = filterSchema.parse(req.query);
+  const { date_from, date_to, ...rest } = filterSchema.parse(req.query);
+  const pagination = parsePaginationQuery(req.query);
 
   const where: ModelWhere<typeof Arrival> = { ...rest };
   const dateRange = formatWhereDateRange(date_from, date_to);
   if (dateRange) where.arrival_date = dateRange;
 
-  const pagination = {} as { limit: number; offset: number };
-  if (page) {
-    pagination.limit = 50;
-    pagination.offset = (page - 1) * pagination.limit;
-  }
   const whereCollectionPoint: ModelWhere<typeof CollectionPoint> = {};
   if (rest.collection_point_id && rest.source_type == "point") {
     whereCollectionPoint.id = rest.collection_point_id;
@@ -82,18 +82,17 @@ export const listArrivals = async (req: Request, res: Response) => {
       { model: CollectionPoint, where: whereCollectionPoint, required: false },
     ],
     order: [["createdAt", "DESC"]],
-    ...pagination,
+    ...(pagination.paginated
+      ? { limit: pagination.limit, offset: pagination.offset }
+      : {}),
   });
 
   res.json({
     success: true,
     arrivals: arrivals.rows,
-    pagination: {
-      page: page || 1,
-      limit: pagination.limit,
-      total: arrivals.count,
-      totalPages: Math.ceil(arrivals.count / pagination.limit),
-    },
+    pagination: pagination.paginated
+      ? buildPaginationMeta(pagination.page, pagination.perPage, arrivals.count)
+      : buildUnpaginatedMeta(arrivals.count),
   });
 };
 

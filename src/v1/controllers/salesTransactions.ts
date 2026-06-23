@@ -15,6 +15,11 @@ import {
   issueGiftCard,
   recreditGiftCard,
 } from "../../services/giftCards.js";
+import {
+  buildPaginationMeta,
+  buildUnpaginatedMeta,
+  parsePaginationQuery,
+} from "../../services/pagination.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import { enumSchema, idSchema, postalSchema } from "../../services/zod.js";
 
@@ -223,15 +228,12 @@ export const listTransactions = async (req: Request, res: Response) => {
     ).optional(),
     date_from: z.coerce.date().optional(),
     date_to: z.coerce.date().optional(),
-    limit: z.coerce.number().positive().optional(),
-    offset: z.coerce.number().nonnegative().default(0),
     session: idSchema().optional(),
     payment_method: enumSchema(
       SALES_PAYMENT_METHODS,
       "methode de payment inconnue",
     ).optional(),
     transaction_number: z.string().optional(),
-    page: z.coerce.number().positive().optional(),
     include: z
       .string()
       .optional()
@@ -239,6 +241,7 @@ export const listTransactions = async (req: Request, res: Response) => {
       .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
   });
   const filter = filterSchema.parse(req.query);
+  const pagination = parsePaginationQuery(req.query);
 
   const where: ModelWhere<typeof SalesTransaction> = {};
   if (filter.transaction_number) where.id = Number(filter.transaction_number);
@@ -254,11 +257,6 @@ export const listTransactions = async (req: Request, res: Response) => {
   const whereStore: ModelWhere<typeof CashRegister> = {};
   if (filter.store_id) whereStore.recyclery_id = filter.store_id;
 
-  const pagination = {} as { limit: number; offset: number };
-  if (filter.page) {
-    pagination.limit = filter.limit || 50;
-    pagination.offset = filter.offset || (filter.page - 1) * pagination.limit;
-  }
   const include: Includeable[] = [
     {
       model: CashSession,
@@ -314,7 +312,9 @@ export const listTransactions = async (req: Request, res: Response) => {
     where,
     include,
     order: [["createdAt", "DESC"]],
-    ...pagination,
+    ...(pagination.paginated
+      ? { limit: pagination.limit, offset: pagination.offset }
+      : {}),
     distinct: true,
     col: "id",
   });
@@ -322,11 +322,13 @@ export const listTransactions = async (req: Request, res: Response) => {
   res.json({
     success: true,
     transactions: transactions.rows,
-    pagination: {
-      limit: filter.limit,
-      offset: filter.offset,
-      total: transactions.count,
-    },
+    pagination: pagination.paginated
+      ? buildPaginationMeta(
+          pagination.page,
+          pagination.perPage,
+          transactions.count,
+        )
+      : buildUnpaginatedMeta(transactions.count),
   });
 };
 
