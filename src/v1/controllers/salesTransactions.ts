@@ -95,6 +95,7 @@ const dataSchema = z
     ).nullish(),
   })
   .superRefine((data, ctx) => {
+    //ensure valid promotion values
     if (data.global_promotion && !data.global_promotion_type) {
       ctx.addIssue({
         code: "custom",
@@ -111,7 +112,37 @@ const dataSchema = z
           message: "La promotion globale doit être entre 0 et 100",
         });
     }
+
+    //ensure valid total amomunt
+    const cartTotal = getCartTotal(data.items)
+    if (!amountsEqual(cartTotal, data.total_amount_before_promotion))
+      ctx.addIssue({
+        code: "custom",
+        message: "le total avant promo n'est pas correct comparé au items",
+      });
+
+    const totalAmount = computeTotalAfterPromotion(data.total_amount_before_promotion, data.global_promotion, data.global_promotion_type)
+    if (!amountsEqual(totalAmount, data.total_amount))
+      ctx.addIssue({
+        code: "custom",
+        message: "le total n'est pas correct",
+      });
+    //ensure valid payments
+    try {
+      validateSaleAmounts(data)
+      normalizePayments(data)
+    }
+    catch (e) {
+      if (createHttpError.isHttpError(e))
+        ctx.addIssue({
+          code: "custom",
+          message: e.message,
+        });
+    }
+    // //TODO check dans front comment il fait
+   
   });
+
 type Data = z.infer<typeof dataSchema>;
 type CartItem = z.infer<typeof itemSchema>;
 
@@ -159,9 +190,11 @@ export function computeTotalAfterPromotion(
   type: "percent" | "fixed" | null | undefined,
 ) {
   const subtotal = Number(before);
-  const promo = Number(promotion ?? 0);
-  if (!promo || !type) return subtotal;
-  if (type === "percent") return subtotal * (1 - promo / 100);
+  //
+  const promo = getGlobalPromotionDiscount(subtotal, { value: promotion ?? 0, type: type ?? "fixed" })
+  // const promo = Number(promotion ?? 0);
+  // if (!promo || !type) return subtotal;
+  // if (type === "percent") return subtotal * (1 - promo / 100);
   return Math.max(subtotal - promo, 0);
 }
 
@@ -188,10 +221,8 @@ const validateSaleAmounts = (data: Data) => {
 };
 
 const normalizePayments = (data: Data) => {
-  const explicitPayments = Array.isArray(data.payments) ? data.payments : [];
-  const payments = explicitPayments.length > 0 ? explicitPayments : [];
-  // : [{ method: data.payment_method??0, amount: data.payment_amount }];
 
+  const payments = data.payments ?? []
   const totalPayments = payments.reduce(
     (acc, p) => acc + toAmount(p.amount),
     0,
@@ -324,10 +355,10 @@ export const listTransactions = async (req: Request, res: Response) => {
     transactions: transactions.rows,
     pagination: pagination.paginated
       ? buildPaginationMeta(
-          pagination.page,
-          pagination.perPage,
-          transactions.count,
-        )
+        pagination.page,
+        pagination.perPage,
+        transactions.count,
+      )
       : buildUnpaginatedMeta(transactions.count),
   });
 };
@@ -385,11 +416,11 @@ export const createTransaction = async (
   res: Response,
 ) => {
   const data = dataSchema.parse(req.body);
-  validateSaleAmounts(data);
+  // validateSaleAmounts(data);
   const payments = normalizePayments(data);
   const session = await findByPkOrThrow(
     CashSession,
-    data.cash_session_id,
+    data.cash_session_id,//TODO utiliser req.user ?? pour trouver sa caisse ouverte, + safe ?
     "session non trouvé",
   );
   if (session.status !== "open") {
@@ -397,11 +428,10 @@ export const createTransaction = async (
   }
 
   const result = await db.sequelize.transaction(async (t) => {
-    // const uniqueMethods = [...new Set(payments.map((p) => p.method))];
-    // const storedMethod = uniqueMethods.length === 1 ? uniqueMethods[0] : "mixed";
+
     const storedMethod =
       payments && payments.length === 1
-        ? (payments[0]?.method ?? "mixed")
+        ? (payments[0]!.method)
         : "mixed";
 
     const sale = await session.createSalesTransaction(
@@ -409,7 +439,7 @@ export const createTransaction = async (
         total_amount_before_promotion: data.total_amount_before_promotion,
         total_amount: data.total_amount,
         payment_method: storedMethod,
-        payment_amount: data.payment_amount, //TODO payments.reduce(...)
+        payment_amount: data.payment_amount,
         customer_postal_code: data?.customer_postal_code || null,
         transactionType: "sell",
         // change_amount: data.change_amount,
@@ -418,6 +448,7 @@ export const createTransaction = async (
       },
       { transaction: t },
     );
+    //TODO can we do in the above with through:{}
     if (data.global_promotion) {
       await sale.createGlobalPromotion(
         {
@@ -475,25 +506,29 @@ export const createTransaction = async (
             bundlePrice: item.bundlePrice,
           },
           transaction: t,
-        });
+        });//TODO can it auto update item ?
       }
     }
 
     for await (const payment of payments.filter(
       (p) => p.method === "giftcard",
     )) {
-      const giftCardCode = payment.gift_card_code;
-      if (!giftCardCode) {
-        throw new createHttpError.BadRequest(
-          "gift_card_code est requis pour un paiement giftcard",
-        );
-      }
+      // zod schema validated giftcardcode exist
+      //TODO maybe we can change type so it infer giftcard not null when method giftcard
+      const giftCardCode = payment.gift_card_code!;
+      // if (!giftCardCode) {
+      //   throw new createHttpError.BadRequest(
+      //     "gift_card_code est requis pour un paiement giftcard",
+      //   );
+      // }
       const giftCard = await findGiftCardByCode(giftCardCode, {
         transaction: t,
       });
       if (!giftCard) {
         throw new createHttpError.NotFound("gift card introuvable");
       }
+
+      //TODO one of the 2 should trigger the other one
       await chargeGiftCard({
         giftCardId: giftCard.id,
         salesTransactionId: sale.id,
@@ -508,7 +543,7 @@ export const createTransaction = async (
           method: "giftcard",
           amount: payment.amount,
           gift_card_id: giftCard.id,
-          metadata: { gift_card_code: giftCardCode },
+          metadata: { gift_card_code: giftCardCode },//TODO source sale payment + user in meta ?
         },
         { transaction: t },
       );
@@ -526,6 +561,7 @@ export const createTransaction = async (
         { transaction: t },
       );
     }
+
 
     await sale.reload({
       include: [
@@ -666,7 +702,7 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
           "transaction item relation manquante",
         );
       const soldQty = c.TransactionItem.quantity;
-      
+
       if (soldQty - alreadyRefunded < 0 && item.quantity > soldQty) {
         throw new createHttpError.BadRequest(
           "peut pas rembourser plus d'objects que vendu",
@@ -1174,7 +1210,7 @@ export const updateTransaction = async (
 ) => {
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
-  validateSaleAmounts(data);
+  // validateSaleAmounts(data);
 
   const transaction = await findByPkOrThrow(
     SalesTransaction,
@@ -1192,17 +1228,22 @@ export const updateTransaction = async (
         { model: TransactionPayment, as: "payments" },
         { model: LabeledItem, as: "items" },
         { model: TransactionGlobalPromotion, as: "globalPromotions" },
+        { model: SalesTransaction, as: "refunds" },
       ],
     },
   );
   if (transaction.transactionType != "sell")
     throw new createHttpError.BadRequest("pas fait pour les refunds");
+  if ((transaction.refunds?.length ?? 0) > 0)
+    throw new createHttpError.Conflict("transaction contiens des refunds, impossible de modifier");//TODO conflict is good ?
 
   const result = await db.sequelize.transaction(async (t) => {
     //update payments
     const oldPayments = transaction.payments ?? [];
     const newPayments = data.payments ?? [];
 
+    //TODO shoud do somehting for the giftcard ?? or remove create is good
+    //it work with remove create giftcard payment so.....
     const edit = oldPayments.filter(
       (o) =>
         !newPayments.find((n) => o.amount == n.amount && o.method == n.method),
@@ -1218,6 +1259,7 @@ export const updateTransaction = async (
     for (const e of edit2) {
       //create giftcard payment
       if (e.method == "giftcard") {
+        //TODO deja check in zod refine mais comme c'est mal typé la suite raise error
         const giftCardCode = e.gift_card_code;
         if (!giftCardCode) {
           throw new createHttpError.BadRequest(
@@ -1239,7 +1281,8 @@ export const updateTransaction = async (
           transaction: t,
         });
       }
-      await transaction.createPayment({ ...e }, { transaction: t }); // add new payments
+      const meta = e.gift_card_code ? { gift_card_code: e.gift_card_code } : {}
+      await transaction.createPayment({ ...e, metadata: meta }, { transaction: t }); // add new payments
     }
     const storedMethod =
       newPayments && newPayments.length === 1
@@ -1272,7 +1315,7 @@ export const updateTransaction = async (
     );
     for (const r of removed) {
       await r.TransactionItem?.destroy({ transaction: t });
-      await r.update({ status: "available" }, { transaction: t });
+      // await r.update({ status: "available" }, { transaction: t });//TODO changed in model ?
     }
     //quantity changed
     for (const i of prevItems) {
@@ -1291,7 +1334,7 @@ export const updateTransaction = async (
       }
     }
 
-    transaction.update(
+    await transaction.update(
       {
         customer_postal_code: data.customer_postal_code ?? null,
         payment_method: storedMethod,
@@ -1357,7 +1400,7 @@ export const removeTransaction = async (
   })
   if (toDelete.CashSession?.status != "open" && toDelete.CashSession?.user_id != req.user.id)
     throw new createHttpError.Forbidden("trop tard pour modifier")
-  if(toDelete.refunds && toDelete.refunds?.length > 0)
+  if (toDelete.refunds && toDelete.refunds?.length > 0)
     throw new createHttpError.Forbidden("transaction a deja ete remboursee")
   await toDelete.destroy();
 
