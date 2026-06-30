@@ -54,6 +54,7 @@ describe("refund rules", () => {
   });
 
   it("rejects refund for non-existent transaction", async () => {
+    expect.hasAssertions();
     const res = makeRes();
     await expectHttpError(
       () =>
@@ -84,6 +85,7 @@ describe("refund rules", () => {
   });
 
   it("rejects refund quantity greater than sold", async () => {
+    expect.hasAssertions();
     const item = await LabeledItem.create({
       category_id: categoryId,
       recyclery_id: recycleryId,
@@ -128,6 +130,7 @@ describe("refund rules", () => {
   });
 
   it("rejects second refund that exceeds remaining quantity", async () => {
+    expect.hasAssertions();
     const item = await LabeledItem.create({
       category_id: categoryId,
       recyclery_id: recycleryId,
@@ -165,6 +168,10 @@ describe("refund rules", () => {
       }),
       partialRes,
     );
+    expect(partialRes.status).toHaveBeenCalledWith(201);
+    expect(partialRes.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true }),
+    );
 
     const excessRes = makeRes();
     await expectHttpError(
@@ -182,6 +189,106 @@ describe("refund rules", () => {
             },
           }),
           excessRes,
+        ),
+      400,
+    );
+  });
+
+  it("allows incremental refunds while total stays within sold quantity", async () => {
+    expect.hasAssertions();
+    const item = await LabeledItem.create({
+      category_id: categoryId,
+      recyclery_id: recycleryId,
+      created_by: userId,
+      price: 15,
+      weight: 0,
+      status: "available",
+    });
+
+    const saleRes = makeRes();
+    await createTransaction(
+      makeReq({
+        user: { id: userId, role: "admin" },
+        body: makeSaleBody({
+          sessionId,
+          items: [makeItemPayload(item, { quantity: 4 })],
+        }),
+      }),
+      saleRes,
+    );
+    const saleId = saleRes.json.mock.calls[0][0].data.id;
+
+    const firstRefundRes = makeRes();
+    await createRefund(
+      makeReq({
+        params: { id: saleId },
+        user: { id: userId, role: "admin" },
+        body: {
+          cash_session_id: sessionId,
+          total_amount: 30,
+          payment_method: "cash",
+          refund_reason: "first partial",
+          items: [makeItemPayload(item, { quantity: 2 })],
+        },
+      }),
+      firstRefundRes,
+    );
+    expect(firstRefundRes.status).toHaveBeenCalledWith(201);
+
+    const secondRefundRes = makeRes();
+    await createRefund(
+      makeReq({
+        params: { id: saleId },
+        user: { id: userId, role: "admin" },
+        body: {
+          cash_session_id: sessionId,
+          total_amount: 15,
+          payment_method: "cash",
+          refund_reason: "second partial",
+          items: [makeItemPayload(item, { quantity: 1 })],
+        },
+      }),
+      secondRefundRes,
+    );
+    expect(secondRefundRes.status).toHaveBeenCalledWith(201);
+    expect(secondRefundRes.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true }),
+    );
+
+    const thirdRefundRes = makeRes();
+    await createRefund(
+      makeReq({
+        params: { id: saleId },
+        user: { id: userId, role: "admin" },
+        body: {
+          cash_session_id: sessionId,
+          total_amount: 15,
+          payment_method: "cash",
+          refund_reason: "second partial",
+          items: [makeItemPayload(item, { quantity: 1 })],
+        },
+      }),
+      thirdRefundRes,
+    );
+    expect(thirdRefundRes.status).toHaveBeenCalledWith(201);
+    expect(thirdRefundRes.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true }),
+    );
+    await expectHttpError(
+      () =>
+        createRefund(
+          makeReq({
+            params: { id: saleId },
+            user: { id: userId, role: "admin" },
+            body: {
+              cash_session_id: sessionId,
+              total_amount: 15,
+              payment_method: "cash",
+              refund_reason: "second partial",
+              items: [makeItemPayload(item, { quantity: 1 })],
+            },
+          }),
+          makeRes(),
         ),
       400,
     );
