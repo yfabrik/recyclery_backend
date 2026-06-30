@@ -46,13 +46,13 @@ export const listLabeledItem = async (req: Request, res: Response) => {
 
   const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
-        ...filter,
-        [Op.or]: [
-          // { name: likeQuery },
-          { description: likeQuery },
-          { id: likeQuery },
-        ],
-      }
+      ...filter,
+      [Op.or]: [
+        // { name: likeQuery },
+        { description: likeQuery },
+        { id: likeQuery },
+      ],
+    }
     : { ...filter };
   const labeledItems = await LabeledItem.findAndCountAll({
     where,
@@ -86,10 +86,10 @@ export const listLabeledItem = async (req: Request, res: Response) => {
     items: labeledItems.rows,
     pagination: pagination.paginated
       ? buildPaginationMeta(
-          pagination.page,
-          pagination.perPage,
-          labeledItems.count,
-        )
+        pagination.page,
+        pagination.perPage,
+        labeledItems.count,
+      )
       : buildUnpaginatedMeta(labeledItems.count),
   });
 };
@@ -143,8 +143,9 @@ export const updateItem = async (req: RequestWithUser, res: Response) => {
     condition_state: data.condition_state ?? item.condition_state,
     weight: data.weight ?? item.weight,
   });
+  await item.reload()
 
-  res.json({ success: true, message: "Article mis à jour avec succès" });
+  res.json({ success: true, item, message: "Article mis à jour avec succès" });
 };
 
 export const deleteLabeledItem = async (req: Request, res: Response) => {
@@ -182,13 +183,13 @@ export const itemsStats = async (req: Request, res: Response) => {
 
   const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
-        ...filter,
-        [Op.or]: [
-          // { name: likeQuery },
-          { description: likeQuery },
-          { id: likeQuery },
-        ],
-      }
+      ...filter,
+      [Op.or]: [
+        // { name: likeQuery },
+        { description: likeQuery },
+        { id: likeQuery },
+      ],
+    }
     : { ...filter };
 
   const stats = await LabeledItem.findAll({

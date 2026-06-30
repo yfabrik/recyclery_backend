@@ -47,6 +47,7 @@ export const listPromotions = async (_req: Request, res: Response) => {
         required: false,
       },
     ],
+    order: [["startDate", "DESC"]],
   });
   return res.json({ success: true, message: "promotions", data: promotions });
 };
