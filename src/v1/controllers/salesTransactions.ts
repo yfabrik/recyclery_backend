@@ -114,14 +114,18 @@ const dataSchema = z
     }
 
     //ensure valid total amomunt
-    const cartTotal = getCartTotal(data.items)
+    const cartTotal = getCartTotal(data.items);
     if (!amountsEqual(cartTotal, data.total_amount_before_promotion))
       ctx.addIssue({
         code: "custom",
         message: "le total avant promo n'est pas correct comparé au items",
       });
 
-    const totalAmount = computeTotalAfterPromotion(data.total_amount_before_promotion, data.global_promotion, data.global_promotion_type)
+    const totalAmount = computeTotalAfterPromotion(
+      data.total_amount_before_promotion,
+      data.global_promotion,
+      data.global_promotion_type,
+    );
     if (!amountsEqual(totalAmount, data.total_amount))
       ctx.addIssue({
         code: "custom",
@@ -129,10 +133,9 @@ const dataSchema = z
       });
     //ensure valid payments
     try {
-      validateSaleAmounts(data)
-      normalizePayments(data)
-    }
-    catch (e) {
+      validateSaleAmounts(data);
+      normalizePayments(data);
+    } catch (e) {
       if (createHttpError.isHttpError(e))
         ctx.addIssue({
           code: "custom",
@@ -140,7 +143,6 @@ const dataSchema = z
         });
     }
     // //TODO check dans front comment il fait
-   
   });
 
 type Data = z.infer<typeof dataSchema>;
@@ -191,7 +193,10 @@ export function computeTotalAfterPromotion(
 ) {
   const subtotal = Number(before);
   //
-  const promo = getGlobalPromotionDiscount(subtotal, { value: promotion ?? 0, type: type ?? "fixed" })
+  const promo = getGlobalPromotionDiscount(subtotal, {
+    value: promotion ?? 0,
+    type: type ?? "fixed",
+  });
   // const promo = Number(promotion ?? 0);
   // if (!promo || !type) return subtotal;
   // if (type === "percent") return subtotal * (1 - promo / 100);
@@ -221,8 +226,7 @@ const validateSaleAmounts = (data: Data) => {
 };
 
 const normalizePayments = (data: Data) => {
-
-  const payments = data.payments ?? []
+  const payments = data.payments ?? [];
   const totalPayments = payments.reduce(
     (acc, p) => acc + toAmount(p.amount),
     0,
@@ -355,10 +359,10 @@ export const listTransactions = async (req: Request, res: Response) => {
     transactions: transactions.rows,
     pagination: pagination.paginated
       ? buildPaginationMeta(
-        pagination.page,
-        pagination.perPage,
-        transactions.count,
-      )
+          pagination.page,
+          pagination.perPage,
+          transactions.count,
+        )
       : buildUnpaginatedMeta(transactions.count),
   });
 };
@@ -420,7 +424,7 @@ export const createTransaction = async (
   const payments = normalizePayments(data);
   const session = await findByPkOrThrow(
     CashSession,
-    data.cash_session_id,//TODO utiliser req.user ?? pour trouver sa caisse ouverte, + safe ?
+    data.cash_session_id, //TODO utiliser req.user ?? pour trouver sa caisse ouverte, + safe ?
     "session non trouvé",
   );
   if (session.status !== "open") {
@@ -428,11 +432,8 @@ export const createTransaction = async (
   }
 
   const result = await db.sequelize.transaction(async (t) => {
-
     const storedMethod =
-      payments && payments.length === 1
-        ? (payments[0]!.method)
-        : "mixed";
+      payments && payments.length === 1 ? payments[0]!.method : "mixed";
 
     const sale = await session.createSalesTransaction(
       {
@@ -506,7 +507,7 @@ export const createTransaction = async (
             bundlePrice: item.bundlePrice,
           },
           transaction: t,
-        });//TODO can it auto update item ?
+        }); //TODO can it auto update item ?
       }
     }
 
@@ -543,7 +544,7 @@ export const createTransaction = async (
           method: "giftcard",
           amount: payment.amount,
           gift_card_id: giftCard.id,
-          metadata: { gift_card_code: giftCardCode },//TODO source sale payment + user in meta ?
+          metadata: { gift_card_code: giftCardCode }, //TODO source sale payment + user in meta ?
         },
         { transaction: t },
       );
@@ -561,7 +562,6 @@ export const createTransaction = async (
         { transaction: t },
       );
     }
-
 
     await sale.reload({
       include: [
@@ -687,14 +687,14 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
   const refunded = data.items
     .map((item) => {
       const alreadyRefunded = parentRefunds.reduce((prev, current) => {
-        const items = current.items?.filter((i) => i.barcode == item.barcode);
+        const items = current.items?.filter((i) => i.id == +item.barcode);
         prev +=
           items?.reduce((p, v) => (p += v.TransactionItem?.quantity ?? 0), 0) ||
           0;
         return prev;
       }, 0);
       //test que le compte d'object deborde pas
-      const c = parentItems.find((i) => i.barcode === item.barcode);
+      const c = parentItems.find((i) => i.id === +item.barcode);
       if (!c)
         throw new createHttpError.NotFound("item non trouvé dans la vente");
       if (!c.TransactionItem)
@@ -703,7 +703,7 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
         );
       const soldQty = c.TransactionItem.quantity;
 
-      if (soldQty - alreadyRefunded < 0 && item.quantity > soldQty) {
+      if (soldQty - alreadyRefunded < 0 || item.quantity > soldQty) {
         throw new createHttpError.BadRequest(
           "peut pas rembourser plus d'objects que vendu",
         );
@@ -1235,7 +1235,9 @@ export const updateTransaction = async (
   if (transaction.transactionType != "sell")
     throw new createHttpError.BadRequest("pas fait pour les refunds");
   if ((transaction.refunds?.length ?? 0) > 0)
-    throw new createHttpError.Conflict("transaction contiens des refunds, impossible de modifier");//TODO conflict is good ?
+    throw new createHttpError.Conflict(
+      "transaction contiens des refunds, impossible de modifier",
+    ); //TODO conflict is good ?
 
   const result = await db.sequelize.transaction(async (t) => {
     //update payments
@@ -1281,8 +1283,11 @@ export const updateTransaction = async (
           transaction: t,
         });
       }
-      const meta = e.gift_card_code ? { gift_card_code: e.gift_card_code } : {}
-      await transaction.createPayment({ ...e, metadata: meta }, { transaction: t }); // add new payments
+      const meta = e.gift_card_code ? { gift_card_code: e.gift_card_code } : {};
+      await transaction.createPayment(
+        { ...e, metadata: meta },
+        { transaction: t },
+      ); // add new payments
     }
     const storedMethod =
       newPayments && newPayments.length === 1
@@ -1391,17 +1396,28 @@ export const removeTransaction = async (
   //   },
   // );
 
-  const toDelete = await findByPkOrThrow(SalesTransaction, id, "transaction non trouvé", {
-    include: [{
-      model: CashSession,
+  const toDelete = await findByPkOrThrow(
+    SalesTransaction,
+    id,
+    "transaction non trouvé",
+    {
+      include: [
+        {
+          model: CashSession,
+        },
+        { model: SalesTransaction, as: "refunds" },
+      ],
     },
-    { model: SalesTransaction, as: "refunds" }
-    ]
-  })
-  if (toDelete.CashSession?.status != "open" && toDelete.CashSession?.user_id != req.user.id)
-    throw new createHttpError.Forbidden("trop tard pour modifier")
-  if (toDelete.refunds && toDelete.refunds?.length > 0)
-    throw new createHttpError.Forbidden("transaction a deja ete remboursee")
+  );
+  if (
+    toDelete.CashSession?.status != "open" &&
+    toDelete.CashSession?.user_id != req.user.id
+  )
+    throw new createHttpError.Forbidden("trop tard pour modifier");
+  if (toDelete.transactionType != "sell")
+    throw new createHttpError.Forbidden("refunds sont insuprimables");
+    if (toDelete.refunds && toDelete.refunds?.length > 0)
+      throw new createHttpError.Forbidden("transaction a deja ete remboursee");
   await toDelete.destroy();
 
   res.json({
