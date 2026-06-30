@@ -8,7 +8,7 @@ import * as z from "zod";
 import { getJwtSecret } from "../../config/jwt.js";
 import { USER_ROLES } from "../../constants/dbEnums.js";
 import db from "../../models/index.js";
-import { enumSchema, idSchema } from "../../services/zod.js";
+import { enumSchema, idSchema, phoneSchema } from "../../services/zod.js";
 import type { RequestWithUser } from "./types.ts";
 
 const { User } = db;
@@ -147,5 +147,59 @@ export const userProfile = (req: RequestWithUser, res: Response) => {
     user,
     permissions,
     permissionsByModule,
+  });
+};
+
+
+export const updateProfile = async (req: RequestWithUser, res: Response) => {
+  const dataSchema = z.object({
+    username: z.string("Nom d'utilisateur requis"),
+    email: z.email("email requis"),
+    phone: phoneSchema().optional().nullish().prefault(null),
+  });
+  const data = dataSchema.parse(req.body);
+  const user = req.user;
+  await user.update(data);
+  res.json({
+    success: true,
+    user,
+    message: "Profile mis à jour",
+  });
+};
+
+export const updatePassword = async (req: RequestWithUser, res: Response) => {
+  const dataSchema = z.object({
+    currentPassword: z.string("mot de passe requis"),
+    newPassword: z.string("nouveau mot de passe requis"),
+    confirmPassword: z.string("confirmation de mot de passe requis"),
+  }).superRefine((data, ctx) => {
+    if (data.newPassword !== data.confirmPassword) {
+      ctx.addIssue({
+        code: "custom",
+        origin: "newPassword",
+        input: data,
+        message: "Les mots de passe ne correspondent pas",
+      });
+    }
+  });
+  const data = dataSchema.parse(req.body);
+
+  const user = await User.scope("withPassword").findByPk(req.user.id);
+  if (!user || !user.password_hash) {
+    throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
+  }
+
+  const isValidPassword = await bcrypt.compare(
+    data.currentPassword,
+    user.password_hash,
+  );
+  if (!isValidPassword) {
+    throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
+  }
+  await user.update({ password: data.newPassword });
+
+  res.json({
+    success: true,
+    message: "Mot de passe mis à jour",
   });
 };
