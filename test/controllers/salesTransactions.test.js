@@ -301,7 +301,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
     giftCardId = card.id;
 
     let balance = await getGiftCardBalance(giftCardId);
-    expect(balance.currentBalance).toBe(60);
+    expect(balance.currentBalance).toBe(30);
 
     const refundReq1 = {
       params: { id: baseSaleId },
@@ -326,7 +326,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
     );
 
     balance = await getGiftCardBalance(giftCardId);
-    expect(balance.currentBalance).toBe(70);
+    expect(balance.currentBalance).toBe(40);
 
     const refundReq2 = {
       params: { id: baseSaleId },
@@ -344,7 +344,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
     await createRefund(refundReq2, refundRes2);
     expect(refundRes2.status).toHaveBeenCalledWith(201);
     balance = await getGiftCardBalance(giftCardId);
-    expect(balance.currentBalance).toBe(90);
+    expect(balance.currentBalance).toBe(60);
   });
 
   it("creates a mixed sale with partial gift card payment and updates status/amount", async () => {
@@ -385,10 +385,10 @@ describe("salesTransactions controller gift card/refund flows", () => {
     expect(Number(createdPayments[1].amount)).toBe(10);
 
     const balance = await getGiftCardBalance(giftCardId);
-    expect(balance.currentBalance).toBe(75);
+    expect(balance.currentBalance).toBe(45);
 
     const card = await GiftCard.findByPk(giftCardId);
-    expect(card.status).toBe("partially_used");
+    expect(card.status).toBe("active");
   });
 
   it("creates a second mixed sale that consumes remaining gift card value", async () => {
@@ -407,8 +407,8 @@ describe("salesTransactions controller gift card/refund flows", () => {
         sessionId,
         items: [makeItemPayload({ item: fullUseItem })],
         payments: [
-          { method: "giftcard", amount: 75, gift_card_code: giftCardCode },
-          { method: "card", amount: 5 },
+          { method: "giftcard", amount: 45, gift_card_code: giftCardCode },
+          { method: "card", amount: 35 },
         ],
       }),
     };
@@ -427,8 +427,8 @@ describe("salesTransactions controller gift card/refund flows", () => {
       order: [["id", "ASC"]],
     });
     expect(payments.map((p) => p.method)).toEqual(["giftcard", "card"]);
-    expect(Number(payments[0].amount)).toBe(75);
-    expect(Number(payments[1].amount)).toBe(5);
+    expect(Number(payments[0].amount)).toBe(45);
+    expect(Number(payments[1].amount)).toBe(35);
 
     const balance = await getGiftCardBalance(giftCardId);
     expect(balance.currentBalance).toBe(0);

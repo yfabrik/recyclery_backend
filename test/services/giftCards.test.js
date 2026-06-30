@@ -42,9 +42,12 @@ describe("giftCards service", () => {
       createdBy: user.id,
     });
 
+    await card.reload();
+    expect(card.status).toBe("active");
+
     const balance = await getGiftCardBalance(card.id);
     expect(balance.giftCard.id).toBe(card.id);
-    expect(balance.currentBalance).toBe(100);
+    expect(balance.currentBalance).toBe(50);
   });
 
   it("charges and recredits gift card correctly", async () => {
@@ -67,8 +70,11 @@ describe("giftCards service", () => {
       createdBy: user.id,
     });
 
+    await card.reload();
+    expect(card.status).toBe("partially_used");
+
     let balance = await getGiftCardBalance(card.id);
-    expect(balance.currentBalance).toBe(48);
+    expect(balance.currentBalance).toBe(18);
 
     await recreditGiftCard({
       giftCardId: card.id,
@@ -77,8 +83,62 @@ describe("giftCards service", () => {
       createdBy: user.id,
     });
 
+    await card.reload();
+    expect(card.status).toBe("partially_used");
+
     balance = await getGiftCardBalance(card.id);
-    expect(balance.currentBalance).toBe(55);
+    expect(balance.currentBalance).toBe(25);
+  });
+
+  it("updates status when charge movements are removed", async () => {
+    const user = await createUser();
+    const issueTx = await createSaleTransaction({ userId: user.id });
+    const firstUsageTx = await createSaleTransaction({ userId: user.id });
+    const secondUsageTx = await createSaleTransaction({ userId: user.id });
+
+    const card = await issueGiftCard({
+      code: `GC-STATUS-${Date.now()}`,
+      initialValue: 10,
+      issuedTransactionId: issueTx.id,
+      createdBy: user.id,
+    });
+
+    const firstCharge = await chargeGiftCard({
+      giftCardId: card.id,
+      salesTransactionId: firstUsageTx.id,
+      amount: 3,
+      createdBy: user.id,
+    });
+
+    let balance0 = await getGiftCardBalance(card.id);
+    expect(balance0.currentBalance).toBe(7);
+
+    const secondCharge = await chargeGiftCard({
+      giftCardId: card.id,
+      salesTransactionId: secondUsageTx.id,
+      amount: 7,
+      createdBy: user.id,
+    });
+
+    let balance = await getGiftCardBalance(card.id);
+    expect(balance.currentBalance).toBe(0);
+
+    await card.reload();
+    expect(card.status).toBe("redeemed");
+
+    await secondCharge.destroy();
+    balance = await getGiftCardBalance(card.id);
+    expect(balance.currentBalance).toBe(7);
+
+    await card.reload();
+    expect(card.status).toBe("partially_used");
+
+    await firstCharge.destroy();
+    balance = await getGiftCardBalance(card.id);
+    expect(balance.currentBalance).toBe(10);
+
+    await card.reload();
+    expect(card.status).toBe("active");
   });
 
   it("rejects charge when balance is insufficient", async () => {

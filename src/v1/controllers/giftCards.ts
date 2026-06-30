@@ -1,6 +1,11 @@
 import z from "zod";
 import createHttpError from "http-errors";
 import { GIFT_CARD_STATUSES } from "../../constants/dbEnums.js";
+import {
+  buildPaginationMeta,
+  buildUnpaginatedMeta,
+  parsePaginationQuery,
+} from "../../services/pagination.js";
 import { enumSchema, idSchema } from "../../services/zod.js";
 import {
   chargeGiftCard,
@@ -38,12 +43,11 @@ const movementSchema = z.object({
 const listSchema = z.object({
   status: enumSchema(GIFT_CARD_STATUSES).optional(),
   code: z.string().trim().optional(),
-  limit: z.coerce.number().positive().max(200).default(50),
-  offset: z.coerce.number().nonnegative().default(0),
 });
 
 export const listGiftCards = async (req: Request, res: Response) => {
   const filter = listSchema.parse(req.query);
+  const pagination = parsePaginationQuery(req.query);
 
   const where: ModelWhere<typeof GiftCard> = {};
 
@@ -62,18 +66,17 @@ export const listGiftCards = async (req: Request, res: Response) => {
       },
     ],
     order: [["createdAt", "DESC"]],
-    limit: filter.limit,
-    offset: filter.offset,
+    ...(pagination.paginated
+      ? { limit: pagination.limit, offset: pagination.offset }
+      : {}),
   });
 
   res.json({
     success: true,
     data: result.rows,
-    pagination: {
-      limit: filter.limit,
-      offset: filter.offset,
-      total: result.count,
-    },
+    pagination: pagination.paginated
+      ? buildPaginationMeta(pagination.page, pagination.perPage, result.count)
+      : buildUnpaginatedMeta(result.count),
   });
 };
 

@@ -109,6 +109,20 @@ export default class TransactionItem extends Model<
         sequelize,
         modelName: "TransactionItem",
         tableName: "transaction_items",
+        hooks: {
+          beforeCreate: (instance, options) => {
+            console.log("in transaction item hook before create")
+            console.log("item", instance.labeled_item_id)
+          },
+          afterCreate: (instance, options) => {
+            console.log("in transaction item hook create")
+            console.log("item", instance.labeled_item_id)
+          },
+          afterDestroy: async (instance, options) => {
+            const item = await instance.getLabeledItem({ transaction: options.transaction ?? null })
+            await item.update({status:"available"})
+          }
+        }
       },
     );
   }

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
-import { login, register, userProfile } from "../controllers/auth.js";
+import { login, register, updatePassword, updateProfile, userProfile } from "../controllers/auth.js";
 import { authenticateToken } from "../../middlewares/auth.js";
 import rateLimit from "express-rate-limit";
 import logger from "../../services/logger.js";
@@ -61,3 +61,7 @@ router.get("/verify", authenticateToken, (req, res) => {
 });
 
 router.get("/profile", authenticateToken, asyncHandler(userProfile));
+
+router.put("/profile",authenticateToken, asyncHandler(updateProfile))
+
+router.put("/profile/password",authenticateToken, asyncHandler(updatePassword))

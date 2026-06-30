@@ -5,41 +5,14 @@ import {
   type CreateOptions,
   type FindOptions,
 } from "sequelize";
+import type { Models } from "../models/db-types.js";
 import db from "../models/index.js";
-import type SalesTransaction from "../models/salestransaction.js";
+import { getGiftCardBalanceInTx, toAmount } from "./giftCardLedger.js";
 import { findByPkOrThrow } from "./sequelize.js";
 
-const { GiftCard, GiftCardTransaction, User, sequelize } = db;
+const { GiftCard, GiftCardTransaction, CashSession, SalesTransaction, sequelize } = db;
 
-const toAmount = (value?: number | string | null) =>
-  Number.parseFloat(String(value ?? 0));
-
-const getGiftCardBalanceInTx = async (
-  giftCardId: InstanceType<typeof GiftCard>["id"],
-  transaction: Transaction,
-) => {
-  const giftCard = await findByPkOrThrow(
-    GiftCard,
-    giftCardId,
-    "gift card not found",
-    { transaction },
-  );
-
-  const movementSum =
-    (await GiftCardTransaction.sum("amount", {
-      where: { gift_card_id: giftCardId },
-      transaction,
-    })) || 0;
-
-  return {
-    giftCard,
-    initialValue: toAmount(giftCard.initial_value),
-    movementSum: toAmount(movementSum),
-    currentBalance: toAmount(giftCard.initial_value) + toAmount(movementSum),
-  };
-};
-
-const assertGiftCardUsable = (giftCard: InstanceType<typeof GiftCard>) => {
+const assertGiftCardUsable = (giftCard: Models["GiftCard"]) => {
   if (giftCard.status === "cancelled") {
     throw new createHttpError.BadRequest("gift card is cancelled");
   }
@@ -54,9 +27,9 @@ type GiftCreate = {
   code: string;
   initialValue: number;
   expiresAt?: Date | string | null;
-  issuedTransactionId?: number | null;
-  issuedRefundTransactionId?: number | null;
-  createdBy: number;
+  issuedTransactionId?: Models["SalesTransaction"]["id"] | null;
+  issuedRefundTransactionId?: Models["SalesTransaction"]["id"] | null;
+  createdBy: Models["User"]["id"];
   note?: string | null;
   recipientName?: string | null;
   recipientEmail?: string | null;
@@ -82,14 +55,43 @@ export const issueGiftCard = async ({
       "initial gift card value must be >= 0",
     );
   }
-  const linkedTransactionId = issuedTransactionId || issuedRefundTransactionId;
+  let linkedTransactionId = issuedTransactionId || issuedRefundTransactionId;
   if (!linkedTransactionId) {
-    throw new createHttpError.BadRequest(
-      "gift card issuance requires a linked sales transaction id",
-    );
+    const openedSession = await CashSession.findOne({
+      where: {
+        status: "open",
+        user_id: createdBy,
+      },
+    });
+    if (!openedSession)
+      throw new createHttpError.BadRequest(
+        "gift card issuance requires a linked sales transaction id",
+      );
+
   }
 
   const run = async (transaction: Transaction) => {
+    if (!linkedTransactionId) {
+      //TODO a refaire
+      const openedSession = await CashSession.findOne({
+        where: {
+          status: "open",
+          user_id: createdBy,
+        },
+      });
+      if (!openedSession) throw new createHttpError.BadRequest(
+        "gift card issuance requires a linked sales transaction id",
+      );
+      linkedTransactionId = (await SalesTransaction.create({
+        cash_session_id: openedSession.id,
+        payment_method: "cash",
+        created_by: createdBy,
+        total_amount_before_promotion: amount,
+        total_amount: amount,
+        payment_amount: amount,
+        transactionType: "sell",
+      }, { transaction })).id;
+    }
     const giftCard = await GiftCard.create(
       {
         code,
@@ -130,7 +132,7 @@ export const issueGiftCard = async ({
  * @param  [options]
  */
 export const getGiftCardBalance = async (
-  giftCardId: InstanceType<typeof GiftCard>["id"],
+  giftCardId: Models["GiftCard"]["id"],
   options?: CreateOptions,
 ) => {
   if (options?.transaction) {
@@ -146,10 +148,10 @@ export const getGiftCardBalance = async (
  */
 
 type GiftCharge = {
-  giftCardId: InstanceType<typeof GiftCard>["id"];
-  salesTransactionId: InstanceType<typeof SalesTransaction>["id"];
+  giftCardId: Models["GiftCard"]["id"];
+  salesTransactionId: Models["SalesTransaction"]["id"];
   amount: number | string;
-  createdBy: InstanceType<typeof User>["id"];
+  createdBy: Models["User"]["id"];
   metadata?: Record<string, unknown> | null;
 };
 export const chargeGiftCard = async ({
@@ -234,7 +236,7 @@ export const recreditGiftCard = async ({
 };
 
 export const findGiftCardByCode = async (
-  code: InstanceType<typeof GiftCard>["code"],
+  code: Models["GiftCard"]["code"],
   options: FindOptions = {},
 ) =>
   GiftCard.findOne({

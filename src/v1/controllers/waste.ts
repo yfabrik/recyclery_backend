@@ -4,6 +4,11 @@ import z from "zod";
 
 import { formatWhereDateRange } from "../../helpers.js";
 import { WASTE_DISPOSAL_TYPES } from "../../constants/dbEnums.js";
+import {
+  buildPaginationMeta,
+  buildUnpaginatedMeta,
+  parsePaginationQuery,
+} from "../../services/pagination.js";
 
 import db from "../../models/index.js";
 import { enumSchema, idSchema } from "../../services/zod.js";
@@ -44,10 +49,9 @@ export const listWaste = async (req: Request, res: Response) => {
     disposal_type: enumSchema(WASTE_DISPOSAL_TYPES).nullish(),
     date_from: z.coerce.date().optional(),
     date_to: z.coerce.date().optional(),
-    page: z.coerce.number().optional().default(1),
-    limit: z.coerce.number().optional().default(50),
   });
   const filter = filterSchema.parse(req.query);
+  const pagination = parsePaginationQuery(req.query);
 
   const where: ModelWhere<typeof WasteDisposal> = {};
   if (filter.category_id) where.category_id = filter.category_id;
@@ -57,8 +61,7 @@ export const listWaste = async (req: Request, res: Response) => {
   const dateRange = formatWhereDateRange(filter.date_from, filter.date_to);
   if (dateRange) where.disposal_date = dateRange;
 
-  const offset = filter.limit * (filter.page - 1 >= 0 ? filter.page - 1 : 0);
-  const waste = await WasteDisposal.findAll({
+  const waste = await WasteDisposal.findAndCountAll({
     where,
     include: [
       { model: Category, as: "category" },
@@ -67,21 +70,15 @@ export const listWaste = async (req: Request, res: Response) => {
       { model: User },
     ],
     order: [["disposal_date", "DESC"]],
-    offset,
-    // limit: 5,
+    ...(pagination.paginated
+      ? { limit: pagination.limit, offset: pagination.offset }
+      : {}),
   });
-
-  // Get total count for pagination
-
-  const wasteCount = await WasteDisposal.count({ where });
   res.json({
-    disposals: waste,
-    pagination: {
-      page: filter.page,
-      limit: filter.limit,
-      total: wasteCount,
-      totalPages: Math.ceil(wasteCount / filter.limit),
-    },
+    disposals: waste.rows,
+    pagination: pagination.paginated
+      ? buildPaginationMeta(pagination.page, pagination.perPage, waste.count)
+      : buildUnpaginatedMeta(waste.count),
   });
 };
 

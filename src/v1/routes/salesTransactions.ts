@@ -8,8 +8,10 @@ import {
   getTransaction,
   listRefunds,
   listTransactions,
+  removeTransaction,
   transactionsStats,
   transactionStatsPostalCode,
+  updateTransaction,
 } from "../controllers/salesTransactions.js";
 
 export const router = Router();
@@ -37,3 +39,7 @@ router.get("/:id/refunds", asyncHandler(listRefunds));
 
 // POST - Créer un avoir (credit note)
 // router.post("/credit-note", asyncHandler(createAvoir));
+
+router.put("/:id",asyncHandler(updateTransaction))
+
+router.delete("/:id",asyncHandler(removeTransaction))

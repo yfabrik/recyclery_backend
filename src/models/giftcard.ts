@@ -15,12 +15,15 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
+import {
+  GIFT_CARD_STATUSES,
+  type GiftCardStatus,
+} from "../constants/dbEnums.js";
 import type { ModelStatics } from "./db-types.ts";
 import type GiftCardTransaction from "./giftcardtransaction.ts";
 import type SalesTransaction from "./salestransaction.ts";
 import type TransactionPayment from "./transactionpayment.ts";
 import type User from "./user.ts";
-import { GIFT_CARD_STATUSES, type GiftCardStatus } from "../constants/dbEnums.js";
 
 export default class GiftCard extends Model<
   InferAttributes<GiftCard>,

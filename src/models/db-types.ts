@@ -30,6 +30,12 @@ import type User from "./user.js";
 import type WasteDisposal from "./wasteDisposal.js";
 import type TransactionGlobalPromotion from "./transactionGlobalPromotion.js";
 
+/**
+ * App-layer typing convention:
+ * - Use Models["GiftCard"] for a model instance type.
+ * - Use Models["GiftCard"]["id"] for typed ids/fields.
+ * Prefer this map in services/controllers over InstanceType<typeof Model>.
+ */
 export type Models = {
   Arrival: Arrival;
   CashRegister: CashRegister;

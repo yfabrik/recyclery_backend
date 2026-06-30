@@ -3,6 +3,11 @@ import createHttpError from "http-errors";
 import { col, fn, literal, Op } from "sequelize";
 import z from "zod";
 import { CONDITION_STATES } from "../../constants/dbEnums.js";
+import {
+  buildPaginationMeta,
+  buildUnpaginatedMeta,
+  parsePaginationQuery,
+} from "../../services/pagination.js";
 import { enumSchema, idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 
@@ -34,27 +39,21 @@ export const listLabeledItem = async (req: Request, res: Response) => {
     search: z.string().optional(),
     recyclery_id: idSchema().optional(),
     barcode: idSchema().optional(), //TODO verifier
-    page: z.coerce.number().positive().optional(),
   });
-  const { search, page, ...filter } = filterSchema.parse(req.query);
+  const { search, ...filter } = filterSchema.parse(req.query);
+  const pagination = parsePaginationQuery(req.query);
   const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
 
   const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
-        ...filter,
-        [Op.or]: [
-          // { name: likeQuery },
-          { description: likeQuery },
-          { id: likeQuery },
-        ],
-      }
+      ...filter,
+      [Op.or]: [
+        // { name: likeQuery },
+        { description: likeQuery },
+        { id: likeQuery },
+      ],
+    }
     : { ...filter };
-  const pagination = {} as { limit: number; offset: number };
-  if (page) {
-    pagination.limit = 50;
-    pagination.offset = (page - 1) * 50;
-  }
-
   const labeledItems = await LabeledItem.findAndCountAll({
     where,
     distinct: true,
@@ -77,13 +76,21 @@ export const listLabeledItem = async (req: Request, res: Response) => {
       },
     ],
     order: [["createdAt", "DESC"]],
-    ...pagination,
+    ...(pagination.paginated
+      ? { limit: pagination.limit, offset: pagination.offset }
+      : {}),
   });
 
   res.json({
     success: true,
     items: labeledItems.rows,
-    total: labeledItems.count,
+    pagination: pagination.paginated
+      ? buildPaginationMeta(
+        pagination.page,
+        pagination.perPage,
+        labeledItems.count,
+      )
+      : buildUnpaginatedMeta(labeledItems.count),
   });
 };
 /**
@@ -136,8 +143,9 @@ export const updateItem = async (req: RequestWithUser, res: Response) => {
     condition_state: data.condition_state ?? item.condition_state,
     weight: data.weight ?? item.weight,
   });
+  await item.reload()
 
-  res.json({ success: true, message: "Article mis à jour avec succès" });
+  res.json({ success: true, item, message: "Article mis à jour avec succès" });
 };
 
 export const deleteLabeledItem = async (req: Request, res: Response) => {
@@ -175,13 +183,13 @@ export const itemsStats = async (req: Request, res: Response) => {
 
   const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
-        ...filter,
-        [Op.or]: [
-          // { name: likeQuery },
-          { description: likeQuery },
-          { id: likeQuery },
-        ],
-      }
+      ...filter,
+      [Op.or]: [
+        // { name: likeQuery },
+        { description: likeQuery },
+        { id: likeQuery },
+      ],
+    }
     : { ...filter };
 
   const stats = await LabeledItem.findAll({

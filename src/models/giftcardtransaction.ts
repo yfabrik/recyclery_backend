@@ -7,18 +7,18 @@ import {
   type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
-  type ModelStatic,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
-import type { ModelStatics } from "./db-types.ts";
-import type GiftCard from "./giftcard.ts";
-import type SalesTransaction from "./salestransaction.ts";
-import type User from "./user.ts";
 import {
   GIFT_CARD_TRANSACTION_TYPES,
   type GiftCardTransactionType,
 } from "../constants/dbEnums.js";
+import { syncGiftCardStatus } from "../services/giftCardLedger.js";
+import type { ModelStatics } from "./db-types.ts";
+import GiftCard from "./giftcard.js";
+import type SalesTransaction from "./salestransaction.ts";
+import type User from "./user.ts";
 
 export default class GiftCardTransaction extends Model<
   InferAttributes<GiftCardTransaction>,
@@ -56,7 +56,6 @@ export default class GiftCardTransaction extends Model<
     });
     this.belongsTo(models.User, { as: "createdBy", foreignKey: "created_by" });
   }
-
   static initModel(sequelize: Sequelize) {
     return this.init(
       {
@@ -103,34 +102,17 @@ export default class GiftCardTransaction extends Model<
           { fields: ["sales_transaction_id"] },
         ],
         hooks: {
-          beforeCreate: async (movement, options) => {
-            const GiftCardModel = movement.sequelize.models.GiftCard as
-              | ModelStatic<GiftCard>
-              | undefined;
-            if (!GiftCardModel) throw new Error("GiftCard model not found");
-            const giftCard = await GiftCardModel.findByPk(
-              movement.gift_card_id,
-              {
-                transaction: options.transaction ?? null,
-                include: [{ model: GiftCardTransaction, as: "movements" }],
-              },
+          afterCreate: async (instance, options) => {
+            await syncGiftCardStatus(
+              instance.gift_card_id,
+              options.transaction ?? null,
             );
-            if (!giftCard) throw new Error("Gift card not found");
-            let newStatus = giftCard.status;
-            const amount = Math.abs(Number(movement.amount));
-            const currentValue = giftCard.current_value ?? 0;
-            if (movement.type === "charge") {
-              if (amount - currentValue < 0) {
-                newStatus = "partially_used";
-              }
-              if (amount - currentValue >= 0) {
-                newStatus = "redeemed";
-              }
-              await giftCard.update(
-                { status: newStatus },
-                { transaction: options.transaction ?? null },
-              );
-            }
+          },
+          afterDestroy: async (instance, options) => {
+            await syncGiftCardStatus(
+              instance.gift_card_id,
+              options.transaction ?? null,
+            );
           },
         },
       },

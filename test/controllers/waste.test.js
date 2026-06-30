@@ -96,7 +96,42 @@ describe("waste controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         disposals: expect.any(Array),
-        pagination: expect.any(Object),
+        pagination: {
+          page: 1,
+          perPage: 1,
+          total: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrevious: false,
+        },
+      }),
+    );
+  });
+
+  it("should list wastes with paginated metadata", async () => {
+    const req = {
+      query: { page: 1, perPage: 10 },
+      user: { id: 1, role: "admin" },
+    };
+
+    const res = {
+      json: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+    };
+
+    await listWaste(req, res);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        disposals: expect.any(Array),
+        pagination: {
+          page: 1,
+          perPage: 10,
+          total: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrevious: false,
+        },
       }),
     );
   });

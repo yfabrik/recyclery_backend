@@ -12,6 +12,7 @@ import {
   type HasManyAddAssociationMixin,
   type HasManyCreateAssociationMixin,
   type HasManyGetAssociationsMixin,
+  type HasManyRemoveAssociationMixin,
   type InferAttributes,
   type InferCreationAttributes,
   type NonAttribute,
@@ -123,6 +124,12 @@ export default class SalesTransaction extends Model<
     TransactionPayment,
     TransactionPayment["id"]
   >;
+  declare createPayment: HasManyCreateAssociationMixin<
+    TransactionPayment, "sales_transaction_id"
+  >;
+  declare removePayment: HasManyRemoveAssociationMixin<
+    TransactionPayment, TransactionPayment["id"]
+  >;
   declare getIssuedGiftCards: HasManyGetAssociationsMixin<GiftCard>;
   declare addIssuedGiftCard: HasManyAddAssociationMixin<
     GiftCard,
@@ -157,6 +164,7 @@ export default class SalesTransaction extends Model<
     this.hasMany(models.GiftCardTransaction, {
       foreignKey: "sales_transaction_id",
       as: "giftCardMovements",
+      onDelete: "CASCADE"
     });
     this.hasMany(models.TransactionPayment, {
       foreignKey: "sales_transaction_id",
