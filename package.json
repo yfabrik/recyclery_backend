@@ -25,11 +25,13 @@
     "helmet": "^8.1.0",
     "http-errors": "^2.0.0",
     "jsonwebtoken": "^9.0.2",
+    "mariadb": "^3.5.3",
     "node-cron": "^4.2.1",
     "sequelize": "^6.37.7",
     "sqlite3": "^5.1.7",
     "winston": "^3.18.3",
-    "zod": "^4.3.5"
+    "zod": "^4.3.5",
+    "@recyclerie/api": "git+ssh://git@gitea.fabrik.lan/yfabrik/type-recyclerie.git#v0.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",

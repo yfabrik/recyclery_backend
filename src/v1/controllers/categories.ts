@@ -1,31 +1,31 @@
 import createHttpError from "http-errors";
 import { literal, Op, type Includeable } from "sequelize";
-import * as z from "zod";
+import {
+  categoryDataSchema,
+  categoryListFilterSchema,
+  categoryPatchSchema,
+} from "@recyclerie/api/schemas/categories";
+import type {
+  CreateCategoryResponse,
+  DeleteCategoryResponse,
+  ListCategoriesResponse,
+  PatchCategoryResponse,
+  UpdateCategoryResponse,
+} from "@recyclerie/api/responses/categories";
+import {
+  apiCreated,
+  apiData,
+  apiMessage,
+} from "@recyclerie/api/types/response";
 import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
+import { toCategoryDto } from "../../mappers/categories.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
 import type { ModelWhere, Models } from "../../models/db-types.js";
 
 const { Category, Recyclery, Promotion } = db;
-
-const dataSchema = z.object({
-  name: z.string("Le nom est requis").trim().min(1, "Le nom est requis"),
-  description: z.string().nullish().prefault(null),
-  icon: z.string().nullish().prefault(null), //TODO should be enum with list of icon
-  parent_id: idSchema().nullish().prefault(null),
-  defaultWeight: z.number().nonnegative().prefault(0),
-  defaultPrice: z.number().nonnegative().prefault(0),
-  priceBasedOnWeight: z.boolean().prefault(false),
-  bundleQuantity: z.coerce
-    .number()
-    .int()
-    .nonnegative()
-    .nullish()
-    .prefault(null),
-  bundlePrice: z.coerce.number().nonnegative().nullish().prefault(null),
-});
 
 const IOValues = {
   IN: 1 << 1,
@@ -42,15 +42,6 @@ const findExistingCategory = async (
   });
 };
 
-/**
- * Keep promotions that are either:
- * - global (no linked stores), or
- * - linked to the requested store.
- * Also removes the internal `stores` include from response payload.
- *
- * @param  category
- * @param storeId
- */
 const filterPromotionsForStore = (
   category: Models["Category"],
   storeId: Models["Recyclery"]["id"],
@@ -83,22 +74,7 @@ const filterPromotionsForStore = (
 };
 
 export const listCategories = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["category", "parent", "promo"] as const;
-  const filtersSchema = z.object({
-    include: z
-      .string()
-      .toLowerCase()
-      .optional()
-      .transform((val) => (val ? val.split(",") : []))
-      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
-    only_category: z.coerce.boolean().optional().default(false),
-    only_sub: z.coerce.boolean().optional().default(false),
-    out: z.coerce.boolean().optional(),
-    in: z.coerce.boolean().optional(),
-    sell: z.coerce.boolean().optional(),
-    store_id: idSchema().optional(),
-  });
-  const filters = filtersSchema.parse(req.query);
+  const filters = categoryListFilterSchema.parse(req.query);
 
   const where: ModelWhere<typeof Category> = {};
 
@@ -191,15 +167,13 @@ export const listCategories = async (req: Request, res: Response) => {
     );
   }
 
-  res.json({
-    success: true,
-    categories,
-  });
+  res.json(
+    apiData(categories.map(toCategoryDto)) satisfies ListCategoriesResponse,
+  );
 };
 
 export const createCategorie = async (req: Request, res: Response) => {
-  const data = dataSchema.parse(req.body);
-  // Vérifier si la catégorie existe déjà
+  const data = categoryDataSchema.parse(req.body);
   const existingCategory = await findExistingCategory(
     data.name,
     data.parent_id,
@@ -212,30 +186,28 @@ export const createCategorie = async (req: Request, res: Response) => {
     ...data,
   });
 
-  res.status(201).json({
-    success: true,
-    message: "Catégorie créée avec succès",
-    category,
-  });
+  res.status(201).json(
+    apiCreated(toCategoryDto(category), {
+      message: "Catégorie créée avec succès",
+    }) satisfies CreateCategoryResponse,
+  );
 };
 
 export const deleteCategorie = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const toDelete = await findByPkOrThrow(Category, id, "Catégorie non trouvée");
   await toDelete.destroy();
-  res.json({
-    success: true,
-    message: "Catégorie supprimée avec succès",
-  });
+  res.json(
+    apiMessage("Catégorie supprimée avec succès") satisfies DeleteCategoryResponse,
+  );
 };
 
 export const updateCategorie = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const data = dataSchema.parse(req.body);
+  const data = categoryDataSchema.parse(req.body);
 
   const category = await findByPkOrThrow(Category, id, "Catégorie non trouvée");
 
-  // Vérifier si le nouveau nom n'est pas déjà utilisé
   const existingCategory = await findExistingCategory(
     data.name,
     category.parent_id,
@@ -248,21 +220,16 @@ export const updateCategorie = async (req: Request, res: Response) => {
     ...data,
   });
 
-  res.json({
-    success: true,
-    message: "Catégorie mise à jour avec succès",
-    category,
-  });
+  res.json(
+    apiData(toCategoryDto(category), {
+      message: "Catégorie mise à jour avec succès",
+    }) satisfies UpdateCategoryResponse,
+  );
 };
 
 export const patchCategory = async (req: Request, res: Response) => {
-  const dataSchema = z.object({
-    in: z.boolean().optional(),
-    out: z.boolean().optional(),
-    sell: z.boolean().optional(),
-  });
   const id = idSchema().parse(req.params.id);
-  const data = dataSchema.parse(req.body);
+  const data = categoryPatchSchema.parse(req.body);
   const category = await findByPkOrThrow(Category, id, "categorie non trouvé", {
     include: [
       {
@@ -337,8 +304,7 @@ export const patchCategory = async (req: Request, res: Response) => {
 
     await category.save({ transaction: t });
   });
-  res.json({
-    success: true,
-    message: "Catégorie mise à jour avec succès",
-  });
+  res.json(
+    apiMessage("Catégorie mise à jour avec succès") satisfies PatchCategoryResponse,
+  );
 };

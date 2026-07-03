@@ -1,9 +1,21 @@
 import type { Request, Response } from "express";
 import { Op } from "sequelize";
+import type {
+  DashboardActivitiesResponse,
+  DashboardChartsResponse,
+  DashboardStatsResponse,
+  DashboardStoreHistoryResponse,
+  DashboardStoreStatsResponse,
+} from "@recyclerie/api/responses/dashboard";
+import { apiData } from "@recyclerie/api/types/response";
 import type { Models } from "../../models/db-types.js";
 import db from "../../models/index.js";
 import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
+import {
+  toDashboardStoreDto,
+  toDashboardStoreHistoryDto,
+} from "../../mappers/dashboard.js";
 
 const {
   LabeledItem,
@@ -145,10 +157,7 @@ export const dashboardStats = async (_req: Request, res: Response) => {
   stats.thisMonthRevenue = profit(month_transactions);
   stats.thisMonthSales = month_transactions.length;
 
-  res.json({
-    success: true,
-    data: stats,
-  });
+  res.json(apiData(stats) satisfies DashboardStatsResponse);
 };
 
 type activity = {
@@ -235,10 +244,7 @@ export const dashboardActivities = async (_req: Request, res: Response) => {
   // Trier par date et limiter à 10 activités
   activities.sort((a, b) => +new Date(b.time) - +new Date(a.time));
 
-  res.json({
-    success: true,
-    data: activities.slice(0, 10),
-  });
+  res.json(apiData(activities.slice(0, 10)) satisfies DashboardActivitiesResponse);
 };
 
 export const dashboardCharts = async (_req: Request, res: Response) => {
@@ -271,14 +277,13 @@ export const dashboardCharts = async (_req: Request, res: Response) => {
     );
   }
 
-  res.json({
-    success: true,
-    data: {
+  res.json(
+    apiData({
       sales: salesData,
       revenue: revenueData,
       labels: labels,
-    },
-  });
+    }) satisfies DashboardChartsResponse,
+  );
 };
 
 const statsMonth = async (
@@ -413,23 +418,22 @@ export const dashboardStoreStats = async (_req: Request, res: Response) => {
     order: ["name"],
   });
 
-  const storesStats = [];
-
-  for (const store of stores) {
-    storesStats.push({
-      id: store.id,
-      name: store.name,
-      address: store.address,
-      phone: store.phone,
-      email: store.email,
-      stats: await statsMonth(store),
-    });
-  }
-
-  res.json({
-    success: true,
-    stores: storesStats,
-  });
+  res.json(
+    apiData(
+      await Promise.all(
+        stores.map(async (store) =>
+          toDashboardStoreDto({
+            id: store.id,
+            name: store.name,
+            address: store.address,
+            phone: store.phone,
+            email: store.email,
+            stats: await statsMonth(store),
+          }),
+        ),
+      ),
+    ) satisfies DashboardStoreStatsResponse,
+  );
 };
 
 export const StoreHistoryStats = async (req: Request, res: Response) => {
@@ -446,15 +450,16 @@ export const StoreHistoryStats = async (req: Request, res: Response) => {
     storeStat.push(await statsMonth(store, today));
   }
 
-  res.json({
-    success: true,
-    data: {
-      id: store.id,
-      name: store.name,
-      address: store.address,
-      phone: store.phone,
-      email: store.email,
-      stats: storeStat,
-    },
-  });
+  res.json(
+    apiData(
+      toDashboardStoreHistoryDto({
+        id: store.id,
+        name: store.name,
+        address: store.address,
+        phone: store.phone,
+        email: store.email,
+        stats: storeStat,
+      }),
+    ) satisfies DashboardStoreHistoryResponse,
+  );
 };

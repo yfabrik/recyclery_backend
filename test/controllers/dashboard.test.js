@@ -136,7 +136,7 @@ describe("dashboard controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        stores: expect.arrayContaining([
+        data: expect.arrayContaining([
           expect.objectContaining({
             id: expect.any(Number),
             name: expect.any(String),

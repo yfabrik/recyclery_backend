@@ -1,79 +1,51 @@
 import type { Request, Response } from "express";
-import { Op, type Includeable } from "sequelize";
-import * as z from "zod";
+import createHttpError from "http-errors";
+import { Op, type Includeable } from "sequelize";import {
+  assignEmployeeToTaskBodySchema,
+  taskDataSchema,
+  taskListFilterSchema,
+} from "@recyclerie/api/schemas/tasks";
+import type {
+  AssignEmployeeTaskResponse,
+  CreateTaskResponse,
+  DeleteTaskResponse,
+  DetailTaskResponse,
+  ListTasksResponse,
+  RemoveEmployeeTaskResponse,
+  TaskEmployeesResponse,
+  UpdateTaskResponse,
+} from "@recyclerie/api/responses/tasks";
+import {
+  apiCreated,
+  apiData,
+  apiMessage,
+} from "@recyclerie/api/types/response";
 
 import { formatWhereDateRange } from "../../helpers.js";
 
-import {
-  RECURRENCE_PATTERNS,
-  TASK_CATEGORIES,
-} from "../../constants/dbEnums.js";
-import { enumSchema, idSchema } from "../../services/zod.js";
+import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { ModelWhere } from "../../models/db-types.ts";
 
 import db from "../../models/index.js";
+import { toEmployeeDto } from "../../mappers/employees.js";
+import { toTaskDto } from "../../mappers/tasks.js";
 
 const { Task, TaskSchedule, Employee, Recyclery } = db;
 
-const dataSchema = z.object({
-  name: z.string("Nom requis"),
-  description: z.string().nullish().prefault(null),
-  category: enumSchema(TASK_CATEGORIES, "categorie requise"),
-  priority: z.string("priorité requis"),
-  // estimated_duration: z.coerce.number().nullish(),
-  required_skills: z
-    .array(z.string())
-    .nullish()
-    .default([])
-    .transform((val) => JSON.stringify(val)),
-  location: z.string().nullish().prefault(null),
-  equipment_needed: z
-    .array(z.string())
-    .nullish()
-    .default([])
-    .transform((val) => JSON.stringify(val)),
-  // hourly_rate: z.coerce.number().nullish(),
-  is_recurring: z.coerce.boolean().optional(),
-  recurrence_pattern: enumSchema(RECURRENCE_PATTERNS, "récurrence invalide")
-    .nullish()
-    .prefault(null),
-  assigned_to: idSchema().nullish(),
-  notes: z.string().nullish().prefault(null),
-  start_time: z.coerce.date().optional().default(new Date()),
-  end_time: z.coerce.date().optional().default(new Date()),
-  scheduled_date: z.coerce.date().optional().default(new Date()),
-  store_id: idSchema().nullish().prefault(null),
-});
-
 export const listTasks = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["user", "store"] as const;
-  const includeSchema = z.object({
-    include: z
-      .string()
-      .optional()
-      .transform((val) => (val ? val.split(",") : []))
-      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
-    category: enumSchema(TASK_CATEGORIES)
-      .nullable()
-      .optional()
-      .default(
-        req.originalUrl == "/api/collection-point-presence"
-          ? "point"
-          : req.originalUrl == "/api/store-hours"
-            ? "vente"
-            : req.originalUrl == "/api/collections"
-              ? "collection"
-              : null,
-      ),
-    priority: z.string().optional(),
-    search: z.string().optional(),
-    date_from: z.coerce.date().optional(),
-    date_to: z.coerce.date().optional(),
-    store_id: idSchema().nullish(),
+  const defaultCategory =
+    req.originalUrl == "/api/collection-point-presence"
+      ? "point"
+      : req.originalUrl == "/api/store-hours"
+        ? "vente"
+        : req.originalUrl == "/api/collections"
+          ? "collection"
+          : null;
+  const data = taskListFilterSchema.parse({
+    ...req.query,
+    category: defaultCategory,
   });
-  // const category = req.originalUrl == '/api/collection-point-presence' ? "point" : req.originalUrl == '/api/store-hours' ? "vente" : req.originalUrl == '/api/collections' ? "collection" : null
-  const data = includeSchema.parse({ ...req.query });
 
   const where: ModelWhere<typeof Task> = {};
   const dateRange = formatWhereDateRange(data.date_from, data.date_to);
@@ -110,32 +82,9 @@ export const listTasks = async (req: Request, res: Response) => {
     order: [["createdAt", "DESC"]],
   });
 
-  const t = tasks.map((t) => {
-    return {
-      ...t.get({ plain: true }),
-
-      start_time: t.start_time ? new Date(t.start_time) : null,
-      end_time: t.end_time ? new Date(t.end_time) : null,
-    };
-  });
-
-  // Parser les champs JSON
-  // const parsedTasks = tasks.map((task) => ({
-  //   ...task,
-  //   required_skills: task.required_skills
-  //     ? JSON.parse(task.required_skills)
-  //     : [],
-  //   equipment_needed: task.equipment_needed
-  //     ? JSON.parse(task.equipment_needed)
-  //     : [],
-  // }));
-
-  res.json({
-    success: true,
-    // tasksx: parsedTasks,
-    tasks: t,
-    presence_hours: t,
-  });
+  res.json(
+    apiData(tasks.map(toTaskDto)) satisfies ListTasksResponse,
+  );
 };
 
 export const detailTask = async (req: Request, res: Response) => {
@@ -153,14 +102,13 @@ export const detailTask = async (req: Request, res: Response) => {
   //     : [],
   // };
 
-  res.json({
-    success: true,
-    task: tasks,
-  });
+  res.json(
+    apiData(toTaskDto(tasks)) satisfies DetailTaskResponse,
+  );
 };
 
 export const createTask = async (req: Request, res: Response) => {
-  const data = dataSchema.parse(req.body);
+  const data = taskDataSchema.parse(req.body);
   let name = data.name ?? data.category;
   let store;
   if (data.store_id) {
@@ -174,13 +122,16 @@ export const createTask = async (req: Request, res: Response) => {
     const schedule = await db.sequelize.transaction(async (t) => {
       return TaskSchedule.create({ ...data, name }, { transaction: t });
     });
-    const task = await schedule.getTasks();
+    const [createdTask] = await schedule.getTasks();
+    if (!createdTask) {
+      throw new createHttpError.InternalServerError("Tâche non créée");
+    }
 
-    res.json({
-      success: true,
-      message: "Tâche créée avec succès",
-      task: task[0],
-    });
+    res.json(
+      apiCreated(toTaskDto(createdTask), {
+        message: "Tâche créée avec succès",
+      }) satisfies CreateTaskResponse,
+    );
   } else {
     const { is_recurring, recurrence_pattern, ...rest } = data;
     const task = await Task.create({
@@ -189,18 +140,18 @@ export const createTask = async (req: Request, res: Response) => {
       name,
     });
 
-    res.json({
-      success: true,
-      message: "Tâche créée avec succès",
-      task,
-    });
+    res.json(
+      apiCreated(toTaskDto(task), {
+        message: "Tâche créée avec succès",
+      }) satisfies CreateTaskResponse,
+    );
   }
 };
 
 export const updateTask = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const data = dataSchema.parse(req.body);
+  const data = taskDataSchema.parse(req.body);
   // Vérifier que la tâche existe
   const existing = await findByPkOrThrow(Task, id, "Tâche non trouvée");
 
@@ -220,11 +171,11 @@ export const updateTask = async (req: Request, res: Response) => {
     name,
   });
 
-  res.json({
-    success: true,
-    message: "Tâche mise à jour avec succès",
-    task: existing,
-  });
+  res.json(
+    apiData(toTaskDto(existing), {
+      message: "Tâche mise à jour avec succès",
+    }) satisfies UpdateTaskResponse,
+  );
 };
 
 export const deleteTask = async (req: Request, res: Response) => {
@@ -233,10 +184,9 @@ export const deleteTask = async (req: Request, res: Response) => {
   const existing = await findByPkOrThrow(Task, id, "Tâche non trouvée");
   await existing.destroy();
 
-  res.json({
-    success: true,
-    message: "Tâche supprimée avec succès",
-  });
+  res.json(
+    apiMessage("Tâche supprimée avec succès") satisfies DeleteTaskResponse,
+  );
 };
 
 export const getUsersFromTask = async (req: Request, res: Response) => {
@@ -246,15 +196,16 @@ export const getUsersFromTask = async (req: Request, res: Response) => {
   const tasks = await findByPkOrThrow(Task, taskId, "tache non trouvé", {
     include: [{ model: Employee }],
   });
-  res.json({
-    success: true,
-    employees: tasks.Employees,
-  });
+  res.json(
+    apiData(
+      (tasks.Employees ?? []).map(toEmployeeDto),
+    ) satisfies TaskEmployeesResponse,
+  );
 };
 
 export const addUserToTask = async (req: Request, res: Response) => {
   const taskId = idSchema().parse(req.params.taskId);
-  const employee_id = idSchema("ID employé requis").parse(req.body.employee_id);
+  const { employee_id } = assignEmployeeToTaskBodySchema.parse(req.body);
 
   const task = await findByPkOrThrow(Task, taskId, "Tâche non trouvée");
 
@@ -273,10 +224,9 @@ export const addUserToTask = async (req: Request, res: Response) => {
 
   await task.addEmployee(employee);
 
-  res.json({
-    success: true,
-    message: "Employé assigné avec succès",
-  });
+  res.json(
+    apiMessage("Employé assigné avec succès") satisfies AssignEmployeeTaskResponse,
+  );
 };
 
 export const removeUserFromTask = async (req: Request, res: Response) => {
@@ -286,8 +236,7 @@ export const removeUserFromTask = async (req: Request, res: Response) => {
   const task = await findByPkOrThrow(Task, taskId, "Tâche non trouvée");
   await task.removeEmployee(employeeId);
 
-  res.json({
-    success: true,
-    message: "Employé retiré avec succès",
-  });
+  res.json(
+    apiMessage("Employé retiré avec succès") satisfies RemoveEmployeeTaskResponse,
+  );
 };

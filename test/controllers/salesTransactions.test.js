@@ -211,7 +211,7 @@ const makeItemPayload = ({
   bundleQuantity,
 });
 
-const saleFromRes = (res) => res.json.mock.calls[0][0].data.sale;
+const saleFromRes = (res) => res.json.mock.calls[0][0].data.transaction;
 
 describe("salesTransactions controller gift card/refund flows", () => {
   /** @type {number} */
@@ -321,7 +321,9 @@ describe("salesTransactions controller gift card/refund flows", () => {
     expect(refundRes1.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        giftCard: expect.objectContaining({ code: giftCardCode }),
+        data: expect.objectContaining({
+          giftCard: expect.objectContaining({ code: giftCardCode }),
+        }),
       }),
     );
 

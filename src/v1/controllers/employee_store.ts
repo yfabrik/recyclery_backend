@@ -1,10 +1,31 @@
-import z from "zod";
+import {
+  assignEmployeeStoreSchema,
+  employeeStoreParamsSchema,
+  removeEmployeeStoreParamsSchema,
+} from "@recyclerie/api/schemas/employeeStore";
+import type {
+  AssignEmployeeStoreResponse,
+  EmployeeStoreByEmployeeResponse,
+  ListEmployeeStoreResponse,
+  ListStoreEmployeesResponse,
+  RemoveEmployeeStoreResponse,
+} from "@recyclerie/api/responses/employeeStore";
+import {
+  apiCreated,
+  apiData,
+  apiMessage,
+} from "@recyclerie/api/types/response";
 import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 import type { Includeable } from "sequelize";
 
 import db from "../../models/index.js";
+import {
+  toEmployeeStoreAssignmentDto,
+  toEmployeeWithStoreAssignmentsDto,
+} from "../../mappers/employeeStore.js";
+import { toEmployeeDto } from "../../mappers/employees.js";
 
 const { sequelize, Employee, Recyclery, EmployeeStore } = db;
 
@@ -21,17 +42,15 @@ export const listEmployeeStore = async (_req: Request, res: Response) => {
     ],
   });
 
-  res.json({
-    success: true,
-    assignments,
-  });
+  res.json(
+    apiData(
+      assignments.map(toEmployeeWithStoreAssignmentsDto),
+    ) satisfies ListEmployeeStoreResponse,
+  );
 };
 
 export const getEmployeeStoreById = async (req: Request, res: Response) => {
-  const params = z.object({
-    employeeId: idSchema("employee id requis"),
-  });
-  const { employeeId } = params.parse(req.params);
+  const { employeeId } = employeeStoreParamsSchema.parse(req.params);
 
   const employee = await findByPkOrThrow(
     Employee,
@@ -51,15 +70,8 @@ export const getEmployeeStoreById = async (req: Request, res: Response) => {
   );
 
   const stores = employee?.stores || [];
-  const assignments = stores.map((s) => {
-    const values = s.dataValues;
-    return { ...values, is_primary: s.EmployeeStore.is_primary };
-  });
-  res.json({
-    success: true,
-    assignments,
-    stores: employee.stores,
-  });
+  const data = stores.map((s) => toEmployeeStoreAssignmentDto(s));
+  res.json(apiData(data) satisfies EmployeeStoreByEmployeeResponse);
 };
 
 export const listStoreEmployee = async (req: Request, res: Response) => {
@@ -80,16 +92,13 @@ export const listStoreEmployee = async (req: Request, res: Response) => {
     include,
   });
 
-  res.json({ users });
+  res.json(
+    apiData(users.map(toEmployeeDto)) satisfies ListStoreEmployeesResponse,
+  );
 };
 
 export const assignUserToStore = async (req: Request, res: Response) => {
-  const dataSchema = z.object({
-    employee_id: idSchema("employee_id est requis"),
-    store_id: idSchema("store_id est requis"),
-    is_primary: z.boolean().optional().default(false),
-  });
-  const data = dataSchema.parse(req.body);
+  const data = assignEmployeeStoreSchema.parse(req.body);
 
   // Vérifier que l'employé et le magasin existent
   const employee = await findByPkOrThrow(Employee, data.employee_id, "Employé non trouvé", {
@@ -137,19 +146,17 @@ export const assignUserToStore = async (req: Request, res: Response) => {
     ],
   });
 
-  res.status(201).json({
-    success: true,
-    message: "Affectation créée avec succès",
-    employee,
-  });
+  res
+    .status(201)
+    .json(
+      apiCreated(toEmployeeWithStoreAssignmentsDto(employee), {
+        message: "Affectation créée avec succès",
+      }) satisfies AssignEmployeeStoreResponse,
+    );
 };
 
 export const removeEmployeeStore = async (req: Request, res: Response) => {
-  const dataSchema = z.object({
-    employeeId: idSchema("employee_id est requis"),
-    store_id: idSchema().nullish(),
-  });
-  const data = dataSchema.parse(req.params);
+  const data = removeEmployeeStoreParamsSchema.parse(req.params);
 
   const employee = await findByPkOrThrow(
     Employee,
@@ -169,13 +176,7 @@ export const removeEmployeeStore = async (req: Request, res: Response) => {
     // await employee.setStores([]);
     await EmployeeStore.destroy({ where: { employeeId: data.employeeId } });
   }
-  const emplo = await Employee.findByPk(data.employeeId, {
-    include: [{ model: Recyclery, as: "stores" }],
-  });
-  console.log(emplo);
-
-  res.json({
-    success: true,
-    message: `Affectation(s) supprimée(s) avec succès`,
-  });
+  res.json(
+    apiMessage(`Affectation(s) supprimée(s) avec succès`) satisfies RemoveEmployeeStoreResponse,
+  );
 };

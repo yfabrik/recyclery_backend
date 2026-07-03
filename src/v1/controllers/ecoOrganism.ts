@@ -1,9 +1,42 @@
 import { col, fn, literal, Op, type Includeable } from "sequelize";
-import z from "zod";
 
 import type { Request, Response } from "express";
-import { idSchema, phoneSchema } from "../../services/zod.js";
+import {
+  ecoOrganismDataSchema,
+  ecoOrganismFilterSchema,
+} from "@recyclerie/api/schemas/ecoOrganism";
+import type {
+  CreateEcoOrganismResponse,
+  DeleteEcoOrganismResponse,
+  DetailEcoOrganismResponse,
+  EcoOrganismStatsResponse,
+  EcoOrgQuarterCategoryBreakdownDto,
+  EcoOrgQuarterInBreakdownDto,
+  EcoOrgQuarterLabel,
+  EcoOrgQuarterSellBreakdownDto,
+  EcoOrgQuarterStatsDto,
+  EcoOrgQuarterStatsResponse,
+  EcoOrgWeightedCategoryDto,
+  ListEcoOrganismsResponse,
+  UpdateEcoOrganismResponse,
+} from "@recyclerie/api/responses/ecoOrganism";
+import {
+  EMPTY_ECO_ORG_QUARTER_CATEGORY_BREAKDOWN,
+  EMPTY_ECO_ORG_QUARTER_IN_BREAKDOWN,
+  EMPTY_ECO_ORG_QUARTER_SELL_BREAKDOWN,
+} from "@recyclerie/api/responses/ecoOrganism";
+import {
+  apiCreated,
+  apiData,
+  apiMessage,
+} from "@recyclerie/api/types/response";
+import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
+import {
+  toEcoOrganismDto,
+  toEcoOrganismStatsDto,
+  type EcoOrganismStatsRow,
+} from "../../mappers/ecoOrganism.js";
 
 import type { ModelWhere, Models } from "../../models/db-types.js";
 import db from "../../models/index.js";
@@ -16,33 +49,11 @@ const {
   TransactionItem,
   SalesTransaction,
   LabeledItem,
+  CollectionPoint
 } = db;
 
-const dataSchema = z.object({
-  name: z.string().trim().nonempty("Le nom est requis"),
-  description: z.string().nullish().prefault(null),
-  contact_email: z.email().nullish().prefault(null),
-  contact_phone: phoneSchema().nullish().prefault(null),
-  address: z.string().nullish().prefault(null),
-  website: z.url().nullish().prefault(null),
-  is_active: z.boolean().optional().default(true),
-  inCategories: z.array(idSchema()).optional().default([]),
-  sellCategories: z.array(idSchema()).optional().default([]),
-});
-
 export const listEcoOrganism = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["waste", "incategories", "sellcategories"] as const;
-  const filterSchema = z.object({
-    active: z.coerce.boolean().optional(),
-    include: z
-      .string()
-      .toLowerCase()
-      .optional()
-      .transform((val) => (val ? val.split(",") : []))
-      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
-  });
-  const filter = filterSchema.parse(req.query);
-
+  const filter = ecoOrganismFilterSchema.parse(req.query);
   const where: ModelWhere<typeof EcoOrganism> = {};
   if (filter.active) where.is_active = filter.active;
   const include: Includeable[] = [];
@@ -53,7 +64,9 @@ export const listEcoOrganism = async (req: Request, res: Response) => {
     include.push({ model: Category, as: "sellCategories" });
   const eco_organisms = await EcoOrganism.findAll({ where, include });
 
-  res.json({ eco_organisms });
+  res.json(
+    apiData(eco_organisms.map(toEcoOrganismDto)) satisfies ListEcoOrganismsResponse,
+  );
 };
 
 export const detailEcoOrganism = async (req: Request, res: Response) => {
@@ -64,11 +77,13 @@ export const detailEcoOrganism = async (req: Request, res: Response) => {
     "Éco-organisme non trouvé",
   );
 
-  res.json({ eco_organism });
+  res.json(
+    apiData(toEcoOrganismDto(eco_organism)) satisfies DetailEcoOrganismResponse,
+  );
 };
 
 export const createEcoOrganism = async (req: Request, res: Response) => {
-  const data = dataSchema.parse(req.body);
+  const data = ecoOrganismDataSchema.parse(req.body);
   const { inCategories, sellCategories, ...ecoData } = data;
 
   const created = await db.sequelize.transaction(async (t) => {
@@ -77,16 +92,17 @@ export const createEcoOrganism = async (req: Request, res: Response) => {
     await eco.setSellCategories(sellCategories, { transaction: t });
     return eco;
   });
-  res.status(201).json({
-    message: "Éco-organisme créé avec succès",
-    eco_organism_id: created.id,
-  });
+  res.status(201).json(
+    apiCreated(toEcoOrganismDto(created), {
+      message: "Éco-organisme créé avec succès",
+    }) satisfies CreateEcoOrganismResponse,
+  );
 };
 
 export const updateEcoOrganism = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const data = dataSchema.parse(req.body);
+  const data = ecoOrganismDataSchema.parse(req.body);
 
   const eco_organism = await findByPkOrThrow(
     EcoOrganism,
@@ -99,7 +115,11 @@ export const updateEcoOrganism = async (req: Request, res: Response) => {
     await eco_organism.setInCategories(inCategories, { transaction: t });
     await eco_organism.setSellCategories(sellCategories, { transaction: t });
   });
-  res.json({ message: "Éco-organisme mis à jour avec succès", eco_organism });
+  res.json(
+    apiData(toEcoOrganismDto(eco_organism), {
+      message: "Éco-organisme mis à jour avec succès",
+    }) satisfies UpdateEcoOrganismResponse,
+  );
 };
 
 export const deleteEcoOrganism = async (req: Request, res: Response) => {
@@ -117,81 +137,39 @@ export const deleteEcoOrganism = async (req: Request, res: Response) => {
   // Check if eco-organism is used in waste disposals
 
   if (waste > 0) {
-    // If used in waste disposals, deactivate instead of delete
     await ecoOrg.update({ is_active: false });
-    res.json({ message: "Éco-organisme désactivé avec succès" });
+    res.json(
+      apiMessage("Éco-organisme désactivé avec succès") satisfies DeleteEcoOrganismResponse,
+    );
   } else {
     await ecoOrg.destroy();
-    // If not used, delete permanently
-    res.json({ message: "Éco-organisme supprimé avec succès" });
+    res.json(
+      apiMessage("Éco-organisme supprimé avec succès") satisfies DeleteEcoOrganismResponse,
+    );
   }
 };
 
-type quarterLabel = `${number}-T${1 | 2 | 3 | 4}`;
 type EcoOrgId = Models["EcoOrganism"]["id"];
-type ArrivalSourceType = Models["Arrival"]["source_type"];
 
 type QuarterRange = {
   start: Date;
   end: Date;
-  label: quarterLabel;
+  label: EcoOrgQuarterLabel;
   labelMMYYYY: string;
-};
-
-type WeightedCategory = {
-  id: Models["Category"]["id"];
-  name: Models["Category"]["name"];
-  weight_kg: number;
-};
-
-type QuarterCategoryBreakdown = {
-  total_weight_kg: number;
-  categories: (WeightedCategory & {
-    subcategories: WeightedCategory[];
-  })[];
-  labelMMYYYY?: string;
-};
-
-type QuarterInBreakdown = QuarterCategoryBreakdown & {
-  by_source_type: Record<ArrivalSourceType, QuarterCategoryBreakdown>;
-};
-
-type SellCategoryBreakdown = Omit<WeightedCategory, "weight_kg"> & {
-  weight_kg: number;
-  quantity: number;
-  subcategories: (WeightedCategory & { quantity: number })[];
-};
-
-type QuarterSellBreakdown = {
-  total_weight_kg: number;
-  quantity: number;
-  categories: SellCategoryBreakdown[];
 };
 
 type QuarterOutByEcoOrgMap = Map<
   EcoOrgId,
-  Record<quarterLabel, QuarterCategoryBreakdown>
+  Record<EcoOrgQuarterLabel, EcoOrgQuarterCategoryBreakdownDto>
 >;
 type QuarterInByEcoOrgMap = Map<
   EcoOrgId,
-  Record<quarterLabel, QuarterInBreakdown>
+  Record<EcoOrgQuarterLabel, EcoOrgQuarterInBreakdownDto>
 >;
 type QuarterSellByEcoOrgMap = Map<
   EcoOrgId,
-  Record<quarterLabel, QuarterSellBreakdown>
+  Record<EcoOrgQuarterLabel, EcoOrgQuarterSellBreakdownDto>
 >;
-
-type EcoOrgQuarterStatsResponse = Pick<
-  Models["EcoOrganism"],
-  "id" | "name" | "description" | "is_active"
-> & {
-  quarters: {
-    quarter: quarterLabel;
-    quarterOut: QuarterCategoryBreakdown;
-    quarterIn: QuarterInBreakdown;
-    quarterSell: QuarterSellBreakdown;
-  }[];
-};
 
 export const quartersDateRanges = (startDate: Date, quarterCount = 4) => {
   // Normalize to local midnight to avoid timezone drift
@@ -302,7 +280,7 @@ export const getQuarterStatOut = async (
 
       let byEcoOrg = new Map<
         EcoOrgId,
-        Record<quarterLabel, QuarterCategoryBreakdown>
+        Record<EcoOrgQuarterLabel, EcoOrgQuarterCategoryBreakdownDto>
       >();
 
       for (const row of rows) {
@@ -323,8 +301,8 @@ export const getQuarterStatOut = async (
                   name: row.subcategory_name,
                   weight_kg: row.weight_kg,
                 },
-              ] as WeightedCategory[])
-            : ([] as WeightedCategory[]);
+              ] as EcoOrgWeightedCategoryDto[])
+            : ([] as EcoOrgWeightedCategoryDto[]);
           ecoOrg.categories.push({
             id: row.category_id,
             name: row.category_name,
@@ -352,14 +330,14 @@ export const getQuarterStatOut = async (
   );
   const quarterDataByEcoOrg = new Map<
     EcoOrgId,
-    Record<quarterLabel, QuarterCategoryBreakdown>
+    Record<EcoOrgQuarterLabel, EcoOrgQuarterCategoryBreakdownDto>
   >();
 
   for (const perQuarterMap of weightByEcoOrgByQuarter) {
     for (const [ecoOrgId, quarterData] of perQuarterMap.entries()) {
       const currentData =
         quarterDataByEcoOrg.get(ecoOrgId) ??
-        ({} as Record<quarterLabel, QuarterCategoryBreakdown>);
+        ({} as Record<EcoOrgQuarterLabel, EcoOrgQuarterCategoryBreakdownDto>);
       quarterDataByEcoOrg.set(ecoOrgId, { ...currentData, ...quarterData });
     }
   }
@@ -416,6 +394,8 @@ export const getQuarterStatIn = async (
         include: [
           { model: Category, as: "categorie", required: true },
           { model: Category, as: "subcategorie" },
+          { model: CollectionPoint, required: false },
+
         ],
         group: ["source_type", "category_id", "subcategory_id"],
         raw: true,
@@ -434,7 +414,7 @@ export const getQuarterStatIn = async (
 
   const byEcoOrg = new Map() as QuarterInByEcoOrgMap;
   for (const ecoOrg of inCategoryLinks) {
-    const quarterRecord = {} as Record<quarterLabel, QuarterInBreakdown>;
+    const quarterRecord = {} as Record<EcoOrgQuarterLabel, EcoOrgQuarterInBreakdownDto>;
     for (const range of quarterRanges) {
       quarterRecord[range.label] = {
         total_weight_kg: 0,
@@ -449,6 +429,10 @@ export const getQuarterStatIn = async (
           point: {
             total_weight_kg: 0,
             categories: [],
+            // by_point:{
+            //   total_weight_kg: 0,
+            //   categories: [],
+            // }
           },
           apport: {
             total_weight_kg: 0,
@@ -466,8 +450,8 @@ export const getQuarterStatIn = async (
 
   for (const [_ecoOrgId, quarterData] of byEcoOrg) {
     for (const [label, quarter] of Object.entries(quarterData) as [
-      quarterLabel,
-      QuarterInBreakdown,
+      EcoOrgQuarterLabel,
+      EcoOrgQuarterInBreakdownDto,
     ][]) {
       arrivalRowsByQuarterLabel.get(label)?.forEach((row) => {
         const catId = row.category_id;
@@ -520,6 +504,18 @@ export const getQuarterStatIn = async (
               });
             }
           }
+          // if (sourceType === "point") {
+          //   const point = row.collection_point;
+          //   if (point) {
+          //     point.total_weight_kg += row.weight_kg;
+          //   } else {
+          //     point.categories.push({
+          //       id: point.id,
+          //       name: point.name,
+          //       weight_kg: row.weight_kg,
+          //     });
+          //   }
+          // }
         }
       });
     }
@@ -549,7 +545,7 @@ export const getQuarterStatSell = async (
             fn(
               "SUM",
               literal(
-                "COALESCE(CAST(LabeledItem.weight AS REAL), 0) * COALESCE(TransactionItem.quantity, 0)",
+                "COALESCE(CAST(LabeledItem.weight AS DOUBLE), 0) * COALESCE(TransactionItem.quantity, 0)",
               ),
             ),
             "weight_kg",
@@ -595,7 +591,7 @@ export const getQuarterStatSell = async (
 
   const byEcoOrg = new Map() as QuarterSellByEcoOrgMap;
   for (const ecoOrg of sellCategoryLinks) {
-    const quarterRecord = {} as Record<quarterLabel, QuarterSellBreakdown>;
+    const quarterRecord = {} as Record<EcoOrgQuarterLabel, EcoOrgQuarterSellBreakdownDto>;
     for (const range of quarterRanges) {
       quarterRecord[range.label] = {
         total_weight_kg: 0,
@@ -615,8 +611,8 @@ export const getQuarterStatSell = async (
 
   for (const [_ecoOrgId, quarterData] of byEcoOrg) {
     for (const [label, quarter] of Object.entries(quarterData) as [
-      quarterLabel,
-      QuarterSellBreakdown,
+      EcoOrgQuarterLabel,
+      EcoOrgQuarterSellBreakdownDto,
     ][]) {
       soldQuantityRowsByQuarterLabel.get(label)?.forEach((row) => {
         const catId = row.category_id;
@@ -652,17 +648,19 @@ export const ecoOrgaStats = async (_req: Request, res: Response) => {
     attributes: [
       [fn("COUNT", col("*")), "total_eco_organisms"],
       [
-        fn("SUM", literal(`CASE WHEN "is_active" = 1 THEN 1 ELSE 0 END`)),
+        fn("SUM", literal(`CASE WHEN is_active = 1 THEN 1 ELSE 0 END`)),
         "active_eco_organisms",
       ],
       [
-        fn("SUM", literal(`CASE WHEN "is_active" = 0 THEN 1 ELSE 0 END`)),
+        fn("SUM", literal(`CASE WHEN is_active = 0 THEN 1 ELSE 0 END`)),
         "inactive_eco_organisms",
       ],
     ],
   });
 
-  res.json({ stats });
+  res.json(
+    apiData(toEcoOrganismStatsDto(stats as EcoOrganismStatsRow | null)) satisfies EcoOrganismStatsResponse,
+  );
 };
 
 export const ecoOrgQuarterStats = async (_req: Request, res: Response) => {
@@ -680,7 +678,7 @@ export const ecoOrgQuarterStats = async (_req: Request, res: Response) => {
       getQuarterStatSell(quarterRanges),
     ]);
 
-  const response = ecoOrganisms.map((eo) => {
+  const response: EcoOrgQuarterStatsDto[] = ecoOrganisms.map((eo) => {
     return {
       id: eo.id,
       name: eo.name,
@@ -689,13 +687,21 @@ export const ecoOrgQuarterStats = async (_req: Request, res: Response) => {
       quarters: quarterRanges.map((range) => {
         return {
           quarter: range.label,
-          quarterOut: quarterOutByEcoOrg.get(eo.id)?.[range.label] ?? {},
-          quarterIn: quarterInByEcoOrg.get(eo.id)?.[range.label] ?? {},
-          quarterSell: quarterSellByEcoOrg.get(eo.id)?.[range.label] ?? {},
+          quarterOut:
+            quarterOutByEcoOrg.get(eo.id)?.[range.label] ??
+            EMPTY_ECO_ORG_QUARTER_CATEGORY_BREAKDOWN,
+          quarterIn:
+            quarterInByEcoOrg.get(eo.id)?.[range.label] ??
+            EMPTY_ECO_ORG_QUARTER_IN_BREAKDOWN,
+          quarterSell:
+            quarterSellByEcoOrg.get(eo.id)?.[range.label] ??
+            EMPTY_ECO_ORG_QUARTER_SELL_BREAKDOWN,
         };
       }),
     };
-  }) as Array<EcoOrgQuarterStatsResponse>;
+  });
 
-  return res.json({ stats: response });
+  return res.json(
+    apiData(response) satisfies EcoOrgQuarterStatsResponse,
+  );
 };

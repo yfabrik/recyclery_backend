@@ -1,9 +1,28 @@
 import type { Request, Response } from "express";
-import { col, fn, literal } from "sequelize";
-import z from "zod";
-
+import { col, fn, literal, type Includeable } from "sequelize";
+import {
+  listWasteQuerySchema,
+  wasteBodySchema,
+  wasteDateRangeQuerySchema,
+  wasteIdParamsSchema,
+} from "@recyclerie/api/schemas/waste";
+import type {
+  CreateWasteResponse,
+  DeleteWasteResponse,
+  DetailWasteResponse,
+  ListWasteResponse,
+  UpdateWasteResponse,
+  WasteStatsCategoryResponse,
+  WasteStatsDto,
+  WasteStatsResponse,
+} from "@recyclerie/api/responses/waste";
+import {
+  apiCreated,
+  apiData,
+  apiMessage,
+  apiPaginated,
+} from "@recyclerie/api/types/response";
 import { formatWhereDateRange } from "../../helpers.js";
-import { WASTE_DISPOSAL_TYPES } from "../../constants/dbEnums.js";
 import {
   buildPaginationMeta,
   buildUnpaginatedMeta,
@@ -11,46 +30,21 @@ import {
 } from "../../services/pagination.js";
 
 import db from "../../models/index.js";
-import { enumSchema, idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
+import { toWasteDto } from "../../mappers/waste.js";
 import { type ModelWhere, type RequestWithUser } from "./types.js";
 
 const { Category, EcoOrganism, User, WasteDisposal } = db;
 
-const dataSchema = z
-  .object({
-    disposal_date: z.coerce.date("date de sortie requis"),
-    category_id: idSchema("categorie requis"),
-    subcategory_id: idSchema().nullish().prefault(null),
-    eco_organism_id: idSchema().nullish().prefault(null),
-    disposal_type: enumSchema(WASTE_DISPOSAL_TYPES, "type de sortie requis"),
-    weight_kg: z.coerce.number().positive("poid requis"),
-    volume_m3: z.coerce.number().nonnegative().nullish().prefault(null),
-    transport_method: z.string().nullish().prefault(null),
-    transport_company: z.string().nullish().prefault(null),
-    transport_cost: z.coerce.number().nonnegative().nullish().prefault(null),
-    notes: z.string().nullish().prefault(null),
-  })
-  .superRefine((obj, ctx) => {
-    if (obj.disposal_type === "eco_organism" && !obj.eco_organism_id)
-      ctx.addIssue({
-        code: "custom",
-        origin: "disposal_type",
-        message: "Éco-organisme requis pour ce type de sortie",
-        input: obj,
-      });
-  });
+const wasteIncludes:Includeable[] = [
+  { model: Category, as: "category" },
+  { model: Category, as: "subcategory" },
+  { model: EcoOrganism, as: "eco_organism" },
+  { model: User },
+]   ;
 
 export const listWaste = async (req: Request, res: Response) => {
-  const filterSchema = z.object({
-    category_id: idSchema().nullish(),
-    subcategory_id: idSchema().nullish(),
-    eco_organism_id: idSchema().nullish(),
-    disposal_type: enumSchema(WASTE_DISPOSAL_TYPES).nullish(),
-    date_from: z.coerce.date().optional(),
-    date_to: z.coerce.date().optional(),
-  });
-  const filter = filterSchema.parse(req.query);
+  const filter = listWasteQuerySchema.parse(req.query);
   const pagination = parsePaginationQuery(req.query);
 
   const where: ModelWhere<typeof WasteDisposal> = {};
@@ -63,63 +57,54 @@ export const listWaste = async (req: Request, res: Response) => {
 
   const waste = await WasteDisposal.findAndCountAll({
     where,
-    include: [
-      { model: Category, as: "category" },
-      { model: Category, as: "subcategory" },
-      { model: EcoOrganism, as: "eco_organism" },
-      { model: User },
-    ],
+    include: wasteIncludes,
     order: [["disposal_date", "DESC"]],
     ...(pagination.paginated
       ? { limit: pagination.limit, offset: pagination.offset }
       : {}),
   });
-  res.json({
-    disposals: waste.rows,
-    pagination: pagination.paginated
-      ? buildPaginationMeta(pagination.page, pagination.perPage, waste.count)
-      : buildUnpaginatedMeta(waste.count),
-  });
+  res.json(
+    apiPaginated(
+      waste.rows.map(toWasteDto),
+      pagination.paginated
+        ? buildPaginationMeta(pagination.page, pagination.perPage, waste.count)
+        : buildUnpaginatedMeta(waste.count),
+    ) satisfies ListWasteResponse,
+  );
 };
 
 export const detailWaste = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id);
+  const { id } = wasteIdParamsSchema.parse(req.params);
   const waste = await findByPkOrThrow(
     WasteDisposal,
     id,
     "Sortie de déchets non trouvée",
     {
-      include: [
-        { model: Category, as: "category" },
-        { model: Category, as: "subcategory" },
-        { model: EcoOrganism, as: "eco_organism" },
-        { model: User },
-      ],
+      include: wasteIncludes,
     },
   );
 
-  res.json({ disposal: waste });
+  res.json(apiData(toWasteDto(waste)) satisfies DetailWasteResponse);
 };
 
 export const createWaste = async (req: RequestWithUser, res: Response) => {
-  const data = dataSchema.parse(req.body);
+  const data = wasteBodySchema.parse(req.body);
 
   const waste = await WasteDisposal.create({
     ...data,
     created_by: req.user.id,
   });
 
-  res.status(201).json({
-    message: "Sortie de déchets créée avec succès",
-    disposal_id: waste.id,
-    waste,
-    // disposal_number: disposal_number,
-  });
+  res.status(201).json(
+    apiCreated(toWasteDto(waste), {
+      message: "Sortie de déchets créée avec succès",
+    }) satisfies CreateWasteResponse,
+  );
 };
 
 export const updateWaste = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id);
-  const data = dataSchema.parse(req.body);
+  const { id } = wasteIdParamsSchema.parse(req.params);
+  const data = wasteBodySchema.parse(req.body);
 
   const waste = await findByPkOrThrow(
     WasteDisposal,
@@ -128,11 +113,13 @@ export const updateWaste = async (req: Request, res: Response) => {
   );
   await waste.update({ ...data });
 
-  res.json({ message: "Sortie de déchets mise à jour avec succès" });
+  res.json(
+    apiMessage("Sortie de déchets mise à jour avec succès") satisfies UpdateWasteResponse,
+  );
 };
 
 export const deleteWaste = async (req: Request, res: Response) => {
-  const id = idSchema().parse(req.params.id);
+  const { id } = wasteIdParamsSchema.parse(req.params);
   const toDelete = await findByPkOrThrow(
     WasteDisposal,
     id,
@@ -140,15 +127,13 @@ export const deleteWaste = async (req: Request, res: Response) => {
   );
   await toDelete.destroy();
 
-  res.json({ message: "Sortie de déchets supprimée avec succès" });
+  res.json(
+    apiMessage("Sortie de déchets supprimée avec succès") satisfies DeleteWasteResponse,
+  );
 };
 
 export const wasteStats = async (req: Request, res: Response) => {
-  const filterSchema = z.object({
-    date_from: z.coerce.date().optional(),
-    date_to: z.coerce.date().optional(),
-  });
-  const filter = filterSchema.parse(req.query);
+  const filter = wasteDateRangeQuerySchema.parse(req.query);
 
   const where: ModelWhere<typeof WasteDisposal> = {};
   const dateRange = formatWhereDateRange(filter.date_from, filter.date_to);
@@ -185,15 +170,13 @@ export const wasteStats = async (req: Request, res: Response) => {
     where,
   });
 
-  res.json({ stats });
+  res.json(
+    apiData((stats?.toJSON() ?? null) as WasteStatsDto | null) satisfies WasteStatsResponse,
+  );
 };
 
 export const wasteStatsCategory = async (req: Request, res: Response) => {
-  const data = z.object({
-    date_from: z.coerce.date().optional(),
-    date_to: z.coerce.date().optional(),
-  });
-  const { date_from, date_to } = data.parse(req.query);
+  const { date_from, date_to } = wasteDateRangeQuerySchema.parse(req.query);
 
   const where: ModelWhere<typeof WasteDisposal> = {};
   const dateRange = formatWhereDateRange(date_from, date_to);
@@ -233,5 +216,7 @@ export const wasteStatsCategory = async (req: Request, res: Response) => {
     group: ["id", "categorie.name"],
   });
 
-  res.json({ stats });
+  res.json(
+    apiData(stats.map((row) => row.toJSON() as WasteStatsDto)) satisfies WasteStatsCategoryResponse,
+  );
 };

@@ -86,7 +86,7 @@ describe("collection schedule controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        schedules: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );
@@ -108,7 +108,7 @@ describe("collection schedule controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        task: expect.any(Object),
+        data: expect.any(Object),
         success: true,
       }),
     );
@@ -178,7 +178,7 @@ describe("collection schedule controller functions", () => {
       }),
       createRes,
     );
-    const scheduleId = createRes.json.mock.calls[0][0].presence.id;
+    const scheduleId = createRes.json.mock.calls[0][0].data.id;
 
     const updateRes = makeRes();
     await updateCollectionPoint(
@@ -221,7 +221,7 @@ describe("collection schedule controller functions", () => {
       }),
       createRes,
     );
-    const scheduleId = createRes.json.mock.calls[0][0].presence.id;
+    const scheduleId = createRes.json.mock.calls[0][0].data.id;
 
     const delRes = makeRes();
     await deleteCollectionPoint(

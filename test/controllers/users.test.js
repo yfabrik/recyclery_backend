@@ -38,7 +38,7 @@ describe("User controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        user: expect.objectContaining({
+        data: expect.objectContaining({
           username: "john_doe",
           email: "john.doe@test.com",
           role: "employee",
@@ -62,7 +62,7 @@ describe("User controller functions", () => {
     await findUserById(req, res);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        user: expect.objectContaining({
+        data: expect.objectContaining({
           username: "john_doe",
           email: "john.doe@test.com",
           role: "employee",
@@ -110,7 +110,7 @@ describe("User controller functions", () => {
     await listUsers(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ users: expect.any(Array) }),
+      expect.objectContaining({ success: true, data: expect.any(Array) }),
     );
   });
 
@@ -127,10 +127,10 @@ describe("User controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        users: expect.any(Array),
+        data: expect.any(Array),
       }),
     );
-    const users = res.json.mock.calls[0][0].users;
+    const users = res.json.mock.calls[0][0].data;
     expect(users.length).toBeGreaterThanOrEqual(0);
     if (users.length > 0 && users[0].managedStores !== undefined) {
       expect(users[0].managedStores).toEqual(expect.any(Array));
@@ -190,7 +190,7 @@ describe("User controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        user: expect.objectContaining({
+        data: expect.objectContaining({
           username: "manager_user",
           email: "manager@test.com",
           role: "manager",
@@ -213,7 +213,7 @@ describe("User controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        users: expect.arrayContaining([
+        data: expect.arrayContaining([
           expect.objectContaining({
             role: "manager",
           }),

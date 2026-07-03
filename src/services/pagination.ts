@@ -1,13 +1,8 @@
 import z from "zod";
 
-export interface PaginationMeta {
-  page: number;
-  perPage: number;
-  total: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}
+import type { PaginationMeta } from "@recyclerie/api/types/pagination";
+
+export type { PaginationMeta };
 
 export type PaginationMode =
   | { paginated: false }

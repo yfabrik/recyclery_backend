@@ -1,12 +1,14 @@
-import z from "zod";
-import {
-  EMPLOYEE_DAYS_OF_WEEK,
-  TIME_SLOTS,
-} from "../../constants/dbEnums.js";
-import { enumSchema, idSchema } from "../../services/zod.js";
+import { employeeWorkdaysBulkSchema } from "@recyclerie/api/schemas/employeeWorkdays";
+import type {
+  CreateEmployeeWorkdaysResponse,
+  ListEmployeeWorkdaysResponse,
+} from "@recyclerie/api/responses/employeeWorkdays";
+import { apiData, apiMessage } from "@recyclerie/api/types/response";
+import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 import db from "../../models/index.js";
+import { toEmployeeWorkdayDto } from "../../mappers/employeeWorkdays.js";
 
 const { EmployeeWorkdays, Employee } = db;
 
@@ -17,30 +19,15 @@ export const listEmployeeWorkdays = async (req: Request, res: Response) => {
     where: { employee_id: employeeId },
   });
 
-  res.json({
-    success: true,
-    workdays,
-  });
+  res.json(
+    apiData(workdays.map(toEmployeeWorkdayDto)) satisfies ListEmployeeWorkdaysResponse,
+  );
 };
 
 export const createEmployeeWorkdays = async (req: Request, res: Response) => {
-  const dataSchema = z.object({
-    day_of_week: enumSchema(EMPLOYEE_DAYS_OF_WEEK, "jour requis"),
-    time_slot: enumSchema(TIME_SLOTS, "créneau requis"),
-    is_working: z.boolean(),
-    start_time: z.iso.time(),
-    end_time: z.iso.time(),
-    notes: z.string().nullish(),
-    week: z.string().regex(/^week[1-9]$/, "week format incorrect"),
-  });
-  const schema = z.object({
-    workdays: z.array(dataSchema, "workdays doit être un tableau"),
-  });
-
-  const { workdays } = schema.parse(req.body);
+  const { workdays } = employeeWorkdaysBulkSchema.parse(req.body);
   const employeeId = idSchema().parse(req.params.employeeId);
 
-  // Vérifier que l'employé existe
   const employee = await findByPkOrThrow(
     Employee,
     employeeId,
@@ -54,7 +41,6 @@ export const createEmployeeWorkdays = async (req: Request, res: Response) => {
     },
   );
 
-  // Supprimer les anciens jours de travail de cet employé
   await db.sequelize.transaction(async (t) => {
     await EmployeeWorkdays.destroy({
       where: { employee_id: employee.id },
@@ -67,9 +53,8 @@ export const createEmployeeWorkdays = async (req: Request, res: Response) => {
     }));
     await EmployeeWorkdays.bulkCreate(workdayToCreate, { transaction: t });
   });
-  res.json({
-    success: true,
 
-    message: "Jours de travail mis à jour avec succès",
-  });
+  res.json(
+    apiMessage("Jours de travail mis à jour avec succès") satisfies CreateEmployeeWorkdaysResponse,
+  );
 };

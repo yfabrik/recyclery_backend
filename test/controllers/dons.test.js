@@ -50,7 +50,9 @@ describe("dons controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        donation: expect.objectContaining({
+        success: true,
+        message: expect.any(String),
+        data: expect.objectContaining({
           id: expect.any(Number),
           donor_name: "MarieMartin",
           estimated_value: expect.any(Number),
@@ -75,7 +77,8 @@ describe("dons controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        donations: expect.any(Array),
+        success: true,
+        data: expect.any(Array),
       }),
     );
   });
