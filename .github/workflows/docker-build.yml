@@ -1,0 +1,42 @@
+name: Docker Build
+
+on:
+  workflow_call:
+    outputs:
+      image-tags:
+        description: GHCR tags for the built image
+        value: ${{ jobs.build.outputs.image-tags }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image-tags: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: recyclerie:ci
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Save Docker image
+        run: docker save recyclerie:ci | gzip > docker-image.tar.gz
+
+      - name: Upload Docker image
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: docker-image.tar.gz
+          retention-days: 1

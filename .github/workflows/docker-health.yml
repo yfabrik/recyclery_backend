@@ -1,0 +1,86 @@
+name: Docker Health Check
+
+on:
+  workflow_call:
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: recyclerie_root
+          MARIADB_DATABASE: recyclerie
+          MARIADB_USER: recyclerie
+          MARIADB_PASSWORD: recyclerie_dev
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_URL: mariadb://recyclerie:recyclerie_dev@127.0.0.1:3306/recyclerie
+      JWT_SECRET: ci-test-jwt-secret
+      NODE_ENV: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Apply database migrations
+        run: npm ci && npm run db:migrate
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: gunzip -c docker-image.tar.gz | docker load
+
+      - name: Container health check
+        run: |
+          set -euo pipefail
+
+          docker run -d --name recyclerie-ci \
+            --add-host=host.docker.internal:host-gateway \
+            -e NODE_ENV=production \
+            -e JWT_SECRET="${JWT_SECRET}" \
+            -e DB_URL=mariadb://recyclerie:recyclerie_dev@host.docker.internal:3306/recyclerie \
+            -p 5000:5000 \
+            recyclerie:ci
+
+          cleanup() {
+            docker logs recyclerie-ci || true
+            docker rm -f recyclerie-ci || true
+          }
+          trap cleanup EXIT
+
+          echo "Waiting for the container to boot and pass database bootstrap..."
+          for attempt in $(seq 1 30); do
+            if ! docker inspect -f '{{.State.Running}}' recyclerie-ci | grep -q true; then
+              echo "Container exited before becoming healthy (attempt ${attempt})"
+              exit 1
+            fi
+
+            if curl -fsS http://127.0.0.1:5000/health >/dev/null; then
+              echo "Health check passed on attempt ${attempt}"
+              exit 0
+            fi
+
+            sleep 2
+          done
+
+          echo "Timed out waiting for the container to respond on port 5000"
+          exit 1
