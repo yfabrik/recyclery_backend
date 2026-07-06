@@ -9,6 +9,7 @@ import {
   updateArrival,
 } from "../../src/v1/controllers/arrivals";
 import { makeReq, makeRes, expectHttpError } from "./helpers.js";
+import { IOValues } from "../../src/constants/categoryIO.js";
 const { Recyclery, Category, User, CollectionPoint, Arrival } = db;
 
 beforeAll(async () => {
@@ -21,8 +22,8 @@ beforeAll(async () => {
     city: "Orgelet",
     postal_code: "39270",
   });
-  await Category.create({ name: "Électronique" });
-  await Category.create({ name: "Mobilier", parent_id: 1 });
+  await Category.create({ name: "Électronique", IO: IOValues.IN });
+  await Category.create({ name: "Mobilier", parent_id: 1, IO: IOValues.IN });
   await User.create({
     email: "employee@test.com",
     username: "testemployee",
