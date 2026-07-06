@@ -24,14 +24,9 @@ import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
 import type { ModelWhere, Models } from "../../models/db-types.js";
+import { IOValues } from "../../constants/categoryIO.js";
 
 const { Category, Recyclery, Promotion } = db;
-
-const IOValues = {
-  IN: 1 << 1,
-  OUT: 1 << 0,
-  SELL: 1 << 2,
-};
 
 const findExistingCategory = async (
   name: string,

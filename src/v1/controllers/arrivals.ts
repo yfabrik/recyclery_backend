@@ -31,6 +31,7 @@ import {
   parsePaginationQuery,
 } from "../../services/pagination.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
+import { IOValues } from "../../constants/categoryIO.js";
 import {
   toArrivalCategoryStatsDto,
   toArrivalDto,
@@ -102,21 +103,30 @@ const normalizeArrivalPayload = async (data: ArrivalData) => {
     Category,
     data.category_id,
     "Catégorie non trouvée",
+    {
+      include: [
+        {
+          model: Category,
+          as: "subcategories",
+          required: false,
+          where: { IO: literal(`subcategories.IO & ${IOValues.IN} != 0`) },
+        },
+      ],
+    },
   );
-  const subCount = await Category.count({
-    where: { parent_id: category.id },
-  });
+  const subCount = category.subcategories?.length ?? 0;
   if (subCount > 0 && !data.subcategory_id) {
     throw new createHttpError.BadRequest(
       "sous-catégorie requise pour cette catégorie",
     );
   }
   if (data.subcategory_id) {
-    await findByPkOrThrow(
-      Category,
-      data.subcategory_id,
-      "Sous-catégorie non trouvée",
-    );
+    const subCategory = category.subcategories?.find((sub) => sub.id === data.subcategory_id);
+    if (!subCategory) {
+      throw new createHttpError.BadRequest(
+        "Sous-catégorie non trouvée",
+      );
+    }
   }
 
   if (data.source_type === "point") {
