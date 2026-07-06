@@ -41,7 +41,7 @@ router.get("/stats/overview", asyncHandler(planningStats));
 router.get(
   "/:scheduleId/employees",
   asyncHandler(async (req, res) => {
-    logger.error("called useless fn in planning route FIXME", {
+    logger.fatal("called useless fn in planning route FIXME", {
       params: req.params,
       referer: req?.headers?.referer,
     });
