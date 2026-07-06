@@ -202,8 +202,8 @@ export const deleteLabeledItem = async (req: Request, res: Response) => {
 export const tagItemAsSell = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const item = await findByPkOrThrow(LabeledItem, id, "Article non trouvé");
-  if (item.status == "available")
-    throw new createHttpError[404]("Article non trouvé");
+  if (item.status !== "available")
+    throw new createHttpError[400]("Article non disponible");
   await item.update({
     status: "sold",
   });
@@ -248,8 +248,8 @@ export const itemsStats = async (req: Request, res: Response) => {
     ],
     where,
   });
-
+//FIXME failing here
   res.json(
-    apiData(toLabeledItemStatsDto(stats[0] as LabeledItemStatsRow | undefined)) satisfies LabeledItemStatsResponse,
+    apiData(toLabeledItemStatsDto(stats[0]?.get({plain:true}) as LabeledItemStatsRow | undefined)) satisfies LabeledItemStatsResponse,
   );
 };
