@@ -1,0 +1,42 @@
+name: Docker Push
+
+on:
+  workflow_call:
+    inputs:
+      image-tags:
+        description: GHCR tags produced during the build job
+        required: true
+        type: string
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: gunzip -c docker-image.tar.gz | docker load
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push Docker image
+        run: |
+          set -euo pipefail
+          mapfile -t tags <<< "${{ inputs.image-tags }}"
+          for tag in "${tags[@]}"; do
+            [ -z "${tag}" ] && continue
+            docker tag recyclerie:ci "${tag}"
+            docker push "${tag}"
+          done

@@ -3,91 +3,74 @@ import createHttpError from "http-errors";
 import { findUserByEmail } from "../../services/users.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import { col, fn, Op, type Includeable } from "sequelize";
-import * as z from "zod";
-import { USER_ROLES } from "../../constants/dbEnums.js";
-import { enumSchema, idSchema, phoneSchema } from "../../services/zod.js";
+import {
+  userAdminUpdatePasswordSchema,
+  userCreateSchema,
+  userListFilterSchema,
+  userUpdateSchema,
+} from "@recyclerie/api/schemas/users";
+import type {
+  CreateUserResponse,
+  DeleteUserResponse,
+  DetailUserResponse,
+  ListUsersResponse,
+  UpdateUserPasswordResponse,
+  UpdateUserResponse,
+  UserStatsByRoleDto,
+  UserStatsResponse,
+} from "@recyclerie/api/responses/users";
+import {
+  apiData,
+  apiMessage,
+} from "@recyclerie/api/types/response";
+import { idSchema } from "../../services/zod.js";
+import { toUserDto, toUserStatsDto } from "../../mappers/users.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
 import type { ModelWhere } from "./types.js";
 
-const { EmployeeWorkdays, Recyclery, User } = db;
+const { Recyclery, User } = db;
 
 export const listUsers = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["EmployeeWorkdays", "managedStores"];
-  const filterSchema = z.object({
-    store_id: z.coerce.number().optional(),
-    role: z
-      .string()
-      .optional()
-      .transform((val) => (val ? val.split(",") : []))
-      .pipe(z.array(enumSchema(USER_ROLES))),
-    active: z.coerce.boolean().optional(),
-    include: z
-      .string()
-      .optional()
-      .transform((val) => (val ? val.split(",") : []))
-      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
-  });
-  const filter = filterSchema.parse(req.query);
+  const filter = userListFilterSchema.parse(req.query);
 
   const where: ModelWhere<typeof User> = {};
-  // if (filter.store_id) where.recyclery_id = filter.store_id;
   if (filter.role.length > 0) where.role = { [Op.in]: filter.role };
   if (filter.active) where.isActive = filter.active;
 
   const include: Includeable[] = [];
-  if (filter.include.includes("EmployeeWorkdays"))
-    include.push({
-      model: EmployeeWorkdays,
-    });
   if (filter.include.includes("managedStores"))
     include.push({
       model: Recyclery,
       as: "managedStores",
     });
-  // if (filter.include.includes("stores"))
-  //   include.push({
-  //     model: Recyclery,
-  //     as: "stores",
-  //   });
 
   const users = await User.findAll({
     where,
     include,
   });
 
-  res.json({ users });
+  res.json(
+    apiData(users.map(toUserDto)) satisfies ListUsersResponse,
+  );
 };
 
 export const findUserById = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const user = await findByPkOrThrow(User, id, "Utilisateur non trouvé", {
     include: [
-      // { model: Recyclery, as: "stores", required: false },
       { model: Recyclery, as: "managedStores", required: false },
     ],
   });
 
-  res.json({
-    success: true,
-    user,
-  });
+  res.json(
+    apiData(toUserDto(user)) satisfies DetailUserResponse,
+  );
 };
 
 export const createUser = async (req: Request, res: Response) => {
-  const dataSchema = z.object({
-    username: z.string("Nom d'utilisateur obligatoire").trim().nonempty(),
-    email: z.email(" email obligatoire"),
-    password: z.string(" mot de passe  obligatoire"),
-    role: enumSchema(USER_ROLES).optional().default("employee"),
-    managedStores: z.array(idSchema()).nullish(),
-    phone: phoneSchema().nullish().prefault(null),
-    // contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
-    isActive: z.coerce.boolean().optional().prefault(true),
-  });
-
-  const data = dataSchema.parse(req.body);
+  const data = userCreateSchema.parse(req.body);
 
   const existingUser = await findUserByEmail(data.email);
   if (existingUser)
@@ -105,26 +88,16 @@ export const createUser = async (req: Request, res: Response) => {
     return created;
   });
 
-  res.json({
-    success: true,
-    message: "Utilisateur créé avec succès",
-    user,
-  });
+  res.json(
+    apiData(toUserDto(user), {
+      message: "Utilisateur créé avec succès",
+    }) satisfies CreateUserResponse,
+  );
 };
 
 export const updateUser = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const dataSchema = z.object({
-    username: z.string("Nom d'utilisateur obligatoire").trim().nonempty(),
-    email: z.email(" email obligatoire"),
-    role: enumSchema(USER_ROLES).optional().default("employee"),
-    managedStores: z.array(idSchema()).nullish(),
-    phone: phoneSchema().nullish().prefault(null),
-    // contract_hours: z.coerce.number().nullish(), //TODO le temps ça devrait pas dependre des heure de travail set ?
-    isActive: z.coerce.boolean().optional().default(true),
-  });
-
-  const data = dataSchema.parse(req.body);
+  const data = userUpdateSchema.parse(req.body);
 
   const user = await findByPkOrThrow(User, id, "Utilisateur non trouvé");
   const { managedStores, ...userData } = data;
@@ -135,21 +108,20 @@ export const updateUser = async (req: Request, res: Response) => {
     }
   });
 
-  res.json({
-    success: true,
-    user,
-    message: "Utilisateur mis à jour",
-  });
+  res.json(
+    apiData(toUserDto(user), {
+      message: "Utilisateur mis à jour",
+    }) satisfies UpdateUserResponse,
+  );
 };
 
 export const deleteUser = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const user = await findByPkOrThrow(User, id, "utilisateur non trouvé");
   await user.destroy();
-  res.json({
-    success: true,
-    message: "user removed",
-  });
+  res.json(
+    apiMessage("user removed") satisfies DeleteUserResponse,
+  );
 };
 
 export const userStats = async (_req: Request, res: Response) => {
@@ -176,45 +148,31 @@ export const userStats = async (_req: Request, res: Response) => {
     where: { role: { [Op.in]: ["employee", "manager", "admin"] } },
   });
 
-  res.json({
-    success: true,
-    stats: {
-      totalUsers: totalUsers,
-      usersByRole: usersByRole,
-      recentLogins: recentLogins,
-      activeEmployees: activeEmployees,
-    },
-  });
+  res.json(
+    apiData(
+      toUserStatsDto({
+        totalUsers,
+        usersByRole: usersByRole as unknown as UserStatsByRoleDto[],
+        recentLogins,
+        activeEmployees,
+      }),
+    ) satisfies UserStatsResponse,
+  );
 };
 
 export const updatePassword = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const dataSchema = z.object({
-    // currentPassword: z.string("mot de passe actuel requis"),
-    newPassword: z
-      .string("nouveau mot de passe requis")
-      .min(6, "mot de passe tros court"),
-  });
-
-  const data = dataSchema.parse(req.body);
+  const data = userAdminUpdatePasswordSchema.parse(req.body);
   const user = await findByPkOrThrow(
     User.scope("withPassword"),
     id,
     "utilisateur non trouvé",
   );
-  // const isValidPassword = await bcrypt.compare(
-  //   data.currentPassword,
-  //   user.password_hash,
-  // );
-  // if (!isValidPassword) {
-  //   throw new createHttpError.Unauthorized("Email ou mot de passe incorrect");
-  // }
   await user.update({
     password: data.newPassword,
   });
 
-  res.json({
-    success: true,
-    message: "password updated",
-  });
+  res.json(
+    apiMessage("password updated") satisfies UpdateUserPasswordResponse,
+  );
 };

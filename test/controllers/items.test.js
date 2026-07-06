@@ -59,17 +59,48 @@ describe("item controller functions", () => {
 
     await createLabeledItem(req, res);
 
-    expect(res.json).toHaveBeenCalledWith({
-      success: true,
-      message: "Article créé avec succès",
-      item: expect.objectContaining({
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        message: "Article créé avec succès",
+        data: expect.objectContaining({
         id: expect.any(Number),
         description:
           "Ordinateur portable Dell Latitude E5420, Intel Core i5, 8GB RAM, 500GB HDD, écran 14 pouces",
         category_id: 1,
         weight: 2.5,
+        }),
       }),
-    });
+    );
+  });
+
+  it("should include category subcategories when requested", async () => {
+    const body = {
+      description: "Item with expanded category",
+      category_id: 1,
+      subcategory_id: 2,
+      weight: 1,
+      price: 10,
+      recyclery_id: 1,
+    };
+    const req = {
+      query: { include: "category.subcategories" },
+      user: { id: 1, role: "admin" },
+      body,
+    };
+    const res = {
+      json: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+    };
+
+    await createLabeledItem(req, res);
+
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.data.category.subcategories).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 2, name: "Ordinateurs" }),
+      ]),
+    );
   });
 
   it("should list items", async () => {
@@ -86,7 +117,7 @@ describe("item controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        items: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );
@@ -109,7 +140,7 @@ describe("item controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        items: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );
@@ -132,7 +163,7 @@ describe("item controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        items: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );

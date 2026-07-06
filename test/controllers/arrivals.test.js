@@ -9,6 +9,7 @@ import {
   updateArrival,
 } from "../../src/v1/controllers/arrivals";
 import { makeReq, makeRes, expectHttpError } from "./helpers.js";
+import { IOValues } from "../../src/constants/categoryIO.js";
 const { Recyclery, Category, User, CollectionPoint, Arrival } = db;
 
 beforeAll(async () => {
@@ -21,8 +22,8 @@ beforeAll(async () => {
     city: "Orgelet",
     postal_code: "39270",
   });
-  await Category.create({ name: "Électronique" });
-  await Category.create({ name: "Mobilier", parent_id: 1 });
+  await Category.create({ name: "Électronique", IO: IOValues.IN });
+  await Category.create({ name: "Mobilier", parent_id: 1, IO: IOValues.IN });
   await User.create({
     email: "employee@test.com",
     username: "testemployee",
@@ -70,7 +71,7 @@ describe("arrival controller functions", () => {
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        arrival: expect.objectContaining({
+        data: expect.objectContaining({
           id: expect.any(Number),
           category_id: 1,
           subcategory_id: 2,
@@ -112,7 +113,7 @@ describe("arrival controller functions", () => {
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        arrival: expect.any(Object),
+        data: expect.any(Object),
         success: true,
       }),
     );
@@ -132,7 +133,7 @@ describe("arrival controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        arrivals: expect.arrayContaining([
+        data: expect.arrayContaining([
           expect.objectContaining({
             id: expect.any(Number),
             weight: expect.any(Number),
@@ -158,14 +159,14 @@ describe("arrival controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        arrivals: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );
     const response = res.json.mock.calls[0][0];
-    if (response.arrivals.length > 0) {
+    if (response.data.length > 0) {
       expect(
-        response.arrivals.every((arr) => arr.source_type === "point"),
+        response.data.every((arr) => arr.source_type === "point"),
       ).toBe(true);
     }
   });
@@ -185,7 +186,7 @@ describe("arrival controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        arrival: expect.objectContaining({
+        data: expect.objectContaining({
           id: 1,
           weight: expect.any(Number),
         }),
@@ -280,7 +281,7 @@ describe("arrival controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        arrivals: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );
@@ -300,7 +301,7 @@ describe("arrival controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        arrivals: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );
@@ -384,7 +385,7 @@ describe("arrival controller functions", () => {
       res,
     );
     const arrival = await Arrival.findByPk(
-      res.json.mock.calls[0][0].arrival.id,
+      res.json.mock.calls[0][0].data.id,
     );
     expect(arrival.collection_point_id).toBeNull();
   });

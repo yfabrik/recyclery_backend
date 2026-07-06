@@ -1,12 +1,35 @@
 import { col, fn, literal, Op, where } from "sequelize";
-import * as z from "zod";
+import {
+  recycleryDataSchema,
+  recycleryFilterSchema,
+} from "@recyclerie/api/schemas/recycleries";
+import type {
+  CreateRecycleryResponse,
+  DeleteRecycleryResponse,
+  DetailRecycleryResponse,
+  ListRecycleriesResponse,
+  ListRecycleryCashRegistersResponse,
+  RecycleryStatsResponse,
+  UpdateRecycleryResponse,
+} from "@recyclerie/api/responses/recycleries";
+import {
+  apiCreated,
+  apiData,
+  apiMessage,
+} from "@recyclerie/api/types/response";
 import { listCaisses } from "../../services/caisse.js";
-import { idSchema, phoneSchema, postalSchema } from "../../services/zod.js";
+import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
 import type { ModelWhere } from "../../models/db-types.js";
+import { toCashRegisterDto } from "../../mappers/cashRegister.js";
+import {
+  toRecycleryDto,
+  toRecycleryStatsDto,
+  type RecycleryItemStatsRow,
+} from "../../mappers/recycleries.js";
 
 const {
   Recyclery,
@@ -20,33 +43,8 @@ const {
   CashSession,
 } = db;
 
-const dataSchema = z.object({
-  name: z
-    .string("Le nom de la recyclerie est requis")
-    .trim()
-    .nonempty("nom requis"),
-  address: z.string().nullish().prefault(null),
-  phone: phoneSchema().nullish().prefault(null),
-  email: z.email().nullish().prefault(null),
-  manager_id: idSchema().nullish().prefault(null),
-  city: z.string().nullish().prefault(null),
-  postal_code: postalSchema().nullish().prefault(null),
-  is_active: z.coerce.boolean().default(true),
-});
-
 export const listRecycleries = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["employees", "horaires", "caisses"] as const;
-  const filterSchema = z.object({
-    include: z
-      .string()
-      .optional()
-      .transform((val) => (val ? val.split(",") : []))
-      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
-    active: z.coerce.boolean().optional(),
-  });
-
-  const filter = filterSchema.parse(req.query);
-  const where: ModelWhere<typeof Recyclery> = {};
+  const filter = recycleryFilterSchema.parse(req.query);  const where: ModelWhere<typeof Recyclery> = {};
   if (filter.active) where.is_active = filter.active;
   const include = [];
   if (filter.include.includes("employees"))
@@ -63,15 +61,25 @@ export const listRecycleries = async (req: Request, res: Response) => {
       required: false,
       where: { category: "vente" },
     });
-  include.push(
-    {
-      model: CashRegister,
-      required: false,
-      as: "caisses",
-      // separate:true
-    },
-    { model: User, as: "manager" },
-  );
+  if (filter.include.includes("caisses")){
+
+    include.push(
+      {
+        model: CashRegister,
+        required: false,
+        as: "caisses",
+        // separate:true
+        include: [
+          {
+            model: CashSession,
+            as: "sessions",
+            required: false,
+          },
+        ],
+      },
+      { model: User, as: "manager" },
+    );
+  }
 
   const recycleries = await Recyclery.findAll({
     attributes: {
@@ -79,8 +87,8 @@ export const listRecycleries = async (req: Request, res: Response) => {
         [
           literal(`(
         SELECT COUNT(*)
-        FROM "CashRegisters" c
-        WHERE c."recyclery_id" = "Recyclery"."id"
+        FROM \`CashRegisters\` c
+        WHERE c.\`recyclery_id\` = \`Recyclery\`.\`id\`
       )`),
           "cash_registers_count",
         ],
@@ -92,7 +100,9 @@ export const listRecycleries = async (req: Request, res: Response) => {
     // group: ["Recyclery.id", "manager.id"],//group by empeche de lister les caisses , j'ai juste la premiere caisses
     order: [["name", "ASC"]],
   });
-  res.json({ success: true, stores: recycleries, recycleries });
+  res.json(
+    apiData(recycleries.map(toRecycleryDto)) satisfies ListRecycleriesResponse,
+  );
 };
 
 export const detailRecyclerie = async (req: Request, res: Response) => {
@@ -104,26 +114,30 @@ export const detailRecyclerie = async (req: Request, res: Response) => {
     ],
   });
 
-  res.json({ success: true, store: recyclerie });
+  res.json(
+    apiData(toRecycleryDto(recyclerie)) satisfies DetailRecycleryResponse,
+  );
 };
 
 export const createRecyclerie = async (req: Request, res: Response) => {
-  const data = dataSchema.parse(req.body);
+  const data = recycleryDataSchema.parse(req.body);
   const recyclery = await Recyclery.create({
     ...data,
   });
 
-  res.status(201).json({
-    message: "Recyclerie créée avec succès",
-    recyclery,
-    store: recyclery,
-  });
+  res
+    .status(201)
+    .json(
+      apiCreated(toRecycleryDto(recyclery), {
+        message: "Recyclerie créée avec succès",
+      }) satisfies CreateRecycleryResponse,
+    );
 };
 
 export const updateRecyclerie = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const data = dataSchema.parse(req.body);
+  const data = recycleryDataSchema.parse(req.body);
 
   const recyclerie = await findByPkOrThrow(
     Recyclery,
@@ -145,12 +159,11 @@ export const updateRecyclerie = async (req: Request, res: Response) => {
     );
   });
 
-  res.json({
-    success: true,
-    message: "Recyclerie mise à jour avec succès",
-    recyclery: recyclerie,
-    store: recyclerie,
-  });
+  res.json(
+    apiData(toRecycleryDto(recyclerie), {
+      message: "Recyclerie mise à jour avec succès",
+    }) satisfies UpdateRecycleryResponse,
+  );
 };
 
 export const deleteRecyclerie = async (req: Request, res: Response) => {
@@ -162,15 +175,19 @@ export const deleteRecyclerie = async (req: Request, res: Response) => {
     "Recyclerie non trouvée",
   );
   await recyclerie.destroy();
-  res.json({ message: "Recyclerie supprimée avec succès" });
+  res.json(
+    apiMessage("Recyclerie supprimée avec succès") satisfies DeleteRecycleryResponse,
+  );
 };
 
 export const listCaissesRecyclerie = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const caisses = listCaisses(id);
+  const caisses = await listCaisses(id);
 
-  res.json({ success: true, cash_registers: caisses });
+  res.json(
+    apiData(caisses.map(toCashRegisterDto)) satisfies ListRecycleryCashRegistersResponse,
+  );
 };
 
 export const recycleryStats = async (req: Request, res: Response) => {
@@ -229,10 +246,9 @@ export const recycleryStats = async (req: Request, res: Response) => {
       }
     : { monthly_sales: 0, monthly_revenue: 0 };
 
-  res.json({
-    stats: {
-      ...items,
-      ...sales,
-    },
-  });
+  res.json(
+    apiData(
+      toRecycleryStatsDto({ items: items as RecycleryItemStatsRow | null, sales }),
+    ) satisfies RecycleryStatsResponse,
+  );
 };

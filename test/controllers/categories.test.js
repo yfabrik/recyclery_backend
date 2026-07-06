@@ -39,7 +39,7 @@ describe("categories controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        category: expect.objectContaining({
+        data: expect.objectContaining({
           id: expect.any(Number),
           name: "Électronique",
         }),
@@ -87,7 +87,7 @@ describe("categories controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        category: expect.objectContaining({
+        data: expect.objectContaining({
           id: expect.any(Number),
           name: "Ordinateurs",
           parent_id: 1,
@@ -114,27 +114,27 @@ describe("categories controller functions", () => {
       makeReq({ body: { name: "Meubles" } }),
       parentRes,
     );
-    const parentId = parentRes.json.mock.calls[0][0].category.id;
+    const parentId = parentRes.json.mock.calls[0][0].data.id;
 
     const res = makeRes();
     await createCategorie(
       makeReq({ body: { name: "Ordinateurs", parent_id: parentId } }),
       res,
     );
-    expect(res.json.mock.calls[0][0].category.name).toBe("Ordinateurs");
+    expect(res.json.mock.calls[0][0].data.name).toBe("Ordinateurs");
   });
 
   it("clears subcategory IO when parent in is disabled", async () => {
     const parentRes = makeRes();
     await createCategorie(makeReq({ body: { name: "IOParent" } }), parentRes);
-    const parentId = parentRes.json.mock.calls[0][0].category.id;
+    const parentId = parentRes.json.mock.calls[0][0].data.id;
 
     const subRes = makeRes();
     await createCategorie(
       makeReq({ body: { name: "IOSub", parent_id: parentId } }),
       subRes,
     );
-    const subId = subRes.json.mock.calls[0][0].category.id;
+    const subId = subRes.json.mock.calls[0][0].data.id;
 
     const parent = await Category.findByPk(parentId);
     const sub = await Category.findByPk(subId);
@@ -156,14 +156,14 @@ describe("categories controller functions", () => {
   it("enables parent in when subcategory in is enabled", async () => {
     const parentRes = makeRes();
     await createCategorie(makeReq({ body: { name: "IOParent2" } }), parentRes);
-    const parentId = parentRes.json.mock.calls[0][0].category.id;
+    const parentId = parentRes.json.mock.calls[0][0].data.id;
 
     const subRes = makeRes();
     await createCategorie(
       makeReq({ body: { name: "IOSub2", parent_id: parentId } }),
       subRes,
     );
-    const subId = subRes.json.mock.calls[0][0].category.id;
+    const subId = subRes.json.mock.calls[0][0].data.id;
 
     const parent = await Category.findByPk(parentId);
     const sub = await Category.findByPk(subId);
@@ -185,7 +185,7 @@ describe("categories controller functions", () => {
   it("deletes subcategories when parent is deleted", async () => {
     const parentRes = makeRes();
     await createCategorie(makeReq({ body: { name: "ParentDel" } }), parentRes);
-    const parentId = parentRes.json.mock.calls[0][0].category.id;
+    const parentId = parentRes.json.mock.calls[0][0].data.id;
 
     const subRes = makeRes();
     await createCategorie(
@@ -217,7 +217,7 @@ describe("categories controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        categories: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );
@@ -239,7 +239,7 @@ describe("categories controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        categories: expect.arrayContaining([
+        data: expect.arrayContaining([
           expect.objectContaining({
             parent_id: null,
             subcategories: expect.any(Array),
@@ -271,7 +271,7 @@ describe("categories controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        categories: expect.arrayContaining([
+        data: expect.arrayContaining([
           expect.objectContaining({ parent_id: expect.anything() }),
         ]),
         success: true,
@@ -298,7 +298,7 @@ describe("categories controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        category: expect.objectContaining({
+        data: expect.objectContaining({
           name: "Électronique et Informatique",
         }),
         success: true,
@@ -359,7 +359,7 @@ describe("categories controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        categories: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );

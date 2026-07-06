@@ -42,8 +42,7 @@ describe("recyclery controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        recyclery: expect.any(Object),
-        // success: true,
+        data: expect.any(Object),
         message: "Recyclerie créée avec succès",
       }),
     );
@@ -62,7 +61,7 @@ describe("recyclery controller functions", () => {
     await listRecycleries(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ stores: expect.any(Array) }),
+      expect.objectContaining({ data: expect.any(Array) }),
     );
   });
 
@@ -80,7 +79,7 @@ describe("recyclery controller functions", () => {
     await detailRecyclerie(req, res);
 
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ store: expect.any(Object) }),
+      expect.objectContaining({ data: expect.any(Object) }),
     );
   });
 
@@ -100,7 +99,7 @@ describe("recyclery controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        store: expect.objectContaining({
+        data: expect.objectContaining({
           name: "updated",
         }),
         success: true,
@@ -136,7 +135,7 @@ describe("recyclery controller functions", () => {
       }),
       res,
     );
-    expect(res.json.mock.calls[0][0].recyclery.name).toBe("Trim Recyclerie");
+    expect(res.json.mock.calls[0][0].data.name).toBe("Trim Recyclerie");
   });
 
   it("should delete recyclery", async () => {

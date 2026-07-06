@@ -62,7 +62,7 @@ describe("caisseSessions controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        session: expect.any(Object),
+        data: expect.any(Object),
         success: true,
       }),
     );
@@ -89,7 +89,7 @@ describe("caisseSessions controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        session: expect.any(Object),
+        data: expect.any(Object),
         success: true,
       }),
     );
@@ -137,7 +137,7 @@ describe("caisseSessions controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        session: expect.any(Object),
+        data: expect.any(Object),
         success: true,
       }),
     );
@@ -164,7 +164,7 @@ describe("caisseSessions controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        sessions: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );
@@ -253,7 +253,7 @@ describe("caisseSessions controller functions", () => {
     };
     const openRes = makeRes();
     await openCashSession(makeReq({ body }), openRes);
-    const sessionId = openRes.json.mock.calls[0][0].session.id;
+    const sessionId = openRes.json.mock.calls[0][0].data.id;
 
     const req = {
       params: { id: sessionId },

@@ -12,6 +12,22 @@ import logger from "./services/logger.js";
 
 export const app = express();
 app.set("trust proxy", 1 /* number of proxies between user and server */);
+
+let appReady = false;
+
+app.get("/health", async (_req, res) => {
+  if (!appReady) {
+    return res.status(503).json({ status: "starting" });
+  }
+
+  try {
+    await db.sequelize.authenticate();
+    return res.json({ status: "ok" });
+  } catch {
+    return res.status(503).json({ status: "unavailable" });
+  }
+});
+
 app.use(helmet());
 app.use(express.json());
 const limiter = rateLimit({
@@ -86,7 +102,7 @@ app.listen(5000, () => {
           password: process.env.DEFAULT_PASS,
           role: "admin",
         });
-        return;
+  appReady = true;
       }
     })
     .catch((err) => logger.error("sync error", err));

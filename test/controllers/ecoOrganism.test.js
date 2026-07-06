@@ -65,8 +65,9 @@ describe("collection schedule controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        eco_organism_id: expect.any(Number),
+        data: expect.objectContaining({ id: expect.any(Number) }),
         message: expect.any(String),
+        success: true,
       }),
     );
   });
@@ -86,7 +87,7 @@ describe("collection schedule controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        eco_organisms: expect.any(Array),
+        data: expect.any(Array),
       }),
     );
   });
@@ -106,7 +107,7 @@ describe("collection schedule controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        eco_organisms: expect.any(Array),
+        data: expect.any(Array),
       }),
     );
   });
@@ -127,7 +128,7 @@ describe("collection schedule controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        eco_organism: expect.any(Object),
+        data: expect.any(Object),
       }),
     );
   });
@@ -150,7 +151,7 @@ describe("collection schedule controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        eco_organism: expect.objectContaining({ name: "updated" }),
+        data: expect.objectContaining({ name: "updated" }),
       }),
     );
   });
