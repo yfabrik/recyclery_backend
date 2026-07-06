@@ -388,6 +388,7 @@ export const getQuarterStatOut = async (
  */
 export const getQuarterStatIn = async (
   quarterRanges: QuarterRange[],
+  point?:Models["CollectionPoint"]["id"]
   // ecoOrganisms: Models["EcoOrganism"][],
 ): Promise<QuarterInByEcoOrgMap> => {
   //all eco org avec leur incategories
@@ -411,6 +412,7 @@ export const getQuarterStatIn = async (
         ],
         where: {
           arrival_date: { [Op.between]: [range.start, range.end] },
+          ...(point? {collection_point_id:point}:{})
           // category_id:{[Op.in]:}
         },
         include: [
@@ -665,7 +667,11 @@ export const ecoOrgaStats = async (_req: Request, res: Response) => {
   res.json({ stats });
 };
 
-export const ecoOrgQuarterStats = async (_req: Request, res: Response) => {
+export const ecoOrgQuarterStats = async (req: Request, res: Response) => {
+  const filterSchema = z.object({
+    point:idSchema().optional()
+  })
+  const filter = filterSchema.parse(req.query)
   const quarterRanges = quartersDateRanges(new Date());
   // Fetch all eco organisms (we want the full list with quarters, including those with 0 waste)
   const ecoOrganisms = await EcoOrganism.findAll({
@@ -676,7 +682,7 @@ export const ecoOrgQuarterStats = async (_req: Request, res: Response) => {
   const [quarterOutByEcoOrg, quarterInByEcoOrg, quarterSellByEcoOrg] =
     await Promise.all([
       getQuarterStatOut(quarterRanges),
-      getQuarterStatIn(quarterRanges),
+      getQuarterStatIn(quarterRanges,filter.point),
       getQuarterStatSell(quarterRanges),
     ]);
 
