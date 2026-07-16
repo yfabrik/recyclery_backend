@@ -94,4 +94,5 @@ export const toCashRegisterDetailDto = (
     store_name: extras.store_name,
     total_sessions: extras.total_sessions,
     last_session: extras.last_session,
+    sessions: register.sessions ?? [],
   });
