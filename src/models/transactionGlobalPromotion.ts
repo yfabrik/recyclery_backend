@@ -37,7 +37,7 @@ export default class TransactionGlobalPromotion extends Model<
   >;
 
   static associate(models: ModelStatics) {
-    this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" });
+    this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" ,onDelete: "CASCADE", onUpdate: "CASCADE"});
   }
 
   static initModel(sequelize: Sequelize) {

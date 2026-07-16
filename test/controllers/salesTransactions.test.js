@@ -896,4 +896,43 @@ describe("sale transaction rules", () => {
     const tx = await SalesTransaction.findByPk(txId);
     expect(Number(tx.total_amount)).toBeCloseTo(0.9, 2);
   });
+
+  it("creates Livres sale with price 3.175 and totals rounded to 3.18", async () => {
+    const res = makeRes();
+    await createTransaction(
+      makeReq({
+        user: { id: userId, role: "admin" },
+        body: {
+          cash_session_id: sessionId,
+          total_amount: 3.18,
+          total_amount_before_promotion: 3.18,
+          global_promotion: 0,
+          global_promotion_type: "percent",
+          customer_postal_code: null,
+          payment_amount: 3.18,
+          payments: [{ method: "cash", amount: 3.18 }],
+          items: [
+            {
+              name: "Livres",
+              price: 3.175,
+              quantity: 1,
+              category_id: categoryId,
+              subcategory_id: null,
+              weight: 1.27,
+              barcode: "MANUAL1784199602203",
+              promotion: 0,
+              bundlePrice: null,
+              bundleQuantity: null,
+              total_price: 3.175,
+            },
+          ],
+        },
+      }),
+      res,
+    );
+
+    const tx = saleFromRes(res);
+    expect(Number(tx.total_amount)).toBe(3.18);
+    expect(tx.payment_method).toBe("cash");
+  });
 });

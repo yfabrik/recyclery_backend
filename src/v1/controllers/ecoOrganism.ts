@@ -1,10 +1,5 @@
 import { col, fn, literal, Op, type Includeable } from "sequelize";
 
-import type { Request, Response } from "express";
-import {
-  ecoOrganismDataSchema,
-  ecoOrganismFilterSchema,
-} from "@recyclerie/api/schemas/ecoOrganism";
 import type {
   CreateEcoOrganismResponse,
   DeleteEcoOrganismResponse,
@@ -26,21 +21,24 @@ import {
   EMPTY_ECO_ORG_QUARTER_SELL_BREAKDOWN,
 } from "@recyclerie/api/responses/ecoOrganism";
 import {
+  ecoOrganismDataSchema,
+  ecoOrganismFilterSchema,
+} from "@recyclerie/api/schemas/ecoOrganism";
+import {
   apiCreated,
   apiData,
   apiMessage,
 } from "@recyclerie/api/types/response";
-import { idSchema } from "../../services/zod.js";
-import { findByPkOrThrow } from "../../services/sequelize.js";
+import type { Request, Response } from "express";
 import {
-  toEcoOrganismDto,
-  toEcoOrganismStatsDto,
-  type EcoOrganismStatsRow,
+  toEcoOrganismDto
 } from "../../mappers/ecoOrganism.js";
+import { findByPkOrThrow } from "../../services/sequelize.js";
+import { idSchema } from "../../services/zod.js";
 
-import type { ModelWhere, Models } from "../../models/db-types.js";
-import db from "../../models/index.js";
 import z from "zod";
+import type { Models, ModelWhere } from "../../models/db-types.js";
+import db from "../../models/index.js";
 
 const {
   EcoOrganism,
@@ -279,7 +277,7 @@ export const getQuarterStatOut = async (
         raw: true,
       })) as unknown as WasteQuarterRow[];
 
-      let byEcoOrg = new Map<
+      const byEcoOrg = new Map<
         EcoOrgId,
         Record<EcoOrgQuarterLabel, EcoOrgQuarterCategoryBreakdownDto>
       >();
@@ -645,7 +643,7 @@ export const ecoOrgaStats = async (_req: Request, res: Response) => {
   });
 
   res.json(
-    apiData(toEcoOrganismStatsDto(stats as EcoOrganismStatsRow | null)) satisfies EcoOrganismStatsResponse,
+    apiData(stats?.get({plain:true})) satisfies EcoOrganismStatsResponse,
   );
 };
 

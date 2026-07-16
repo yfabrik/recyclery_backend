@@ -43,11 +43,17 @@ module.exports = {
 
     await queryInterface.addIndex("employee_store", ["employeeId"]);
     await queryInterface.addIndex("employee_store", ["recycleryId"]);
-    await queryInterface.addIndex("employee_store", ["employeeId"], {
-      unique: true,
-      name: "employee_store_unique_primary_per_employee",
-      where: { is_primary: true },
-    });
+
+    // Partial unique indexes (WHERE is_primary = true) work on SQLite but not on
+    // MariaDB/MySQL, which would block multiple store assignments per employee.
+    // One-primary-per-employee is enforced in the EmployeeStore model hooks instead.
+    if (queryInterface.sequelize.getDialect() === "sqlite") {
+      await queryInterface.addIndex("employee_store", ["employeeId"], {
+        unique: true,
+        name: "employee_store_unique_primary_per_employee",
+        where: { is_primary: true },
+      });
+    }
   },
 
   async down(queryInterface) {

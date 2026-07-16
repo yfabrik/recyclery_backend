@@ -30,7 +30,7 @@ export default class GiftCard extends Model<
   InferCreationAttributes<GiftCard>
 > {
   declare id: CreationOptional<number>;
-  declare code: string;
+  declare code: CreationOptional<string>;
   declare initial_value: number;
   declare expires_at: CreationOptional<Date | null>;
   declare status: CreationOptional<GiftCardStatus>;
@@ -92,6 +92,10 @@ export default class GiftCard extends Model<
     TransactionPayment["id"]
   >;
 
+  static generateCode() {
+    return `GC-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  }
+
   static associate(models: ModelStatics) {
     this.belongsTo(models.SalesTransaction, {
       as: "issuedTransaction",
@@ -130,7 +134,7 @@ export default class GiftCard extends Model<
           type: DataTypes.STRING,
           allowNull: false,
           unique: true,
-          defaultValue: () => `GC-${Date.now().toString(36).toUpperCase()}`,
+          defaultValue: () => GiftCard.generateCode(),
         },
         initial_value: {
           type: DataTypes.DECIMAL(10, 2),

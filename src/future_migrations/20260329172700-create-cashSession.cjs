@@ -16,6 +16,8 @@ module.exports = {
           model: "CashRegisters",
           key: "id",
         },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       },
       user_id: {
         type: Sequelize.INTEGER.UNSIGNED,
@@ -23,6 +25,8 @@ module.exports = {
           model: "Users",
           key: "id",
         },
+        onDelete: "SET NULL",
+        onUpdate: "CASCADE",
       },
       opening_amount: {
         type: Sequelize.DECIMAL(10, 2),

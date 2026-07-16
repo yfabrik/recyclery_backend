@@ -26,4 +26,4 @@ export const toPromotionDto = (model: PromotionMapperInput): PromotionDto =>
     stores: model.stores
       ?.map((store) => toRecycleryRef(store))
       .filter((store): store is NonNullable<typeof store> => store != null),
-  }) as PromotionDto;
+  }) satisfies PromotionDto;

@@ -20,17 +20,18 @@ type GiftCardMapperInput = MapperInput<GiftCard> & {
 
 export const toGiftCardTransactionDto = (
   model: GiftCardTransactionMapperInput,
-): GiftCardTransactionDto => ({
-  gift_card_id: model.gift_card_id,
-  sales_transaction_id: model.sales_transaction_id,
-  type: model.type,
-  amount: toNumber(model.amount),
-  ...(model.occurred_at ? { occurred_at: toIsoDate(model.occurred_at) } : {}),
-  metadata: model.metadata ?? null,
-  created_by: model.created_by,
-  createdAt: toIsoDate(model.createdAt),
-  updatedAt: toIsoDate(model.updatedAt),
-});
+): GiftCardTransactionDto =>
+  stripUndefined({
+    gift_card_id: model.gift_card_id,
+    sales_transaction_id: model.sales_transaction_id,
+    type: model.type,
+    amount: toNumber(model.amount),
+    ...(model.occurred_at ? { occurred_at: toIsoDate(model.occurred_at) } : {}),
+    metadata: model.metadata ?? null,
+    created_by: model.created_by,
+    createdAt: toIsoDate(model.createdAt),
+    updatedAt: toIsoDate(model.updatedAt),
+  }) satisfies GiftCardTransactionDto;
 
 export const toGiftCardDto = (model: GiftCardMapperInput): GiftCardDto => {
   const movements = model.movements?.map(toGiftCardTransactionDto);
@@ -42,7 +43,7 @@ export const toGiftCardDto = (model: GiftCardMapperInput): GiftCardDto => {
         ? movements.reduce((sum, movement) => sum + movement.amount, 0)
         : undefined;
 
-  return {
+  return stripUndefined({
     id: model.id,
     code: model.code,
     initial_value: toNumber(model.initial_value),
@@ -60,7 +61,7 @@ export const toGiftCardDto = (model: GiftCardMapperInput): GiftCardDto => {
     createdAt: toIsoDate(model.createdAt),
     updatedAt: toIsoDate(model.updatedAt),
     ...(movements ? { movements } : {}),
-  };
+  }) satisfies GiftCardDto;
 };
 
 export const toGiftCardSummaryFromFields = (card: {
@@ -75,18 +76,18 @@ export const toGiftCardSummaryFromFields = (card: {
     code: card.code,
     status: card.status,
     currentBalance: card.current_balance ?? card.initial_value,
-  }) as GiftCardSummaryDto;
+  }) satisfies GiftCardSummaryDto;
 
 export const toGiftCardSummaryDto = (
   model: GiftCardMapperInput,
 ): GiftCardSummaryDto => {
   const dto = toGiftCardDto(model);
-  return {
+  return stripUndefined({
     id: dto.id,
     code: dto.code,
     status: dto.status,
     ...(dto.current_value != null ? { currentBalance: dto.current_value } : {}),
-  };
+  }) satisfies GiftCardSummaryDto;
 };
 
 export const toGiftCardBalanceDto = (balance: {

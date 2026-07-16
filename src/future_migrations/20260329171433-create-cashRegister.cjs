@@ -25,6 +25,8 @@ module.exports = {
           model: "Recycleries",
           key: "id",
         },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       },
       createdAt: {
         allowNull: false,
@@ -34,6 +36,12 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE,
       },
+    });
+
+    await queryInterface.addIndex("CashRegisters", ["recyclery_id"]);
+    await queryInterface.addIndex("CashRegisters", ["recyclery_id", "name"], {
+      unique: true,
+      name: "cash_registers_recyclery_id_name",
     });
   },
   async down(queryInterface, Sequelize) {

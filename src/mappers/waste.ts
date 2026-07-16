@@ -36,4 +36,4 @@ export const toWasteDto = (model: WasteDisposalMapperInput): WasteDisposalDto =>
     subcategory: toCategoryRef(model.subcategory) ?? null,
     eco_organism: toEcoOrganismRef(model.eco_organism) ?? null,
     User: toUserRef(model.User),
-  }) as WasteDisposalDto;
+  }) satisfies WasteDisposalDto;

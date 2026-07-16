@@ -32,4 +32,4 @@ export const toCategoryDto = (model: CategoryMapperInput): CategoryDto =>
     subcategories: model.subcategories?.map(toCategoryDto),
     parent: model.parent ? toCategoryDto(model.parent) : undefined,
     Promotions: model.Promotions?.map(toPromotionDto),
-  }) as CategoryDto;
+  }) satisfies CategoryDto;

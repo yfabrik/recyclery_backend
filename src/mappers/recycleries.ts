@@ -46,13 +46,14 @@ export const toRecycleryDto = (model: RecycleryMapperInput): RecycleryDto =>
     caisses: model.caisses?.map(toCashRegisterDto),
     employees: model.employees?.map(toEmployeeDto),
     TaskSchedules: model.TaskSchedules?.map(toTaskScheduleDto),
-  }) as RecycleryDto;
+  }) satisfies RecycleryDto;
 
 export const toRecycleryStatsDto = (stats: {
   items: RecycleryItemStatsRow | null | undefined;
   sales: { monthly_sales: number; monthly_revenue: number };
-}): RecycleryStatsDto => ({
-  ...(stats.items ?? {}),
-  monthly_sales: stats.sales.monthly_sales,
-  monthly_revenue: stats.sales.monthly_revenue,
-});
+}): RecycleryStatsDto =>
+  ({
+    ...(stats.items ?? {}),
+    monthly_sales: stats.sales.monthly_sales,
+    monthly_revenue: stats.sales.monthly_revenue,
+  }) satisfies RecycleryStatsDto;

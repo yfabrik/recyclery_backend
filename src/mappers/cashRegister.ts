@@ -9,7 +9,7 @@ import type CashSession from "../models/cashsession.js";
 import type Recyclery from "../models/recyclery.js";
 import { toRecycleryRef } from "./refs.js";
 import { toIsoDate, toNumber, toOptionalIsoDate, toOptionalNumber } from "./serialize.js";
-import type { MapperInput } from "./types.js";
+import { stripUndefined, type MapperInput } from "./types.js";
 
 type CashSessionRefInput = MapperInput<CashSession>;
 
@@ -37,42 +37,44 @@ const toCashSessionRef = (
     user_id: value.user_id,
     createdAt: toIsoDate(value.createdAt),
     updatedAt: toIsoDate(value.updatedAt),
-  };
+  } satisfies CashSessionRefDto;
 };
 
 export const toCashRegisterSessionRefDto = (
   model: CashRegisterMapperInput,
-): CashRegisterSessionRefDto => ({
-  id: model.id,
-  name: model.name,
-  is_active: model.is_active,
-  recyclery_id: model.recyclery_id,
-  Recyclery: toRecycleryRef(model.Recyclery) ?? null,
-});
+): CashRegisterSessionRefDto =>
+  ({
+    id: model.id,
+    name: model.name,
+    is_active: model.is_active,
+    recyclery_id: model.recyclery_id,
+    Recyclery: toRecycleryRef(model.Recyclery) ?? null,
+  }) satisfies CashRegisterSessionRefDto;
 
 export const toCashRegisterDto = (
   model: CashRegisterMapperInput,
-): CashRegisterDto => ({
-  id: model.id,
-  name: model.name,
-  is_active: model.is_active,
-  recyclery_id: model.recyclery_id,
-  createdAt: toIsoDate(model.createdAt),
-  updatedAt: toIsoDate(model.updatedAt),
-  store_name: model.store_name ?? null,
-  ...(model.total_sessions != null
-    ? { total_sessions: model.total_sessions }
-    : {}),
-  last_session: toOptionalIsoDate(model.last_session) ?? null,
-  Recyclery: toRecycleryRef(model.Recyclery) ?? null,
-  ...(model.sessions
-    ? {
-        sessions: model.sessions
-          .map(toCashSessionRef)
-          .filter((session): session is CashSessionRefDto => session != null),
-      }
-    : {}),
-});
+): CashRegisterDto =>
+  stripUndefined({
+    id: model.id,
+    name: model.name,
+    is_active: model.is_active,
+    recyclery_id: model.recyclery_id,
+    createdAt: toIsoDate(model.createdAt),
+    updatedAt: toIsoDate(model.updatedAt),
+    store_name: model.store_name ?? null,
+    ...(model.total_sessions != null
+      ? { total_sessions: model.total_sessions }
+      : {}),
+    last_session: toOptionalIsoDate(model.last_session) ?? null,
+    Recyclery: toRecycleryRef(model.Recyclery) ?? null,
+    ...(model.sessions
+      ? {
+          sessions: model.sessions
+            .map(toCashSessionRef)
+            .filter((session): session is CashSessionRefDto => session != null),
+        }
+      : {}),
+  }) satisfies CashRegisterDto;
 
 export const toCashRegisterDetailDto = (
   register: CashRegister,
@@ -92,4 +94,5 @@ export const toCashRegisterDetailDto = (
     store_name: extras.store_name,
     total_sessions: extras.total_sessions,
     last_session: extras.last_session,
+    sessions: register.sessions ?? [],
   });

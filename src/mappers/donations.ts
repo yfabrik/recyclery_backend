@@ -27,4 +27,4 @@ export const toDonationDto = (model: DonationMapperInput): DonationDto =>
     createdAt: toIsoDate(model.createdAt),
     updatedAt: toIsoDate(model.updatedAt),
     User: toUserRef(model.User) ?? null,
-  }) as DonationDto;
+  }) satisfies DonationDto;

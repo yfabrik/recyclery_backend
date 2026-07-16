@@ -12,7 +12,7 @@ import { apiError } from "@recyclerie/api/types/response";
 import type { ApiErrorResponse } from "@recyclerie/api/types/response";
 const { JsonWebTokenError, NotBeforeError, TokenExpiredError } = jwt;
 
-type LogLevel = "warn" | "error" | "fatal";
+type LogLevel = "warn" | "error";
 
 type ResolvedError = {
   status: number;
@@ -105,7 +105,7 @@ const resolveError = (err: unknown): ResolvedError => {
   if (err instanceof DatabaseError) {
     return {
       status: 500,
-      level: "fatal",
+      level: "error",
       payload: apiError(err.message, { error: "Database Error" }),
     };
   }
@@ -127,12 +127,12 @@ const resolveError = (err: unknown): ResolvedError => {
   if (isHttpError(err)) {
     return {
       status: err.statusCode,
-      level: err.statusCode >= 500 ? "fatal" : "warn",
+      level: err.statusCode >= 500 ? "error" : "warn",
       payload: apiError(err.message, { error: err.message, status: err.status }),
     };
   }
 
-  return { status: 500, level: "fatal", payload: apiError("server error", { status: 500 }) };
+  return { status: 500, level: "error", payload: apiError("server error", { status: 500 }) };
 };
 
 export const errorHandler: ErrorRequestHandler = (
@@ -145,7 +145,9 @@ export const errorHandler: ErrorRequestHandler = (
     user?: { id?: string | number };
   };
   const errorLike = (typeof err === "object" && err !== null ? err : {}) as {
+    name?: string;
     message?: string;
+    stack?: string;
   };
 
   const { status, level, payload } = resolveError(err);
@@ -163,7 +165,11 @@ export const errorHandler: ErrorRequestHandler = (
       referer: req?.headers?.referer,
     },
     body: sanitizeBody(req?.body),
-    error: err,
+    error: {
+      name: err instanceof Error ? err.name : (errorLike.name || "Error"),
+      message: errorLike.message || "Unhandled error",
+      stack: err instanceof Error ? err.stack : errorLike.stack,
+    },
   });
 
   return res.status(status).json(payload);

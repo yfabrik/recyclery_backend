@@ -38,6 +38,7 @@ import {
 
 import db from "../../models/index.js";
 import type { ModelWhere, RequestWithUser } from "./types.js";
+import { formatWhereDateRange } from "../../helpers.js";
 
 const { LabeledItem, Category, User } = db;
 
@@ -54,21 +55,21 @@ const buildLabeledItemIncludes = (
   return [
     expandCategory
       ? {
-          model: Category,
-          as: "category",
-          include: [
-            {
-              model: Category,
-              as: "subcategories",
-              attributes: ["id", "name", "parent_id", "description", "icon"],
-            },
-          ],
-        }
+        model: Category,
+        as: "category",
+        include: [
+          {
+            model: Category,
+            as: "subcategories",
+            attributes: ["id", "name", "parent_id", "description", "icon"],
+          },
+        ],
+      }
       : {
-          model: Category,
-          as: "category",
-          attributes: ["id", "name"],
-        },
+        model: Category,
+        as: "category",
+        attributes: ["id", "name"],
+      },
     {
       model: Category,
       as: "subcategory",
@@ -83,19 +84,20 @@ const buildLabeledItemIncludes = (
 };
 
 export const listLabeledItem = async (req: Request, res: Response) => {
-  const { search, include, ...filter } = labeledItemFilterSchema.parse(req.query);
+  const { search, include, date_from, date_to, ...filter } = labeledItemFilterSchema.parse(req.query);
   const pagination = parsePaginationQuery(req.query);
   const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
-
+  const dateRange = formatWhereDateRange(date_from, date_to);
   const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
-        ...filter,
-        [Op.or]: [
-          { description: likeQuery },
-          { id: likeQuery },
-        ],
-      }
-    : { ...filter };
+      ...filter,
+      ...(dateRange && { createdAt: dateRange }),
+      [Op.or]: [
+        { description: likeQuery },
+        { id: likeQuery },
+      ],
+    }
+    : { ...filter, ...(dateRange && { createdAt: dateRange }) };
   const labeledItems = await LabeledItem.findAndCountAll({
     where,
     distinct: true,
@@ -112,10 +114,10 @@ export const listLabeledItem = async (req: Request, res: Response) => {
       labeledItems.rows.map(toLabeledItemDto),
       pagination.paginated
         ? buildPaginationMeta(
-            pagination.page,
-            pagination.perPage,
-            labeledItems.count,
-          )
+          pagination.page,
+          pagination.perPage,
+          labeledItems.count,
+        )
         : buildUnpaginatedMeta(labeledItems.count),
     ) satisfies ListLabeledItemsResponse,
   );
@@ -214,20 +216,21 @@ export const tagItemAsSell = async (req: RequestWithUser, res: Response) => {
 };
 
 export const itemsStats = async (req: Request, res: Response) => {
-  const { search, page, include, ...filter } = labeledItemStatsFilterSchema.parse(
+  const { search, page: _page, include: _include, date_from, date_to, ...filter } = labeledItemStatsFilterSchema.parse(
     req.query,
   );
   const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
-
+  const dateRange = formatWhereDateRange(date_from, date_to);
   const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
-        ...filter,
-        [Op.or]: [
-          { description: likeQuery },
-          { id: likeQuery },
-        ],
-      }
-    : { ...filter };
+      ...filter,
+      ...(dateRange && { createdAt: dateRange }),
+      [Op.or]: [
+        { description: likeQuery },
+        { id: likeQuery },
+      ],
+    }
+    : { ...filter, ...(dateRange && { createdAt: dateRange }) };
 
   const stats = await LabeledItem.findAll({
     attributes: [
@@ -248,8 +251,8 @@ export const itemsStats = async (req: Request, res: Response) => {
     ],
     where,
   });
-//FIXME failing here
+  //FIXME failing here
   res.json(
-    apiData(toLabeledItemStatsDto(stats[0]?.get({plain:true}) as LabeledItemStatsRow | undefined)) satisfies LabeledItemStatsResponse,
+    apiData(toLabeledItemStatsDto(stats[0]?.get({ plain: true }) as LabeledItemStatsRow | undefined)) satisfies LabeledItemStatsResponse,
   );
 };

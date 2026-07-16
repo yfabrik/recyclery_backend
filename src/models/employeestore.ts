@@ -79,12 +79,16 @@ export default class EmployeeStore extends Model<
           { fields: ["employeeId"] },
           { fields: ["recycleryId"] },
           { fields: ["employeeId", "recycleryId"], unique: true }, //already set by PK
-          {
-            unique: true,
-            fields: ["employeeId"],
-            where: { is_primary: true },
-            name: "employee_store_unique_primary_per_employee",
-          },
+          ...(sequelize.getDialect() === "sqlite"
+            ? [
+                {
+                  unique: true,
+                  fields: ["employeeId"],
+                  where: { is_primary: true },
+                  name: "employee_store_unique_primary_per_employee",
+                },
+              ]
+            : []),
         ],
         hooks: {
           async afterCreate(instance, options) {

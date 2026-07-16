@@ -36,7 +36,7 @@ router.post(
 
   // requireRole(["admin", "manager"]),
   asyncHandler(async (req, res) => {
-    logger.fatal("called useless fn in store route FIXME", {
+    logger.error("called useless fn in store route FIXME", {
       params: req.params,
       body: req.body,
       referer: req?.headers?.referer,

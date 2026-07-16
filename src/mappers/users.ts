@@ -25,16 +25,17 @@ export const toUserDto = (model: UserMapperInput): UserDto =>
     managedStores: model.managedStores
       ?.map((store) => toRecycleryRef(store))
       .filter((store): store is NonNullable<typeof store> => store != null),
-  }) as UserDto;
+  }) satisfies UserDto;
 
 export const toUserStatsDto = (stats: {
   totalUsers: number;
   usersByRole: UserStatsDto["usersByRole"];
   recentLogins: number;
   activeEmployees: number;
-}): UserStatsDto => ({
-  totalUsers: stats.totalUsers,
-  usersByRole: stats.usersByRole,
-  recentLogins: stats.recentLogins,
-  activeEmployees: stats.activeEmployees,
-});
+}): UserStatsDto =>
+  ({
+    totalUsers: stats.totalUsers,
+    usersByRole: stats.usersByRole,
+    recentLogins: stats.recentLogins,
+    activeEmployees: stats.activeEmployees,
+  }) satisfies UserStatsDto;
