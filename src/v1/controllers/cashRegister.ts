@@ -174,6 +174,6 @@ export const deleteCaisse = async (req: Request, res: Response) => {
 export const listCaissesMagasin = async (req: Request, res: Response) => {
   const { store_id } = req.params;
   req.query.store_id = store_id;
-  logger.fatal("called list caisse magasin, REMAKE THIS ONE");
+  logger.error("called list caisse magasin, REMAKE THIS ONE");
   listCaisses(req, res);
 };

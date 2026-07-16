@@ -120,7 +120,7 @@ export const deleteCollectionPoint = async (req: Request, res: Response) => {
  * @deprecated
  */
 export const stats = async (_req: Request, res: Response) => {
-  logger.fatal("called stats collection points, REMAKE THIS ONE");
+  logger.error("called stats collection points, REMAKE THIS ONE");
   res.json(
     apiData({
       total_collections: 0,

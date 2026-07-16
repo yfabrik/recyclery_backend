@@ -14,7 +14,7 @@ export const router = Router();
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    logger.fatal("called useless fn in employee workdays route FIXME", {
+    logger.error("called useless fn in employee workdays route FIXME", {
       query: req.query,
       referer: req?.headers?.referer,
     });
@@ -44,7 +44,7 @@ router.post("/employee/:employeeId", asyncHandler(createEmployeeWorkdays));
 router.post(
   "/",
   asyncHandler(async (req, res) => {
-    logger.fatal("called useless fn in employee workdays route FIXME", {
+    logger.error("called useless fn in employee workdays route FIXME", {
       params: req.params,
       body: req.body,
       referer: req?.headers?.referer,
@@ -100,7 +100,7 @@ router.post(
 router.put(
   "/:id",
   asyncHandler(async (req, res) => {
-    logger.fatal("called useless fn in employee workdays route FIXME", {
+    logger.error("called useless fn in employee workdays route FIXME", {
       params: req.params,
       body: req.body,
       referer: req?.headers?.referer,
@@ -137,7 +137,7 @@ router.put(
 router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
-    logger.fatal("called useless fn in employee workdays route FIXME", {
+    logger.error("called useless fn in employee workdays route FIXME", {
       params: req.params,
       body: req.body,
       referer: req?.headers?.referer,
@@ -165,7 +165,7 @@ router.delete(
 router.delete(
   "/employee/:employeeId",
   asyncHandler(async (req, res) => {
-    logger.fatal("called useless fn in employee workdays route FIXME", {
+    logger.error("called useless fn in employee workdays route FIXME", {
       params: req.params,
       body: req.body,
       referer: req?.headers?.referer,

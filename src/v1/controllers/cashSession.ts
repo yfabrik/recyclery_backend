@@ -274,7 +274,7 @@ export const getRegistersByStore = async (req: Request, res: Response) => {
   const store_id = idSchema("Missing store_id").parse(req.params.store_id);
 
   req.query.store_id = store_id.toString();
-  logger.fatal("called get register by store REMAKE THIS ONE");
+  logger.error("called get register by store REMAKE THIS ONE");
   return await listCaisses(req, res);
 };
 

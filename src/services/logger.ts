@@ -11,19 +11,15 @@ import {
 
 const isProduction = process.env.NODE_ENV === "production";
 
-// Custom severity ladder: `fatal` sits above `error` for unrecoverable
-// failures (5xx, deprecated route hits) that must stand out from ordinary errors.
 const levels = {
-  fatal: 0,
-  error: 1,
-  warn: 2,
-  info: 3,
-  http: 4,
-  debug: 5,
+  error: 0,
+  warn: 1,
+  info: 2,
+  http: 3,
+  debug: 4,
 } as const;
 
 addColors({
-  fatal: "magenta bold",
   error: "red",
   warn: "yellow",
   info: "green",
@@ -70,16 +66,9 @@ const logger = createLogger({
         new _transports.Console({
           level: "debug",
           format: _format.combine(
-            _format.colorize(),
             _format.timestamp(),
-            _format.printf(({ level, message, timestamp, stack, ...meta }) => {
-              const base = `${timestamp} ${level}: ${message}`;
-              const details = stack ? `\n${stack}` : "";
-              const metaStr = Object.keys(meta).length
-                ? `\n${JSON.stringify(meta)}`
-                : "";
-              return base + details + metaStr;
-            }),
+            _format.errors({ stack: true }),
+            _format.json(),
           ),
         }),
       ]
@@ -93,7 +82,7 @@ const logger = createLogger({
               const base = `${timestamp} ${level}: ${message}`;
               const details = stack ? `\n${stack}` : "";
               const metaStr = Object.keys(meta).length
-                ? `\n${JSON.stringify(meta)}`
+                ? ` ${JSON.stringify(meta)}`
                 : "";
               return base + details + metaStr;
             }),
