@@ -41,7 +41,7 @@ if (isProduction) {
     if (!existsSync(logsDir)) {
       mkdirSync(logsDir, { recursive: true });
     }
-  } catch (e) {
+  } catch (_e) {
     // Fall back silently; Winston will throw if it cannot write
   }
 }

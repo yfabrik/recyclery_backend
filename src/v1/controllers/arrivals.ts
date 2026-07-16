@@ -114,6 +114,11 @@ const normalizeArrivalPayload = async (data: ArrivalData) => {
       ],
     },
   );
+  if((category.IO &IOValues.IN) == 0) {
+    throw new createHttpError.BadRequest(
+      "Catégorie non trouvée",
+    );
+  }
   const subCount = category.subcategories?.length ?? 0;
   if (subCount > 0 && !data.subcategory_id) {
     throw new createHttpError.BadRequest(
@@ -141,8 +146,8 @@ const normalizeArrivalPayload = async (data: ArrivalData) => {
   return {
     ...data,
     collection_point_id: null,
-    collection_point_name: null,
-    collection_point_address: null,
+    collection_point_name: null,//TODO needed ??
+    collection_point_address: null,//TODO needed ??
   };
 };
 
@@ -178,8 +183,8 @@ export const updateArrival = async (req: RequestWithUser, res: Response) => {
 
 export const deleteArrival = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const arrival = await Arrival.destroy({ where: { id } });
-  if (!arrival) throw new createHttpError[404]("Arrivage non trouvé");
+  const arrival = await findByPkOrThrow(Arrival, id, "Arrivage non trouvé");
+  await arrival.destroy();
   res.json(
     apiMessage("Arrivage supprimé avec succès") satisfies DeleteArrivalResponse,
   );
