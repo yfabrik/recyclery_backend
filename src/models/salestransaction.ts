@@ -181,6 +181,7 @@ export default class SalesTransaction extends Model<
     this.hasMany(models.TransactionGlobalPromotion, {
       as: "globalPromotions",
       foreignKey: "transaction_id",
+      onDelete: "CASCADE",
     });
   }
 

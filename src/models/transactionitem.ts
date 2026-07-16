@@ -110,13 +110,9 @@ export default class TransactionItem extends Model<
         modelName: "TransactionItem",
         tableName: "transaction_items",
         hooks: {
-          beforeCreate: (instance, options) => {
-            console.log("in transaction item hook before create")
-            console.log("item", instance.labeled_item_id)
-          },
-          afterCreate: (instance, options) => {
-            console.log("in transaction item hook create")
-            console.log("item", instance.labeled_item_id)
+          beforeCreate: (_instance, _options) => {
+                      },
+          afterCreate: (_instance, _options) => {
           },
           afterDestroy: async (instance, options) => {
             const item = await instance.getLabeledItem({ transaction: options.transaction ?? null })
