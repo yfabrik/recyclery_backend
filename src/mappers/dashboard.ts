@@ -10,6 +10,7 @@ import type {
 } from "@recyclerie/api/responses/dashboard";
 
 import { toIsoDate } from "./serialize.js";
+import { asEmail, asPhone } from "./brands.js";
 
 export const toDashboardStatsDto = (stats: DashboardStatsDto): DashboardStatsDto =>
   stats;
@@ -27,12 +28,13 @@ const toPeriodStats = (period: {
   revenue: number;
   start: Date;
   end: Date;
-}): DashboardStorePeriodStatsDto => ({
-  transactions: period.transactions,
-  revenue: period.revenue,
-  start: toIsoDate(period.start),
-  end: toIsoDate(period.end),
-});
+}): DashboardStorePeriodStatsDto =>
+  ({
+    transactions: period.transactions,
+    revenue: period.revenue,
+    start: toIsoDate(period.start),
+    end: toIsoDate(period.end),
+  }) satisfies DashboardStorePeriodStatsDto;
 
 const toMonthStats = (month: {
   transactions: number;
@@ -41,14 +43,15 @@ const toMonthStats = (month: {
   sessions: number;
   start: Date;
   end: Date;
-}): DashboardStoreMonthStatsDto => ({
-  transactions: month.transactions,
-  revenue: month.revenue,
-  averageTransaction: month.averageTransaction,
-  sessions: month.sessions,
-  start: toIsoDate(month.start),
-  end: toIsoDate(month.end),
-});
+}): DashboardStoreMonthStatsDto =>
+  ({
+    transactions: month.transactions,
+    revenue: month.revenue,
+    averageTransaction: month.averageTransaction,
+    sessions: month.sessions,
+    start: toIsoDate(month.start),
+    end: toIsoDate(month.end),
+  }) satisfies DashboardStoreMonthStatsDto;
 
 export const toDashboardStoreStatsBlockDto = (
   stats: {
@@ -69,12 +72,13 @@ export const toDashboardStoreStatsBlockDto = (
     items: { available: number; sold: number };
     growth: { revenue: number };
   },
-): DashboardStoreStatsBlockDto => ({
-  currentMonth: toMonthStats(stats.currentMonth),
-  lastMonth: toPeriodStats(stats.lastMonth),
-  items: stats.items,
-  growth: stats.growth,
-});
+): DashboardStoreStatsBlockDto =>
+  ({
+    currentMonth: toMonthStats(stats.currentMonth),
+    lastMonth: toPeriodStats(stats.lastMonth),
+    items: stats.items,
+    growth: stats.growth,
+  }) satisfies DashboardStoreStatsBlockDto;
 
 export const toDashboardStoreDto = (store: {
   id: number;
@@ -83,14 +87,15 @@ export const toDashboardStoreDto = (store: {
   phone?: string | null;
   email?: string | null;
   stats: Parameters<typeof toDashboardStoreStatsBlockDto>[0];
-}): DashboardStoreDto => ({
-  id: store.id,
-  name: store.name,
-  address: store.address ?? null,
-  phone: store.phone ?? null,
-  email: store.email ?? null,
-  stats: toDashboardStoreStatsBlockDto(store.stats),
-});
+}): DashboardStoreDto =>
+  ({
+    id: store.id,
+    name: store.name,
+    address: store.address ?? null,
+    phone: asPhone(store.phone),
+    email: asEmail(store.email),
+    stats: toDashboardStoreStatsBlockDto(store.stats),
+  }) satisfies DashboardStoreDto;
 
 export const toDashboardStoreHistoryDto = (store: {
   id: number;
@@ -99,11 +104,12 @@ export const toDashboardStoreHistoryDto = (store: {
   phone?: string | null;
   email?: string | null;
   stats: Parameters<typeof toDashboardStoreStatsBlockDto>[0][];
-}): DashboardStoreHistoryDto => ({
-  id: store.id,
-  name: store.name,
-  address: store.address ?? null,
-  phone: store.phone ?? null,
-  email: store.email ?? null,
-  stats: store.stats.map(toDashboardStoreStatsBlockDto),
-});
+}): DashboardStoreHistoryDto =>
+  ({
+    id: store.id,
+    name: store.name,
+    address: store.address ?? null,
+    phone: asPhone(store.phone),
+    email: asEmail(store.email),
+    stats: store.stats.map(toDashboardStoreStatsBlockDto),
+  }) satisfies DashboardStoreHistoryDto;

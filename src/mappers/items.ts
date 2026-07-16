@@ -37,7 +37,7 @@ export const toLabeledItemDto = (
 ): LabeledItemDto =>
   stripUndefined({
     id: model.id,
-    barcode: model.barcode != null ? String(model.barcode) : undefined,
+    barcode: String(model.barcode ?? model.id).padStart(12, "0"),//TODO il devrait pas avoir un barcode obligatoirement ?
     description: model.description ?? null,
     weight: toNumber(model.weight),
     price: toNumber(model.price),
@@ -57,7 +57,7 @@ export const toLabeledItemDto = (
     subcategory: toCategoryRef(model.subcategory) ?? null,
     recyclery: toRecycleryRef(model.recyclery) ?? null,
     createdBy: toUserRef(model.createdBy) ?? null,
-  }) as LabeledItemDto;
+  }) satisfies LabeledItemDto;
 
 export const toLabeledItemStatsDto = (
   value: LabeledItemStatsRow | null | undefined,
@@ -69,5 +69,5 @@ export const toLabeledItemStatsDto = (
     sold_items: value.sold_items,
     reserved_items: value.reserved_items,
     total_value: value.total_value,
-  }) as LabeledItemStatsDto;
+  }) satisfies LabeledItemStatsDto;
 };

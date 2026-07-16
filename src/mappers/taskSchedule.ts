@@ -49,7 +49,7 @@ export const toTaskScheduleDto = (
     name: model.name,
     description: model.description ?? null,
     category: model.category,
-    priority: model.priority ?? null,
+    priority: (model.priority ?? null) as TaskScheduleDto["priority"],
     required_skills: model.required_skills ?? null,
     location: model.location ?? null,
     equipment_needed: model.equipment_needed ?? null,
@@ -69,7 +69,7 @@ export const toTaskScheduleDto = (
     Tasks: tasks?.map(toTaskDto),
     Recyclery: toRecycleryRef(model.Recyclery) ?? null,
     Employees: model.Employees?.map(toEmployeeDto),
-  }) as TaskScheduleDto;
+  }) satisfies TaskScheduleDto;
 };
 
 export const toStoreHoursDto = (
@@ -87,7 +87,7 @@ export const toStoreHoursDto = (
     store_id: schedule.store_id ?? null,
     createdAt: toIsoDate(schedule.createdAt),
     updatedAt: toIsoDate(schedule.updatedAt),
-  }) as StoreHoursDto;
+  }) satisfies StoreHoursDto;
 
 export const toAvailableEmployeeDto = (
   employee: AvailableEmployeeInput,
@@ -99,7 +99,7 @@ export const toAvailableEmployeeDto = (
     has_conflicts: employee.has_conflicts,
     conflicts: employee.conflicts.map(toTaskDto),
     already_assigned: Boolean(employee.already_assigned),
-  }) as AvailableEmployeeDto;
+  }) satisfies AvailableEmployeeDto;
 };
 
 export const toPlanningStatsOverviewDto = (
@@ -112,7 +112,7 @@ export const toPlanningStatsOverviewDto = (
     in_progress_count: stats.in_progress_count,
     completed_count: stats.completed_count,
     cancelled_count: stats.cancelled_count,
-  }) as PlanningStatsOverviewDto;
+  }) satisfies PlanningStatsOverviewDto;
 };
 
 export const toPlanningStatsDto = (stats: {

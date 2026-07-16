@@ -46,7 +46,7 @@ export const toEcoOrganismDto = (
       ?.map((cat) => toCategoryRef(cat))
       .filter((cat): cat is NonNullable<typeof cat> => cat != null),
     WasteDisposals: model.WasteDisposals?.map(toWasteDto),
-  }) as EcoOrganismDto;
+  }) satisfies EcoOrganismDto;
 
 export const toEcoOrganismStatsDto = (
   value: EcoOrganismStatsRow | null | undefined,
@@ -56,7 +56,7 @@ export const toEcoOrganismStatsDto = (
     total_eco_organisms: value.total_eco_organisms,
     active_eco_organisms: value.active_eco_organisms,
     inactive_eco_organisms: value.inactive_eco_organisms,
-  }) as EcoOrganismStatsDto;
+  }) satisfies EcoOrganismStatsDto;
 };
 
 export const toEcoOrgQuarterStatsDto = (

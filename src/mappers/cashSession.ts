@@ -45,14 +45,7 @@ export const toCashSessionDto = (
     : null;
 
   const recycleryFromRegister =
-    cashRegister?.Recyclery ??
-    toRecycleryRef(model.Recyclery) ??
-    (model.Recyclery && typeof model.Recyclery.id === "number"
-      ? stripUndefined({
-          id: model.Recyclery.id,
-          name: model.Recyclery.name,
-        })
-      : null);
+    cashRegister?.Recyclery ?? toRecycleryRef(model.Recyclery) ?? null;
 
   return stripUndefined({
     id: model.id,
@@ -73,7 +66,7 @@ export const toCashSessionDto = (
     Recyclery: recycleryFromRegister,
     User: toUserRef(model.User),
     SalesTransactions: model.SalesTransactions?.map(toSalesTransactionDto),
-  }) as CashSessionDto;
+  }) satisfies CashSessionDto;
 };
 
 export const toOptionalCashSessionDto = (

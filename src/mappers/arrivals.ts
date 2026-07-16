@@ -56,7 +56,7 @@ export const toArrivalDto = (model: ArrivalMapperInput): ArrivalDto =>
     subcategorie: toCategoryRef(model.subcategorie) ?? null,
     User: toUserRef(model.User),
     CollectionPoint: toCollectionPointRef(model.CollectionPoint) ?? null,
-  }) as ArrivalDto;
+  }) satisfies ArrivalDto;
 
 export const toArrivalStatsDto = (
   value: ArrivalStatsRow | null | undefined,
@@ -80,7 +80,7 @@ export const toArrivalStatsDto = (
     house_clearances: value.house_clearances,
     pending_processing: value.pending_processing,
     processed: value.processed,
-  }) as ArrivalStatsDto;
+  }) satisfies ArrivalStatsDto;
 };
 
 export const toArrivalCategoryStatsDto = (
@@ -90,4 +90,4 @@ export const toArrivalCategoryStatsDto = (
     count: value?.count,
     total_weight: value?.total_weight,
     categorie: toCategoryRef(value?.categorie),
-  }) as ArrivalCategoryStatsDto;
+  }) satisfies ArrivalCategoryStatsDto;

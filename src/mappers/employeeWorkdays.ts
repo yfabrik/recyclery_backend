@@ -10,13 +10,13 @@ export const toEmployeeWorkdayDto = (
   stripUndefined({
     id: model.id,
     employee_id: model.employee_id,
-    day_of_week: model.day_of_week,
-    time_slot: model.time_slot,
+    day_of_week: model.day_of_week as EmployeeWorkdayDto["day_of_week"],
+    time_slot: model.time_slot as EmployeeWorkdayDto["time_slot"],
     is_working: model.is_working,
     start_time: model.start_time,
     end_time: model.end_time,
     notes: model.notes ?? null,
-    week: model.week,
+    week: model.week as EmployeeWorkdayDto["week"],
     createdAt: toIsoDate(model.createdAt),
     updatedAt: toIsoDate(model.updatedAt),
-  }) as EmployeeWorkdayDto;
+  }) satisfies EmployeeWorkdayDto;

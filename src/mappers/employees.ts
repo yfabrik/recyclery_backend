@@ -38,5 +38,5 @@ export const toEmployeeDto = (model: EmployeeMapperInput): EmployeeDto => {
     skills: model.skills
       ?.map((skill) => toSkillDto(skill))
       .filter((skill): skill is NonNullable<typeof skill> => skill != null),
-  }) as EmployeeDto;
+  }) satisfies EmployeeDto;
 };

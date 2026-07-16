@@ -20,7 +20,7 @@ export const toTaskDto = (model: TaskMapperInput): TaskDto =>
     name: model.name,
     description: model.description ?? null,
     category: model.category,
-    priority: model.priority ?? null,
+    priority: (model.priority ?? null) as TaskDto["priority"],
     required_skills: model.required_skills ?? null,
     location: model.location ?? null,
     equipment_needed: model.equipment_needed ?? null,
@@ -38,4 +38,4 @@ export const toTaskDto = (model: TaskMapperInput): TaskDto =>
     updatedAt: toIsoDate(model.updatedAt),
     Recyclery: toRecycleryRef(model.Recyclery) ?? null,
     Employees: model.Employees?.map(toEmployeeDto),
-  }) as TaskDto;
+  }) satisfies TaskDto;
