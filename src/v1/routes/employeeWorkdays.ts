@@ -80,10 +80,11 @@ router.post(
       employee_id,
       day_of_week,
       time_slot,
-      is_working: is_working ? 1 : 0,
+      is_working: Boolean(is_working),
       start_time,
       end_time,
       notes,
+      week: "week1",
     });
 
     return res.status(201).json({
@@ -116,11 +117,13 @@ router.put(
         error: "Jour de travail non trouvé",
       });
     }
-    ((result.is_working = is_working ? 1 : 0),
-      (result.start_time = start_time || null),
-      (result.end_time = end_time || null),
-      (result.notes = notes || null),
-      await result.save());
+
+      await result.update({
+        is_working: Boolean(is_working),
+        start_time: start_time || null,
+        end_time: end_time || null,
+        notes: notes || null,
+      });
 
     return res.json({
       success: true,

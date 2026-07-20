@@ -55,7 +55,7 @@ describe("tasks controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        task: expect.any(Object),
+        data: expect.any(Object),
         success: true,
       }),
     );
@@ -76,7 +76,7 @@ describe("tasks controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        task: expect.any(Object),
+        data: expect.any(Object),
         success: true,
       }),
     );
@@ -97,7 +97,7 @@ describe("tasks controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        tasks: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );
@@ -143,7 +143,7 @@ describe("tasks controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        employees: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );

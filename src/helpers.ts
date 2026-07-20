@@ -7,7 +7,7 @@ import {
 } from "sequelize";
 import type { ModelClass } from "./models/db-types.js";
 
-export const formatWhereDateRange = (dateFrom?: Date, dateTo?: Date) => {
+export const formatWhereDateRange = (dateFrom?: Date, dateTo?: Date):WhereAttributeHashValue<Date> => {
   const from = dateFrom
     ? new Date(new Date(dateFrom).setHours(0, 0, 0, 0))
     : undefined;
@@ -19,7 +19,7 @@ export const formatWhereDateRange = (dateFrom?: Date, dateTo?: Date) => {
   let result = {}; //as WhereAttributeHashValue<Date>
   if (from) result = { ...result, [Op.gte]: from };
   if (to) result = { ...result, [Op.lte]: to };
-  return result as WhereAttributeHashValue<Date>;
+  return result ;
 };
 
 export const ensureItemWithIdExist = async <T extends ModelClass>(

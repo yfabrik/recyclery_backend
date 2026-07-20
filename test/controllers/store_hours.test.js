@@ -59,7 +59,7 @@ describe("store_hours controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 1,
+        data: { id: 1 },
         success: true,
       }),
     );
@@ -79,7 +79,7 @@ describe("store_hours controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        storeHours: expect.arrayContaining([
+        data: expect.arrayContaining([
           expect.objectContaining({
             id: expect.any(Number),
             day_of_week: expect.any(String),

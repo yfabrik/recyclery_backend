@@ -52,7 +52,7 @@ describe("collection points controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        collection_point: expect.objectContaining({
+        data: expect.objectContaining({
           id: expect.any(Number),
           name: "Point de collecte Centre-ville",
           city: "Orgelet",
@@ -92,7 +92,7 @@ describe("collection points controller functions", () => {
       }),
       res,
     );
-    expect(res.json.mock.calls[0][0].collection_point.name).toBe("Trimmed Point");
+    expect(res.json.mock.calls[0][0].data.name).toBe("Trimmed Point");
   });
 
   it("should create another point with different name", async () => {
@@ -120,7 +120,7 @@ describe("collection points controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        collection_point: expect.objectContaining({
+        data: expect.objectContaining({
           name: "Autre point",
           contact_email: "collecte.centreville@test.com",
         }),
@@ -143,7 +143,7 @@ describe("collection points controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        collection_point: expect.any(Object),
+        data: expect.any(Object),
         success: true,
       }),
     );
@@ -171,7 +171,7 @@ describe("collection points controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        collection_point: expect.objectContaining({
+        data: expect.objectContaining({
           name: "Point de collecte Centre-ville Mise à jour",
           address: "50 Avenue Principale",
           city: "Orgelet",
@@ -197,7 +197,7 @@ describe("collection points controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        collection_points: expect.any(Array),
+        data: expect.any(Array),
         success: true,
       }),
     );

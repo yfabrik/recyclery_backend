@@ -53,8 +53,11 @@ describe("waste controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        disposal_id: expect.any(Number),
+        success: true,
         message: expect.any(String),
+        data: expect.objectContaining({
+          id: expect.any(Number),
+        }),
       }),
     );
   });
@@ -74,8 +77,8 @@ describe("waste controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        disposal: expect.any(Object),
-        // success: true
+        success: true,
+        data: expect.any(Object),
       }),
     );
   });
@@ -95,7 +98,8 @@ describe("waste controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        disposals: expect.any(Array),
+        success: true,
+        data: expect.any(Array),
         pagination: {
           page: 1,
           perPage: 1,
@@ -123,7 +127,8 @@ describe("waste controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        disposals: expect.any(Array),
+        success: true,
+        data: expect.any(Array),
         pagination: {
           page: 1,
           perPage: 10,

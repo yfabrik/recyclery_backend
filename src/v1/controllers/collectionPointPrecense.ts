@@ -1,17 +1,17 @@
 import type { Request, Response } from "express";
 import createHttpError from "http-errors";
-import * as z from "zod";
-
-import db from "../../models/index.js";
-import { FRENCH_WEEKDAYS } from "../../constants/dbEnums.js";
-import { enumSchema, idSchema } from "../../services/zod.js";
+import { createCollectionPointPresenceDataSchema } from "@recyclerie/api/schemas/schedules";
+import type { CreateCollectionPointPresenceResponse } from "@recyclerie/api/responses/taskSchedule";
+import { apiCreated, apiMessage } from "@recyclerie/api/types/response";
+import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 
 import { detailTask } from "./tasks.js";
 
 import { deleteSchedule, listSchedules } from "./taskSchedule.js";
 
-const { CollectionPoint, TaskSchedule } = db;
+import db from "../../models/index.js";
+import { toTaskScheduleDto } from "../../mappers/taskSchedule.js";
 
 const getDateFromDay = (
   day:
@@ -40,31 +40,9 @@ const getDateFromDay = (
   return d;
 };
 
-const dataSchema = z.object({
-  collection_point_id: idSchema(
-    "ID du point de collecte et jour de la semaine sont obligatoires",
-  ),
-  store_id: idSchema().nullish().prefault(null),
-  day_of_week: enumSchema(FRENCH_WEEKDAYS).transform((val) => getDateFromDay(val)),
-  is_open: z.coerce.boolean().default(true),
-  start_time: z.union([
-    z.iso.time().transform((val) => {
-      const [hours, min] = val.split(":") as [string, string, ...string[]];
-      return new Date(new Date().setHours(+hours, +min));
-    }),
-    z.coerce.date(),
-  ]),
-  end_time: z.union([
-    z.iso.time().transform((val) => {
-      const [hours, min] = val.split(":") as [string, string, ...string[]];
-      return new Date(new Date().setHours(+hours, +min));
-    }),
-    z.coerce.date(),
-  ]),
-  is_24h: z.coerce.boolean().default(false),
-  notes: z.string().nullish().prefault(null),
-  is_present: z.coerce.boolean().default(true),
-});
+const dataSchema = createCollectionPointPresenceDataSchema(getDateFromDay);
+
+const { CollectionPoint, TaskSchedule } = db;
 
 /**
  * @deprecated
@@ -111,12 +89,11 @@ export const createPointPrecense = async (req: Request, res: Response) => {
     );
   });
 
-  res.json({
-    success: true,
-    message: "Jours de présence créés avec succès",
-    id: presence.id,
-    presence,
-  });
+  res.json(
+    apiCreated(toTaskScheduleDto(presence), {
+      message: "Jours de présence créés avec succès",
+    }) satisfies CreateCollectionPointPresenceResponse,
+  );
 };
 
 export const updatePointPrecense = async (req: Request, res: Response) => {
@@ -140,10 +117,9 @@ export const updatePointPrecense = async (req: Request, res: Response) => {
     );
   });
 
-  res.json({
-    success: true,
-    message: "Jours de présence mis à jour avec succès",
-  });
+  res.json(
+    apiMessage("Jours de présence mis à jour avec succès"),
+  );
 };
 
 /**

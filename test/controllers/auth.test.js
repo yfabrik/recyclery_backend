@@ -34,13 +34,16 @@ describe("auth controller functions", () => {
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
+        success: true,
         message: "Utilisateur créé avec succès",
-        token: expect.any(String),
-        user: expect.objectContaining({
-          id: expect.any(Number),
-          username: "newuser",
-          email: "newuser@test.com",
-          role: "employee",
+        data: expect.objectContaining({
+          token: expect.any(String),
+          user: expect.objectContaining({
+            id: expect.any(Number),
+            username: "newuser",
+            email: "newuser@test.com",
+            role: "employee",
+          }),
         }),
       }),
     );
@@ -101,13 +104,16 @@ describe("auth controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
+        success: true,
         message: "Connexion réussie",
-        token: expect.any(String),
-        user: expect.objectContaining({
-          id: expect.any(Number),
-          username: "newuser",
-          email: "newuser@test.com",
-          role: "employee",
+        data: expect.objectContaining({
+          token: expect.any(String),
+          user: expect.objectContaining({
+            id: expect.any(Number),
+            username: "newuser",
+            email: "newuser@test.com",
+            role: "employee",
+          }),
         }),
       }),
     );
@@ -164,13 +170,15 @@ describe("auth controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        user: expect.objectContaining({
-          role: "admin",
-        }),
-        permissions: expect.arrayContaining(["*"]),
-        permissionsByModule: expect.objectContaining({
-          dashboard: expect.arrayContaining(["read", "write"]),
-          inventory: expect.arrayContaining(["read", "write", "delete"]),
+        data: expect.objectContaining({
+          user: expect.objectContaining({
+            role: "admin",
+          }),
+          permissions: expect.arrayContaining(["*"]),
+          permissionsByModule: expect.objectContaining({
+            dashboard: expect.arrayContaining(["read", "write"]),
+            inventory: expect.arrayContaining(["read", "write", "delete"]),
+          }),
         }),
       }),
     );
@@ -195,12 +203,14 @@ describe("auth controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        user: expect.objectContaining({
-          role: "manager",
-        }),
-        permissions: expect.arrayContaining(["read", "write"]),
-        permissionsByModule: expect.objectContaining({
-          dashboard: expect.arrayContaining(["read", "write"]),
+        data: expect.objectContaining({
+          user: expect.objectContaining({
+            role: "manager",
+          }),
+          permissions: expect.arrayContaining(["read", "write"]),
+          permissionsByModule: expect.objectContaining({
+            dashboard: expect.arrayContaining(["read", "write"]),
+          }),
         }),
       }),
     );
@@ -225,13 +235,15 @@ describe("auth controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        user: expect.objectContaining({
-          role: "employee",
-        }),
-        permissions: expect.arrayContaining(["read"]),
-        permissionsByModule: expect.objectContaining({
-          dashboard: expect.arrayContaining(["read"]),
-          sales: expect.arrayContaining(["read", "write"]),
+        data: expect.objectContaining({
+          user: expect.objectContaining({
+            role: "employee",
+          }),
+          permissions: expect.arrayContaining(["read"]),
+          permissionsByModule: expect.objectContaining({
+            dashboard: expect.arrayContaining(["read"]),
+            sales: expect.arrayContaining(["read", "write"]),
+          }),
         }),
       }),
     );

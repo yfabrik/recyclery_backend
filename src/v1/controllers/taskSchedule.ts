@@ -1,11 +1,28 @@
 import createHttpError from "http-errors";
 import { col, fn, literal, Op } from "sequelize";
-import * as z from "zod";
 import {
-  RECURRENCE_PATTERNS,
-  TASK_CATEGORIES,
-} from "../../constants/dbEnums.js";
-import { enumSchema, idSchema } from "../../services/zod.js";
+  assignEmployeeToScheduleBodySchema,
+  taskScheduleDataSchema,
+  taskScheduleDateFilterSchema,
+  taskScheduleFilterSchema,
+} from "@recyclerie/api/schemas/taskSchedule";
+import type {
+  AssignEmployeeScheduleResponse,
+  AvailableEmployeesResponse,
+  CreateTaskScheduleResponse,
+  DeleteTaskScheduleResponse,
+  DetailTaskScheduleResponse,
+  EmployeeScheduleResponse,
+  ListTaskSchedulesResponse,
+  PlanningStatsResponse,
+  UpdateTaskScheduleResponse,
+} from "@recyclerie/api/responses/taskSchedule";
+import {
+  apiCreated,
+  apiData,
+  apiMessage,
+} from "@recyclerie/api/types/response";
+import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
@@ -13,34 +30,12 @@ import db from "../../models/index.js";
 
 import { formatWhereDateRange } from "../../helpers.js";
 import type { ModelWhere } from "../../models/db-types.js";
+import { toAvailableEmployeeDto, toPlanningStatsDto, toTaskScheduleDto, type PlanningStatsOverviewRow } from "../../mappers/taskSchedule.js";
+import { toTaskDto } from "../../mappers/tasks.js";
 
 const { Recyclery, Task, TaskSchedule, Employee, EmployeeWorkdays } = db;
 
-const dataSchema = z.object({
-  scheduled_date: z.coerce.date("date requis"),
-  start_time: z.coerce.date("heure de debut requis"),
-  end_time: z.coerce.date("heure de fin requis"),
-  category: enumSchema(TASK_CATEGORIES, "catégorie requise"),
-  notes: z.string().nullish().prefault(null),
-  store_id: idSchema().nullish().prefault(null),
-  collection_point_id: idSchema().nullish().prefault(null),
-  recurrence_pattern: enumSchema(RECURRENCE_PATTERNS, "récurrence invalide")
-    .nullish()
-    .prefault(null),
-  is_recurring: z.coerce.boolean().default(true),
-  name: z.string().nullish(),
-  location: z.string().nullish().prefault(null),
-});
-
 export const listSchedules = async (req: Request, res: Response) => {
-  const filterSchema = z.object({
-    start_date: z.coerce.date().optional(),
-    end_date: z.coerce.date().optional(),
-    employee_id: idSchema().optional(),
-    status: z.string().optional(),
-    store_id: idSchema().optional(),
-    category: z.string().optional(),
-  });
   const category =
     req.originalUrl == "/api/collection-point-presence"
       ? "point"
@@ -50,7 +45,7 @@ export const listSchedules = async (req: Request, res: Response) => {
           ? "collection"
           : req.query?.category;
 
-  const filter = filterSchema.parse({ ...req.query, category });
+  const filter = taskScheduleFilterSchema.parse({ ...req.query, category });
 
   const where: ModelWhere<typeof TaskSchedule> = {};
 
@@ -113,18 +108,9 @@ export const listSchedules = async (req: Request, res: Response) => {
     ],
   });
 
-  const result = schedules.map((s) => {
-    return {
-      ...s.get({ plain: true }),
-      start_time: s.start_time ? new Date(s.start_time) : null,
-      end_time: s.end_time ? new Date(s.end_time) : null,
-    };
-  });
-  res.json({
-    success: true,
-    schedules: result,
-    presence_hours: result, //TODO is reccuring => status ? y'a besoin d'un truc pour présent ce jour
-  });
+  res.json(
+    apiData(schedules.map(toTaskScheduleDto)) satisfies ListTaskSchedulesResponse,
+  );
 };
 
 export const findSchedule = async (req: Request, res: Response) => {
@@ -152,14 +138,13 @@ export const findSchedule = async (req: Request, res: Response) => {
     },
   );
 
-  res.json({
-    success: true,
-    schedule: schedules,
-  });
+  res.json(
+    apiData(toTaskScheduleDto(schedules)) satisfies DetailTaskScheduleResponse,
+  );
 };
 
 export const createSchedule = async (req: Request, res: Response) => {
-  const data = dataSchema.parse(req.body);
+  const data = taskScheduleDataSchema.parse(req.body);
   const schedule = await db.sequelize.transaction(async (t) => {
     return TaskSchedule.create(
       { ...data, name: data.name ?? data.category },
@@ -167,17 +152,18 @@ export const createSchedule = async (req: Request, res: Response) => {
     );
   });
 
-  res.status(201).json({
-    success: true,
-    message: "Planning créé avec succès",
-    schedule,
-    // schedule_id: result.id,
-  });
+  res
+    .status(201)
+    .json(
+      apiCreated(toTaskScheduleDto(schedule), {
+        message: "Planning créé avec succès",
+      }) satisfies CreateTaskScheduleResponse,
+    );
 };
 
 export const updateSchedule = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const data = dataSchema.parse(req.body);
+  const data = taskScheduleDataSchema.parse(req.body);
 
   // Vérifier que le planning existe
   const existingSchedules = await findByPkOrThrow(
@@ -194,10 +180,9 @@ export const updateSchedule = async (req: Request, res: Response) => {
     );
   });
 
-  res.json({
-    success: true,
-    message: "Planning mis à jour avec succès",
-  });
+  res.json(
+    apiMessage("Planning mis à jour avec succès") satisfies UpdateTaskScheduleResponse,
+  );
 };
 
 export const deleteSchedule = async (req: Request, res: Response) => {
@@ -212,21 +197,17 @@ export const deleteSchedule = async (req: Request, res: Response) => {
     await scheduleToDelete.destroy({ transaction: t });
   });
 
-  res.json({
-    success: true,
-    message: "Planning supprimé avec succès",
-  });
+  res.json(
+    apiMessage("Planning supprimé avec succès") satisfies DeleteTaskScheduleResponse,
+  );
 };
 
 export const getEmployeeSchedule = async (req: Request, res: Response) => {
   // const employee_id = idSchema().parse(req.params.employee_id);
 
-  const { start_date, end_date } = z
-    .object({
-      start_date: z.coerce.date().optional(),
-      end_date: z.coerce.date().optional(),
-    })
-    .parse(req.query);
+  const { start_date, end_date } = taskScheduleDateFilterSchema.parse(
+    req.query,
+  );
 
   const where: ModelWhere<typeof TaskSchedule> = {};
   const dateRange = formatWhereDateRange(start_date, end_date);
@@ -243,10 +224,9 @@ export const getEmployeeSchedule = async (req: Request, res: Response) => {
     ],
   });
 
-  res.json({
-    success: true,
-    schedules: schedules,
-  });
+  res.json(
+    apiData(schedules.map(toTaskScheduleDto)) satisfies EmployeeScheduleResponse,
+  );
 };
 
 export const addEmployeeToSchedule = async (req: Request, res: Response) => {
@@ -254,7 +234,7 @@ export const addEmployeeToSchedule = async (req: Request, res: Response) => {
     req.params.scheduleId,
   );
 
-  const employee_id = idSchema("ID employé requis").parse(req.body.employee_id);
+  const { employee_id } = assignEmployeeToScheduleBodySchema.parse(req.body);
 
   // Vérifier que la tâche du planning existe et récupérer ses détails
   const task = await findByPkOrThrow(Task, scheduleId, "Tâche du planning non trouvée", {
@@ -303,11 +283,11 @@ export const addEmployeeToSchedule = async (req: Request, res: Response) => {
   // Créer l'assignation
   await task.addEmployee(employee);
 
-  res.json({
-    success: true,
-    message: "Employé assigné avec succès",
-    task_schedule: task,
-  });
+  res.json(
+    apiData(toTaskDto(task), {
+      message: "Employé assigné avec succès",
+    }) satisfies AssignEmployeeScheduleResponse,
+  );
 };
 
 export const removeEmployeeFromSchedule = async (
@@ -331,10 +311,9 @@ export const removeEmployeeFromSchedule = async (
   //   // where: { schedule_id: scheduleId, employee_id: employeeId },
   // });
 
-  res.json({
-    success: true,
-    message: "Employé retiré avec succès",
-  });
+  res.json(
+    apiMessage("Employé retiré avec succès") satisfies DeleteTaskScheduleResponse,
+  );
 };
 
 export const findAvailableEMployee = async (req: Request, res: Response) => {
@@ -457,25 +436,22 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
     });
   }
 
-  res.json({
-    success: true,
-    employees: availableEmployees,
-    schedule_info: {
-      id: currentSchedule.id,
-      scheduled_date: currentSchedule.scheduled_date,
-      start_time: currentSchedule.start_time,
-      end_time: currentSchedule.end_time,
-    },
-  });
+  res.json(
+    apiData(
+      availableEmployees.map((employee) =>
+        toAvailableEmployeeDto({
+          ...employee,
+          already_assigned: Boolean(employee.already_assigned),
+        }),
+      ),
+    ) satisfies AvailableEmployeesResponse,
+  );
 };
 
 export const planningStats = async (req: Request, res: Response) => {
-  const { start_date, end_date } = z
-    .object({
-      start_date: z.coerce.date().optional(),
-      end_date: z.coerce.date().optional(),
-    })
-    .parse(req.query);
+  const { start_date, end_date } = taskScheduleDateFilterSchema.parse(
+    req.query,
+  );
 
   const where: ModelWhere<typeof TaskSchedule> = {};
   const dateRange = formatWhereDateRange(start_date, end_date);
@@ -541,12 +517,13 @@ export const planningStats = async (req: Request, res: Response) => {
     limit: 5,
   });
 
-  res.json({
-    success: true,
-    stats: {
-      overview: stats,
-      topTasks: topTasks,
-      topEmployees: topEmployees,
-    },
-  });
+  res.json(
+    apiData(
+      toPlanningStatsDto({
+        overview: stats as PlanningStatsOverviewRow | null,
+        topTasks: topTasks as unknown as Array<Record<string, unknown>>,
+        topEmployees: topEmployees as unknown as Array<Record<string, unknown>>,
+      }),
+    ) satisfies PlanningStatsResponse,
+  );
 };

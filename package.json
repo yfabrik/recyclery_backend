@@ -12,7 +12,10 @@
     "lint": "eslint .",
     "jest": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.cjs --runInBand",
     "mocha": "mocha",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.cjs --runInBand --coverage=false"
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.cjs --runInBand --coverage=false",
+    "db:migrate": "sequelize-cli db:migrate --options-path .sequelizerc",
+    "db:migrate-data": "tsx src/scripts/migrateToMariadb.ts",
+    "db:smoke": "tsx src/scripts/smokeMariaDb.ts"
   },
   "author": "",
   "license": "ISC",
@@ -25,11 +28,13 @@
     "helmet": "^8.1.0",
     "http-errors": "^2.0.0",
     "jsonwebtoken": "^9.0.2",
+    "mariadb": "^3.5.3",
     "node-cron": "^4.2.1",
     "sequelize": "^6.37.7",
-    "sqlite3": "^6.0.1",
-    "winston": "^3.19.0",
-    "zod": "^4.3.5"
+    "sqlite3": "^5.1.7",
+    "winston": "^3.18.3",
+    "zod": "^4.3.5",
+    "@recyclerie/api": "git+ssh://git@github.com/yfabrik/api-recyclerie.git#v0.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.6",

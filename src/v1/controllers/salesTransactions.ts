@@ -2,13 +2,31 @@ import createHttpError from "http-errors";
 import { col, fn, literal, Op, type Includeable } from "sequelize";
 import z from "zod";
 
-import type { Request, Response } from "express";
+import type {
+  CreateRefundResponse,
+  CreateSalesTransactionResponse,
+  DeleteSalesTransactionResponse,
+  DetailSalesTransactionResponse,
+  GiftCardSummaryDto,
+  ListRefundsResponse,
+  ListSalesTransactionsResponse,
+  PostalCodeStatsResponse,
+  SalesTransactionStatsResponse,
+  UpdateSalesTransactionResponse,
+} from "@recyclerie/api/responses/salesTransactions";
 import {
-  PAYMENT_METHODS,
-  PROMOTION_TYPES,
-  SALES_PAYMENT_METHODS,
-  TRANSACTION_TYPES,
-} from "../../constants/dbEnums.js";
+  refundDataSchema,
+  saleTransactionBaseSchema,
+  transactionListFilterSchema,
+  transactionStatsFilterSchema
+} from "@recyclerie/api/schemas/salesTransactions";
+import {
+  apiCreated,
+  apiData,
+  apiMessage,
+  apiPaginated,
+} from "@recyclerie/api/types/response";
+import type { Request, Response } from "express";
 import {
   chargeGiftCard,
   findGiftCardByCode,
@@ -21,15 +39,21 @@ import {
   parsePaginationQuery,
 } from "../../services/pagination.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
-import { enumSchema, idSchema, postalSchema } from "../../services/zod.js";
+import { idSchema } from "../../services/zod.js";
 
 import db from "../../models/index.js";
 
+import { amountsEqual, computeTotalAfterPromotion, getCartTotal, getCartTotalWithGlobalPromotion, isAmountEqual, roundCurrency, type CartLine } from "@recyclerie/api/domain/cart";
 import { formatWhereDateRange } from "../../helpers.js";
+import { toGiftCardSummaryFromFields } from "../../mappers/giftCards.js";
+import {
+  toPostalCodeStatsDto,
+  toSalesTransactionDto,
+  type PostalCodeStatsRow,
+} from "../../mappers/salesTransactions.js";
 import type { Models } from "../../models/db-types.js";
 import TransactionGlobalPromotion from "../../models/transactionGlobalPromotion.js";
 import { type ModelWhere, type RequestWithUser } from "./types.js";
-
 const {
   CashSession,
   CashRegister,
@@ -43,162 +67,125 @@ const {
   GiftCard,
 } = db;
 
-export const getCartLinePrice = (line: CartItem) => {
-  let bundles = 0;
-  let extraItems = line.quantity;
-  if (line.bundleQuantity && line.bundleQuantity !== 0) {
-    bundles = Math.trunc(line.quantity / line.bundleQuantity);
-    extraItems = line.quantity % line.bundleQuantity;
+// export const getCartLinePrice = (line: SaleCartItem) => {
+//   let bundles = 0;
+//   let extraItems = line.quantity;
+//   if (line.bundleQuantity && line.bundleQuantity !== 0) {
+//     bundles = Math.trunc(line.quantity / line.bundleQuantity);
+//     extraItems = line.quantity % line.bundleQuantity;
+//   }
+//   const sum = (price: number, quantity: number) =>
+//     price * quantity * (1 - (line.promotion ?? 0) / 100);
+//   return (
+//     sum(line.price, extraItems) + sum(line.bundlePrice || line.price, bundles)
+//   );
+// };
+
+const dataSchema = saleTransactionBaseSchema.superRefine((data, ctx) => {
+  //ensure valid promotion values
+  if (data.global_promotion && !data.global_promotion_type) {
+    ctx.addIssue({
+      code: "custom",
+      message: "global_promotion_type est requis",
+    });
   }
-  const sum = (price: number, quantity: number) =>
-    price * quantity * (1 - (line.promotion ?? 0) / 100);
-  return (
-    sum(line.price, extraItems) + sum(line.bundlePrice || line.price, bundles)
-  );
-};
+  if (data.global_promotion_type && data.global_promotion) {
+    if (
+      data.global_promotion_type === "percent" &&
+      data.global_promotion > 100
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "La promotion globale doit être entre 0 et 100",
+      });
+  }
 
-const itemSchema = z.object({
-  name: z.string("nom requis"),
-  price: z.coerce.number("prix requis").positive(),
-  quantity: z.coerce.number().positive().default(1),
-  category_id: idSchema(),
-  subcategory_id: idSchema().nullish(),
-  weight: z.coerce.number("poid requis").nonnegative(),
-  barcode: z.string("code-barres requis"),
-  promotion: z.coerce.number().min(0).max(100).nullish(),
-  bundlePrice: z.coerce.number().nullish(),
-  bundleQuantity: z.coerce.number().nullish(),
+  //ensure valid total amomunt
+  const cartTotal = getCartTotal(data.items as CartLine[]);
+  if (!isAmountEqual(cartTotal, data.total_amount_before_promotion))
+    // if (!amountsEqual(cartTotal, data.total_amount_before_promotion))
+    ctx.addIssue({
+      code: "custom",
+      message: "le total avant promo n'est pas correct comparé au items",
+    });
+
+  const globalPromotion = data.global_promotion ? { value: data.global_promotion, type: data.global_promotion_type ?? "percent" } : undefined;
+  const totalAmount = getCartTotalWithGlobalPromotion(data.items as CartLine[], globalPromotion);
+  //   const totalAmount = computeTotalAfterPromotion(
+  //   data.total_amount_before_promotion,
+  //   data.global_promotion,
+  //   data.global_promotion_type,
+  // );
+  if (!isAmountEqual(totalAmount, data.total_amount))
+    // if (!amountsEqual(totalAmount, data.total_amount))
+    ctx.addIssue({
+      code: "custom",
+      message: "le total n'est pas correct",
+    });
+  //ensure valid payments
+  try {
+    validateSaleAmounts(data);
+    normalizePayments(data);
+  } catch (e) {
+    if (createHttpError.isHttpError(e))
+      ctx.addIssue({
+        code: "custom",
+        message: e.message,
+      });
+  }
+  // //TODO check dans front comment il fait
 });
-const paymentLineSchema = z.object({
-  method: enumSchema(PAYMENT_METHODS, "mode de paiement requis"),
-  amount: z.coerce.number("montant requis").positive(),
-  gift_card_code: z.string().trim().min(1).nullish(),
-});
-const dataSchema = z
-  .object({
-    cash_session_id: idSchema("sesions requis"),
-    total_amount: z.coerce.number("argent requis"),
-    total_amount_before_promotion: z.coerce.number("argent requis"),
-    // payment_method: z.enum(["cash", "card", "check"]).default("cash"),
-    payment_amount: z.coerce.number("argent requis"),
-    payments: z.array(paymentLineSchema).optional(),
-    customer_postal_code: postalSchema().nullish(),
-    items: z.array(itemSchema),
-    change_amount: z.coerce.number().optional(),
-    global_promotion: z.coerce
-      .number()
-      .min(0, "La promotion globale doit être supérieure à 0")
-      .nullish(),
-    global_promotion_type: enumSchema(
-      PROMOTION_TYPES,
-      "Type de promotion globale invalide",
-    ).nullish(),
-  })
-  .superRefine((data, ctx) => {
-    //ensure valid promotion values
-    if (data.global_promotion && !data.global_promotion_type) {
-      ctx.addIssue({
-        code: "custom",
-        message: "global_promotion_type est requis",
-      });
-    }
-    if (data.global_promotion_type && data.global_promotion) {
-      if (
-        data.global_promotion_type === "percent" &&
-        data.global_promotion > 100
-      )
-        ctx.addIssue({
-          code: "custom",
-          message: "La promotion globale doit être entre 0 et 100",
-        });
-    }
 
-    //ensure valid total amomunt
-    const cartTotal = getCartTotal(data.items)
-    if (!amountsEqual(cartTotal, data.total_amount_before_promotion))
-      ctx.addIssue({
-        code: "custom",
-        message: "le total avant promo n'est pas correct comparé au items",
-      });
+// export type CartItem = z.infer<typeof transactionItemSchema>;
+export type Data = z.infer<typeof dataSchema>;
 
-    const totalAmount = computeTotalAfterPromotion(data.total_amount_before_promotion, data.global_promotion, data.global_promotion_type)
-    if (!amountsEqual(totalAmount, data.total_amount))
-      ctx.addIssue({
-        code: "custom",
-        message: "le total n'est pas correct",
-      });
-    //ensure valid payments
-    try {
-      validateSaleAmounts(data)
-      normalizePayments(data)
-    }
-    catch (e) {
-      if (createHttpError.isHttpError(e))
-        ctx.addIssue({
-          code: "custom",
-          message: e.message,
-        });
-    }
-    // //TODO check dans front comment il fait
-   
-  });
+// type GlobalPromotionType = "percent" | "fixed";
 
-type Data = z.infer<typeof dataSchema>;
-type CartItem = z.infer<typeof itemSchema>;
+// interface GlobalPromotionInput {
+//   type: GlobalPromotionType;
+//   value: number;
+// }
+// const toAmount = (value?: number | string | null) =>
 
-type GlobalPromotionType = "percent" | "fixed";
+//   Number.parseFloat(String(value ?? 0));
 
-interface GlobalPromotionInput {
-  type: GlobalPromotionType;
-  value: number;
-}
-const toAmount = (value?: number | string | null) =>
-  Number.parseFloat(String(value ?? 0));
+// const amountsEqual = (a: number | string, b: number | string) =>
+//   Math.abs(toAmount(a) - toAmount(b)) < 0.01;
 
-const amountsEqual = (a: number | string, b: number | string) =>
-  Math.abs(toAmount(a) - toAmount(b)) < 0.001;
+// const getCartTotal = (cart: SaleCartItem[]) => {
+//   return cart.reduce((prev, current) => (prev += getCartLinePrice(current)), 0);
+// };
 
-const getCartTotal = (cart: CartItem[]) => {
-  return cart.reduce((prev, current) => (prev += getCartLinePrice(current)), 0);
-};
+// const getGlobalPromotionDiscount = (
+//   subtotal: number,
+//   promotion?: GlobalPromotionInput | null,
+// ) => {
+//   if (!promotion) return 0;
+//   const normalizedValue = Math.max(Number(promotion.value) || 0, 0);
+//   const discount =
+//     promotion.type === "percent"
+//       ? subtotal * (Math.min(normalizedValue, 100) / 100)
+//       : normalizedValue;
+//   return Math.min(discount, subtotal);
+// };
 
-const getGlobalPromotionDiscount = (
-  subtotal: number,
-  promotion?: GlobalPromotionInput | null,
-) => {
-  if (!promotion) return 0;
-  const normalizedValue = Math.max(Number(promotion.value) || 0, 0);
-  const discount =
-    promotion.type === "percent"
-      ? subtotal * (Math.min(normalizedValue, 100) / 100)
-      : normalizedValue;
-  return Math.min(discount, subtotal);
-};
-
-const getCartTotalWithGlobalPromotion = (
-  cart: CartItem[],
-  promotion?: GlobalPromotionInput | null,
-) => {
-  const subtotal = getCartTotal(cart);
-  const discount = getGlobalPromotionDiscount(subtotal, promotion);
-  return Math.max(subtotal - discount, 0);
-};
 // shared helper — single source of truth
-export function computeTotalAfterPromotion(
-  before: number,
-  promotion: number | null | undefined,
-  type: "percent" | "fixed" | null | undefined,
-) {
-  const subtotal = Number(before);
-  //
-  const promo = getGlobalPromotionDiscount(subtotal, { value: promotion ?? 0, type: type ?? "fixed" })
-  // const promo = Number(promotion ?? 0);
-  // if (!promo || !type) return subtotal;
-  // if (type === "percent") return subtotal * (1 - promo / 100);
-  return Math.max(subtotal - promo, 0);
-}
+// export function computeTotalAfterPromotion(
+//   before: number,
+//   promotion: number | null | undefined,
+//   type: "percent" | "fixed" | null | undefined,
+// ) {
+//   const subtotal = Number(before);
+//   //
+//   const promo = getGlobalPromotionDiscount(subtotal, { value: promotion ?? 0, type: type ?? "fixed" })
+//   // const promo = Number(promotion ?? 0);
+//   // if (!promo || !type) return subtotal;
+//   // if (type === "percent") return subtotal * (1 - promo / 100);
+//   return Math.max(subtotal - promo, 0);
+// }
 
 const validateSaleAmounts = (data: Data) => {
+  
   const expectedNet = computeTotalAfterPromotion(
     data.total_amount_before_promotion,
     data.global_promotion,
@@ -210,7 +197,7 @@ const validateSaleAmounts = (data: Data) => {
     );
   }
   const totalPayments = data.payments?.reduce(
-    (acc, p) => acc + toAmount(p.amount),
+    (acc, p) => acc + roundCurrency(p.amount),
     0,
   );
   if (!amountsEqual(totalPayments ?? 0, data.payment_amount)) {
@@ -221,10 +208,9 @@ const validateSaleAmounts = (data: Data) => {
 };
 
 const normalizePayments = (data: Data) => {
-
-  const payments = data.payments ?? []
+  const payments = data.payments ?? [];
   const totalPayments = payments.reduce(
-    (acc, p) => acc + toAmount(p.amount),
+    (acc, p) => acc + roundCurrency(p.amount),
     0,
   );
   if (data.total_amount > totalPayments) {
@@ -233,7 +219,7 @@ const normalizePayments = (data: Data) => {
       "la somme des paiements doit etre au moins egale au total",
     );
   }
-
+  //TODO c'est check dans le schema maintenant
   for (const payment of payments) {
     if (payment.method === "giftcard" && !payment.gift_card_code) {
       throw new createHttpError.BadRequest(
@@ -246,32 +232,7 @@ const normalizePayments = (data: Data) => {
 };
 
 export const listTransactions = async (req: Request, res: Response) => {
-  const ALLOWED_INCLUDES = ["refund", "items", "payments"] as const;
-  const filterSchema = z.object({
-    store_id: z.preprocess(
-      (val) => (val === "" ? undefined : val),
-      idSchema().optional().nullable(),
-    ),
-    period: z.string().optional(),
-    type: enumSchema(
-      TRANSACTION_TYPES,
-      "type de transaction inconnu",
-    ).optional(),
-    date_from: z.coerce.date().optional(),
-    date_to: z.coerce.date().optional(),
-    session: idSchema().optional(),
-    payment_method: enumSchema(
-      SALES_PAYMENT_METHODS,
-      "methode de payment inconnue",
-    ).optional(),
-    transaction_number: z.string().optional(),
-    include: z
-      .string()
-      .optional()
-      .transform((val) => (val ? val.split(",") : []))
-      .pipe(z.array(z.enum(ALLOWED_INCLUDES))),
-  });
-  const filter = filterSchema.parse(req.query);
+  const filter = transactionListFilterSchema.parse(req.query);
   const pagination = parsePaginationQuery(req.query);
 
   const where: ModelWhere<typeof SalesTransaction> = {};
@@ -350,17 +311,18 @@ export const listTransactions = async (req: Request, res: Response) => {
     col: "id",
   });
 
-  res.json({
-    success: true,
-    transactions: transactions.rows,
-    pagination: pagination.paginated
-      ? buildPaginationMeta(
-        pagination.page,
-        pagination.perPage,
-        transactions.count,
-      )
-      : buildUnpaginatedMeta(transactions.count),
-  });
+  res.json(
+    apiPaginated(
+      transactions.rows.map(toSalesTransactionDto),
+      pagination.paginated
+        ? buildPaginationMeta(
+          pagination.page,
+          pagination.perPage,
+          transactions.count,
+        )
+        : buildUnpaginatedMeta(transactions.count),
+    ) satisfies ListSalesTransactionsResponse,
+  );
 };
 
 export const getTransaction = async (req: Request, res: Response) => {
@@ -408,7 +370,9 @@ export const getTransaction = async (req: Request, res: Response) => {
       ],
     },
   );
-  res.json({ success: true, transaction });
+  res.json(
+    apiData(toSalesTransactionDto(transaction)) satisfies DetailSalesTransactionResponse,
+  );
 };
 
 export const createTransaction = async (
@@ -420,7 +384,7 @@ export const createTransaction = async (
   const payments = normalizePayments(data);
   const session = await findByPkOrThrow(
     CashSession,
-    data.cash_session_id,//TODO utiliser req.user ?? pour trouver sa caisse ouverte, + safe ?
+    data.cash_session_id, //TODO utiliser req.user ?? pour trouver sa caisse ouverte, + safe ?
     "session non trouvé",
   );
   if (session.status !== "open") {
@@ -428,11 +392,8 @@ export const createTransaction = async (
   }
 
   const result = await db.sequelize.transaction(async (t) => {
-
     const storedMethod =
-      payments && payments.length === 1
-        ? (payments[0]!.method)
-        : "mixed";
+      payments && payments.length === 1 ? payments[0]!.method : "mixed";
 
     const sale = await session.createSalesTransaction(
       {
@@ -506,7 +467,7 @@ export const createTransaction = async (
             bundlePrice: item.bundlePrice,
           },
           transaction: t,
-        });//TODO can it auto update item ?
+        }); //TODO can it auto update item ?
       }
     }
 
@@ -543,7 +504,7 @@ export const createTransaction = async (
           method: "giftcard",
           amount: payment.amount,
           gift_card_id: giftCard.id,
-          metadata: { gift_card_code: giftCardCode },//TODO source sale payment + user in meta ?
+          metadata: { gift_card_code: giftCardCode }, //TODO source sale payment + user in meta ?
         },
         { transaction: t },
       );
@@ -561,7 +522,6 @@ export const createTransaction = async (
         { transaction: t },
       );
     }
-
 
     await sale.reload({
       include: [
@@ -596,43 +556,19 @@ export const createTransaction = async (
   //     ]
   //   }
   // }
-  res.json({
-    success: true,
-    data: {
-      id: result.id,
-
-      message: "Transaction créée avec succès",
-      sale: result,
-      payments,
-    },
-  });
+  res.json(
+    apiCreated(
+      {
+        id: result.id,
+        transaction: toSalesTransactionDto(result),
+      },
+      { message: "Transaction créée avec succès" },
+    ) satisfies CreateSalesTransactionResponse,
+  );
 };
 
 export const createRefund = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const refundItemSchema = z.object({
-    name: z.string("nom requis"),
-    price: z.coerce.number("prix requis").positive(),
-    quantity: z.coerce.number().positive().default(1),
-    category_id: idSchema(),
-    subcategory_id: idSchema().nullish(),
-    weight: z.coerce.number("poid requis").nonnegative(),
-    barcode: z.string("code-barres requis"),
-    promotion: z.coerce.number().min(0).max(100).nullish(),
-    bundlePrice: z.coerce.number().nullish(),
-    bundleQuantity: z.coerce.number().nullish(),
-    // refundQantity: z.coerce.number(),
-    // refundPrice: z.coerce.number(),
-  });
-  const refundDataSchema = z.object({
-    cash_session_id: idSchema(),
-    total_amount: z.coerce.number("argent requis"),
-    payment_method: enumSchema(PAYMENT_METHODS).default("cash"),
-    refund_method: enumSchema(PAYMENT_METHODS).default("cash"),
-    gift_card_code: z.string().trim().min(1).nullish(),
-    refund_reason: z.string("refund raison requis"),
-    items: z.array(refundItemSchema),
-  });
 
   const parent = await findByPkOrThrow(
     SalesTransaction,
@@ -687,14 +623,14 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
   const refunded = data.items
     .map((item) => {
       const alreadyRefunded = parentRefunds.reduce((prev, current) => {
-        const items = current.items?.filter((i) => i.barcode == item.barcode);
+        const items = current.items?.filter((i) => i.id == +item.barcode);
         prev +=
           items?.reduce((p, v) => (p += v.TransactionItem?.quantity ?? 0), 0) ||
           0;
         return prev;
       }, 0);
       //test que le compte d'object deborde pas
-      const c = parentItems.find((i) => i.barcode === item.barcode);
+      const c = parentItems.find((i) => i.id === +item.barcode);
       if (!c)
         throw new createHttpError.NotFound("item non trouvé dans la vente");
       if (!c.TransactionItem)
@@ -703,7 +639,7 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
         );
       const soldQty = c.TransactionItem.quantity;
 
-      if (soldQty - alreadyRefunded < 0 && item.quantity > soldQty) {
+      if (soldQty - alreadyRefunded < 0 || item.quantity > soldQty) {
         throw new createHttpError.BadRequest(
           "peut pas rembourser plus d'objects que vendu",
         );
@@ -747,14 +683,11 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
   // });
 
   const result = await db.sequelize.transaction(async (t) => {
-    let refundGiftCard: null | {
-      id: number;
-      code: string;
-      status: string;
+    let refundGiftCard: null | (GiftCardSummaryDto & {
+      type: "recredit_existing" | "issued_new";
       initial_value?: number;
       current_balance?: number;
-      type: "recredit_existing" | "issued_new";
-    } = null;
+    }) = null;
 
     const total_amount = refunded.reduce(
       (prev, current) => (prev += current.toRefundNow),
@@ -838,9 +771,7 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
         };
       } else {
         // Refund -> Gift card (create a new card when no code is provided)
-        const generatedCode = `GC-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
         const giftCard = await issueGiftCard({
-          code: generatedCode,
           initialValue: refundAmount,
           issuedRefundTransactionId: refund.id,
           createdBy: req.user.id,
@@ -856,7 +787,7 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
             gift_card_id: giftCard.id,
             metadata: {
               source: "refund_issue",
-              gift_card_code: generatedCode,
+              gift_card_code: giftCard.code,
               parentTransactionId: id,
             },
           },
@@ -891,13 +822,19 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
   //   "message": "Remboursement cree avec succes",
   //   "refund": { "...": "..." }
   // }
-  res.status(201).json({
-    success: true,
-    message: "Remboursement créé avec succès",
-    refund: result.refund,
-    ...(result.giftCard ? { giftCard: result.giftCard } : {}),
-    // refund,
-  });
+  res.status(201).json(
+    apiCreated(
+      {
+        refund: toSalesTransactionDto(result.refund),
+        ...(result.giftCard
+          ? {
+            giftCard: toGiftCardSummaryFromFields(result.giftCard),
+          }
+          : {}),
+      },
+      { message: "Remboursement créé avec succès" },
+    ) satisfies CreateRefundResponse,
+  );
 };
 
 export const listRefunds = async (req: Request, res: Response) => {
@@ -919,20 +856,16 @@ export const listRefunds = async (req: Request, res: Response) => {
     },
   );
 
-  res.json({
-    success: true,
-    refunds: refunds.refunds,
-    ref: refunds,
-  });
+  res.json(
+    apiData({
+      refunds: (refunds.refunds ?? []).map(toSalesTransactionDto),
+      parent: toSalesTransactionDto(refunds),
+    }) satisfies ListRefundsResponse,
+  );
 };
 
 export const transactionsStats = async (req: Request, res: Response) => {
-  const filterSchema = z.object({
-    store_id: z.union([idSchema(), z.literal("")]).nullish(),
-    date_from: z.coerce.date().optional(),
-    date_to: z.coerce.date().optional(),
-  });
-  const filter = filterSchema.parse(req.query);
+  const filter = transactionStatsFilterSchema.parse(req.query);
 
   const where: ModelWhere<typeof SalesTransaction> = {};
   const include: Includeable[] = [];
@@ -1057,7 +990,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
   // total_price is virtual in TransactionItem (price*extraItems*(1-promo) + (bundlePrice|price)*bundles*(1-promo))
   const totalPriceExpr = literal(`(
     (TransactionItem.price * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN TransactionItem.quantity % TransactionItem.bundleQuantity ELSE TransactionItem.quantity END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100))
-    + (COALESCE(TransactionItem.bundlePrice, TransactionItem.price) * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN CAST(TransactionItem.quantity / TransactionItem.bundleQuantity AS INTEGER) ELSE 0 END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100))
+    + (COALESCE(TransactionItem.bundlePrice, TransactionItem.price) * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN FLOOR(TransactionItem.quantity / TransactionItem.bundleQuantity) ELSE 0 END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100))
   )`);
   const byCategory = (await TransactionItem.findAll({
     attributes: [
@@ -1120,9 +1053,8 @@ export const transactionsStats = async (req: Request, res: Response) => {
   //   where,
   //   raw: true,
   // });
-  res.json({
-    success: true,
-    stats: {
+  res.json(
+    apiData({
       total_transactions: count,
       total_sales: statsRow.total_sales_before_refunds,
       ...statsRow,
@@ -1139,32 +1071,15 @@ export const transactionsStats = async (req: Request, res: Response) => {
         total_quantity: Number(row.total_quantity ?? 0),
         total_price_sum: parseFloat(String(row.total_price_sum ?? 0)),
       })),
-      // total_sales_before_refunds: parseFloat(
-      //   stats[0].total_sales_before_refunds || 0,
-      // ),
-      // total_sales: parseFloat(stats[0].total_sales || 0),
-      // total_refunded: parseFloat(stats[0].total_refunded || 0),
-      // average_transaction: parseFloat(stats[0].average_transaction || 0),
-      // sessions_count: stats[0].sessions_count || 0,
-      // payment_methods: stats.map((method) => ({
-      //   payment_method: method.payment_method,
-      //   count: method.count,
-      //   total: parseFloat(method.total || 0),
-      // })),
-    },
-  });
+    }) satisfies SalesTransactionStatsResponse,
+  );
 };
 
 export const transactionStatsPostalCode = async (
   req: Request,
   res: Response,
 ) => {
-  const filterSchema = z.object({
-    store_id: z.union([idSchema(), z.literal("")]).nullish(),
-    date_from: z.coerce.date().optional(),
-    date_to: z.coerce.date().optional(),
-  });
-  const filter = filterSchema.parse(req.query);
+  const filter = transactionStatsFilterSchema.parse(req.query);
   const { store_id, date_from, date_to } = filter;
 
   const where: ModelWhere<typeof SalesTransaction> = {};
@@ -1198,10 +1113,13 @@ export const transactionStatsPostalCode = async (
     order: [["total_sales", "DESC"]],
   });
 
-  res.json({
-    success: true,
-    postal_codes: postalStats,
-  });
+  res.json(
+    apiData(
+      postalStats.map((row) =>
+        toPostalCodeStatsDto(row as unknown as PostalCodeStatsRow),
+      ),
+    ) satisfies PostalCodeStatsResponse,
+  );
 };
 
 export const updateTransaction = async (
@@ -1211,6 +1129,24 @@ export const updateTransaction = async (
   const id = idSchema().parse(req.params.id);
   const data = dataSchema.parse(req.body);
   // validateSaleAmounts(data);
+
+  //1 check received data
+  //2 find transaction
+  //3 refuse refund type
+  //4 refuse if transaction already refunded
+
+  //5 compare new vs old datas
+  //5.1 remove payments that are in old data but not in new data
+  //5.2 add payments that are in new data but not in old data
+  //5.3 update payments giftcard that are in old data and new data
+
+  //6 update items
+  //6.1 remove items that are in old data but not in new data
+  //6.2 add items that are in new data but not in old data
+  //6.3 update items quantity
+
+  //7 update transaction
+
 
   const transaction = await findByPkOrThrow(
     SalesTransaction,
@@ -1235,7 +1171,9 @@ export const updateTransaction = async (
   if (transaction.transactionType != "sell")
     throw new createHttpError.BadRequest("pas fait pour les refunds");
   if ((transaction.refunds?.length ?? 0) > 0)
-    throw new createHttpError.Conflict("transaction contiens des refunds, impossible de modifier");//TODO conflict is good ?
+    throw new createHttpError.Conflict(
+      "transaction contiens des refunds, impossible de modifier",
+    ); //TODO conflict is good ?
 
   const result = await db.sequelize.transaction(async (t) => {
     //update payments
@@ -1281,7 +1219,8 @@ export const updateTransaction = async (
           transaction: t,
         });
       }
-      const meta = e.gift_card_code ? { gift_card_code: e.gift_card_code } : {}
+      const meta =
+        e.method === "giftcard" ? { gift_card_code: e.gift_card_code } : {};
       await transaction.createPayment({ ...e, metadata: meta }, { transaction: t }); // add new payments
     }
     const storedMethod =
@@ -1358,11 +1297,11 @@ export const updateTransaction = async (
     });
   });
 
-  res.json({
-    success: true,
-    message: " transaction mise à jour",
-    data: result,
-  });
+  res.json(
+    apiData(toSalesTransactionDto(result), {
+      message: " transaction mise à jour",
+    }) satisfies UpdateSalesTransactionResponse,
+  );
 };
 
 export const removeTransaction = async (
@@ -1391,20 +1330,27 @@ export const removeTransaction = async (
   //   },
   // );
 
-  const toDelete = await findByPkOrThrow(SalesTransaction, id, "transaction non trouvé", {
-    include: [{
-      model: CashSession,
-    },
-    { model: SalesTransaction, as: "refunds" }
-    ]
+  const toDelete = await findByPkOrThrow(
+    SalesTransaction,
+    id,
+    "transaction non trouvé",
+    {
+      include: [
+        {
+          model: CashSession,
+        },
+        { model: SalesTransaction, as: "refunds" },
+      ],
+    
   })
   if (toDelete.CashSession?.status != "open" && toDelete.CashSession?.user_id != req.user.id)
     throw new createHttpError.Forbidden("trop tard pour modifier")
   if (toDelete.refunds && toDelete.refunds?.length > 0)
     throw new createHttpError.Forbidden("transaction a deja ete remboursee")
+  await TransactionGlobalPromotion.destroy({ where: { transaction_id: id } });//TODO remove after migration, fail because sqlite hasnt  ondelete cascade
   await toDelete.destroy();
 
-  res.json({
-    success: true,
-  });
+  res.json(
+    apiMessage("Transaction supprimée") satisfies DeleteSalesTransactionResponse,
+  );
 };

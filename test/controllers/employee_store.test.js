@@ -63,7 +63,7 @@ describe("employee_store controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        assignments: expect.any(Array),
+        data: expect.any(Array),
       }),
     );
   });
@@ -83,8 +83,7 @@ describe("employee_store controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        assignments: expect.any(Array),
-        stores: expect.any(Array),
+        data: expect.any(Array),
       }),
     );
   });
@@ -103,7 +102,8 @@ describe("employee_store controller functions", () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        users: expect.any(Array),
+        data: expect.any(Array),
+        success: true,
       }),
     );
   });
@@ -131,7 +131,7 @@ describe("employee_store controller functions", () => {
       expect.objectContaining({
         success: true,
         message: "Affectation créée avec succès",
-        employee: expect.any(Object),
+        data: expect.any(Object),
       }),
     );
   });

@@ -2,15 +2,37 @@ import { col, fn, type Includeable } from "sequelize";
 
 import type { Request, Response } from "express";
 import createHttpError from "http-errors";
-import * as z from "zod";
+import {
+  cashSessionFilterSchema,
+  cashSessionStatsFilterSchema,
+  closeCashSessionSchema,
+  openCashSessionSchema,
+} from "@recyclerie/api/schemas/cashSession";
+import type {
+  ActiveCashSessionResponse,
+  CashSessionsStatsResponse,
+  CloseCashSessionResponse,
+  DetailCashSessionResponse,
+  ListCashSessionsResponse,
+  OpenCashSessionResponse,
+} from "@recyclerie/api/responses/cashSession";
+import {
+  apiCreated,
+  apiData,
+  apiResult,
+} from "@recyclerie/api/types/response";
 import logger from "../../services/logger.js";
-import { CASH_SESSION_STATUSES } from "../../constants/dbEnums.js";
-import { enumSchema, idSchema } from "../../services/zod.js";
+import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import { listCaisses } from "./cashRegister.js";
 
 import db from "../../models/index.js";
 import type { ModelWhere, RequestWithUser } from "./types.js";
+import {
+  toCashSessionDto,
+  toOptionalCashSessionDto,
+  toCashSessionStatsItemDto,
+} from "../../mappers/cashSession.js";
 
 const {
   CashSession,
@@ -26,12 +48,7 @@ const {
 
 // 🧠 GET /cash-sessions
 export const listCashSessions = async (req: Request, res: Response) => {
-  const filterSchema = z.object({
-    store_id: z.coerce.number().positive().optional(),
-    user_id: z.coerce.number().positive().optional(),
-    status: enumSchema(CASH_SESSION_STATUSES).optional(),
-  });
-  const data = filterSchema.parse(req.query);
+  const data = cashSessionFilterSchema.parse(req.query);
 
   const where: ModelWhere<typeof CashSession> = {};
 
@@ -55,12 +72,14 @@ export const listCashSessions = async (req: Request, res: Response) => {
     include: [
       {
         model: CashRegister,
-        attributes: ["name"],
+        attributes: ["id", "name", "is_active", "recyclery_id"],
         where: whereRegister,
-        include: [{ model: Recyclery, attributes: ["name"] }],
+        include: [
+          { model: Recyclery, attributes: ["id", "name", "city", "is_active"] },
+        ],
       },
 
-      { model: User, attributes: ["username"] },
+      { model: User, attributes: ["id", "username", "email", "role"] },
       {
         model: SalesTransaction,
         attributes: [],
@@ -70,7 +89,9 @@ export const listCashSessions = async (req: Request, res: Response) => {
     order: [["createdAt", "DESC"]],
   });
 
-  res.json({ success: true, sessions });
+  res.json(
+    apiData(sessions.map(toCashSessionDto)) satisfies ListCashSessionsResponse,
+  );
 };
 
 // 🧠 GET /cash-sessions/active
@@ -84,36 +105,23 @@ export const getActiveSession = async (req: RequestWithUser, res: Response) => {
     include: [
       {
         model: CashRegister,
-        attributes: ["name", "recyclery_id"],
-        include: [{ model: Recyclery, attributes: ["name"] }],
+        attributes: ["id", "name", "is_active", "recyclery_id"],
+        include: [
+          { model: Recyclery, attributes: ["id", "name", "city", "is_active"] },
+        ],
       },
     ],
     order: [["createdAt", "DESC"]],
   });
 
-  let t;
-  if (session) {
-    const tmp = session.get({ plain: true });
-    t = {
-      ...tmp,
-      CashRegister: session.CashRegister,
-      Recyclery: session.CashRegister?.Recyclery,
-    };
-  }
-
-  res.json({ success: true, session: t });
+  res.json(
+    apiData(toOptionalCashSessionDto(session)) satisfies ActiveCashSessionResponse,
+  );
 };
 
 // 🧠 POST /cash-sessions/open
 export const openCashSession = async (req: RequestWithUser, res: Response) => {
-  const dataSchema = z.object({
-    cash_register_id: idSchema("caisse requise"),
-    store_id: idSchema("magasin requis"),
-    opening_amount: z.coerce.number().positive("argent requis"),
-    notes: z.string().nullish().prefault(null),
-  });
-
-  const data = dataSchema.parse(req.body);
+  const data = openCashSessionSchema.parse(req.body);
 
   const userId = req.user.id;
   await findByPkOrThrow(Recyclery, data.store_id, "Magasin non trouvé");
@@ -133,21 +141,17 @@ export const openCashSession = async (req: RequestWithUser, res: Response) => {
     ...data,
   });
 
-  res.status(201).json({
-    success: true,
-    session,
-    session_id: session.id,
-  });
+  res
+    .status(201)
+    .json(
+      apiCreated(toCashSessionDto(session)) satisfies OpenCashSessionResponse,
+    );
 };
 
 // 🧠 PUT /cash-sessions/:id/close
 export const closeCashSession = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  const dataSchema = z.object({
-    closing_amount: z.coerce.number().positive("argent requis"),
-    notes: z.string().nullish().prefault(null),
-  });
-  const data = dataSchema.parse(req.body);
+  const data = closeCashSessionSchema.parse(req.body);
   const userId = req.user.id;
 
   const session = await CashSession.findOne({
@@ -223,12 +227,12 @@ export const closeCashSession = async (req: RequestWithUser, res: Response) => {
     notes: data.notes || session.notes,
   });
 
-  res.json({
-    success: true,
-    message: "Session fermée avec succès",
-    expected_amount: expected,
-    difference_amount: difference,
-  });
+  res.json(
+    apiResult(
+      { expected_amount: expected, difference_amount: difference },
+      "Session fermée avec succès",
+    ) satisfies CloseCashSessionResponse,
+  );
 };
 
 export const getSessionById = async (req: Request, res: Response) => {
@@ -238,10 +242,12 @@ export const getSessionById = async (req: Request, res: Response) => {
     include: [
       {
         model: CashRegister,
-        attributes: ["name"],
-        include: [{ model: Recyclery, attributes: ["name"] }],
+        attributes: ["id", "name", "is_active", "recyclery_id"],
+        include: [
+          { model: Recyclery, attributes: ["id", "name", "city", "is_active"] },
+        ],
       },
-      { model: User, attributes: ["username"] },
+      { model: User, attributes: ["id", "username", "email", "role"] },
       {
         model: SalesTransaction,
         include: [
@@ -253,10 +259,9 @@ export const getSessionById = async (req: Request, res: Response) => {
     ],
   });
 
-  res.json({
-    success: true,
-    session,
-  });
+  res.json(
+    apiData(toCashSessionDto(session)) satisfies DetailCashSessionResponse,
+  );
 };
 
 /**
@@ -269,18 +274,12 @@ export const getRegistersByStore = async (req: Request, res: Response) => {
   const store_id = idSchema("Missing store_id").parse(req.params.store_id);
 
   req.query.store_id = store_id.toString();
-  logger.info("called get register by store REMAKE THIS ONE");
+  logger.error("called get register by store REMAKE THIS ONE");
   return await listCaisses(req, res);
 };
 
 export const sessionsStats = async (req: Request, res: Response) => {
-  const filtersSchema = z.object({
-    date_from: z.coerce.date().nullish(),
-    date_to: z.coerce.date().nullish(),
-    store_id: idSchema().nullish(),
-  });
-
-  const filters = filtersSchema.parse(req.params);
+  const filters = cashSessionStatsFilterSchema.parse(req.params);
 
   const where: ModelWhere<typeof CashRegister> = {};
   if (filters.store_id) where.recyclery_id = filters.store_id;
@@ -313,52 +312,53 @@ export const sessionsStats = async (req: Request, res: Response) => {
     include,
   });
 
-  return res.json({
-    success: true,
-    data: stats.map((session) => {
-      return {
-        transactions: session.SalesTransactions?.length ?? 0,
-        cash: session.SalesTransactions?.reduce(
-          (prev, current) => {
-            if (current.payment_method == "cash") {
-              prev.count++;
-              prev.value += +(current.total_amount || 0);
-            }
-            return prev;
-          },
-          { count: 0, value: 0 },
-        ),
-        card: session.SalesTransactions?.reduce(
-          (prev, current) => {
-            if (current.payment_method == "card") {
-              prev.count++;
-              prev.value += +(current.total_amount || 0);
-            }
-            return prev;
-          },
-          { count: 0, value: 0 },
-        ),
-        categories: session.SalesTransactions?.reduce(
-          (prev, current) => {
-            current.items?.forEach((item) => {
-              const categorie = item.category;
-              const sub = item.subcategory;
-              const val = {
-                category: categorie?.name || "",
-                sub: sub?.name || "",
-                value: item.price,
-              };
-              const exist = prev.find(
-                (p) => p.category == val.category && p.sub == val.sub,
-              );
-              if (exist) exist.value += val.value;
-              else prev.push(val);
-            });
-            return prev;
-          },
-          [] as { category: string; sub: string; value: number }[],
-        ),
-      };
-    }),
-  });
+  return res.json(
+    apiData(
+      stats.map((session) =>
+        toCashSessionStatsItemDto({
+          transactions: session.SalesTransactions?.length ?? 0,
+          cash: (session.SalesTransactions ?? []).reduce(
+            (prev, current) => {
+              if (current.payment_method == "cash") {
+                prev.count++;
+                prev.value += +(current.total_amount || 0);
+              }
+              return prev;
+            },
+            { count: 0, value: 0 },
+          ),
+          card: (session.SalesTransactions ?? []).reduce(
+            (prev, current) => {
+              if (current.payment_method == "card") {
+                prev.count++;
+                prev.value += +(current.total_amount || 0);
+              }
+              return prev;
+            },
+            { count: 0, value: 0 },
+          ),
+          categories: (session.SalesTransactions ?? []).reduce(
+            (prev, current) => {
+              current.items?.forEach((item) => {
+                const categorie = item.category;
+                const sub = item.subcategory;
+                const val = {
+                  category: categorie?.name || "",
+                  sub: sub?.name || "",
+                  value: item.price,
+                };
+                const exist = prev.find(
+                  (p) => p.category == val.category && p.sub == val.sub,
+                );
+                if (exist) exist.value += val.value;
+                else prev.push(val);
+              });
+              return prev;
+            },
+            [] as { category: string; sub: string; value: number }[],
+          ),
+        }),
+      ),
+    ) satisfies CashSessionsStatsResponse,
+  );
 };

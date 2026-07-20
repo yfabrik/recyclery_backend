@@ -72,7 +72,7 @@ describe("taskSchedule controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        schedules: expect.any(Array),
+        data: expect.any(Array),
       }),
     );
   });
@@ -93,7 +93,7 @@ describe("taskSchedule controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        schedules: expect.any(Array),
+        data: expect.any(Array),
       }),
     );
   });
@@ -131,7 +131,7 @@ describe("taskSchedule controller functions", () => {
       expect.objectContaining({
         success: true,
         message: "Planning créé avec succès",
-        schedule: expect.objectContaining({
+        data: expect.objectContaining({
           id: expect.any(Number),
           category: "custom",
         }),
@@ -246,7 +246,7 @@ describe("taskSchedule controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        schedules: expect.any(Array),
+        data: expect.any(Array),
       }),
     );
   });
@@ -270,7 +270,7 @@ describe("taskSchedule controller functions", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-        schedules: expect.any(Array),
+        data: expect.any(Array),
       }),
     );
   });
@@ -322,7 +322,7 @@ describe("taskSchedule controller functions", () => {
       status: jest.fn().mockReturnThis(),
     };
     await createSchedule(createReq, createRes);
-    const createdSchedule = createRes.json.mock.calls[0][0].schedule;
+    const createdSchedule = createRes.json.mock.calls[0][0].data;
 
     const req = {
       params: { id: createdSchedule.id },

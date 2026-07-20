@@ -1,115 +1,147 @@
 import type { Request, Response } from "express";
 import createHttpError from "http-errors";
-import { col, fn, literal, Op } from "sequelize";
-import z from "zod";
-import { CONDITION_STATES } from "../../constants/dbEnums.js";
+import { col, fn, literal, Op, type Includeable } from "sequelize";
+import {
+  labeledItemDataSchema,
+  labeledItemFilterSchema,
+  labeledItemIncludeSchema,
+  labeledItemStatsFilterSchema,
+  type LabeledItemIncludeList,
+} from "@recyclerie/api/schemas/items";
+import type {
+  CreateLabeledItemResponse,
+  DeleteLabeledItemResponse,
+  DetailLabeledItemResponse,
+  LabeledItemStatsResponse,
+  ListLabeledItemsResponse,
+  TagLabeledItemSoldResponse,
+  UpdateLabeledItemResponse,
+} from "@recyclerie/api/responses/items";
+import {
+  apiCreated,
+  apiData,
+  apiMessage,
+  apiPaginated,
+} from "@recyclerie/api/types/response";
 import {
   buildPaginationMeta,
   buildUnpaginatedMeta,
   parsePaginationQuery,
 } from "../../services/pagination.js";
-import { enumSchema, idSchema } from "../../services/zod.js";
+import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
+import {
+  toLabeledItemDto,
+  toLabeledItemStatsDto,
+  type LabeledItemStatsRow,
+} from "../../mappers/items.js";
 
 import db from "../../models/index.js";
 import type { ModelWhere, RequestWithUser } from "./types.js";
+import { formatWhereDateRange } from "../../helpers.js";
 
 const { LabeledItem, Category, User } = db;
 
-const dataSchema = z.object({
-  name: z.string().nullish(),
-  description: z.string().nullish().prefault(null),
-  category_id: idSchema("categorie requis"),
-  subcategory_id: idSchema().nullish().prefault(null),
-  weight: z.coerce.number().nonnegative("poid requis").default(0),
-  price: z.coerce.number().nonnegative("prix requis"),
-  cost: z.coerce.number().nonnegative().nullish().prefault(null),
-  condition_state: enumSchema(CONDITION_STATES).optional(),
-  location: z.string().nullish(),
-  arrival_id: idSchema().nullish(),
-  purchase_price: z.coerce.number().nonnegative().nullish(),
-  selling_price: z.coerce.number().nonnegative().nullish(),
-  recyclery_id: idSchema().nullish().prefault(null),
-});
+const parseItemInclude = (query: Request["query"]): LabeledItemIncludeList =>
+  labeledItemIncludeSchema.parse(
+    typeof query.include === "string" ? query.include : undefined,
+  );
 
-export const listLabeledItem = async (req: Request, res: Response) => {
-  const filterSchema = z.object({
-    status: z.string().optional(),
-    category_id: idSchema().optional(),
-    search: z.string().optional(),
-    recyclery_id: idSchema().optional(),
-    barcode: idSchema().optional(), //TODO verifier
-  });
-  const { search, ...filter } = filterSchema.parse(req.query);
-  const pagination = parsePaginationQuery(req.query);
-  const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
+const buildLabeledItemIncludes = (
+  include: LabeledItemIncludeList,
+): Includeable[] => {
+  const expandCategory = include.includes("category.subcategories");
 
-  const where: ModelWhere<typeof LabeledItem> = likeQuery
-    ? {
-      ...filter,
-      [Op.or]: [
-        // { name: likeQuery },
-        { description: likeQuery },
-        { id: likeQuery },
-      ],
-    }
-    : { ...filter };
-  const labeledItems = await LabeledItem.findAndCountAll({
-    where,
-    distinct: true,
-    col: "id",
-    include: [
-      {
+  return [
+    expandCategory
+      ? {
+        model: Category,
+        as: "category",
+        include: [
+          {
+            model: Category,
+            as: "subcategories",
+            attributes: ["id", "name", "parent_id", "description", "icon"],
+          },
+        ],
+      }
+      : {
         model: Category,
         as: "category",
         attributes: ["id", "name"],
       },
-      {
-        model: Category,
-        as: "subcategory",
-        attributes: ["id", "name"],
-      },
-      {
-        model: User,
-        as: "createdBy",
-        attributes: ["id", "username"],
-      },
-    ],
+    {
+      model: Category,
+      as: "subcategory",
+      attributes: ["id", "name"],
+    },
+    {
+      model: User,
+      as: "createdBy",
+      attributes: ["id", "username"],
+    },
+  ];
+};
+
+export const listLabeledItem = async (req: Request, res: Response) => {
+  const { search, include, date_from, date_to, ...filter } = labeledItemFilterSchema.parse(req.query);
+  const pagination = parsePaginationQuery(req.query);
+  const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
+  const dateRange = formatWhereDateRange(date_from, date_to);
+  const where: ModelWhere<typeof LabeledItem> = likeQuery
+    ? {
+      ...filter,
+      ...(dateRange && { createdAt: dateRange }),
+      [Op.or]: [
+        { description: likeQuery },
+        { id: likeQuery },
+      ],
+    }
+    : { ...filter, ...(dateRange && { createdAt: dateRange }) };
+  const labeledItems = await LabeledItem.findAndCountAll({
+    where,
+    distinct: true,
+    col: "id",
+    include: buildLabeledItemIncludes(include),
     order: [["createdAt", "DESC"]],
     ...(pagination.paginated
       ? { limit: pagination.limit, offset: pagination.offset }
       : {}),
   });
 
-  res.json({
-    success: true,
-    items: labeledItems.rows,
-    pagination: pagination.paginated
-      ? buildPaginationMeta(
-        pagination.page,
-        pagination.perPage,
-        labeledItems.count,
-      )
-      : buildUnpaginatedMeta(labeledItems.count),
-  });
+  res.json(
+    apiPaginated(
+      labeledItems.rows.map(toLabeledItemDto),
+      pagination.paginated
+        ? buildPaginationMeta(
+          pagination.page,
+          pagination.perPage,
+          labeledItems.count,
+        )
+        : buildUnpaginatedMeta(labeledItems.count),
+    ) satisfies ListLabeledItemsResponse,
+  );
 };
-/**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- */
+
 export const getItemFromBarcode = async (req: Request, res: Response) => {
   const barcode = idSchema().parse(req.params.barcode);
-  const item = await LabeledItem.findOne({ where: { id: barcode } });
+  const include = parseItemInclude(req.query);
+  const item = await LabeledItem.findOne({
+    where: { id: barcode },
+    include: buildLabeledItemIncludes(include),
+  });
 
   if (!item) throw new createHttpError[404]("Article non trouvé");
-  res.json({ success: true, item });
+  res.json(
+    apiData(toLabeledItemDto(item)) satisfies DetailLabeledItemResponse,
+  );
 };
 
 export const createLabeledItem = async (
   req: RequestWithUser,
   res: Response,
 ) => {
-  const data = dataSchema.parse(req.body);
+  const data = labeledItemDataSchema.parse(req.body);
 
   const category = await Category.findByPk(data.category_id);
   const sub =
@@ -124,18 +156,22 @@ export const createLabeledItem = async (
     ...data,
     created_by: req.user.id,
   });
+  const include = parseItemInclude(req.query);
+  if (include.length > 0) {
+    await item.reload({ include: buildLabeledItemIncludes(include) });
+  }
 
-  res.status(201).json({
-    success: true,
-    message: "Article créé avec succès",
-    item,
-  });
+  res.status(201).json(
+    apiCreated(toLabeledItemDto(item), {
+      message: "Article créé avec succès",
+    }) satisfies CreateLabeledItemResponse,
+  );
 };
 
 export const updateItem = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const data = dataSchema.parse(req.body);
+  const data = labeledItemDataSchema.parse(req.body);
 
   const item = await findByPkOrThrow(LabeledItem, id, "item non trouvé");
   await item.update({
@@ -143,9 +179,16 @@ export const updateItem = async (req: RequestWithUser, res: Response) => {
     condition_state: data.condition_state ?? item.condition_state,
     weight: data.weight ?? item.weight,
   });
-  await item.reload()
+  const include = parseItemInclude(req.query);
+  await item.reload({
+    include: buildLabeledItemIncludes(include),
+  });
 
-  res.json({ success: true, item, message: "Article mis à jour avec succès" });
+  res.json(
+    apiData(toLabeledItemDto(item), {
+      message: "Article mis à jour avec succès",
+    }) satisfies UpdateLabeledItemResponse,
+  );
 };
 
 export const deleteLabeledItem = async (req: Request, res: Response) => {
@@ -153,44 +196,41 @@ export const deleteLabeledItem = async (req: Request, res: Response) => {
   const toDelete = await findByPkOrThrow(LabeledItem, id, "Article non trouvé");
   await toDelete.destroy();
 
-  res.json({ success: true, message: "Article supprimé avec succès" });
+  res.json(
+    apiMessage("Article supprimé avec succès") satisfies DeleteLabeledItemResponse,
+  );
 };
 
 export const tagItemAsSell = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const item = await findByPkOrThrow(LabeledItem, id, "Article non trouvé");
-  if (item.status == "available")
-    throw new createHttpError[404]("Article non trouvé");
+  if (item.status !== "available")
+    throw new createHttpError[400]("Article non disponible");
   await item.update({
     status: "sold",
-    // sold_at: new Date()
   });
 
-  res.json({ success: true, message: "Article marqué comme vendu" });
+  res.json(
+    apiMessage("Article marqué comme vendu") satisfies TagLabeledItemSoldResponse,
+  );
 };
 
 export const itemsStats = async (req: Request, res: Response) => {
-  const filterSchema = z.object({
-    status: z.string().optional(),
-    category_id: idSchema().optional(),
-    search: z.string().optional(),
-    recyclery_id: idSchema().optional(),
-    barcode: idSchema().optional(), //TODO verifier
-    page: z.coerce.number().positive().optional(),
-  });
-  const { search, page, ...filter } = filterSchema.parse(req.query);
+  const { search, page: _page, include: _include, date_from, date_to, ...filter } = labeledItemStatsFilterSchema.parse(
+    req.query,
+  );
   const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
-
+  const dateRange = formatWhereDateRange(date_from, date_to);
   const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
       ...filter,
+      ...(dateRange && { createdAt: dateRange }),
       [Op.or]: [
-        // { name: likeQuery },
         { description: likeQuery },
         { id: likeQuery },
       ],
     }
-    : { ...filter };
+    : { ...filter, ...(dateRange && { createdAt: dateRange }) };
 
   const stats = await LabeledItem.findAll({
     attributes: [
@@ -211,9 +251,8 @@ export const itemsStats = async (req: Request, res: Response) => {
     ],
     where,
   });
-
-  res.json({
-    success: true,
-    stats: stats[0],
-  });
+  //FIXME failing here
+  res.json(
+    apiData(toLabeledItemStatsDto(stats[0]?.get({ plain: true }) as LabeledItemStatsRow | undefined)) satisfies LabeledItemStatsResponse,
+  );
 };

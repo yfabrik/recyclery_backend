@@ -1,8 +1,16 @@
 import createHttpError from "http-errors";
-import * as z from "zod";
-import { FRENCH_WEEKDAYS } from "../../constants/dbEnums.js";
+import { createStoreHoursDataSchema } from "@recyclerie/api/schemas/schedules";
+import type {
+  CreateStoreHoursResponse,
+  ListStoreHoursResponse,
+  UpdateStoreHoursResponse,
+} from "@recyclerie/api/responses/taskSchedule";
+import {
+  apiCreated,
+  apiData,
+} from "@recyclerie/api/types/response";
 import logger from "../../services/logger.js";
-import { enumSchema, idSchema } from "../../services/zod.js";
+import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 
 import { deleteSchedule } from "./taskSchedule.js";
@@ -10,31 +18,10 @@ import type { Request, Response } from "express";
 import type { Includeable } from "sequelize";
 
 import db from "../../models/index.js";
+import { toStoreHoursDto, toTaskScheduleDto } from "../../mappers/taskSchedule.js";
 
 const { TaskSchedule, Recyclery } = db;
 
-const dataSchema = z.object({
-  store_id: idSchema("ID du magasin et jour de la semaine sont obligatoires"),
-  day_of_week: enumSchema(FRENCH_WEEKDAYS).transform((val) => getDateFromDay(val)),
-
-  is_recurring: z.coerce.boolean().default(true),
-  start_time: z.union([
-    z.iso.time().transform((val) => {
-      const [hours, min] = val.split(":");
-      return new Date().setHours(+(hours ?? 0), +(min ?? 0));
-    }),
-    z.coerce.date(),
-  ]),
-  end_time: z.union([
-    z.iso.time().transform((val) => {
-      const [hours, min] = val.split(":");
-      return new Date().setHours(+(hours ?? 0), +(min ?? 0));
-    }),
-    z.coerce.date(),
-  ]),
-  is_24h: z.coerce.boolean().default(false),
-  notes: z.string().nullish(),
-});
 /**
  *
  * @param  day
@@ -58,6 +45,8 @@ const getDateFromDay = (day: string) => {
   return d;
 };
 
+const dataSchema = createStoreHoursDataSchema(getDateFromDay);
+
 /**
  *  @deprecated
  * @param {import("express").Request} _req
@@ -74,30 +63,9 @@ export const listHoraires = async (_req: Request, res: Response) => {
     include,
   });
 
-  const horaires = schedules.map((schedule) => {
-    return {
-      id: schedule.id,
-      name: schedule.name,
-      day_of_week: schedule.day_of_week,
-      is_open: true,
-      open_time: schedule.start_time,
-      close_time: schedule.end_time,
-      is_24h: false,
-      notes: "",
-      createdAt: schedule.createdAt,
-      updatedAt: schedule.updatedAt,
-      store_id: schedule.store_id,
-    };
-  });
+  const horaires = schedules.map(toStoreHoursDto);
 
-  // const horaires = await StoreHours.findAll({
-  //   include: [{ model: Recyclery }],
-  // });
-
-  res.json({
-    success: true,
-    storeHours: horaires,
-  });
+  res.json(apiData(horaires) satisfies ListStoreHoursResponse);
 };
 /**
  *  @deprecated
@@ -122,29 +90,9 @@ export const horairesMagasin = async (req: Request, res: Response) => {
     include,
   });
 
-  const storeHours = schedules.map((schedule) => {
-    return {
-      id: schedule.id,
-      is_open: true,
-      open_time: schedule.start_time,
-      close_time: schedule.end_time,
-      is_24h: false,
-      notes: "",
-      createdAt: schedule.createdAt,
-      updatedAt: schedule.updatedAt,
-      store_id: schedule.store_id,
-    };
-  });
+  const storeHours = schedules.map(toStoreHoursDto);
 
-  // const storeHours = await Recyclery.findByPk(storeId, {
-  //   include: [{ model: StoreHours, as: "horaires" }],
-  //   order: [["day_of_week"]],
-  // });
-
-  res.json({
-    success: true,
-    storeHours,
-  });
+  res.json(apiData(storeHours) satisfies ListStoreHoursResponse);
 };
 
 export const addHoraire = async (req: Request, res: Response) => {
@@ -179,11 +127,11 @@ export const addHoraire = async (req: Request, res: Response) => {
     );
   });
 
-  res.json({
-    success: true,
-    message: "Horaires créés avec succès",
-    id: horaires.id,
-  });
+  res.json(
+    apiCreated({ id: horaires.id }, {
+      message: "Horaires créés avec succès",
+    }) satisfies CreateStoreHoursResponse,
+  );
 };
 
 export const updateHoraire = async (req: Request, res: Response) => {
@@ -214,11 +162,11 @@ export const updateHoraire = async (req: Request, res: Response) => {
     );
   });
 
-  res.json({
-    success: true,
-    message: "Horaires mis à jour avec succès",
-    horaire: schedule,
-  });
+  res.json(
+    apiData(toTaskScheduleDto(schedule), {
+      message: "Horaires mis à jour avec succès",
+    }) satisfies UpdateStoreHoursResponse,
+  );
 };
 /**
  * @deprecated

@@ -24,7 +24,7 @@ const assertGiftCardUsable = (giftCard: Models["GiftCard"]) => {
   }
 };
 type GiftCreate = {
-  code: string;
+  code?: string;
   initialValue: number;
   expiresAt?: Date | string | null;
   issuedTransactionId?: Models["SalesTransaction"]["id"] | null;
@@ -94,7 +94,7 @@ export const issueGiftCard = async ({
     }
     const giftCard = await GiftCard.create(
       {
-        code,
+        ...(code != null ? { code } : {}),
         initial_value: amount,
         expires_at: expiresAt != null ? new Date(expiresAt) : null,
         issued_transaction_id: issuedTransactionId,

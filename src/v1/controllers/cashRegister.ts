@@ -1,5 +1,21 @@
 import { col, fn } from "sequelize";
-import * as z from "zod";
+import {
+  cashRegisterCreateSchema,
+  cashRegisterFilterSchema,
+  cashRegisterUpdateSchema,
+} from "@recyclerie/api/schemas/cashRegister";
+import type {
+  CreateCashRegisterResponse,
+  DeleteCashRegisterResponse,
+  DetailCashRegisterResponse,
+  ListCashRegistersResponse,
+  UpdateCashRegisterResponse,
+} from "@recyclerie/api/responses/cashRegister";
+import {
+  apiCreated,
+  apiData,
+  apiMessage,
+} from "@recyclerie/api/types/response";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
@@ -7,18 +23,17 @@ import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
 import type { ModelWhere } from "../../models/db-types.js";
+import {
+  toCashRegisterDetailDto,
+  toCashRegisterDto,
+} from "../../mappers/cashRegister.js";
 
 const { CashRegister, Recyclery, CashSession } = db;
 
 export const listCaisses = async (req: Request, res: Response) => {
   const store_id = idSchema().optional().parse(req.params.id);
 
-  const filterSchema = z.object({
-    is_active: z.coerce.boolean().optional(),
-    store_id: idSchema().optional(), //TODO fix NAME ?
-  });
-
-  const filter = filterSchema.parse({ store_id, ...req.query });
+  const filter = cashRegisterFilterSchema.parse({ store_id, ...req.query });
 
   const where: ModelWhere<typeof CashRegister> = {};
   if (filter.store_id) {
@@ -54,12 +69,9 @@ export const listCaisses = async (req: Request, res: Response) => {
     order: [["name", "ASC"]],
   });
 
-  res.json({
-    success: true,
-    data: cashRegister,
-    cash_registers: cashRegister,
-    registers: cashRegister,
-  });
+  res.json(
+    apiData(cashRegister.map(toCashRegisterDto)) satisfies ListCashRegistersResponse,
+  );
 };
 
 export const detailCaisse = async (req: Request, res: Response) => {
@@ -84,28 +96,22 @@ export const detailCaisse = async (req: Request, res: Response) => {
     if (!latest || createdAt > latest) return createdAt;
     return latest;
   }, null);
-
-  //TODO not clean ?
-  res.json({
-    success: true,
-    data: {
-      ...register.toJSON(),
-      store_name: register.get("Recyclery")
-        ? (register.get("Recyclery")?.get("name") ?? null)
-        : null,
-      total_sessions: sessions.length,
-      last_session: lastSession,
-    },
-  });
+//TODO not clean ?
+  res.json(
+    apiData(
+      toCashRegisterDetailDto(register, {
+        store_name: register.get("Recyclery")
+          ? (register.get("Recyclery")?.get("name") ?? null)
+          : null,
+        total_sessions: sessions.length,
+        last_session: lastSession,
+      }),
+    ) satisfies DetailCashRegisterResponse,
+  );
 };
 
 export const createCaisse = async (req: Request, res: Response) => {
-  const dataSchema = z.object({
-    name: z.string("Nom obligatoire").trim().min(1, "Nom obligatoire"),
-    store_id: z.coerce.number("magasin obligatoire"),
-    is_active: z.coerce.boolean().optional().default(true),
-  });
-  const data = dataSchema.parse(req.body);
+  const data = cashRegisterCreateSchema.parse(req.body);
 
   // Vérifier que le magasin existe
   const store = await findByPkOrThrow(Recyclery, data.store_id, "Magasin non trouvé");
@@ -116,22 +122,19 @@ export const createCaisse = async (req: Request, res: Response) => {
     is_active: data.is_active,
   });
 
-  res.status(201).json({
-    success: true,
-    message: "Caisse créée avec succès",
-    cash_register_id: result.id,
-    data: result,
-  });
+  res
+    .status(201)
+    .json(
+      apiCreated(toCashRegisterDto(result), {
+        message: "Caisse créée avec succès",
+      }) satisfies CreateCashRegisterResponse,
+    );
 };
 
 export const updateCaisse = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const dataSchema = z.object({
-    name: z.string("Nom obligatoire").trim().min(1, "Nom obligatoire"),
-    is_active: z.coerce.boolean().optional().default(true),
-  });
-  const data = dataSchema.parse(req.body);
+  const data = cashRegisterUpdateSchema.parse(req.body);
 
   // Vérifier que la caisse existe
   const existingRegister = await findByPkOrThrow(
@@ -141,11 +144,11 @@ export const updateCaisse = async (req: Request, res: Response) => {
   );
   await existingRegister.update({ ...data });
 
-  res.json({
-    success: true,
-    message: "Caisse mise à jour avec succès",
-    data: existingRegister,
-  });
+  res.json(
+    apiData(toCashRegisterDto(existingRegister), {
+      message: "Caisse mise à jour avec succès",
+    }) satisfies UpdateCashRegisterResponse,
+  );
 };
 
 export const deleteCaisse = async (req: Request, res: Response) => {
@@ -159,10 +162,9 @@ export const deleteCaisse = async (req: Request, res: Response) => {
 
   await existingRegister.destroy();
 
-  res.json({
-    success: true,
-    message: "Caisse supprimée avec succès",
-  });
+  res.json(
+    apiMessage("Caisse supprimée avec succès") satisfies DeleteCashRegisterResponse,
+  );
 };
 /**
  * @deprecated
@@ -172,6 +174,6 @@ export const deleteCaisse = async (req: Request, res: Response) => {
 export const listCaissesMagasin = async (req: Request, res: Response) => {
   const { store_id } = req.params;
   req.query.store_id = store_id;
-  logger.info("called list caisse magasin, REMAKE THIS ONE");
+  logger.error("called list caisse magasin, REMAKE THIS ONE");
   listCaisses(req, res);
 };

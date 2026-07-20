@@ -23,7 +23,7 @@ describe("cross-cutting validation rules", () => {
         makeReq({ body: { name: "  TrimCat  " } }),
         res,
       );
-      const cat = await Category.findByPk(res.json.mock.calls[0][0].category.id);
+      const cat = await Category.findByPk(res.json.mock.calls[0][0].data.id);
       expect(cat.name).toBe("TrimCat");
     });
 
@@ -53,7 +53,7 @@ describe("cross-cutting validation rules", () => {
         res,
       );
       const store = await Recyclery.findByPk(
-        res.json.mock.calls[0][0].recyclery.id,
+        res.json.mock.calls[0][0].data.id,
       );
       expect(store.name).toBe("TrimStore");
     });
@@ -71,7 +71,7 @@ describe("cross-cutting validation rules", () => {
         }),
         res,
       );
-      expect(res.json.mock.calls[0][0].collection_point.name).toBe("TrimPoint");
+      expect(res.json.mock.calls[0][0].data.name).toBe("TrimPoint");
     });
   });
 
