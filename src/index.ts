@@ -102,8 +102,8 @@ app.listen(5000, () => {
           password: process.env.DEFAULT_PASS,
           role: "admin",
         });
-  appReady = true;
       }
+      appReady = true;
     })
     .catch((err) => logger.error("sync error", err));
 
