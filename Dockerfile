@@ -1,4 +1,4 @@
-FROM node:lts AS build
+FROM node:latest AS build
 
 ENV NODE_ENV=development
 
@@ -16,7 +16,7 @@ COPY --chown=node:node . .
 
 RUN npx tsc --noCheck
 
-FROM node:lts
+FROM node:latest
 
 ENV NODE_ENV=production
 
