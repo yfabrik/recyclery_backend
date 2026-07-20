@@ -68,6 +68,7 @@ jobs:
           trap cleanup EXIT
 
           echo "Waiting for the container to boot and pass database bootstrap..."
+          sleep 10
           for attempt in $(seq 1 30); do
             if ! docker inspect -f '{{.State.Running}}' recyclerie-ci | grep -q true; then
               echo "Container exited before becoming healthy (attempt ${attempt})"
