@@ -703,7 +703,7 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
         );
       const soldQty = c.TransactionItem.quantity;
 
-      if (soldQty - alreadyRefunded < 0 || item.quantity > soldQty) {
+      if (soldQty - alreadyRefunded < 0 && item.quantity > soldQty) {
         throw new createHttpError.BadRequest(
           "peut pas rembourser plus d'objects que vendu",
         );
