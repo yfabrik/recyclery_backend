@@ -39,7 +39,7 @@ jobs:
           cache: npm
 
       - name: Apply database migrations
-        run: npm ci && npm run db:migrate
+        run: npm ci  && npm i sequelize-cli && npx sequelize-cli db:migrate
 
       - name: Download Docker image
         uses: actions/download-artifact@v4

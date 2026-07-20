@@ -13,7 +13,7 @@
     "jest": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.cjs --runInBand",
     "mocha": "mocha",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.cjs --runInBand --coverage=false",
-    "db:migrate": "sequelize-cli db:migrate --options-path .sequelizerc.cjs",
+    "db:migrate": "sequelize-cli db:migrate --options-path .sequelizerc",
     "db:migrate-data": "tsx src/scripts/migrateToMariadb.ts",
     "db:smoke": "tsx src/scripts/smokeMariaDb.ts"
   },
