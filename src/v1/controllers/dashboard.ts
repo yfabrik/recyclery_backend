@@ -16,6 +16,7 @@ import {
   toDashboardStoreDto,
   toDashboardStoreHistoryDto,
 } from "../../mappers/dashboard.js";
+import { dayjs, now } from "../../utils/dates.js";
 
 const {
   LabeledItem,
@@ -93,11 +94,11 @@ export const dashboardStats = async (_req: Request, res: Response) => {
   });
 
   //FIXME buggie at the end of the month
-  const today = new Date();
-  const lastMonthToday = new Date(new Date().setMonth(today.getMonth() - 1));
-  const lastMonthFirstDay = new Date(new Date(lastMonthToday).setDate(1));
+  const today = now();
+  const lastMonthToday = today.subtract(1, "month");
+  const lastMonthFirstDay = lastMonthToday.startOf("month");
   // 3. Articles vendus ce mois - vérifier d'abord les transactions
-  const currentMonth = new Date().toISOString().slice(0, 7); // Format YYYY-MM
+  const currentMonth = today.format("YYYY-MM");
   const month_transactions = await SalesTransaction.findAll({
     where: { createdAt: { [Op.gt]: currentMonth } },
     include: [{ model: LabeledItem, as: "items" }],
@@ -144,8 +145,9 @@ export const dashboardStats = async (_req: Request, res: Response) => {
     where: {
       createdAt: {
         [Op.between]: [
-          lastMonthFirstDay.toISOString().slice(0, 10),
-          lastMonthToday.toISOString().slice(0, 10),
+          //TODO use daterange where ?
+          lastMonthFirstDay.format("YYYY-MM-DD"),
+          lastMonthToday.format("YYYY-MM-DD"),
         ],
       },
     },
@@ -254,9 +256,8 @@ export const dashboardCharts = async (_req: Request, res: Response) => {
   const labels = [];
 
   for (let i = 6; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().slice(0, 10);
+    const date = now().subtract(i, "day");
+    const dateStr = date.format("YYYY-MM-DD");
 
     // Vérifier d'abord si on a des transactions de vente
     const hasTransactions = await SalesTransaction.findAll({
@@ -272,9 +273,7 @@ export const dashboardCharts = async (_req: Request, res: Response) => {
 
     salesData.push(daySales);
     revenueData.push(dayRevenue);
-    labels.push(
-      date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
-    );
+    labels.push(date.format("DD MMM"));
   }
 
   res.json(
@@ -286,25 +285,83 @@ export const dashboardCharts = async (_req: Request, res: Response) => {
   );
 };
 
+
+const getMonthTransactions = async (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs, store: Models["Recyclery"]) => {
+  const caissesId = store.caisses?.map((caisse) => caisse.id);
+  const month_transactions = await SalesTransaction.findAll({
+    where: {
+      createdAt: {
+        [Op.between]: [
+          startDate.format("YYYY-MM-DD"),
+          endDate.format("YYYY-MM-DD"),
+        ],
+      },
+    },
+    include: [
+      {
+        model: CashSession,
+        where: {
+          cash_register_id: { [Op.in]: caissesId },
+        },
+        required: true,
+      },
+      {
+        model: LabeledItem,
+        as: "items",
+      },
+    ],
+  });
+  const monthSales = month_transactions.length;
+  const monthRevenue = profit(month_transactions);
+
+  const sessions = await CashSession.count({
+    where: {
+      createdAt: {
+        [Op.between]: [
+          startDate.format("YYYY-MM-DD"),
+          endDate.format("YYYY-MM-DD"),
+        ],
+      },
+    },
+    include: [
+      {
+        model: CashRegister,
+        where: { recyclery_id: store.id },
+        required: true,
+      },
+    ],
+  });
+
+  return {
+    transactions: monthSales,
+    revenue: monthRevenue,
+    averageTransaction: monthRevenue / monthSales,
+    sessions: sessions,
+    start: startDate.toDate(),
+    end: endDate.toDate(),
+  }
+
+}
+
 const statsMonth = async (
   store: Models["Recyclery"],
-  theToday: Date = new Date(),
+  theToday: Date = now().toDate(),
 ) => {
-  const today = theToday;
-  const firstDayOfMonth = new Date(new Date(today).setDate(1));
-  const todayLastMonth = new Date(
-    new Date(today).setMonth(today.getMonth() - 1),
-  );
-  const firstDayOfLastMonth = new Date(new Date(todayLastMonth).setDate(1));
+  const today = dayjs(theToday);
+  const firstDayOfMonth = today.startOf("month");
+  const todayLastMonth = today.subtract(1, "month");
+  const firstDayOfLastMonth = todayLastMonth.startOf("month");
 
   const caissesId = store.caisses?.map((caisse) => caisse.id);
+  const currentMonthTransactions = await getMonthTransactions(firstDayOfMonth, today, store);
+  const lastMonthTransactions = await getMonthTransactions(firstDayOfLastMonth, todayLastMonth, store);
 
   const month_transactions = await SalesTransaction.findAll({
     where: {
       createdAt: {
         [Op.between]: [
-          firstDayOfMonth.toISOString().slice(0, 10),
-          today.toISOString().slice(0, 10),
+          firstDayOfMonth.format("YYYY-MM-DD"),
+          today.format("YYYY-MM-DD"),
         ],
       },
     },
@@ -332,8 +389,8 @@ const statsMonth = async (
     where: {
       createdAt: {
         [Op.between]: [
-          firstDayOfLastMonth.toISOString().slice(0, 10),
-          todayLastMonth.toISOString().slice(0, 10),
+          firstDayOfLastMonth.format("YYYY-MM-DD"),
+          todayLastMonth.format("YYYY-MM-DD"),
         ],
       },
     },
@@ -357,8 +414,8 @@ const statsMonth = async (
     where: {
       createdAt: {
         [Op.between]: [
-          firstDayOfMonth.toISOString().slice(0, 10),
-          today.toISOString().slice(0, 10),
+          firstDayOfMonth.format("YYYY-MM-DD"),
+          today.format("YYYY-MM-DD"),
         ],
       },
     },
@@ -372,25 +429,17 @@ const statsMonth = async (
   });
 
   // Calculer l'évolution par rapport au mois dernier
-  const revenueGrowth =
-    lastMonthRevenue > 0
-      ? ((currentRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
-      : 0;
-
+  // const revenueGrowth =
+  //   lastMonthRevenue > 0
+  //     ? ((currentRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+  //     : 0;
+  const revenueGrowth = lastMonthRevenue > 0 ? ((currentMonthTransactions.revenue - lastMonthTransactions.revenue) / lastMonthTransactions.revenue) * 100 : 0;
   return {
     currentMonth: {
-      transactions: currentMonthSales,
-      revenue: currentRevenue,
-      averageTransaction: currentRevenue / currentMonthSales,
-      sessions: sessions,
-      start: firstDayOfMonth,
-      end: today,
+      ...currentMonthTransactions
     },
     lastMonth: {
-      transactions: lastMonthRevenueResult.length,
-      revenue: lastMonthRevenue,
-      start: firstDayOfLastMonth,
-      end: todayLastMonth,
+      ...lastMonthTransactions
     },
     items: {
       available: 0, // Temporairement fixé à 0

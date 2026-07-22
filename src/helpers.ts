@@ -1,3 +1,4 @@
+import type { IsoDate } from "@recyclerie/api";
 import createHttpError from "http-errors";
 import {
   Op,
@@ -6,20 +7,21 @@ import {
   type WhereAttributeHashValue,
 } from "sequelize";
 import type { ModelClass } from "./models/db-types.js";
+import { endOfDay, startOfDay } from "./utils/dates.js";
 
-export const formatWhereDateRange = (dateFrom?: Date, dateTo?: Date):WhereAttributeHashValue<Date> => {
-  const from = dateFrom
-    ? new Date(new Date(dateFrom).setHours(0, 0, 0, 0))
-    : undefined;
-  const to = dateTo
-    ? new Date(new Date(dateTo).setHours(23, 59, 59, 999))
-    : undefined;
+/** Expand IsoDate (YYYY-MM-DD) filters to Europe/Paris day bounds for datetime columns. */
+export const formatWhereDateRange = (
+  dateFrom?: IsoDate | string | Date | null,
+  dateTo?: IsoDate | string | Date | null,
+): WhereAttributeHashValue<Date> | undefined => {
+  const from = dateFrom ? startOfDay(dateFrom).toDate() : undefined;
+  const to = dateTo ? endOfDay(dateTo).toDate() : undefined;
 
-  if (!from && !to) return;
-  let result = {}; //as WhereAttributeHashValue<Date>
+  if (!from && !to) return undefined;
+  let result: WhereAttributeHashValue<Date> = {};
   if (from) result = { ...result, [Op.gte]: from };
   if (to) result = { ...result, [Op.lte]: to };
-  return result ;
+  return result;
 };
 
 export const ensureItemWithIdExist = async <T extends ModelClass>(

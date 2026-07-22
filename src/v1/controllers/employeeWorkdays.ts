@@ -7,6 +7,7 @@ import { apiData, apiMessage } from "@recyclerie/api/types/response";
 import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
+import { literal } from "sequelize";
 import db from "../../models/index.js";
 import { toEmployeeWorkdayDto } from "../../mappers/employeeWorkdays.js";
 
@@ -17,6 +18,8 @@ export const listEmployeeWorkdays = async (req: Request, res: Response) => {
 
   const workdays = await EmployeeWorkdays.findAll({
     where: { employee_id: employeeId },
+    // Monday-first: Mon=0 … Sun=6 via ((day_of_week + 6) % 7)
+    order: [[literal("((day_of_week + 6) % 7)"), "ASC"]],
   });
 
   res.json(

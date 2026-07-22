@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import createHttpError from "http-errors";
 import { createCollectionPointPresenceDataSchema } from "@recyclerie/api/schemas/schedules";
 import type { CreateCollectionPointPresenceResponse } from "@recyclerie/api/responses/taskSchedule";
 import { apiCreated, apiMessage } from "@recyclerie/api/types/response";
@@ -12,35 +11,12 @@ import { deleteSchedule, listSchedules } from "./taskSchedule.js";
 
 import db from "../../models/index.js";
 import { toTaskScheduleDto } from "../../mappers/taskSchedule.js";
+import {
+  combineDateAndTime,
+  dateFromWeekday,
+} from "../../utils/dates.js";
 
-const getDateFromDay = (
-  day:
-    | "Lundi"
-    | "Mardi"
-    | "Mercredi"
-    | "Jeudi"
-    | "Vendredi"
-    | "Samedi"
-    | "Dimanche",
-) => {
-  const today = new Date();
-  let d;
-  let i = 0;
-  while (i < 7) {
-    const jour = new Intl.DateTimeFormat("fr-FR", { weekday: "long" }).format(
-      today.setDate(today.getDate() + 1),
-    );
-    if (jour == day.toLowerCase()) {
-      d = today;
-      break;
-    }
-    i++;
-  }
-  if (!d) throw new createHttpError[400]();
-  return d;
-};
-
-const dataSchema = createCollectionPointPresenceDataSchema(getDateFromDay);
+const dataSchema = createCollectionPointPresenceDataSchema;
 
 const { CollectionPoint, TaskSchedule } = db;
 
@@ -55,8 +31,6 @@ export const listPointPrecense = async (req: Request, res: Response) => {
  * @deprecated
  */
 export const detailPointPrecense = async (req: Request, res: Response) => {
-  // const { collectionPointId } = req.params;
-
   return detailTask(req, res);
 };
 
@@ -74,13 +48,20 @@ export const createPointPrecense = async (req: Request, res: Response) => {
     },
   );
 
+  const scheduled_date = dateFromWeekday(data.day_of_week);
+  const start_time = combineDateAndTime(scheduled_date, data.start_time);
+  const end_time = combineDateAndTime(scheduled_date, data.end_time);
+
   const presence = await db.sequelize.transaction(async (t) => {
     return TaskSchedule.create(
       {
-        ...data,
         name: point.name,
         category: "point",
-        scheduled_date: data.day_of_week,
+        scheduled_date,
+        start_time,
+        end_time,
+        notes: data.notes ?? null,
+        is_recurring: data.is_present,
         recurrence_pattern: "weekly",
         collection_point_id: data.collection_point_id,
         store_id: point.recyclery_id,
@@ -105,27 +86,31 @@ export const updatePointPrecense = async (req: Request, res: Response) => {
     "Jours de présence non trouvés",
   );
 
-  const { day_of_week, is_present, ...rest } = data;
+  const scheduled_date = dateFromWeekday(data.day_of_week);
+  const start_time = combineDateAndTime(scheduled_date, data.start_time);
+  const end_time = combineDateAndTime(scheduled_date, data.end_time);
+
   await db.sequelize.transaction(async (t) => {
     await existing.update(
       {
-        ...rest,
-        is_recurring: is_present,
-        scheduled_date: day_of_week,
+        scheduled_date,
+        start_time,
+        end_time,
+        notes: data.notes ?? null,
+        is_recurring: data.is_present,
+        store_id: data.store_id,
+        collection_point_id: data.collection_point_id,
       },
       { transaction: t },
     );
   });
 
-  res.json(
-    apiMessage("Jours de présence mis à jour avec succès"),
-  );
+  res.json(apiMessage("Jours de présence mis à jour avec succès"));
 };
 
 /**
  * @deprecated
  */
 export const deletePointPrecense = async (req: Request, res: Response) => {
-  // const id = z.coerce.number().positive().parse(req.params.id);
   return deleteSchedule(req, res);
 };
