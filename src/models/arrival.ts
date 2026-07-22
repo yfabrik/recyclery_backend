@@ -72,6 +72,8 @@ export default class Arrival extends Model<
     });
     this.belongsTo(models.CollectionPoint, {
       foreignKey: "collection_point_id",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
     });
     this.belongsTo(models.User, {
       foreignKey:{ name:"processed_by",allowNull: false},
