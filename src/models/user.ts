@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
@@ -9,18 +10,21 @@ import {
   type HasManySetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
+  type ModelStatic,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type Arrival from "./arrival.ts";
 import type { ModelStatics } from "./db-types.ts";
 import type Donation from "./donation.ts";
+import type GiftCard from "./giftcard.ts";
+import type GiftCardTransaction from "./giftcardtransaction.ts";
 import type LabeledItem from "./labeleditem.ts";
 import type Recyclery from "./recyclery.ts";
 import type SalesTransaction from "./salestransaction.ts";
+import type WasteDisposal from "./wasteDisposal.ts";
 import { USER_ROLES, type UserRole } from "../constants/dbEnums.js";
-
-export default class User extends Model<
+import type CashSession from "./cashsession.js";export default class User extends Model<
   InferAttributes<User>,
   InferCreationAttributes<User>
 > {
@@ -41,6 +45,10 @@ export default class User extends Model<
   declare LabeledItems?: NonAttribute<LabeledItem[]>;
   declare Arrivals?: NonAttribute<Arrival[]>;
   declare managedStores?: NonAttribute<Recyclery[]>;
+  declare CashSessions?: NonAttribute<CashSession[]>;
+  declare WasteDisposals?: NonAttribute<WasteDisposal[]>;
+  declare createdGiftCards?: NonAttribute<GiftCard[]>;
+  declare createdGiftCardTransactions?: NonAttribute<GiftCardTransaction[]>;
 
   declare getDonations: HasManyGetAssociationsMixin<Donation>;
   declare addDonation: HasManyAddAssociationMixin<Donation, Donation["id"]>;
@@ -69,15 +77,60 @@ export default class User extends Model<
     Recyclery,
     Recyclery["id"]
   >;
+  declare getCashSessions: HasManyGetAssociationsMixin<CashSession>;
+  declare getWasteDisposals: HasManyGetAssociationsMixin<WasteDisposal>;
+  declare getCreatedGiftCards: HasManyGetAssociationsMixin<GiftCard>;
+  declare getCreatedGiftCardTransactions: HasManyGetAssociationsMixin<GiftCardTransaction>;
 
   static associate(models: ModelStatics) {
-    this.hasMany(models.Donation, { foreignKey: "received_by" });
-    this.hasMany(models.SalesTransaction, { foreignKey: "created_by" });
-    this.hasMany(models.LabeledItem, { foreignKey: "created_by" });
-    this.hasMany(models.Arrival, { foreignKey: "processed_by" });
+    this.hasMany(models.Donation, {
+      foreignKey: "received_by",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
+    });
+    this.hasMany(models.SalesTransaction, {
+      foreignKey: "created_by",
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    });
+    this.hasMany(models.LabeledItem, {
+      foreignKey: "created_by",
+      as: "LabeledItems",
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    });
+    this.hasMany(models.Arrival, {
+      foreignKey: "processed_by",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
+    });
     this.hasMany(models.Recyclery, {
       foreignKey: "manager_id",
       as: "managedStores",
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    });
+    this.hasMany(models.CashSession, {
+      foreignKey: "user_id",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
+    });
+    this.hasMany(models.WasteDisposal, {
+      foreignKey: "created_by",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
+    });
+    this.hasMany(models.GiftCard, {
+      foreignKey: "created_by",
+      as: "createdGiftCards",
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    });
+    this.hasMany(models.GiftCardTransaction, {
+      foreignKey: "created_by",
+      as: "createdGiftCardTransactions",
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
     });
   }
 
@@ -146,6 +199,28 @@ export default class User extends Model<
           },
         },
         hooks: {
+          beforeDestroy: async (user) => {
+            const s = user.sequelize.models;
+            const counts = await Promise.all([
+              (s.Donation as ModelStatic<Donation>).count({
+                where: { received_by: user.id },
+              }),
+              (s.Arrival as ModelStatic<Arrival>).count({
+                where: { processed_by: user.id },
+              }),
+              (s.CashSession as ModelStatic<CashSession>).count({
+                where: { user_id: user.id },
+              }),
+              (s.WasteDisposal as ModelStatic<WasteDisposal>).count({
+                where: { created_by: user.id },
+              }),
+            ]);
+            if (counts.some((n) => n > 0)) {
+              throw new createHttpError[424](
+                "Impossible de supprimer un utilisateur encore référencé par des données métier",
+              );
+            }
+          },
           beforeCreate: async (user) => {
             if (user.password_hash && !user.password_hash.startsWith("$2")) {
               const saltRounds = 10;

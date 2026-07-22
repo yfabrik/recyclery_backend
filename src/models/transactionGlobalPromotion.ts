@@ -28,7 +28,7 @@ export default class TransactionGlobalPromotion extends Model<
 
   declare transaction_id: ForeignKey<SalesTransaction["id"]>;
 
-  declare SalesTransaction?: NonAttribute<SalesTransaction | null>;
+  declare SalesTransaction?: NonAttribute<SalesTransaction>;
 
   declare getSalesTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
   declare setSalesTransaction: BelongsToSetAssociationMixin<
@@ -37,7 +37,11 @@ export default class TransactionGlobalPromotion extends Model<
   >;
 
   static associate(models: ModelStatics) {
-    this.belongsTo(models.SalesTransaction, { foreignKey: "transaction_id" ,onDelete: "CASCADE", onUpdate: "CASCADE"});
+    this.belongsTo(models.SalesTransaction, {
+      foreignKey: { name: "transaction_id", allowNull: false },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
   }
 
   static initModel(sequelize: Sequelize) {
@@ -57,10 +61,6 @@ export default class TransactionGlobalPromotion extends Model<
           type: DataTypes.ENUM(...PROMOTION_TYPES),
           allowNull: false,
           defaultValue: "percent",
-        },
-        transaction_id: {
-          type: DataTypes.INTEGER.UNSIGNED,
-          allowNull: false,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

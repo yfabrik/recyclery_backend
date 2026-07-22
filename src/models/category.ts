@@ -1,6 +1,8 @@
+import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
+  Op,
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
@@ -9,13 +11,15 @@ import {
   type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
+  type ModelStatic,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
 import type { ModelStatics } from "./db-types.ts";
 import type LabeledItem from "./labeleditem.ts";
 import type Promotion from "./promotion.ts";
-
+import type Arrival from "./arrival.ts";
+import type WasteDisposal from "./wasteDisposal.ts";
 export default class Category extends Model<
   InferAttributes<Category>,
   InferCreationAttributes<Category>
@@ -35,10 +39,10 @@ export default class Category extends Model<
 
   declare parent_id: ForeignKey<number | null>;
 
-  declare subcategories?: NonAttribute<Category[]>;
-  declare parent?: NonAttribute<Category>;
-  declare LabeledItems?: NonAttribute<LabeledItem[]>;
-  declare Promotions?: NonAttribute<Promotion[]>;
+  declare subcategories?: NonAttribute<Category[]>;//TODO if subcategory deleted  category still survive ?y
+  declare parent?: NonAttribute<Category>;//TODO if parent deleted  category still survive ?n
+  declare LabeledItems?: NonAttribute<LabeledItem[]>;//TODO if labeleditem deleted  category still survive ?y
+  declare Promotions?: NonAttribute<Promotion[]>;//TODO if promotion deleted  category still survive ?y
 
   declare getSubcategories: HasManyGetAssociationsMixin<Category>;
   declare addSubcategory: HasManyAddAssociationMixin<Category, Category["id"]>;
@@ -57,43 +61,62 @@ export default class Category extends Model<
       as: "subcategories",
       foreignKey: "parent_id",
       onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.belongsTo(models.Category, {
       as: "parent",
-      foreignKey: "parent_id",
+      foreignKey: { name: "parent_id", allowNull: true },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.hasMany(models.LabeledItem, {
       foreignKey: "category_id",
       as: "itemsWithCategory",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
     });
     this.hasMany(models.LabeledItem, {
       foreignKey: "subcategory_id",
       as: "itemsWithSubCategory",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
     });
     this.hasMany(models.Promotion, { foreignKey: "category_id" });
     this.belongsToMany(models.EcoOrganism, {
       through: "ecoOrg_categoryIn",
       as: "inEcoOrganisms",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.belongsToMany(models.EcoOrganism, {
       through: "ecoOrg_categorySell",
       as: "sellEcoOrganisms",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.hasMany(models.Arrival, {
       foreignKey: "category_id",
       as: "arrivalsWithCategory",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
     });
     this.hasMany(models.Arrival, {
       foreignKey: "subcategory_id",
       as: "arrivalsWithSubCategory",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
     });
     this.hasMany(models.WasteDisposal, {
       foreignKey: "category_id",
       as: "wastesWithCategory",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
     });
     this.hasMany(models.WasteDisposal, {
       foreignKey: "subcategory_id",
       as: "wastesWithSubCategory",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
     });
   }
 
@@ -108,7 +131,6 @@ export default class Category extends Model<
         name: { type: DataTypes.STRING, allowNull: false },
         description: DataTypes.TEXT,
         icon: DataTypes.STRING,
-        parent_id: DataTypes.INTEGER,
         defaultWeight: {
           type: DataTypes.FLOAT(),
           validate: { min: 0 },
@@ -149,6 +171,30 @@ export default class Category extends Model<
           { fields: ["parent_id"] },
           { fields: ["parent_id", "name"], unique: true }, //=> enforce unique constraint],
         ],
+        hooks: {
+          beforeDestroy: async (category) => {
+            const id = category.id;
+            const LabeledItem = category.sequelize.models
+              .LabeledItem as ModelStatic<LabeledItem>;
+            const Arrival = category.sequelize.models
+              .Arrival as ModelStatic<Arrival>;
+            const WasteDisposal = category.sequelize.models
+              .WasteDisposal as ModelStatic<WasteDisposal>;
+            const whereCat = {
+              [Op.or]: [{ category_id: id }, { subcategory_id: id }],
+            };
+            const [items, arrivals, wastes] = await Promise.all([
+              LabeledItem.count({ where: whereCat }),
+              Arrival.count({ where: whereCat }),
+              WasteDisposal.count({ where: whereCat }),
+            ]);
+            if (items > 0 || arrivals > 0 || wastes > 0) {
+              throw new createHttpError[424](
+                "Impossible de supprimer une catégorie encore utilisée par des articles, arrivages ou déchets",
+              );
+            }
+          },
+        },
       },
     );
   }

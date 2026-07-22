@@ -1,27 +1,29 @@
+import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
-  Transaction,
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
   type ForeignKey,
   type HasManyAddAssociationMixin,
+  type HasManyCountAssociationsMixin,
   type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
+import {
+  COLLECTION_POINT_TYPES,
+  type CollectionPointType,
+} from "../constants/dbEnums.js";
+import { withTransaction } from "../utils/transaction.js";
 import type Arrival from "./arrival.ts";
 import type { ModelStatics } from "./db-types.ts";
 import type Recyclery from "./recyclery.ts";
 import type Task from "./task.ts";
 import type TaskSchedule from "./taskschedule.ts";
-import {
-  COLLECTION_POINT_TYPES,
-  type CollectionPointType,
-} from "../constants/dbEnums.js";
 
 export default class CollectionPoint extends Model<
   InferAttributes<CollectionPoint>,
@@ -61,16 +63,26 @@ export default class CollectionPoint extends Model<
   declare getTasks: HasManyGetAssociationsMixin<Task>;
   declare addTask: HasManyAddAssociationMixin<Task, Task["id"]>;
   declare getArrivals: HasManyGetAssociationsMixin<Arrival>;
+  declare countArrivals: HasManyCountAssociationsMixin;
   declare addArrival: HasManyAddAssociationMixin<Arrival, Arrival["id"]>;
 
   static associate(models: ModelStatics) {
     this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
     this.hasMany(models.TaskSchedule, {
-      onDelete: "CASCADE",
       foreignKey: "collection_point_id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
-    this.hasMany(models.Task, { foreignKey: "collection_point_id" });
-    this.hasMany(models.Arrival, { foreignKey: "collection_point_id" });
+    this.hasMany(models.Task, {
+      foreignKey: "collection_point_id",
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    });
+    this.hasMany(models.Arrival, {
+      foreignKey: "collection_point_id",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
+    });
   }
 
   static initModel(sequelize: Sequelize) {
@@ -130,29 +142,32 @@ export default class CollectionPoint extends Model<
               !instance.changed("recyclery_id")
             )
               return;
-            const propagateUpdates = async (transaction: Transaction) => {
-              for (const schedule of await instance.getTaskSchedules({
-                transaction: transaction ?? null,
-              })) {
-                await schedule.update(
-                  {
-                    is_recurring: instance.is_active,
-                    store_id: instance.recyclery_id,
-                    name: instance.name,
-                  },
-                  { transaction },
-                );
-              }
-            };
-
-            if (options.transaction) {
-              await propagateUpdates(options.transaction);
-              return;
+            await withTransaction(
+              instance.sequelize!,
+              options.transaction,
+              async (transaction) => {
+                for (const schedule of await instance.getTaskSchedules({
+                  transaction,
+                })) {
+                  await schedule.update(
+                    {
+                      is_recurring: instance.is_active,
+                      store_id: instance.recyclery_id,
+                      name: instance.name,
+                    },
+                    { transaction },
+                  );
+                }
+              },
+            );
+          },
+          beforeDestroy: async (collectionPoint) => {
+            const arrivals = await collectionPoint.countArrivals();
+            if (arrivals > 0) {
+              throw new createHttpError[424](
+                "Impossible de supprimer un point de collecte qui a des arrivages",
+              );
             }
-
-            await instance.sequelize.transaction(async (t) => {
-              await propagateUpdates(t);
-            });
           },
         },
       },

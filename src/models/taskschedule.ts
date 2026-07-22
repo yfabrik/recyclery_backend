@@ -25,6 +25,8 @@ import {
 } from "sequelize";
 import logger from "../services/logger.js";
 import { generateTasksFromSchedule } from "../services/taskScheduleUtils.js";
+import { weekday } from "../utils/dates.js";
+import { withTransaction } from "../utils/transaction.js";
 import type CollectionPoint from "./collectionpoint.ts";
 import type { ModelStatics } from "./db-types.ts";
 import type Employee from "./employee.ts";
@@ -58,7 +60,7 @@ export default class TaskSchedule extends Model<
   declare start_time: Date;
   declare end_time: Date;
 
-  declare day_of_week: NonAttribute<string | null>;
+  declare day_of_week: NonAttribute<number | null>;
 
   declare store_id: ForeignKey<Recyclery["id"] | null>;
   declare collection_point_id: ForeignKey<CollectionPoint["id"] | null>;
@@ -98,12 +100,23 @@ export default class TaskSchedule extends Model<
     this.hasMany(models.Task, {
       foreignKey: "schedule_id",
       onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
-    this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
+    this.belongsTo(models.Recyclery, {
+      foreignKey: "store_id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
     this.belongsTo(models.CollectionPoint, {
       foreignKey: "collection_point_id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
-    this.belongsToMany(models.Employee, { through: "employee_schedule" }); //TODO really GOOD ?
+    this.belongsToMany(models.Employee, {
+      through: "employee_schedule",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    }); //TODO really GOOD ?
   }
 
   static initModel(sequelize: Sequelize) {
@@ -326,10 +339,7 @@ export default class TaskSchedule extends Model<
           type: DataTypes.VIRTUAL,
           get(this: TaskSchedule) {
             if (!this.scheduled_date) return null;
-            const d = new Intl.DateTimeFormat("fr-FR", {
-              weekday: "long",
-            }).format(this.scheduled_date);
-            return d ? d.charAt(0).toUpperCase() + d.slice(1) : null;
+            return weekday(this.scheduled_date);
           },
         },
 
@@ -351,14 +361,21 @@ export default class TaskSchedule extends Model<
             await conflictCheck(data);
           },
           afterCreate: async (schedule: TaskSchedule, options) => {
-            const baseDate = new Date(schedule.scheduled_date);
-            const isRecurring = schedule.is_recurring;
-            const tasksToCreate = generateTasksFromSchedule(
-              baseDate,
-              isRecurring,
-              schedule,
+            await withTransaction(
+              schedule.sequelize!,
+              options.transaction,
+              async (transaction) => {
+                const opts = { ...options, transaction };
+                const baseDate = new Date(schedule.scheduled_date);
+                const isRecurring = schedule.is_recurring;
+                const tasksToCreate = generateTasksFromSchedule(
+                  baseDate,
+                  isRecurring,
+                  schedule,
+                );
+                await createTasksFrom(schedule, tasksToCreate, "", opts);
+              },
             );
-            await createTasksFrom(schedule, tasksToCreate, "", options);
           },
           beforeUpdate: async (data) => {
             logger.info("check for conflict before update schedule");
@@ -366,106 +383,125 @@ export default class TaskSchedule extends Model<
             logger.info("no conflict");
           },
           afterUpdate: async (schedule, options) => {
-            const Task = schedule.sequelize.models.Task as
-              | ModelStatic<Task>
-              | undefined;
-            if (!Task) {
-              logger.error(`Task model not found for schedule ${schedule.id}`);
-              return;
-            }
-            const now = new Date();
-            const wasRecurring = schedule.previous("is_recurring");
-            const isRecurring = schedule.is_recurring;
-            const recurringChanged = schedule.changed("is_recurring");
-            const patternChanged = schedule.changed("recurrence_pattern");
-            const dateChanged = schedule.changed("scheduled_date"); // prevDate !== null && currDate !== null && prevDate !== currDate;
-            const futureTasks = await getFutureTasks(Task, schedule.id, now);
-            if (
-              recurringChanged &&
-              wasRecurring === true &&
-              isRecurring === false
-            ) {
-              await deleteFutureTasks(
-                Task,
-                futureTasks,
-                schedule.id,
-                "is_recurring changed to false",
-                options,
-              );
-              return;
-            }
-            if (
-              recurringChanged &&
-              wasRecurring === false &&
-              isRecurring === true
-            ) {
-              const baseDate = new Date(schedule.scheduled_date || now);
-              const tasksToCreate = generateTasksFromSchedule(
-                baseDate,
-                isRecurring,
-                schedule,
-              );
-              await createTasksFrom(
-                schedule,
-                tasksToCreate,
-                "because is_recurring changed to true with pattern",
-                options,
-              );
-              return;
-            }
-            if (patternChanged || dateChanged) {
-              await deleteFutureTasks(
-                Task,
-                futureTasks,
-                schedule.id,
-                `${patternChanged ? "recurrence_pattern" : "scheduled_date"} changed`,
-                options,
-              );
-              if (isRecurring) {
-                const baseDate = new Date(schedule.scheduled_date || now);
-                const tasksToCreate = generateTasksFromSchedule(
-                  baseDate,
-                  isRecurring,
-                  schedule,
+            await withTransaction(
+              schedule.sequelize!,
+              options.transaction,
+              async (transaction) => {
+                const opts = { ...options, transaction };
+                const Task = schedule.sequelize.models.Task as
+                  | ModelStatic<Task>
+                  | undefined;
+                if (!Task) {
+                  logger.error(
+                    `Task model not found for schedule ${schedule.id}`,
+                  );
+                  return;
+                }
+                const now = new Date();
+                const wasRecurring = schedule.previous("is_recurring");
+                const isRecurring = schedule.is_recurring;
+                const recurringChanged = schedule.changed("is_recurring");
+                const patternChanged = schedule.changed("recurrence_pattern");
+                const dateChanged = schedule.changed("scheduled_date"); // prevDate !== null && currDate !== null && prevDate !== currDate;
+                const futureTasks = await getFutureTasks(
+                  Task,
+                  schedule.id,
+                  now,
                 );
-                await createTasksFrom(
-                  schedule,
-                  tasksToCreate,
-                  `with new ${patternChanged ? "recurrence_pattern" : "scheduled_date"}`,
-                  options,
-                );
-              }
-              return;
-            }
-            await updateFutureTasksFields(Task, schedule, now, options);
+                if (
+                  recurringChanged &&
+                  wasRecurring === true &&
+                  isRecurring === false
+                ) {
+                  await deleteFutureTasks(
+                    Task,
+                    futureTasks,
+                    schedule.id,
+                    "is_recurring changed to false",
+                    opts,
+                  );
+                  return;
+                }
+                if (
+                  recurringChanged &&
+                  wasRecurring === false &&
+                  isRecurring === true
+                ) {
+                  const baseDate = new Date(schedule.scheduled_date || now);
+                  const tasksToCreate = generateTasksFromSchedule(
+                    baseDate,
+                    isRecurring,
+                    schedule,
+                  );
+                  await createTasksFrom(
+                    schedule,
+                    tasksToCreate,
+                    "because is_recurring changed to true with pattern",
+                    opts,
+                  );
+                  return;
+                }
+                if (patternChanged || dateChanged) {
+                  await deleteFutureTasks(
+                    Task,
+                    futureTasks,
+                    schedule.id,
+                    `${patternChanged ? "recurrence_pattern" : "scheduled_date"} changed`,
+                    opts,
+                  );
+                  if (isRecurring) {
+                    const baseDate = new Date(schedule.scheduled_date || now);
+                    const tasksToCreate = generateTasksFromSchedule(
+                      baseDate,
+                      isRecurring,
+                      schedule,
+                    );
+                    await createTasksFrom(
+                      schedule,
+                      tasksToCreate,
+                      `with new ${patternChanged ? "recurrence_pattern" : "scheduled_date"}`,
+                      opts,
+                    );
+                  }
+                  return;
+                }
+                await updateFutureTasksFields(Task, schedule, now, opts);
+              },
+            );
           },
           beforeDestroy: async (schedule, options) => {
-            const Task = schedule.sequelize.models.Task as
-              | ModelStatic<Task>
-              | undefined;
-            if (Task) {
-              const now = new Date();
-              const result = await Task.update(
-                { schedule_id: null },
-                {
-                  where: {
-                    schedule_id: schedule.id,
-                    scheduled_date: { [Op.lt]: now },
-                  },
-                  transaction: options.transaction ?? null,
-                },
-              );
-              const updatedCount = result[0];
-              if (updatedCount > 0) {
-                logger.info(
-                  `Set schedule_id to null for ${updatedCount} past task(s) when destroying schedule ${schedule.id}`,
-                );
-              }
-            } else {
-              logger.error(
-                `Task model not found when destroying schedule ${schedule.id}`,
-              );
-            }
+            await withTransaction(
+              schedule.sequelize!,
+              options.transaction,
+              async (transaction) => {
+                const Task = schedule.sequelize.models.Task as
+                  | ModelStatic<Task>
+                  | undefined;
+                if (Task) {
+                  const now = new Date();
+                  const result = await Task.update(
+                    { schedule_id: null },
+                    {
+                      where: {
+                        schedule_id: schedule.id,
+                        scheduled_date: { [Op.lt]: now },
+                      },
+                      transaction,
+                    },
+                  );
+                  const updatedCount = result[0];
+                  if (updatedCount > 0) {
+                    logger.info(
+                      `Set schedule_id to null for ${updatedCount} past task(s) when destroying schedule ${schedule.id}`,
+                    );
+                  }
+                } else {
+                  logger.error(
+                    `Task model not found when destroying schedule ${schedule.id}`,
+                  );
+                }
+              },
+            );
           },
         },
       },

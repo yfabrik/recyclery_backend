@@ -20,6 +20,7 @@ import type Employee from "./employee.ts";
 import type Recyclery from "./recyclery.ts";
 import type TaskSchedule from "./taskschedule.ts";
 import { TASK_CATEGORIES, type TaskCategory } from "../constants/dbEnums.js";
+import { weekday } from "../utils/dates.js";
 
 export default class Task extends Model<
   InferAttributes<Task>,
@@ -42,7 +43,7 @@ export default class Task extends Model<
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  declare day_of_week: NonAttribute<string | null>;
+  declare day_of_week: NonAttribute<number | null>;
 
   declare schedule_id: ForeignKey<TaskSchedule["id"] | null>;
   declare store_id: ForeignKey<Recyclery["id"] | null>;
@@ -83,12 +84,26 @@ export default class Task extends Model<
   >;
 
   static associate(models: ModelStatics) {
-    this.belongsTo(models.TaskSchedule, { foreignKey: "schedule_id" });
-    this.belongsTo(models.Recyclery, { foreignKey: "store_id" });
+    this.belongsTo(models.TaskSchedule, {
+      foreignKey: "schedule_id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
+    this.belongsTo(models.Recyclery, {
+      foreignKey: "store_id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
     this.belongsTo(models.CollectionPoint, {
       foreignKey: "collection_point_id",
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
     });
-    this.belongsToMany(models.Employee, { through: "employee_task" });
+    this.belongsToMany(models.Employee, {
+      through: "employee_task",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
   }
 
   static initModel(sequelize: Sequelize) {
@@ -116,10 +131,7 @@ export default class Task extends Model<
           type: DataTypes.VIRTUAL,
           get(this: Task) {
             if (!this.scheduled_date) return null;
-            const d = new Intl.DateTimeFormat("fr-FR", {
-              weekday: "long",
-            }).format(this.scheduled_date);
-            return d ? d.charAt(0).toUpperCase() + d.slice(1) : null;
+            return weekday(this.scheduled_date);
           },
         },
         start_time: { type: DataTypes.DATE, allowNull: false },

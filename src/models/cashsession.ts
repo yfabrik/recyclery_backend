@@ -37,12 +37,12 @@ export default class CashSession extends Model<
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  declare cash_register_id: ForeignKey<CashRegister["id"]>;
+  declare cash_register_id: ForeignKey<CashRegister["id"]>;//TODO if cashregister deleted  cashsession still survive ?n
   declare user_id: ForeignKey<User["id"]>;
 
-  declare CashRegister?: NonAttribute<CashRegister | null>;
-  declare SalesTransactions?: NonAttribute<SalesTransaction[]>;
-  declare User?: NonAttribute<User | null>;
+  declare CashRegister?: NonAttribute<CashRegister >;
+  declare SalesTransactions?: NonAttribute<SalesTransaction[]>;//TODO if salestransaction deleted  cashsession still survive ?y
+  declare User?: NonAttribute<User >;
 
   declare getCashRegister: BelongsToGetAssociationMixin<CashRegister>;
   declare setCashRegister: BelongsToSetAssociationMixin<
@@ -59,9 +59,21 @@ export default class CashSession extends Model<
   declare setUser: BelongsToSetAssociationMixin<User, User["id"]>;
 
   static associate(models: ModelStatics) {
-    this.belongsTo(models.CashRegister, { foreignKey: "cash_register_id" });
-    this.hasMany(models.SalesTransaction, { foreignKey: "cash_session_id" });
-    this.belongsTo(models.User, { foreignKey: "user_id" });
+    this.belongsTo(models.CashRegister, {
+      foreignKey:{ name:"cash_register_id",allowNull: false},
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
+    this.hasMany(models.SalesTransaction, {
+      foreignKey: "cash_session_id",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
+    });
+    this.belongsTo(models.User, {
+      foreignKey:{ name:"user_id",allowNull: false},
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
+    });
   }
 
   static initModel(sequelize: Sequelize) {

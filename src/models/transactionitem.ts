@@ -13,6 +13,7 @@ import {
 import type { ModelStatics } from "./db-types.ts";
 import type LabeledItem from "./labeleditem.ts";
 import type SalesTransaction from "./salestransaction.ts";
+import { withTransaction } from "../utils/transaction.js";
 
 export default class TransactionItem extends Model<
   InferAttributes<TransactionItem>,
@@ -32,8 +33,8 @@ export default class TransactionItem extends Model<
   declare transaction_id: ForeignKey<SalesTransaction["id"]>;
   declare labeled_item_id: ForeignKey<LabeledItem["id"]>;
 
-  declare SalesTransaction?: NonAttribute<SalesTransaction | null>;
-  declare LabeledItem?: NonAttribute<LabeledItem | null>;
+  declare SalesTransaction?: NonAttribute<SalesTransaction>;
+  declare LabeledItem?: NonAttribute<LabeledItem>;
 
   declare getSalesTransaction: BelongsToGetAssociationMixin<SalesTransaction>;
   declare setSalesTransaction: BelongsToSetAssociationMixin<
@@ -111,13 +112,22 @@ export default class TransactionItem extends Model<
         tableName: "transaction_items",
         hooks: {
           beforeCreate: (_instance, _options) => {
-                      },
+          },
           afterCreate: (_instance, _options) => {
           },
           afterDestroy: async (instance, options) => {
-            const item = await instance.getLabeledItem({ transaction: options.transaction ?? null })
-            await item.update({status:"available"})
-          }
+            await withTransaction(
+              instance.sequelize!,
+              options.transaction,
+              async (tx) => {
+                const item = await instance.getLabeledItem({
+                  transaction: tx,
+                });
+                if (!item) return;
+                await item.update({ status: "available" }, { transaction: tx });
+              },
+            );
+          },
         }
       },
     );

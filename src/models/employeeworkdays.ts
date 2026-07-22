@@ -18,7 +18,7 @@ export default class EmployeeWorkdays extends Model<
   InferCreationAttributes<EmployeeWorkdays>
 > {
   declare id: CreationOptional<number>;
-  declare day_of_week: string;
+  declare day_of_week: number;
   declare time_slot: string;
   declare is_working: boolean;
   declare start_time: string;
@@ -36,7 +36,11 @@ export default class EmployeeWorkdays extends Model<
   declare setEmployee: BelongsToSetAssociationMixin<Employee, Employee["id"]>;
 
   static associate(models: ModelStatics) {
-    this.belongsTo(models.Employee, { foreignKey: "employee_id" });
+    this.belongsTo(models.Employee, {
+      foreignKey:{ name:"employee_id",allowNull: false},
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
   }
 
   static initModel(sequelize: Sequelize) {
@@ -47,7 +51,7 @@ export default class EmployeeWorkdays extends Model<
           primaryKey: true,
           autoIncrement: true,
         },
-        day_of_week: { type: DataTypes.STRING, allowNull: false },
+        day_of_week: { type: DataTypes.INTEGER, allowNull: false },
         time_slot: DataTypes.STRING,
         is_working: { type: DataTypes.BOOLEAN, allowNull: false },
         start_time: { type: DataTypes.TIME, allowNull: false },

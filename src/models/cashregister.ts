@@ -46,11 +46,16 @@ export default class CashRegister extends Model<
   declare countSessions: HasManyCountAssociationsMixin;
 
   static associate(models: ModelStatics) {
-    this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
+    this.belongsTo(models.Recyclery, {
+      foreignKey:{ name:"recyclery_id",allowNull: false},
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
     this.hasMany(models.CashSession, {
       foreignKey: "cash_register_id",
       as: "sessions",
       onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
   }
 
