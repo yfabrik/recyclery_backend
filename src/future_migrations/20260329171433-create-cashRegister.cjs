@@ -21,6 +21,7 @@ module.exports = {
       },
       recyclery_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
         references: {
           model: "Recycleries",
           key: "id",

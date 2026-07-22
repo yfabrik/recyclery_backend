@@ -30,6 +30,7 @@ module.exports = {
       },
       category_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
         references: {
           model: "Categories",
           key: "id",
@@ -44,8 +45,11 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.addIndex("Promotions", ["category_id"]);
+    await queryInterface.addIndex("Promotions", ["startDate", "endDate"]);
   },
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     await queryInterface.dropTable("Promotions");
   },
 };

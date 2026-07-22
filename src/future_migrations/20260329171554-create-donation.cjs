@@ -36,6 +36,7 @@ module.exports = {
       },
       recyclery_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: true,
         references: {
           model: "Recycleries",
           key: "id",
@@ -43,10 +44,13 @@ module.exports = {
       },
       received_by: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
         references: {
           model: "Users",
           key: "id",
         },
+        onDelete: "RESTRICT",
+        onUpdate: "CASCADE",
       },
       received_at: {
         type: Sequelize.DATE,
@@ -62,6 +66,10 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.addIndex("Donations", ["recyclery_id"]);
+    await queryInterface.addIndex("Donations", ["status"]);
+    await queryInterface.addIndex("Donations", ["createdAt"]);
   },
 
   async down(queryInterface) {

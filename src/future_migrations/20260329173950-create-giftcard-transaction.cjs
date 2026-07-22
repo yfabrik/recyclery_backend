@@ -45,6 +45,16 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
+      created_by: {
+        type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: true,
+        references: {
+          model: "Users",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
+      },
       metadata: {
         type: Sequelize.JSON,
         allowNull: true,

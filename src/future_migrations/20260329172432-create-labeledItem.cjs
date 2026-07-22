@@ -37,20 +37,27 @@ module.exports = {
       },
       category_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
         references: {
           model: "Categories",
           key: "id",
         },
+        onDelete: "RESTRICT",
+        onUpdate: "CASCADE",
       },
       subcategory_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: true,
         references: {
           model: "Categories",
           key: "id",
         },
+        onDelete: "RESTRICT",
+        onUpdate: "CASCADE",
       },
       recyclery_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: true,
         references: {
           model: "Recycleries",
           key: "id",
@@ -58,10 +65,13 @@ module.exports = {
       },
       created_by: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: true,
         references: {
           model: "Users",
           key: "id",
         },
+        onDelete: "SET NULL",
+        onUpdate: "CASCADE",
       },
       createdAt: {
         allowNull: false,
@@ -72,8 +82,12 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.addIndex("LabeledItems", ["status"]);
+    await queryInterface.addIndex("LabeledItems", ["recyclery_id"]);
+    await queryInterface.addIndex("LabeledItems", ["category_id"]);
   },
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     await queryInterface.dropTable("LabeledItems");
   },
 };

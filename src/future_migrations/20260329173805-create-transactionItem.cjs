@@ -23,7 +23,7 @@ module.exports = {
           model: "LabeledItems",
           key: "id",
         },
-        onDelete: "CASCADE",
+        onDelete: "RESTRICT",
         onUpdate: "CASCADE",
       },
       name: {

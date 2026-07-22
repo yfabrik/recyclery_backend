@@ -11,7 +11,7 @@ module.exports = {
         type: Sequelize.INTEGER.UNSIGNED,
       },
       day_of_week: {
-        type: Sequelize.STRING,
+        type: Sequelize.INTEGER,
         allowNull: false,
       },
       time_slot: {
