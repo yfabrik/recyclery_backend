@@ -8,12 +8,14 @@
  *   --cash-sessions       CashSessions.user_id from peer users on same register
  *   --sales-created-by    SalesTransactions.created_by from CashSessions.user_id
  *   --categories          Null/dangling category_id on items/arrivals/waste → archive
+ *   --employee-task       Delete employee_task rows with missing Employee/Task
  *   --audit               Remaining-orphan report only (or after selected repairs)
  *   --all                 All repairs + audit
  *
  * Examples:
  *   tsx src/scripts/repairDbOrphans.ts --cash-sessions
  *   tsx src/scripts/repairDbOrphans.ts --apply --sales-created-by --categories
+ *   tsx src/scripts/repairDbOrphans.ts --apply --employee-task
  *   tsx src/scripts/repairDbOrphans.ts --audit
  *
  * Does not invent LabeledItems.created_by or remap subcategory_id.
@@ -435,8 +437,75 @@ async function repairCategories(transaction?: Transaction) {
   await cleanupEcoOrgJoins(transaction);
 }
 
+const brokenEmployeeTaskWhere = `
+  NOT EXISTS (SELECT 1 FROM Employees e WHERE e.id = et.EmployeeId)
+  OR NOT EXISTS (SELECT 1 FROM Tasks t WHERE t.id = et.TaskId)
+`;
+
+async function repairEmployeeTask(transaction?: Transaction) {
+  logSection(
+    `5. Invalid employee_task rows → delete ${APPLY ? "(APPLY)" : "(dry-run)"}`,
+  );
+
+  if (!(await tableExists("employee_task", transaction))) {
+    console.log("  employee_task: table missing, skip");
+    return;
+  }
+
+  const before = await count(
+    `
+    SELECT COUNT(*) AS c
+    FROM employee_task et
+    WHERE ${brokenEmployeeTaskWhere}
+    `,
+    undefined,
+    transaction,
+  );
+
+  const samples = await q<{ EmployeeId: number; TaskId: number }>(
+    `
+    SELECT et.EmployeeId AS EmployeeId, et.TaskId AS TaskId
+    FROM employee_task et
+    WHERE ${brokenEmployeeTaskWhere}
+    ORDER BY et.EmployeeId, et.TaskId
+    LIMIT ${SAMPLE}
+    `,
+    undefined,
+    transaction,
+  );
+
+  console.log(
+    `  employee_task dangling EmployeeId/TaskId: ${before}` +
+      (samples.length
+        ? ` (sample: ${samples
+            .map((r) => `${r.EmployeeId}/${r.TaskId}`)
+            .join(", ")})`
+        : ""),
+  );
+
+  if (before === 0) return;
+  if (!APPLY) {
+    console.log(`  would delete ${before} join row(s)`);
+    return;
+  }
+
+  const deleteSql = isSqlite()
+    ? `
+      DELETE FROM employee_task
+      WHERE NOT EXISTS (SELECT 1 FROM Employees e WHERE e.id = EmployeeId)
+         OR NOT EXISTS (SELECT 1 FROM Tasks t WHERE t.id = TaskId)
+      `
+    : `
+      DELETE et FROM employee_task et
+      WHERE NOT EXISTS (SELECT 1 FROM Employees e WHERE e.id = et.EmployeeId)
+         OR NOT EXISTS (SELECT 1 FROM Tasks t WHERE t.id = et.TaskId)
+      `;
+  await sequelize.query(deleteSql, { transaction });
+  console.log(`  deleted ${before} invalid employee_task row(s)`);
+}
+
 async function auditReport(transaction?: Transaction) {
-  logSection("5. Audit (report-only)");
+  logSection("6. Audit (report-only)");
 
   console.log("\n  -- LabeledItems.created_by (left null by design) --");
   await logAudit(
@@ -757,6 +826,38 @@ async function auditReport(transaction?: Transaction) {
     transaction,
   );
 
+  console.log("\n  -- employee_task join orphans --");
+  {
+    const n = await count(
+      `
+      SELECT COUNT(*) AS c FROM employee_task et
+      WHERE ${brokenEmployeeTaskWhere}
+      `,
+      undefined,
+      transaction,
+    );
+    if (n === 0) {
+      console.log("  employee_task dangling EmployeeId/TaskId: 0");
+    } else {
+      const samples = await q<{ EmployeeId: number; TaskId: number }>(
+        `
+        SELECT et.EmployeeId AS EmployeeId, et.TaskId AS TaskId
+        FROM employee_task et
+        WHERE ${brokenEmployeeTaskWhere}
+        ORDER BY et.EmployeeId, et.TaskId
+        LIMIT ${SAMPLE}
+        `,
+        undefined,
+        transaction,
+      );
+      console.log(
+        `  employee_task dangling EmployeeId/TaskId: ${n} (sample: ${samples
+          .map((r) => `${r.EmployeeId}/${r.TaskId}`)
+          .join(", ")})`,
+      );
+    }
+  }
+
   console.log("\n  -- category_id still null/dangling (should be 0 after apply) --");
   for (const table of [
     "LabeledItems",
@@ -773,12 +874,18 @@ async function auditReport(transaction?: Transaction) {
   }
 }
 
-type RepairKey = "cash-sessions" | "sales-created-by" | "categories" | "audit";
+type RepairKey =
+  | "cash-sessions"
+  | "sales-created-by"
+  | "categories"
+  | "employee-task"
+  | "audit";
 
 const REPAIR_FLAGS: Record<Exclude<RepairKey, "audit">, string> = {
   "cash-sessions": "--cash-sessions",
   "sales-created-by": "--sales-created-by",
   categories: "--categories",
+  "employee-task": "--employee-task",
 };
 
 const REPAIR_LABELS: Record<RepairKey, string> = {
@@ -788,13 +895,21 @@ const REPAIR_LABELS: Record<RepairKey, string> = {
     "SalesTransactions.created_by from CashSessions.user_id",
   categories:
     "Null/dangling category_id on items/arrivals/waste → archive category",
+  "employee-task":
+    "Delete employee_task rows with missing Employee or Task",
   audit: "Remaining / other orphans report",
 };
 
 const parseRepairSelectionFromArgv = (): RepairKey[] | null => {
   const argv = process.argv.slice(2);
   if (argv.includes("--all")) {
-    return ["cash-sessions", "sales-created-by", "categories", "audit"];
+    return [
+      "cash-sessions",
+      "sales-created-by",
+      "categories",
+      "employee-task",
+      "audit",
+    ];
   }
 
   const selected: RepairKey[] = [];
@@ -814,6 +929,7 @@ const promptRepairSelection = async (): Promise<RepairKey[]> => {
     "cash-sessions",
     "sales-created-by",
     "categories",
+    "employee-task",
     "audit",
   ];
 
@@ -869,6 +985,7 @@ const runSelectedRepairs = async (
   if (run.has("cash-sessions")) await repairCashSessions(transaction);
   if (run.has("sales-created-by")) await repairSalesCreatedBy(transaction);
   if (run.has("categories")) await repairCategories(transaction);
+  if (run.has("employee-task")) await repairEmployeeTask(transaction);
   if (run.has("audit")) await auditReport(transaction);
 };
 
