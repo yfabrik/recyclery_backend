@@ -36,7 +36,7 @@ describe("store_hours controller functions", () => {
   it("should create a new horaires  pour recyclerie test", async () => {
     const body = {
       store_id: 1,
-      day_of_week: "Lundi",
+      day_of_week: 1, // Monday
       time_slot_name: "Matin",
       is_open: true,
       start_time: "09:00",
@@ -82,7 +82,7 @@ describe("store_hours controller functions", () => {
         data: expect.arrayContaining([
           expect.objectContaining({
             id: expect.any(Number),
-            day_of_week: expect.any(String),
+            day_of_week: expect.any(Number),
             name: expect.any(String),
           }),
         ]),
@@ -97,7 +97,7 @@ describe("store_hours controller functions", () => {
       params: { id: 1 },
       body: {
         store_id: 1,
-        day_of_week: "Mardi",
+        day_of_week: 2, // Tuesday
         start_time: "10:00",
         end_time: "19:00",
         is_open: true,

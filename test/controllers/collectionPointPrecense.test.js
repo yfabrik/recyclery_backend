@@ -46,7 +46,7 @@ describe("collection schedule controller functions", () => {
     const body = {
       collection_point_id: 1,
       store_id: 1,
-      day_of_week: "Lundi",
+      day_of_week: 1, // Monday
       is_present: true,
       start_time: "09:00",
       end_time: "12:00",
@@ -143,7 +143,7 @@ describe("collection schedule controller functions", () => {
             body: {
               collection_point_id: 999,
               store_id: 1,
-              day_of_week: "Mardi",
+              day_of_week: 2,
               is_present: true,
               start_time: "09:00",
               end_time: "12:00",
@@ -170,7 +170,7 @@ describe("collection schedule controller functions", () => {
         body: {
           collection_point_id: point.id,
           store_id: 1,
-          day_of_week: "Mercredi",
+          day_of_week: 3,
           is_present: true,
           start_time: "10:00",
           end_time: "11:00",
@@ -213,7 +213,7 @@ describe("collection schedule controller functions", () => {
         body: {
           collection_point_id: point.id,
           store_id: 1,
-          day_of_week: "Jeudi",
+          day_of_week: 4,
           is_present: true,
           start_time: "14:00",
           end_time: "16:00",

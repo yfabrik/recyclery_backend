@@ -9,13 +9,13 @@ describe("EmployeeWorkdays Model", () => {
       const employee = await createEmployee();
       const w = await EmployeeWorkdays.create({
         employee_id: employee.id,
-        day_of_week: "monday",
+        day_of_week: 1, // Monday
         is_working: true,
         start_time: "09:00",
         end_time: "17:00",
       });
       expect(w.id).toBeDefined();
-      expect(w.day_of_week).toBe("monday");
+      expect(w.day_of_week).toBe(1);
       expect(w.is_working).toBe(true);
     });
 
@@ -23,21 +23,21 @@ describe("EmployeeWorkdays Model", () => {
       const employee = await createEmployee();
       const created = await EmployeeWorkdays.create({
         employee_id: employee.id,
-        day_of_week: "tuesday",
+        day_of_week: 2, // Tuesday
         is_working: false,
         start_time: "09:00",
         end_time: "17:00",
       });
       const found = await EmployeeWorkdays.findByPk(created.id);
       expect(found).not.toBeNull();
-      expect(found.day_of_week).toBe("tuesday");
+      expect(found.day_of_week).toBe(2);
     });
 
     it("should update an employee workday", async () => {
       const employee = await createEmployee();
       const created = await EmployeeWorkdays.create({
         employee_id: employee.id,
-        day_of_week: "wednesday",
+        day_of_week: 3, // Wednesday
         is_working: true,
         start_time: "09:00",
         end_time: "17:00",
@@ -52,7 +52,7 @@ describe("EmployeeWorkdays Model", () => {
       const employee = await createEmployee();
       const created = await EmployeeWorkdays.create({
         employee_id: employee.id,
-        day_of_week: "thursday",
+        day_of_week: 4, // Thursday
         is_working: true,
         start_time: "09:00",
         end_time: "17:00",
