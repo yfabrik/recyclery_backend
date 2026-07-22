@@ -13,11 +13,11 @@ import {
   toRecycleryRef,
   toUserRef,
 } from "./refs.js";
-import { toIsoDate, toNumber, toOptionalNumber } from "./serialize.js";
-import { stripUndefined, type MapperInput } from "./types.js";
+import { toIsoDateTime, toOptionalNumber, toNumberOrUndefined } from "./serialize.js";
+import type { MapperInput } from "./types.js";
 
 type LabeledItemMapperInput = MapperInput<LabeledItem> & {
-  barcode?: string;
+  barcode: string;
   category?: MapperInput<Category>;
   subcategory?: MapperInput<Category> | null;
   recyclery?: MapperInput<Recyclery> | null;
@@ -35,39 +35,39 @@ export interface LabeledItemStatsRow {
 export const toLabeledItemDto = (
   model: LabeledItemMapperInput,
 ): LabeledItemDto =>
-  stripUndefined({
+  ({
     id: model.id,
-    barcode: String(model.barcode ?? model.id).padStart(12, "0"),//TODO il devrait pas avoir un barcode obligatoirement ?
-    description: model.description ?? null,
-    weight: toNumber(model.weight),
-    price: toNumber(model.price),
-    cost: toOptionalNumber(model.cost) ?? null,
+    barcode: model.barcode,
+    description: model.description,
+    weight: model.weight,
+    price: model.price,
+    cost: model.cost,
     condition_state: model.condition_state,
     status: model.status,
     category_id: model.category_id,
-    subcategory_id: model.subcategory_id ?? null,
-    recyclery_id: model.recyclery_id ?? null,
-    created_by: model.created_by ?? null,
-    createdAt: toIsoDate(model.createdAt),
-    updatedAt: toIsoDate(model.updatedAt),
+    subcategory_id: model.subcategory_id ,
+    recyclery_id: model.recyclery_id ,
+    created_by: model.created_by,
+    createdAt: toIsoDateTime(model.createdAt),
+    updatedAt: toIsoDateTime(model.updatedAt),
     category:
       model.category != null
         ? toCategoryRefWithSubcategories(model.category)
         : undefined,
-    subcategory: toCategoryRef(model.subcategory) ?? null,
-    recyclery: toRecycleryRef(model.recyclery) ?? null,
-    createdBy: toUserRef(model.createdBy) ?? null,
+    subcategory: toCategoryRef(model.subcategory) ,
+    recyclery: toRecycleryRef(model.recyclery) ,
+    createdBy: toUserRef(model.createdBy) ,
   }) satisfies LabeledItemDto;
 
 export const toLabeledItemStatsDto = (
   value: LabeledItemStatsRow | null | undefined,
 ): LabeledItemStatsDto | null => {
   if (value == null) return null;
-  return stripUndefined({
-    total_items: value.total_items,
-    available_items: value.available_items,
-    sold_items: value.sold_items,
-    reserved_items: value.reserved_items,
-    total_value: value.total_value,
+  return ({
+    total_items: toNumberOrUndefined(value.total_items),
+    available_items: toOptionalNumber(value.available_items),
+    sold_items: toOptionalNumber(value.sold_items),
+    reserved_items: toOptionalNumber(value.reserved_items),
+    total_value: toOptionalNumber(value.total_value),
   }) satisfies LabeledItemStatsDto;
 };

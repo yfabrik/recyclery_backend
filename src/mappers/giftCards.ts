@@ -8,8 +8,8 @@ import type {
 import type GiftCard from "../models/giftcard.js";
 import type GiftCardTransaction from "../models/giftcardtransaction.js";
 import { asEmail, asAlphanumeric } from "./brands.js";
-import { toIsoDate, toNumber } from "./serialize.js";
-import { stripUndefined, type MapperInput } from "./types.js";
+import { requireUserId, toIsoDateTime, toNumber } from "./serialize.js";
+import type {  MapperInput } from "./types.js";
 
 type GiftCardTransactionMapperInput = MapperInput<GiftCardTransaction>;
 
@@ -21,16 +21,16 @@ type GiftCardMapperInput = MapperInput<GiftCard> & {
 export const toGiftCardTransactionDto = (
   model: GiftCardTransactionMapperInput,
 ): GiftCardTransactionDto =>
-  stripUndefined({
+  ({
     gift_card_id: model.gift_card_id,
     sales_transaction_id: model.sales_transaction_id,
     type: model.type,
     amount: toNumber(model.amount),
-    ...(model.occurred_at ? { occurred_at: toIsoDate(model.occurred_at) } : {}),
-    metadata: model.metadata ?? null,
-    created_by: model.created_by,
-    createdAt: toIsoDate(model.createdAt),
-    updatedAt: toIsoDate(model.updatedAt),
+    occurred_at: toIsoDateTime(model.occurred_at),
+    metadata: model.metadata,
+    created_by: model.created_by != null ? requireUserId(model.created_by) : null,
+    createdAt: toIsoDateTime(model.createdAt),
+    updatedAt: toIsoDateTime(model.updatedAt),
   }) satisfies GiftCardTransactionDto;
 
 export const toGiftCardDto = (model: GiftCardMapperInput): GiftCardDto => {
@@ -43,23 +43,23 @@ export const toGiftCardDto = (model: GiftCardMapperInput): GiftCardDto => {
         ? movements.reduce((sum, movement) => sum + movement.amount, 0)
         : undefined;
 
-  return stripUndefined({
+  return ({
     id: model.id,
     code: model.code,
     initial_value: toNumber(model.initial_value),
     ...(currentValue != null ? { current_value: currentValue } : {}),
-    expires_at: model.expires_at ? toIsoDate(model.expires_at) : null,
+    expires_at: model.expires_at ? toIsoDateTime(model.expires_at) : null,
     status: model.status,
-    ...(model.currency != null ? { currency: model.currency } : {}),
-    ...(model.issued_at ? { issued_at: toIsoDate(model.issued_at) } : {}),
-    note: model.note ?? null,
+    currency: model.currency ?? "EUR",
+    issued_at: toIsoDateTime(model.issued_at),
+    note: model.note,
     recipient_name: asAlphanumeric(model.recipient_name),
     recipient_email: asEmail(model.recipient_email),
-    issued_transaction_id: model.issued_transaction_id ?? null,
-    issued_refund_transaction_id: model.issued_refund_transaction_id ?? null,
-    created_by: model.created_by ?? null,
-    createdAt: toIsoDate(model.createdAt),
-    updatedAt: toIsoDate(model.updatedAt),
+    issued_transaction_id: model.issued_transaction_id ,
+    issued_refund_transaction_id: model.issued_refund_transaction_id,
+    created_by: model.created_by != null ? requireUserId(model.created_by) : null,
+    createdAt: toIsoDateTime(model.createdAt),
+    updatedAt: toIsoDateTime(model.updatedAt),
     ...(movements ? { movements } : {}),
   }) satisfies GiftCardDto;
 };
@@ -71,7 +71,7 @@ export const toGiftCardSummaryFromFields = (card: {
   initial_value?: number;
   current_balance?: number;
 }): GiftCardSummaryDto =>
-  stripUndefined({
+  ({
     id: card.id,
     code: card.code,
     status: card.status,
@@ -82,7 +82,7 @@ export const toGiftCardSummaryDto = (
   model: GiftCardMapperInput,
 ): GiftCardSummaryDto => {
   const dto = toGiftCardDto(model);
-  return stripUndefined({
+  return ({
     id: dto.id,
     code: dto.code,
     status: dto.status,

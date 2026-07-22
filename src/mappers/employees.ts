@@ -8,8 +8,8 @@ import { asEmail, asPhone } from "./brands.js";
 import { toEmployeeWorkdayDto } from "./employeeWorkdays.js";
 import { toRecycleryRef } from "./refs.js";
 import { toSkillDto } from "./skills.js";
-import { toIsoDate } from "./serialize.js";
-import { stripUndefined, type MapperInput } from "./types.js";
+import type {  MapperInput } from "./types.js";
+import { toIsoDateTime } from "@recyclerie/api";
 
 type EmployeeMapperInput = MapperInput<Employee> & {
   stores?: Array<MapperInput<Recyclery>>;
@@ -20,7 +20,7 @@ type EmployeeMapperInput = MapperInput<Employee> & {
 export const toEmployeeDto = (model: EmployeeMapperInput): EmployeeDto => {
   const employee = model as Employee;
 
-  return stripUndefined({
+  return ({
     id: model.id,
     nom: model.nom,
     prenom: model.prenom,
@@ -29,8 +29,8 @@ export const toEmployeeDto = (model: EmployeeMapperInput): EmployeeDto => {
     email: asEmail(model.email),
     fullName: employee.fullName,
     workTime: employee.workTime,
-    createdAt: toIsoDate(model.createdAt),
-    updatedAt: toIsoDate(model.updatedAt),
+    createdAt: toIsoDateTime(model.createdAt),
+    updatedAt: toIsoDateTime(model.updatedAt),
     stores: model.stores
       ?.map((store) => toRecycleryRef(store))
       .filter((store): store is NonNullable<typeof store> => store != null),

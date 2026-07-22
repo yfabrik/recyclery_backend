@@ -3,8 +3,8 @@ import type { CategoryDto } from "@recyclerie/api/responses/categories";
 import type Category from "../models/category.js";
 import type Promotion from "../models/promotion.js";
 import { toPromotionDto } from "./promotions.js";
-import { toIsoDate, toNumber, toOptionalNumber } from "./serialize.js";
-import { stripUndefined, type MapperInput } from "./types.js";
+import { toIsoDateTime } from "./serialize.js";
+import type { MapperInput } from "./types.js";
 
 type CategoryMapperInput = MapperInput<Category> & {
   subcategories?: Array<MapperInput<Category>>;
@@ -13,22 +13,22 @@ type CategoryMapperInput = MapperInput<Category> & {
 };
 
 export const toCategoryDto = (model: CategoryMapperInput): CategoryDto =>
-  stripUndefined({
+  ({
     id: model.id,
     name: model.name,
-    description: model.description ?? null,
-    icon: model.icon ?? null,
-    parent_id: model.parent_id ?? null,
+    description: model.description ,
+    icon: model.icon ,
+    parent_id: model.parent_id,
     defaultWeight:
-      model.defaultWeight != null ? toNumber(model.defaultWeight) : undefined,
+      model.defaultWeight ,
     defaultPrice:
-      model.defaultPrice != null ? toNumber(model.defaultPrice) : undefined,
-    IO: model.IO != null ? toNumber(model.IO) : undefined,
+      model.defaultPrice ,
+    IO: model.IO ,
     priceBasedOnWeight: model.priceBasedOnWeight,
-    bundleQuantity: toOptionalNumber(model.bundleQuantity) ?? null,
-    bundlePrice: toOptionalNumber(model.bundlePrice) ?? null,
-    createdAt: toIsoDate(model.createdAt),
-    updatedAt: toIsoDate(model.updatedAt),
+    bundleQuantity: model.bundleQuantity,
+    bundlePrice: model.bundlePrice,
+    createdAt: toIsoDateTime(model.createdAt),
+    updatedAt: toIsoDateTime(model.updatedAt),
     subcategories: model.subcategories?.map(toCategoryDto),
     parent: model.parent ? toCategoryDto(model.parent) : undefined,
     Promotions: model.Promotions?.map(toPromotionDto),

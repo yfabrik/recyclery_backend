@@ -6,12 +6,13 @@ import type Recyclery from "../models/recyclery.js";
 import type TaskSchedule from "../models/taskschedule.js";
 import type User from "../models/user.js";
 import { asEmail, asPhone, asPostal } from "./brands.js";
-import { toCashRegisterDto } from "./cashRegister.js";
+import { toCashRegisterBaseRefDto } from "./cashRegister.js";
 import { toEmployeeDto } from "./employees.js";
 import { toUserRef } from "./refs.js";
 import { toTaskScheduleDto } from "./taskSchedule.js";
-import { toIsoDate } from "./serialize.js";
-import { stripUndefined, type MapperInput } from "./types.js";
+import type {  MapperInput } from "./types.js";
+import { toIsoDateTime } from "@recyclerie/api";
+import { toNumber, toOptionalNumber } from "./serialize.js";
 
 type RecycleryMapperInput = MapperInput<Recyclery> & {
   manager?: MapperInput<User> | null;
@@ -29,21 +30,23 @@ export interface RecycleryItemStatsRow {
 }
 
 export const toRecycleryDto = (model: RecycleryMapperInput): RecycleryDto =>
-  stripUndefined({
+  ({
     id: model.id,
     name: model.name,
-    address: model.address ?? null,
+    address: model.address ,
     phone: asPhone(model.phone),
     email: asEmail(model.email),
-    city: model.city ?? null,
+    city: model.city,
     postal_code: asPostal(model.postal_code),
     is_active: model.is_active,
-    manager_id: model.manager_id ?? null,
-    cash_registers_count: model.cash_registers_count,
-    createdAt: toIsoDate(model.createdAt),
-    updatedAt: toIsoDate(model.updatedAt),
-    manager: toUserRef(model.manager) ?? null,
-    caisses: model.caisses?.map(toCashRegisterDto),
+    manager_id: model.manager_id ,
+    ...(model.cash_registers_count != null
+      ? { cash_registers_count: toNumber(model.cash_registers_count) }
+      : {}),
+    createdAt: toIsoDateTime(model.createdAt),
+    updatedAt: toIsoDateTime(model.updatedAt),
+    manager: toUserRef(model.manager),
+    caisses: model.caisses?.map(toCashRegisterBaseRefDto),
     employees: model.employees?.map(toEmployeeDto),
     TaskSchedules: model.TaskSchedules?.map(toTaskScheduleDto),
   }) satisfies RecycleryDto;
@@ -53,7 +56,10 @@ export const toRecycleryStatsDto = (stats: {
   sales: { monthly_sales: number; monthly_revenue: number };
 }): RecycleryStatsDto =>
   ({
-    ...(stats.items ?? {}),
+    available_items: toOptionalNumber(stats.items?.available_items),
+    sold_items: toOptionalNumber(stats.items?.sold_items),
+    reserved_items: toOptionalNumber(stats.items?.reserved_items),
+    total_items: toOptionalNumber(stats.items?.total_items),
     monthly_sales: stats.sales.monthly_sales,
     monthly_revenue: stats.sales.monthly_revenue,
   }) satisfies RecycleryStatsDto;

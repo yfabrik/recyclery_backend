@@ -9,9 +9,9 @@ import type EcoOrganism from "../models/ecoorganism.js";
 import type WasteDisposal from "../models/wasteDisposal.js";
 import { asEmail, asPhone, asUrl } from "./brands.js";
 import { toCategoryRef } from "./refs.js";
+import { toIsoDateTime, toOptionalNumber, toNumberOrUndefined } from "./serialize.js";
+import type {  MapperInput } from "./types.js";
 import { toWasteDto } from "./waste.js";
-import { toIsoDate } from "./serialize.js";
-import { stripUndefined, type MapperInput } from "./types.js";
 
 type EcoOrganismMapperInput = MapperInput<EcoOrganism> & {
   inCategories?: Array<MapperInput<Category>>;
@@ -28,17 +28,17 @@ export interface EcoOrganismStatsRow {
 export const toEcoOrganismDto = (
   model: EcoOrganismMapperInput,
 ): EcoOrganismDto =>
-  stripUndefined({
+  ({
     id: model.id,
     name: model.name,
-    description: model.description ?? null,
+    description: model.description ,
     contact_email: asEmail(model.contact_email),
     contact_phone: asPhone(model.contact_phone),
-    address: model.address ?? null,
+    address: model.address,
     website: asUrl(model.website),
     is_active: model.is_active,
-    createdAt: toIsoDate(model.createdAt),
-    updatedAt: toIsoDate(model.updatedAt),
+    createdAt: toIsoDateTime(model.createdAt),
+    updatedAt: toIsoDateTime(model.updatedAt),
     inCategories: model.inCategories
       ?.map((cat) => toCategoryRef(cat))
       .filter((cat): cat is NonNullable<typeof cat> => cat != null),
@@ -52,10 +52,10 @@ export const toEcoOrganismStatsDto = (
   value: EcoOrganismStatsRow | null | undefined,
 ): EcoOrganismStatsDto | null => {
   if (value == null) return null;
-  return stripUndefined({
-    total_eco_organisms: value.total_eco_organisms,
-    active_eco_organisms: value.active_eco_organisms,
-    inactive_eco_organisms: value.inactive_eco_organisms,
+  return ({
+    total_eco_organisms: toNumberOrUndefined(value.total_eco_organisms),
+    active_eco_organisms: toOptionalNumber(value.active_eco_organisms),
+    inactive_eco_organisms: toOptionalNumber(value.inactive_eco_organisms),
   }) satisfies EcoOrganismStatsDto;
 };
 
