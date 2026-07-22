@@ -27,6 +27,7 @@ import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
+import { weekday, endOfDay, startOfDay } from "../../utils/dates.js";
 
 import { formatWhereDateRange } from "../../helpers.js";
 import type { ModelWhere } from "../../models/db-types.js";
@@ -245,9 +246,7 @@ export const addEmployeeToSchedule = async (req: Request, res: Response) => {
 
   // Déterminer le jour de la semaine de la tâche
   const taskDate = new Date(currentSchedule.scheduled_date);
-  const dayOfWeek = taskDate
-    .toLocaleDateString("en-US", { weekday: "long" })
-    .toLowerCase();
+  const dayOfWeek = weekday(taskDate);
 
   // Vérifier que l'employé existe, appartient au bon magasin ET est présent ce jour-là
   const employee = await Employee.findOne({
@@ -332,9 +331,7 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
 
   // Déterminer le jour de la semaine de la tâche
   const taskDate = new Date(currentSchedule.scheduled_date);
-  const dayOfWeek = taskDate
-    .toLocaleDateString("en-US", { weekday: "long" })
-    .toLowerCase();
+  const dayOfWeek = weekday(taskDate);
 
   const newYear = new Date(taskDate.getFullYear(), 0, 1);
   const dayNumber = Math.floor((+taskDate - +newYear) / (24 * 60 * 60 * 1000));
@@ -381,11 +378,8 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
   // Pour chaque employé, vérifier s'il est disponible
   const availableEmployees = [];
 
-  const start = new Date(currentSchedule.scheduled_date);
-  start.setHours(0, 0, 0, 0);
-
-  const end = new Date(currentSchedule.scheduled_date);
-  end.setHours(23, 59, 59, 999);
+  const start = startOfDay(currentSchedule.scheduled_date).toDate();
+  const end = endOfDay(currentSchedule.scheduled_date).toDate();
 
   for (const employee of allEmployees) {
     // Vérifier les conflits d'horaires pour cet employé

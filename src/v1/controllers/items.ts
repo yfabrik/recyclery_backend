@@ -84,7 +84,8 @@ const buildLabeledItemIncludes = (
 };
 
 export const listLabeledItem = async (req: Request, res: Response) => {
-  const { search, include, date_from, date_to, ...filter } = labeledItemFilterSchema.parse(req.query);
+  const { search, include, date_from, date_to, ...filter } =
+    labeledItemFilterSchema.parse(req.query);
   const pagination = parsePaginationQuery(req.query);
   const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
   const dateRange = formatWhereDateRange(date_from, date_to);
@@ -216,9 +217,8 @@ export const tagItemAsSell = async (req: RequestWithUser, res: Response) => {
 };
 
 export const itemsStats = async (req: Request, res: Response) => {
-  const { search, page: _page, include: _include, date_from, date_to, ...filter } = labeledItemStatsFilterSchema.parse(
-    req.query,
-  );
+  const { search, page: _page, include: _include, date_from, date_to, ...filter } =
+    labeledItemStatsFilterSchema.parse(req.query);
   const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
   const dateRange = formatWhereDateRange(date_from, date_to);
   const where: ModelWhere<typeof LabeledItem> = likeQuery

@@ -1,14 +1,10 @@
-import createHttpError from "http-errors";
 import { createStoreHoursDataSchema } from "@recyclerie/api/schemas/schedules";
 import type {
   CreateStoreHoursResponse,
   ListStoreHoursResponse,
   UpdateStoreHoursResponse,
 } from "@recyclerie/api/responses/taskSchedule";
-import {
-  apiCreated,
-  apiData,
-} from "@recyclerie/api/types/response";
+import { apiCreated, apiData } from "@recyclerie/api/types/response";
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
@@ -18,39 +14,21 @@ import type { Request, Response } from "express";
 import type { Includeable } from "sequelize";
 
 import db from "../../models/index.js";
-import { toStoreHoursDto, toTaskScheduleDto } from "../../mappers/taskSchedule.js";
+import {
+  toStoreHoursDto,
+  toTaskScheduleDto,
+} from "../../mappers/taskSchedule.js";
+import {
+  combineDateAndTime,
+  dateFromWeekday,
+} from "../../utils/dates.js";
 
 const { TaskSchedule, Recyclery } = db;
 
-/**
- *
- * @param  day
- * @returns
- */
-const getDateFromDay = (day: string) => {
-  const today = new Date();
-  let d;
-  let i = 0;
-  while (i < 7) {
-    const jour = new Intl.DateTimeFormat("fr-FR", { weekday: "long" }).format(
-      today.setDate(today.getDate() + 1),
-    );
-    if (jour == day.toLowerCase()) {
-      d = today;
-      break;
-    }
-    i++;
-  }
-  if (!d) throw new createHttpError[400]();
-  return d;
-};
-
-const dataSchema = createStoreHoursDataSchema(getDateFromDay);
+const dataSchema = createStoreHoursDataSchema;
 
 /**
  *  @deprecated
- * @param {import("express").Request} _req
- * @param {import("express").Response} res
  */
 export const listHoraires = async (_req: Request, res: Response) => {
   logger.warn("list horaires magasin plus a jour");
@@ -67,10 +45,9 @@ export const listHoraires = async (_req: Request, res: Response) => {
 
   res.json(apiData(horaires) satisfies ListStoreHoursResponse);
 };
+
 /**
  *  @deprecated
- * @param {import("express").Request} req
- * @param {import("express").Response} res
  */
 export const horairesMagasin = async (req: Request, res: Response) => {
   logger.warn("list horaires magasin plus a jour");
@@ -102,12 +79,15 @@ export const addHoraire = async (req: Request, res: Response) => {
     include: [
       {
         model: TaskSchedule,
-        // as:"horaires",
         where: { category: "vente" },
         required: false,
       },
     ],
   });
+
+  const scheduled_date = dateFromWeekday(data.day_of_week);
+  const start_time = combineDateAndTime(scheduled_date, data.start_time);
+  const end_time = combineDateAndTime(scheduled_date, data.end_time);
 
   const horaires = await db.sequelize.transaction(async (t) => {
     return TaskSchedule.create(
@@ -116,9 +96,9 @@ export const addHoraire = async (req: Request, res: Response) => {
         category: "vente",
         priority: "low",
         recurrence_pattern: "weekly",
-        scheduled_date: data.day_of_week,
-        start_time: new Date(data.start_time),
-        end_time: new Date(data.end_time),
+        scheduled_date,
+        start_time,
+        end_time,
         notes: null,
         status: "a",
         store_id: data.store_id,
@@ -128,9 +108,12 @@ export const addHoraire = async (req: Request, res: Response) => {
   });
 
   res.json(
-    apiCreated({ id: horaires.id }, {
-      message: "Horaires créés avec succès",
-    }) satisfies CreateStoreHoursResponse,
+    apiCreated(
+      { id: horaires.id },
+      {
+        message: "Horaires créés avec succès",
+      },
+    ) satisfies CreateStoreHoursResponse,
   );
 };
 
@@ -146,13 +129,17 @@ export const updateHoraire = async (req: Request, res: Response) => {
     },
   );
 
+  const scheduled_date = dateFromWeekday(data.day_of_week);
+  const start_time = combineDateAndTime(scheduled_date, data.start_time);
+  const end_time = combineDateAndTime(scheduled_date, data.end_time);
+
   await db.sequelize.transaction(async (t) => {
     await schedule.update(
       {
         name: "vente-" + schedule.Recyclery?.name,
-        scheduled_date: data.day_of_week,
-        start_time: new Date(data.start_time),
-        end_time: new Date(data.end_time),
+        scheduled_date,
+        start_time,
+        end_time,
         notes: null,
         status: "a",
         store_id: data.store_id,
@@ -168,10 +155,9 @@ export const updateHoraire = async (req: Request, res: Response) => {
     }) satisfies UpdateStoreHoursResponse,
   );
 };
+
 /**
  * @deprecated
- * @param {import("express").Request} req
- * @param {import("express").Response} res
  */
 export const removeHoraires = async (req: Request, res: Response) => {
   return deleteSchedule(req, res);

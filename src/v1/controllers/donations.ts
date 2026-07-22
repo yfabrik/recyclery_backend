@@ -6,7 +6,6 @@ import {
 import type {
   CreateDonationResponse,
   DeleteDonationResponse,
-  DonationStatsDto,
   DonationStatsResponse,
   ListDonationsResponse,
   UpdateDonationResponse,
@@ -21,7 +20,7 @@ import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
-import { toDonationDto } from "../../mappers/donations.js";
+import { toDonationDto, toDonationStatsDto } from "../../mappers/donations.js";
 import type { ModelWhere, RequestWithUser } from "./types.js";
 
 const { Donation, User } = db;
@@ -101,6 +100,6 @@ export const donStats = async (_req: Request, res: Response) => {
   });
 
   res.json(
-    apiData((stats ?? null) as DonationStatsDto | null) satisfies DonationStatsResponse,
+    apiData(toDonationStatsDto(stats as Parameters<typeof toDonationStatsDto>[0])) satisfies DonationStatsResponse,
   );
 };

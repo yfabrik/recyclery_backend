@@ -1,4 +1,3 @@
-import { col, fn } from "sequelize";
 import {
   cashRegisterCreateSchema,
   cashRegisterFilterSchema,
@@ -19,13 +18,14 @@ import {
 import logger from "../../services/logger.js";
 import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
+import { findCashRegistersWithAggregates } from "../../services/caisse.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
-import type { ModelWhere } from "../../models/db-types.js";
 import {
   toCashRegisterDetailDto,
   toCashRegisterDto,
+  toCashRegisterListDto,
 } from "../../mappers/cashRegister.js";
 
 const { CashRegister, Recyclery, CashSession } = db;
@@ -35,42 +35,22 @@ export const listCaisses = async (req: Request, res: Response) => {
 
   const filter = cashRegisterFilterSchema.parse({ store_id, ...req.query });
 
-  const where: ModelWhere<typeof CashRegister> = {};
-  if (filter.store_id) {
-    where.recyclery_id = filter.store_id;
-  }
-
-  if (filter.is_active !== undefined) {
-    where.is_active = filter.is_active;
-  }
-
-  //TODO filter + COUNT sessions + last_session
-  const cashRegister = await CashRegister.findAll({
-    attributes: {
-      include: [
-        [col("Recyclery.name"), "store_name"],
-        [fn("COUNT", col("sessions.id")), "total_sessions"],
-        [fn("MAX", col("sessions.createdAt")), "last_session"],
-      ],
-    },
-    include: [
-      {
-        model: Recyclery,
-        required: true,
-      },
-      {
-        model: CashSession,
-        as: "sessions",
-        required: false,
-      },
-    ],
-    where,
-    group: ["CashRegister.id", "Recyclery.name"],
-    order: [["name", "ASC"]],
+  const cashRegister = await findCashRegistersWithAggregates({
+    ...(filter.store_id != null ? { store_id: filter.store_id } : {}),
+    ...(filter.is_active !== undefined ? { is_active: filter.is_active } : {}),
   });
 
   res.json(
-    apiData(cashRegister.map(toCashRegisterDto)) satisfies ListCashRegistersResponse,
+    apiData(
+      cashRegister.map((register) => {
+        const plain = register.get({ plain: true }) as typeof register & {
+          store_name?: string | null;
+          total_sessions?: number | string;
+          last_session?: Date | string | null;
+        };
+        return toCashRegisterListDto(plain);
+      }),
+    ) satisfies ListCashRegistersResponse,
   );
 };
 
@@ -88,7 +68,6 @@ export const detailCaisse = async (req: Request, res: Response) => {
     ],
     order: [[{ model: CashSession, as: "sessions" }, "createdAt", "DESC"]],
   });
-
   const sessions = register.sessions!;
 
   const lastSession = sessions.reduce<Date | null>((latest, session) => {
@@ -96,7 +75,7 @@ export const detailCaisse = async (req: Request, res: Response) => {
     if (!latest || createdAt > latest) return createdAt;
     return latest;
   }, null);
-//TODO not clean ?
+
   res.json(
     apiData(
       toCashRegisterDetailDto(register, {
@@ -113,10 +92,8 @@ export const detailCaisse = async (req: Request, res: Response) => {
 export const createCaisse = async (req: Request, res: Response) => {
   const data = cashRegisterCreateSchema.parse(req.body);
 
-  // Vérifier que le magasin existe
   const store = await findByPkOrThrow(Recyclery, data.store_id, "Magasin non trouvé");
 
-  //unique constraint unique name per store enforced in model
   const result = await store.createCaisse({
     name: data.name,
     is_active: data.is_active,
@@ -125,9 +102,23 @@ export const createCaisse = async (req: Request, res: Response) => {
   res
     .status(201)
     .json(
-      apiCreated(toCashRegisterDto(result), {
-        message: "Caisse créée avec succès",
-      }) satisfies CreateCashRegisterResponse,
+      apiCreated(
+        toCashRegisterDto({
+          id: result.id,
+          name: result.name,
+          is_active: result.is_active,
+          recyclery_id: result.recyclery_id,
+          createdAt: result.createdAt,
+          updatedAt: result.updatedAt,
+          store_name: store.name,
+          total_sessions: 0,
+          last_session: null,
+          Recyclery: store,
+        }),
+        {
+          message: "Caisse créée avec succès",
+        },
+      ) satisfies CreateCashRegisterResponse,
     );
 };
 
@@ -136,24 +127,54 @@ export const updateCaisse = async (req: Request, res: Response) => {
 
   const data = cashRegisterUpdateSchema.parse(req.body);
 
-  // Vérifier que la caisse existe
   const existingRegister = await findByPkOrThrow(
     CashRegister,
     id,
     "Caisse non trouvée",
+    {
+      include: [
+        { model: Recyclery, required: false },
+        {
+          model: CashSession,
+          as: "sessions",
+          attributes: ["id", "createdAt"],
+          required: false,
+        },
+      ],
+    },
   );
   await existingRegister.update({ ...data });
 
+  const sessions = existingRegister.sessions ?? [];
+  const lastSession = sessions.reduce<Date | null>((latest, session) => {
+    const createdAt = session.createdAt;
+    if (!latest || createdAt > latest) return createdAt;
+    return latest;
+  }, null);
+
   res.json(
-    apiData(toCashRegisterDto(existingRegister), {
-      message: "Caisse mise à jour avec succès",
-    }) satisfies UpdateCashRegisterResponse,
+    apiData(
+      toCashRegisterDto({
+        id: existingRegister.id,
+        name: existingRegister.name,
+        is_active: existingRegister.is_active,
+        recyclery_id: existingRegister.recyclery_id,
+        createdAt: existingRegister.createdAt,
+        updatedAt: existingRegister.updatedAt,
+        store_name: existingRegister.Recyclery?.name ?? null,
+        total_sessions: sessions.length,
+        last_session: lastSession,
+        Recyclery: existingRegister.Recyclery ?? null,
+      }),
+      {
+        message: "Caisse mise à jour avec succès",
+      },
+    ) satisfies UpdateCashRegisterResponse,
   );
 };
 
 export const deleteCaisse = async (req: Request, res: Response) => {
   const id = idSchema().parse(req.params.id);
-  // Vérifier que la caisse existe
   const existingRegister = await findByPkOrThrow(
     CashRegister,
     id,
