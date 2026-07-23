@@ -1,4 +1,8 @@
 import "dotenv/config";
+
+// Ensure civil-day math matches French stores even if host TZ differs.
+process.env.TZ ??= "Europe/Paris";
+
 import { assertJwtSecretConfigured } from "./config/jwt.js";
 import express from "express";
 import db from "./models/index.js";
@@ -85,29 +89,33 @@ app.use("*splat", (_req, _res, next) => {
 });
 app.use(errorHandler);
 
-app.listen(5000, () => {
-  db.sequelize
-    .sync()
-    .then(async () => {
-      const count = await db.User.count();
-      if (
-        count == 0 &&
-        process.env.DEFAULT_USERNAME &&
-        process.env.DEFAULT_MAIL &&
-        process.env.DEFAULT_PASS
-      ) {
-        await db.User.create({
-          email: process.env.DEFAULT_MAIL,
-          username: process.env.DEFAULT_USERNAME,
-          password: process.env.DEFAULT_PASS,
-          role: "admin",
-        });
-      }
-      appReady = true;
-    })
-    .catch((err) => logger.error("sync error", err));
+async function bootstrapDatabase() {
+  await db.sequelize.authenticate();
+  logger.debug(`node env = ${process.env.NODE_ENV}`)
 
-  // db.sequelize.sync({ force: true });
+  const count = await db.User.count();
+  if (
+    count === 0 &&
+    process.env.DEFAULT_USERNAME &&
+    process.env.DEFAULT_MAIL &&
+    process.env.DEFAULT_PASS
+  ) {
+    await db.User.create({
+      email: process.env.DEFAULT_MAIL,
+      username: process.env.DEFAULT_USERNAME,
+      password: process.env.DEFAULT_PASS,
+      role: "admin",
+    });
+  }
+
+  appReady = true;
+}
+
+app.listen(5000, () => {
+  bootstrapDatabase().catch((err) => {
+    logger.error("database bootstrap error", err);
+    process.exit(1);
+  });
 
   console.log(`server started on http://0.0.0.0:5000`);
 

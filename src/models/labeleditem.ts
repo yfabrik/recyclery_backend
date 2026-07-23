@@ -1,3 +1,4 @@
+import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
@@ -10,6 +11,7 @@ import {
   type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
+  type ModelStatic,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
@@ -86,22 +88,33 @@ export default class LabeledItem extends Model<
   static associate(models: ModelStatics) {
     this.belongsTo(models.Category, {
       as: "category",
-      foreignKey: "category_id",
+      foreignKey:{ name:"category_id",allowNull: false},
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
     });
     this.belongsTo(models.Category, {
       as: "subcategory",
       foreignKey: "subcategory_id",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
     });
     this.belongsTo(models.Recyclery, {
       as: "recyclery",
       foreignKey: "recyclery_id",
     });
-    this.belongsTo(models.User, { as: "createdBy", foreignKey: "created_by" });
+    this.belongsTo(models.User, {
+      as: "createdBy",
+      foreignKey: { name: "created_by", allowNull: true },
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    });
     this.belongsToMany(models.SalesTransaction, {
       through: models.TransactionItem,
       foreignKey: "labeled_item_id",
       otherKey: "transaction_id",
       as: "transactions",
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
     });
   }
 
@@ -155,6 +168,25 @@ export default class LabeledItem extends Model<
           { fields: ["recyclery_id"] },
           { fields: ["category_id"] },
         ],
+        hooks: {
+          beforeDestroy: async (item) => {
+            if (item.status !== "available") {
+              throw new createHttpError[424](
+                "Impossible de supprimer un article non disponible",
+              );
+            }
+            const TransactionItem = item.sequelize.models
+              .TransactionItem as ModelStatic<TransactionItem>;
+            const linked = await TransactionItem.count({
+              where: { labeled_item_id: item.id },
+            });
+            if (linked > 0) {
+              throw new createHttpError[424](
+                "Impossible de supprimer un article lié à une vente",
+              );
+            }
+          },
+        },
       },
     );
   }

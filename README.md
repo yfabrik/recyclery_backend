@@ -33,7 +33,7 @@ Copy [`.env.example`](.env.example) to `.env`. The app **will not start** withou
 | ------------------------- | ---------- | ----------------------------------------------------- |
 | `JWT_SECRET`              | Yes        | Secret for signing JWT tokens                         |
 | `NODE_ENV`                | No         | `development` (default), `test`, or `production`      |
-| `DB_URL`                  | Production | Database connection string (see `config/config.json`) |
+| `DB_URL`                  | Production | MariaDB connection string (`mariadb://user:pass@host:3306/db`) |
 | `DEFAULT_USERNAME`        | No         | Bootstrap admin username when DB is empty             |
 | `DEFAULT_MAIL`            | No         | Bootstrap admin email                                 |
 | `DEFAULT_PASS`            | No         | Bootstrap admin password                              |
@@ -50,13 +50,42 @@ Copy [`.env.example`](.env.example) to `.env`. The app **will not start** withou
 
 ## Database
 
-- **Development:** SQLite file at `./database/database2.sqlite` (gitignored)
-- **Test:** in-memory SQLite
-- **Production:** connection via `DB_URL`
+- **Development:** MariaDB via `docker compose up -d` (see `docker-compose.yml`)
+- **Test:** in-memory SQLite (`db.sync` in tests only)
+- **Production:** MariaDB connection via `DB_URL`
 
-On startup the app runs `sequelize.sync()` and optionally seeds a default admin when `DEFAULT_*` vars are set and no users exist.
+Schema is managed with [sequelize-cli](https://github.com/sequelize/cli) migrations in `src/future_migrations/`:
 
-Migrations are managed with [sequelize-cli](https://github.com/sequelize/cli); config paths are in [`.sequelizerc`](.sequelizerc).
+```bash
+docker compose up -d
+npx sequelize-cli db:migrate
+```
+
+Copy existing SQLite data to MariaDB:
+
+```bash
+npm run db:migrate-data
+```
+
+On startup the app verifies migrations have been applied and optionally seeds a default admin when `DEFAULT_*` vars are set and no users exist.
+
+Config paths are in [`.sequelizerc.cjs`](.sequelizerc.cjs).
+
+## ChartBrew (read-only dashboards)
+
+Create a read-only user after migrations:
+
+```bash
+docker compose exec -T mariadb mariadb -u root -p recyclerie < scripts/chartbrew-user.sql
+```
+
+Then in ChartBrew, add a **MySQL/MariaDB** connection:
+
+- Host: `127.0.0.1` (or your production host)
+- Port: `3306`
+- Database: `recyclerie`
+- User: `chartbrew`
+- Password: value from `scripts/chartbrew-user.sql`
 
 ## Docker
 

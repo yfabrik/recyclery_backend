@@ -15,6 +15,7 @@ import {
   type GiftCardTransactionType,
 } from "../constants/dbEnums.js";
 import { syncGiftCardStatus } from "../services/giftCardLedger.js";
+import { withTransaction } from "../utils/transaction.js";
 import type { ModelStatics } from "./db-types.ts";
 import GiftCard from "./giftcard.js";
 import type SalesTransaction from "./salestransaction.ts";
@@ -31,7 +32,7 @@ export default class GiftCardTransaction extends Model<
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  declare created_by: ForeignKey<User["id"]>;
+  declare created_by: ForeignKey<User["id"] | null>;
   declare gift_card_id: ForeignKey<GiftCard["id"]>;
   declare sales_transaction_id: ForeignKey<SalesTransaction["id"]>;
 
@@ -52,9 +53,14 @@ export default class GiftCardTransaction extends Model<
   static associate(models: ModelStatics) {
     this.belongsTo(models.GiftCard, { foreignKey: "gift_card_id" });
     this.belongsTo(models.SalesTransaction, {
-      foreignKey: "sales_transaction_id",
+      foreignKey:"sales_transaction_id",
     });
-    this.belongsTo(models.User, { as: "createdBy", foreignKey: "created_by" });
+    this.belongsTo(models.User, {
+      as: "createdBy",
+      foreignKey: { name: "created_by", allowNull: true },
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    });
   }
   static initModel(sequelize: Sequelize) {
     return this.init(
@@ -103,15 +109,17 @@ export default class GiftCardTransaction extends Model<
         ],
         hooks: {
           afterCreate: async (instance, options) => {
-            await syncGiftCardStatus(
-              instance.gift_card_id,
-              options.transaction ?? null,
+            await withTransaction(
+              instance.sequelize!,
+              options.transaction,
+              (tx) => syncGiftCardStatus(instance.gift_card_id, tx),
             );
           },
           afterDestroy: async (instance, options) => {
-            await syncGiftCardStatus(
-              instance.gift_card_id,
-              options.transaction ?? null,
+            await withTransaction(
+              instance.sequelize!,
+              options.transaction,
+              (tx) => syncGiftCardStatus(instance.gift_card_id, tx),
             );
           },
         },

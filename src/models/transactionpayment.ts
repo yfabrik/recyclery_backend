@@ -2,7 +2,6 @@ import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
-  Transaction,
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
@@ -13,6 +12,7 @@ import {
   type Sequelize,
 } from "sequelize";
 import { PAYMENT_METHODS, type PaymentMethod } from "../constants/dbEnums.js";
+import { withTransaction } from "../utils/transaction.js";
 import type { ModelStatics } from "./db-types.ts";
 import type GiftCard from "./giftcard.ts";
 import type SalesTransaction from "./salestransaction.ts";
@@ -44,9 +44,15 @@ export default class TransactionPayment extends Model<
 
   static associate(models: ModelStatics) {
     this.belongsTo(models.SalesTransaction, {
-      foreignKey: "sales_transaction_id",
+      foreignKey: {name:"sales_transaction_id",allowNull: false},
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
-    this.belongsTo(models.GiftCard, { foreignKey: "gift_card_id" });
+    this.belongsTo(models.GiftCard, {
+      foreignKey: "gift_card_id",
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    });
   }
 
   static initModel(sequelize: Sequelize) {
@@ -81,43 +87,60 @@ export default class TransactionPayment extends Model<
         ],
         hooks: {
           beforeCreate: async (instance, options) => {
-            const transaction = options.transaction ?? null
-            console.log("in payment hook before create")
-            const gift = await instance.getGiftCard({ transaction })
-            if (!gift) return
-            const sale = await instance.getSalesTransaction({ transaction })
-            if (!sale)
-              throw new createHttpError.InternalServerError("no sale transaction associé")//TODO 500 ok ?
-            const run = async (t: Transaction) => {
-              //charge giftcard ?
-              // await chargeGiftCard({
-              //   giftCardId: instance.gift_card_id!,
-              //   salesTransactionId: instance.sales_transaction_id,
-              //   amount: instance.amount,
-              //   createdBy: sale.created_by,
-              //   metadata: { source: "sale_payment" },
-              //   transaction: t
-              // });
-            }
-            if (transaction) return run(transaction);
-            return sequelize.transaction(run);
-
+            console.log("in payment hook before create");
+            return withTransaction(
+              sequelize,
+              options.transaction,
+              async (transaction) => {
+                const gift = await instance.getGiftCard({ transaction });
+                if (!gift) return;
+                const sale = await instance.getSalesTransaction({
+                  transaction,
+                });
+                if (!sale)
+                  throw new createHttpError.InternalServerError(
+                    "no sale transaction associé",
+                  ); //TODO 500 ok ?
+                //charge giftcard ?
+                // await chargeGiftCard({
+                //   giftCardId: instance.gift_card_id!,
+                //   salesTransactionId: instance.sales_transaction_id,
+                //   amount: instance.amount,
+                //   createdBy: sale.created_by,
+                //   metadata: { source: "sale_payment" },
+                //   transaction
+                // });
+              },
+            );
           },
 
+          //TODO
+          //           //No filter on type: "charge" — on a refund payment this can delete an issue / recredit movement.
+          // No null check on transaction (sale) — NPE if the sale is already gone.
+          // Ambiguous if several movements share the same card + sale.
+          // Destroy only matching charge rows (ideally linked by amount/id), or keep reverse logic in a service used only for sell payment edits.
           afterDestroy: async (instance, option) => {
-            //TRIGGERED when editing payemnts
-            //remove giftcard transaction if there is one
-            const t = option.transaction ?? null;
-            const gift = await instance.getGiftCard({ transaction: t });
-            if (!gift) return;
-            const transaction = await instance.getSalesTransaction({
-              transaction: t,
-            });
-            const cardPayments = await transaction.getGiftCardMovements({
-              where: { gift_card_id: instance.gift_card_id },
-              transaction: t,
-            });
-            if (cardPayments[0]) await cardPayments[0].destroy({ transaction: t });
+            await withTransaction(
+              instance.sequelize!,
+              option.transaction,
+              async (t) => {
+                const gift = await instance.getGiftCard({ transaction: t });
+                if (!gift) return;
+                const transaction = await instance.getSalesTransaction({
+                  transaction: t,
+                });
+                if (!transaction) return;
+                const cardPayments = await transaction.getGiftCardMovements({
+                  where: {
+                    gift_card_id: instance.gift_card_id,
+                    type: "charge",
+                  },
+                  transaction: t,
+                });
+                if (cardPayments[0])
+                  await cardPayments[0].destroy({ transaction: t });
+              },
+            );
           },
         },
       },

@@ -44,13 +44,12 @@ afterAll(async () => {
 describe("arrival controller functions", () => {
   it("should create an arrival from collection point", async () => {
     const arrivalDate = new Date("2026-01-28T10:00:00Z");
-    const arrivalTime = new Date("2026-01-28T10:30:00Z");
     const body = {
       category_id: 1,
       subcategory_id: 2,
       weight: 15.5,
       arrival_date: arrivalDate,
-      arrival_time: arrivalTime,
+      arrival_time: "10:30",
       source_type: "point",
       collection_point_id: 1,
       notes: "Collecte matin - bon état général",
@@ -86,13 +85,12 @@ describe("arrival controller functions", () => {
 
   it("should create an arrival from direct donation", async () => {
     const arrivalDate = new Date("2026-01-28T14:00:00Z");
-    const arrivalTime = new Date("2026-01-28T14:15:00Z");
     const body = {
       category_id: 1,
       subcategory_id: 2,
       weight: 8.2,
       arrival_date: arrivalDate,
-      arrival_time: arrivalTime,
+      arrival_time: "14:15",
       source_type: "apport",
       source_details: "Donation directe d'un particulier",
       notes: "Meubles en bon état",
@@ -197,13 +195,12 @@ describe("arrival controller functions", () => {
 
   it("should update arrival", async () => {
     const arrivalDate = new Date("2026-01-28T16:00:00Z");
-    const arrivalTime = new Date("2026-01-28T16:30:00Z");
     const body = {
       category_id: 1,
       subcategory_id: 2,
       weight: 20.0,
       arrival_date: arrivalDate,
-      arrival_time: arrivalTime,
+      arrival_time: "16:30",
       source_type: "point",
       collection_point_id: 1,
       notes: "Mise à jour - poids corrigé",
@@ -317,7 +314,7 @@ describe("arrival controller functions", () => {
               category_id: 1,
               weight: 5,
               arrival_date: new Date("2026-02-01"),
-              arrival_time: new Date("2026-02-01T10:00:00"),
+              arrival_time: "10:00",
               source_type: "apport",
             },
           }),
@@ -337,7 +334,7 @@ describe("arrival controller functions", () => {
             subcategory_id: 2,
             weight: 5,
             arrival_date: new Date("2026-02-01"),
-            arrival_time: new Date("2026-02-01T10:00:00"),
+            arrival_time: "10:00",
             source_type: "point",
           },
         }),
@@ -357,7 +354,7 @@ describe("arrival controller functions", () => {
               subcategory_id: 2,
               weight: 5,
               arrival_date: new Date("2026-02-01"),
-              arrival_time: new Date("2026-02-01T10:00:00"),
+              arrival_time: "10:00",
               source_type: "point",
               collection_point_id: 999,
             },
@@ -377,7 +374,7 @@ describe("arrival controller functions", () => {
           subcategory_id: 2,
           weight: 3,
           arrival_date: new Date("2026-02-02"),
-          arrival_time: new Date("2026-02-02T10:00:00"),
+          arrival_time: "10:00",
           source_type: "apport",
           collection_point_id: 1,
         },

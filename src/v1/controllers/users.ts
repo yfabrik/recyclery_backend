@@ -16,7 +16,6 @@ import type {
   ListUsersResponse,
   UpdateUserPasswordResponse,
   UpdateUserResponse,
-  UserStatsByRoleDto,
   UserStatsResponse,
 } from "@recyclerie/api/responses/users";
 import {
@@ -152,7 +151,10 @@ export const userStats = async (_req: Request, res: Response) => {
     apiData(
       toUserStatsDto({
         totalUsers,
-        usersByRole: usersByRole as unknown as UserStatsByRoleDto[],
+        usersByRole: usersByRole as unknown as Array<{
+          role: string;
+          count: number | string;
+        }>,
         recentLogins,
         activeEmployees,
       }),

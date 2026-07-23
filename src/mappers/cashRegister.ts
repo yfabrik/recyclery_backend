@@ -1,69 +1,63 @@
 import type {
   CashRegisterDto,
+  CashRegisterRefDto,
   CashRegisterSessionRefDto,
-  CashSessionRefDto,
 } from "@recyclerie/api/responses/cashRegister";
 
 import type CashRegister from "../models/cashregister.js";
 import type CashSession from "../models/cashsession.js";
 import type Recyclery from "../models/recyclery.js";
+import { toCashSessionRef } from "./cashSession.js";
 import { toRecycleryRef } from "./refs.js";
-import { toIsoDate, toNumber, toOptionalIsoDate, toOptionalNumber } from "./serialize.js";
-import { stripUndefined, type MapperInput } from "./types.js";
-
-type CashSessionRefInput = MapperInput<CashSession>;
+import {
+  toIsoDateTime,
+  toNumber,
+  toOptionalIsoDate
+} from "./serialize.js";
+import type { MapperInput } from "./types.js";
+import type { CashSessionRefDto } from "@recyclerie/api";
 
 type CashRegisterMapperInput = MapperInput<CashRegister> & {
   Recyclery?: MapperInput<Recyclery> | null;
-  sessions?: Array<CashSessionRefInput>;
+  sessions?: Array<MapperInput<CashSession>>;
   store_name?: string | null;
   total_sessions?: number | string;
   last_session?: Date | string | null;
 };
 
-const toCashSessionRef = (
-  value: CashSessionRefInput,
-): CashSessionRefDto | undefined => {
-  if (typeof value.id !== "number") return undefined;
-  return {
-    id: value.id,
-    opening_amount: toNumber(value.opening_amount),
-    closing_amount: toOptionalNumber(value.closing_amount) ?? null,
-    expected_amount: toOptionalNumber(value.expected_amount) ?? null,
-    status: value.status,
-    notes: value.notes ?? null,
-    closed_at: toOptionalIsoDate(value.closed_at) ?? null,
-    cash_register_id: value.cash_register_id,
-    user_id: value.user_id,
-    createdAt: toIsoDate(value.createdAt),
-    updatedAt: toIsoDate(value.updatedAt),
-  } satisfies CashSessionRefDto;
-};
-
-export const toCashRegisterSessionRefDto = (
+/** Base register fields only (nested under recyclery). */
+export const toCashRegisterBaseRefDto = (
   model: CashRegisterMapperInput,
-): CashRegisterSessionRefDto =>
+): CashRegisterRefDto =>
   ({
     id: model.id,
     name: model.name,
     is_active: model.is_active,
     recyclery_id: model.recyclery_id,
+  }) satisfies CashRegisterRefDto;
+
+/** Register ref with optional store, used when nested under a cash session. */
+export const toCashRegisterRefDto = (
+  model: CashRegisterMapperInput,
+): CashRegisterSessionRefDto =>
+  ({
+    ...toCashRegisterBaseRefDto(model),
     Recyclery: toRecycleryRef(model.Recyclery) ?? null,
   }) satisfies CashRegisterSessionRefDto;
 
 export const toCashRegisterDto = (
   model: CashRegisterMapperInput,
 ): CashRegisterDto =>
-  stripUndefined({
+  ({
     id: model.id,
     name: model.name,
     is_active: model.is_active,
     recyclery_id: model.recyclery_id,
-    createdAt: toIsoDate(model.createdAt),
-    updatedAt: toIsoDate(model.updatedAt),
+    createdAt: toIsoDateTime(model.createdAt),
+    updatedAt: toIsoDateTime(model.updatedAt),
     store_name: model.store_name ?? null,
     ...(model.total_sessions != null
-      ? { total_sessions: model.total_sessions }
+      ? { total_sessions: toNumber(model.total_sessions) }
       : {}),
     last_session: toOptionalIsoDate(model.last_session) ?? null,
     Recyclery: toRecycleryRef(model.Recyclery) ?? null,
@@ -75,6 +69,23 @@ export const toCashRegisterDto = (
         }
       : {}),
   }) satisfies CashRegisterDto;
+
+/** List/aggregate rows: never serialize the COUNT join as sessions[]. */
+export const toCashRegisterListDto = (
+  model: CashRegisterMapperInput,
+): CashRegisterDto =>
+  toCashRegisterDto({
+    id: model.id,
+    name: model.name,
+    is_active: model.is_active,
+    recyclery_id: model.recyclery_id,
+    createdAt: model.createdAt,
+    updatedAt: model.updatedAt,
+    store_name: model.store_name ?? null,
+    last_session: model.last_session ?? null,
+    ...(model.Recyclery !== undefined ? { Recyclery: model.Recyclery } : {}),
+    ...(model.total_sessions != null ? { total_sessions: model.total_sessions } : {}),
+  });
 
 export const toCashRegisterDetailDto = (
   register: CashRegister,

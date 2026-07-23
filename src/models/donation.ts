@@ -33,10 +33,10 @@ export default class Donation extends Model<
   declare updatedAt: CreationOptional<Date>;
 
   declare recyclery_id: ForeignKey<Recyclery["id"] | null>;
-  declare received_by: ForeignKey<User["id"] | null>;
+  declare received_by: ForeignKey<User["id"]>;
 
   declare Recyclery?: NonAttribute<Recyclery | null>;
-  declare User?: NonAttribute<User | null>;
+  declare User?: NonAttribute<User>;
 
   declare getRecyclery: BelongsToGetAssociationMixin<Recyclery>;
   declare setRecyclery: BelongsToSetAssociationMixin<
@@ -48,7 +48,11 @@ export default class Donation extends Model<
 
   static associate(models: ModelStatics) {
     this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
-    this.belongsTo(models.User, { foreignKey: "received_by" });
+    this.belongsTo(models.User, {
+      foreignKey:{ name:"received_by",allowNull: false},
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
+    });
   }
 
   static initModel(sequelize: Sequelize) {

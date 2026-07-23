@@ -214,6 +214,8 @@ const makeItemPayload = ({
 const saleFromRes = (res) => res.json.mock.calls[0][0].data.transaction;
 
 describe("salesTransactions controller gift card/refund flows", () => {
+  /** @type {import("../../src/models/user.js").default} */
+  let user;
   /** @type {number} */
   let userId;
   /** @type {number} */
@@ -230,7 +232,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
   beforeAll(async () => {
     await db.sequelize.sync({ force: true });
 
-    const user = await createUser({ role: "admin" });
+    user = await createUser({ role: "admin" });
     userId = user.id;
 
     const recyclery = await createRecyclery();
@@ -274,7 +276,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
     });
 
     const saleReq = {
-      user: { id: userId, role: "admin" },
+      user,
       body: makeSaleBody({
         sessionId,
         items: [
@@ -305,7 +307,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
 
     const refundReq1 = {
       params: { id: baseSaleId },
-      user: { id: userId, role: "admin" },
+      user,
       body: {
         cash_session_id: sessionId,
         total_amount: 10,
@@ -332,7 +334,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
 
     const refundReq2 = {
       params: { id: baseSaleId },
-      user: { id: userId, role: "admin" },
+      user,
       body: {
         cash_session_id: sessionId,
         total_amount: 20,
@@ -360,7 +362,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
     });
 
     const req = {
-      user: { id: userId, role: "admin" },
+      user,
       body: makeSaleBody({
         sessionId,
         items: [makeItemPayload({ item: mixedItem })],
@@ -404,7 +406,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
     });
 
     const req = {
-      user: { id: userId, role: "admin" },
+      user,
       body: makeSaleBody({
         sessionId,
         items: [makeItemPayload({ item: fullUseItem })],
@@ -465,7 +467,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
     const bundleExpected = (10 * 1 + 15 * 2) * (1 - 0); // 40 for qty 5, bundle 2-for-15
 
     const promoSaleReq = {
-      user: { id: userId, role: "admin" },
+      user,
       body: makeSaleBody({
         sessionId,
         total_amount_before_promotion: promoExpected,
@@ -486,7 +488,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
 
     const promoRefundReq = {
       params: { id: promoSaleId },
-      user: { id: userId, role: "admin" },
+      user,
       body: {
         cash_session_id: sessionId,
         total_amount: promoExpected,
@@ -512,7 +514,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
     ).toBe(promoExpected);
 
     const bundleSaleReq = {
-      user: { id: userId, role: "admin" },
+      user,
       body: makeSaleBody({
         sessionId,
         total_amount_before_promotion: bundleExpected,
@@ -535,7 +537,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
 
     const bundleRefundReq = {
       params: { id: bundleSaleId },
-      user: { id: userId, role: "admin" },
+      user,
       body: {
         cash_session_id: sessionId,
         total_amount: bundleExpected,
@@ -570,7 +572,7 @@ describe("salesTransactions controller gift card/refund flows", () => {
 
     const req = {
       params: { id: sessionId },
-      user: { id: userId, role: "admin" },
+      user,
       body: { closing_amount: closingAmount, notes: "closed from test" },
     };
     const res = makeRes();
@@ -596,6 +598,8 @@ describe("salesTransactions controller gift card/refund flows", () => {
 });
 
 describe("sale transaction rules", () => {
+  /** @type {import("../../src/models/user.js").default} */
+  let user;
   let userId;
   let sessionId;
   let categoryId;
@@ -604,7 +608,7 @@ describe("sale transaction rules", () => {
   beforeAll(async () => {
     await db.sequelize.sync({ force: true });
 
-    const user = await createUser({ role: "admin" });
+    user = await createUser({ role: "admin" });
     userId = user.id;
 
     const recyclery = await createRecyclery();
@@ -645,7 +649,7 @@ describe("sale transaction rules", () => {
       () =>
         createTransaction(
           makeReq({
-            user: { id: userId, role: "admin" },
+            user,
             body: makeSaleBody({
               sessionId: 999,
               items: [makeItemPayload({ item })],
@@ -672,7 +676,7 @@ describe("sale transaction rules", () => {
       () =>
         createTransaction(
           makeReq({
-            user: { id: userId, role: "admin" },
+            user,
             body: makeSaleBody({
               sessionId: closedSession.id,
               items: [makeItemPayload({ item })],
@@ -689,7 +693,7 @@ describe("sale transaction rules", () => {
     const res = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: makeSaleBody({
           sessionId,
           items: [makeItemPayload({ item })],
@@ -708,7 +712,7 @@ describe("sale transaction rules", () => {
     const res = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: makeSaleBody({
           sessionId,
           items: [makeItemPayload({ item: a }), makeItemPayload({ item: b })],
@@ -724,7 +728,7 @@ describe("sale transaction rules", () => {
     const res = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: makeSaleBody({
           sessionId,
           items: [makeItemPayload({ item, quantity: 3 })],
@@ -741,7 +745,7 @@ describe("sale transaction rules", () => {
     const res = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: makeSaleBody({
           sessionId,
           total_amount_before_promotion: lineTotal,
@@ -760,7 +764,7 @@ describe("sale transaction rules", () => {
     const res = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: makeSaleBody({
           sessionId,
           total_amount_before_promotion: expected,
@@ -785,7 +789,7 @@ describe("sale transaction rules", () => {
     const res = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: makeSaleBody({
           sessionId,
           items: [makeItemPayload({ item })],
@@ -805,7 +809,7 @@ describe("sale transaction rules", () => {
     const res = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: makeSaleBody({
           sessionId,
           items: [makeItemPayload({ item })],
@@ -823,7 +827,7 @@ describe("sale transaction rules", () => {
     const res = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: makeSaleBody({
           sessionId,
           items: [makeItemPayload({ item })],
@@ -877,7 +881,7 @@ describe("sale transaction rules", () => {
     const res = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: makeSaleBody({
           sessionId,
           items,
@@ -901,7 +905,7 @@ describe("sale transaction rules", () => {
     const res = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: {
           cash_session_id: sessionId,
           total_amount: 3.18,

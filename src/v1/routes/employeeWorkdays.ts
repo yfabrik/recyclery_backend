@@ -60,7 +60,7 @@ router.post(
       notes,
     } = req.body;
 
-    if (!employee_id || !day_of_week || !time_slot) {
+    if (!employee_id || day_of_week == null || !time_slot) {
       return res.status(400).json({
         success: false,
         error: "employee_id, day_of_week et time_slot sont requis",

@@ -27,6 +27,7 @@ import {
   apiPaginated,
 } from "@recyclerie/api/types/response";
 import type { Request, Response } from "express";
+import { logAction } from "../../services/auditLog.js";
 import {
   chargeGiftCard,
   findGiftCardByCode,
@@ -43,12 +44,13 @@ import { idSchema } from "../../services/zod.js";
 
 import db from "../../models/index.js";
 
-import { amountsEqual, computeTotalAfterPromotion, getCartTotal, getCartTotalWithGlobalPromotion, isAmountEqual, roundCurrency, type CartLine } from "@recyclerie/api/domain/cart";
+import { amountsEqual, computeTotalAfterPromotion, getCartLinePrice, getCartTotal, getCartTotalWithGlobalPromotion, isAmountEqual, roundCurrency, type CartLine } from "@recyclerie/api/domain/cart";
 import { formatWhereDateRange } from "../../helpers.js";
 import { toGiftCardSummaryFromFields } from "../../mappers/giftCards.js";
 import {
   toPostalCodeStatsDto,
   toSalesTransactionDto,
+  toSalesTransactionStatsDto,
   type PostalCodeStatsRow,
 } from "../../mappers/salesTransactions.js";
 import type { Models } from "../../models/db-types.js";
@@ -67,19 +69,6 @@ const {
   GiftCard,
 } = db;
 
-// export const getCartLinePrice = (line: SaleCartItem) => {
-//   let bundles = 0;
-//   let extraItems = line.quantity;
-//   if (line.bundleQuantity && line.bundleQuantity !== 0) {
-//     bundles = Math.trunc(line.quantity / line.bundleQuantity);
-//     extraItems = line.quantity % line.bundleQuantity;
-//   }
-//   const sum = (price: number, quantity: number) =>
-//     price * quantity * (1 - (line.promotion ?? 0) / 100);
-//   return (
-//     sum(line.price, extraItems) + sum(line.bundlePrice || line.price, bundles)
-//   );
-// };
 
 const dataSchema = saleTransactionBaseSchema.superRefine((data, ctx) => {
   //ensure valid promotion values
@@ -122,22 +111,40 @@ const dataSchema = saleTransactionBaseSchema.superRefine((data, ctx) => {
       code: "custom",
       message: "le total n'est pas correct",
     });
-  //ensure valid payments
-  try {
-    validateSaleAmounts(data);
-    normalizePayments(data);
-  } catch (e) {
-    if (createHttpError.isHttpError(e))
-      ctx.addIssue({
-        code: "custom",
-        message: e.message,
-      });
+
+  const totalPayments = (data.payments ?? []).reduce(
+    (acc, p) => acc + roundCurrency(p.amount),
+    0,
+  );
+  if (!isAmountEqual(totalPayments, data.payment_amount)) {
+    ctx.addIssue({
+      code: "custom",
+      message: "la somme des paiements doit etre egale au total",
+    });
+
   }
+  if (data.total_amount > totalPayments) {
+    ctx.addIssue({
+      code: "custom",
+      message: "la somme des paiements doit etre au moins egale au total",
+    });
+  }
+  //ensure valid payments
+  // try {
+  //   validateSaleAmounts(data);
+  //   normalizePayments(data);
+  // } catch (e) {
+  //   if (createHttpError.isHttpError(e))
+  //     ctx.addIssue({
+  //       code: "custom",
+  //       message: e.message,
+  //     });
+  // }
   // //TODO check dans front comment il fait
 });
 
 // export type CartItem = z.infer<typeof transactionItemSchema>;
-export type Data = z.infer<typeof dataSchema>;
+export type Data = z.infer<typeof dataSchema>;//TODO not good
 
 // type GlobalPromotionType = "percent" | "fixed";
 
@@ -185,7 +192,8 @@ export type Data = z.infer<typeof dataSchema>;
 // }
 
 const validateSaleAmounts = (data: Data) => {
-  
+
+  //TODO deja fait ailleur
   const expectedNet = computeTotalAfterPromotion(
     data.total_amount_before_promotion,
     data.global_promotion,
@@ -196,6 +204,7 @@ const validateSaleAmounts = (data: Data) => {
       "total_amount incohérent avec total_amount_before_promotion et la promotion globale",
     );
   }
+  //////
   const totalPayments = data.payments?.reduce(
     (acc, p) => acc + roundCurrency(p.amount),
     0,
@@ -234,6 +243,7 @@ const normalizePayments = (data: Data) => {
 export const listTransactions = async (req: Request, res: Response) => {
   const filter = transactionListFilterSchema.parse(req.query);
   const pagination = parsePaginationQuery(req.query);
+  console.log(filter);
 
   const where: ModelWhere<typeof SalesTransaction> = {};
   if (filter.transaction_number) where.id = Number(filter.transaction_number);
@@ -241,7 +251,6 @@ export const listTransactions = async (req: Request, res: Response) => {
 
   const dateRange = formatWhereDateRange(filter.date_from, filter.date_to);
   if (dateRange) where.createdAt = dateRange;
-
   if (filter.session) where.cash_session_id = filter.session;
   if (filter.payment_method) where.payment_method = filter.payment_method;
   if (filter.type) where.transactionType = filter.type;
@@ -476,7 +485,7 @@ export const createTransaction = async (
     )) {
       // zod schema validated giftcardcode exist
       //TODO maybe we can change type so it infer giftcard not null when method giftcard
-      const giftCardCode = payment.gift_card_code!;
+      const giftCardCode = payment.gift_card_code;
       // if (!giftCardCode) {
       //   throw new createHttpError.BadRequest(
       //     "gift_card_code est requis pour un paiement giftcard",
@@ -543,6 +552,14 @@ export const createTransaction = async (
     return sale;
   });
 
+  logAction("sales", "sale.created", {
+    saleId: result.id,
+    total_amount: result.total_amount,
+    cash_session_id: result.cash_session_id,
+    payment_method: result.payment_method,
+    itemCount: result.items?.length ?? data.items.length,
+    userId: req.user.id,
+  });
   // Example response:
   // {
   //   "success": true,
@@ -569,6 +586,12 @@ export const createTransaction = async (
 
 export const createRefund = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
+  const user = req.user;
+  const cashSessions = await user.getCashSessions({where: {status: "open"}});
+  if (cashSessions.length === 0) {
+    throw new createHttpError.BadRequest("aucune caisse ouverte trouvée");
+  }
+  const cashSession = cashSessions[0]!;
 
   const parent = await findByPkOrThrow(
     SalesTransaction,
@@ -589,36 +612,12 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
   );
   const parentRefunds = parent.refunds ?? [];
   const parentItems = parent.items ?? [];
+  const parentBeforePromotion = Number(parent.total_amount_before_promotion);
   const parentPromoValue =
-    parent.total_amount_before_promotion - parent.total_amount;
-  const parentItemsCount = parentItems.reduce(
-    (prev, current) => prev + (current.TransactionItem?.quantity ?? 0),
-    0,
-  );
-  const globalPromoPerItem = parentPromoValue / parentItemsCount;
+    parentBeforePromotion - Number(parent.total_amount);
 
-  //item total price / item quatity
-  // miss global prom
-  //1 faut check si item exist,
-  // 2 check si quantity refundable
-  // 3 get global promo value
-  // 4 total items
-  //5 global promo/totalitems
-  //6 (total item price /quantitty)-le 5 * refund quantity
-
-  //FIXME on se fait baiser quand les object sont en lot et qu'on rembourse qu'une partie
-
-  const data = refundDataSchema.parse(req.body);
-  data.refund_method = data.payment_method;
-
-  const session = await findByPkOrThrow(
-    CashSession,
-    data.cash_session_id,
-    "session non trouvé",
-  );
-  if (session.status !== "open") {
-    throw new createHttpError.BadRequest("session fermée ou invalide");
-  }
+  const data = refundDataSchema.parse(req.body);//TODO mettre plus pour throw early
+  data.refund_method = data.payment_method;//TODO useless ?
 
   const refunded = data.items
     .map((item) => {
@@ -645,10 +644,34 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
         );
       }
       const toRefundquantity = item.quantity - alreadyRefunded;
-      const toRefundNow =
-        (c.TransactionItem.total_price / c.TransactionItem.quantity -
-          globalPromoPerItem) *
-        toRefundquantity;
+      if (toRefundquantity <= 0) {
+        throw new createHttpError.BadRequest(
+          "peut pas rembourser moins d'objects que vendu",
+        );
+      }
+
+      // Cart-line delta keeps bundle pricing correct on partial refunds
+      // (average unit price would over/under-refund lots).
+      const lineAttrs: CartLine = {
+        price: Number(c.TransactionItem.price),
+        quantity: soldQty,
+        promotion: Number(c.TransactionItem.promotionValue ?? 0),
+        bundleQuantity: c.TransactionItem.bundleQuantity ?? null,
+        bundlePrice:
+          c.TransactionItem.bundlePrice != null
+            ? Number(c.TransactionItem.bundlePrice)
+            : null,
+      };
+      const qtyBefore = soldQty - alreadyRefunded;
+      const qtyAfter = soldQty - item.quantity;
+      const lineGrossRefund =
+        getCartLinePrice({ ...lineAttrs, quantity: qtyBefore }) -
+        getCartLinePrice({ ...lineAttrs, quantity: qtyAfter });
+      const promoShare =
+        parentBeforePromotion > 0
+          ? parentPromoValue * (lineGrossRefund / parentBeforePromotion)
+          : 0;
+      const toRefundNow = lineGrossRefund - promoShare;
 
       const alreadyRefundedPrice = parentRefunds.reduce((prev, current) => {
         const items = current.items?.filter((i) => i.barcode == item.barcode);
@@ -659,8 +682,6 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
           ) || 0;
         return prev;
       }, 0);
-      // const toRefundNow = parent.items?.find((i) => i.barcode == item.barcode)?.TransactionItem?.total_price ??0 - alreadyRefundedPrice;
-      // const toRefundNow = getCartLinePrice(item) - alreadyRefundedPrice;
 
       return {
         ...item,
@@ -698,7 +719,7 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
       {
         transactionType: "refund",
         created_by: req.user.id,
-        cash_session_id: data.cash_session_id,
+        cash_session_id: cashSession.id,
         total_amount_before_promotion: total_amount,
         total_amount: total_amount,
         payment_method: data.payment_method,
@@ -816,6 +837,14 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
     return { refund, giftCard: refundGiftCard };
   });
 
+  logAction("refunds", "refund.created", {
+    refundId: result.refund.id,
+    parentTransactionId: id,
+    total_amount: result.refund.total_amount,
+    cash_session_id: result.refund.cash_session_id,
+    payment_method: result.refund.payment_method,
+    userId: req.user.id,
+  });
   // Example response:
   // {
   //   "success": true,
@@ -867,7 +896,6 @@ export const listRefunds = async (req: Request, res: Response) => {
 export const transactionsStats = async (req: Request, res: Response) => {
   const filter = transactionStatsFilterSchema.parse(req.query);
 
-  const where: ModelWhere<typeof SalesTransaction> = {};
   const include: Includeable[] = [];
   if (filter.store_id) {
     include.push({
@@ -884,7 +912,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
       ],
     });
   }
-
+  const where: ModelWhere<typeof SalesTransaction> = {};
   const { date_from, date_to } = filter;
   const dateRange = formatWhereDateRange(date_from, date_to);
   if (dateRange) where.createdAt = dateRange;
@@ -904,11 +932,11 @@ export const transactionsStats = async (req: Request, res: Response) => {
     average_transaction: number | string;
     sessions_count: number | string;
   };
-  type PaymentMethodRow = {
-    payment_method: Models["SalesTransaction"]["payment_method"];
-    total: number | string;
-    count: number | string;
-  };
+  // type PaymentMethodRow = {
+  //   payment_method: Models["SalesTransaction"]["payment_method"];
+  //   total: number | string;
+  //   count: number | string;
+  // };
   type ByDayRow = {
     date: string;
     transaction_count: number | string;
@@ -957,15 +985,39 @@ export const transactionsStats = async (req: Request, res: Response) => {
     average_transaction: 0,
     sessions_count: 0,
   };
-  const methods = (await SalesTransaction.findAll({
+  // const methods = (await SalesTransaction.findAll({
+  //   attributes: [
+  //     "payment_method",
+  //     [fn("SUM", col("total_amount")), "total"],
+  //     [fn("COUNT", col("payment_method")), "count"],
+  //   ],
+  //   where,
+  //   include,
+  //   group: ["payment_method"],
+  //   raw: true,
+  // })) as unknown as PaymentMethodRow[];
+  type PaymentMethodRow = {
+    payment_method: Models["TransactionPayment"]["method"];
+    total: number | string;
+    count: number | string;
+  };
+  const methods = (await TransactionPayment.findAll({
     attributes: [
-      "payment_method",
-      [fn("SUM", col("total_amount")), "total"],
-      [fn("COUNT", col("payment_method")), "count"],
+      ["method", "payment_method"],//TODO alias not safe
+      [fn("SUM", col("amount")), "total"],
+      [fn("COUNT", col("method")), "count"],
     ],
-    where,
-    include,
-    group: ["payment_method"],
+    
+    include: [
+      {
+        model: SalesTransaction,
+        where,
+        include,
+        required: true,
+        attributes: [],
+      },
+    ],
+    group: ["method"],
     raw: true,
   })) as unknown as PaymentMethodRow[];
 
@@ -1054,24 +1106,19 @@ export const transactionsStats = async (req: Request, res: Response) => {
   //   raw: true,
   // });
   res.json(
-    apiData({
-      total_transactions: count,
-      total_sales: statsRow.total_sales_before_refunds,
-      ...statsRow,
-      total_refunded: 0,
-      payment_methods: methods ?? [],
-      by_day: byDay.map((row) => ({
-        date: row.date,
-        transaction_count: Number(row.transaction_count ?? 0),
-        total_amount: parseFloat(String(row.total_amount ?? 0)),
-      })),
-      by_category: byCategory.map((row) => ({
-        category_id: row.category_id,
-        category_name: row.category_name ?? null,
-        total_quantity: Number(row.total_quantity ?? 0),
-        total_price_sum: parseFloat(String(row.total_price_sum ?? 0)),
-      })),
-    }) satisfies SalesTransactionStatsResponse,
+    apiData(
+      toSalesTransactionStatsDto({
+        total_transactions: count,
+        total_sales: statsRow.total_sales_before_refunds,
+        total_sales_before_refunds: statsRow.total_sales_before_refunds,
+        average_transaction: statsRow.average_transaction,
+        sessions_count: statsRow.sessions_count,
+        total_refunded: 0,
+        payment_methods: methods ?? [],
+        by_day: byDay,
+        by_category: byCategory,
+      }),
+    ) satisfies SalesTransactionStatsResponse,
   );
 };
 
@@ -1097,7 +1144,7 @@ export const transactionStatsPostalCode = async (
   const dateRange = formatWhereDateRange(date_from, date_to);
   if (dateRange) where.createdAt = dateRange;
 
-  const postalStats = await SalesTransaction.findAll({
+  const postalStats = (await SalesTransaction.findAll({
     where,
     include,
     attributes: [
@@ -1111,13 +1158,11 @@ export const transactionStatsPostalCode = async (
     ],
     group: ["customer_postal_code"],
     order: [["total_sales", "DESC"]],
-  });
-
+    raw: true,
+  })) as unknown as PostalCodeStatsRow[];
   res.json(
     apiData(
-      postalStats.map((row) =>
-        toPostalCodeStatsDto(row as unknown as PostalCodeStatsRow),
-      ),
+      postalStats.map((row) => toPostalCodeStatsDto(row)),
     ) satisfies PostalCodeStatsResponse,
   );
 };
@@ -1199,11 +1244,11 @@ export const updateTransaction = async (
       if (e.method == "giftcard") {
         //TODO deja check in zod refine mais comme c'est mal typé la suite raise error
         const giftCardCode = e.gift_card_code;
-        if (!giftCardCode) {
-          throw new createHttpError.BadRequest(
-            "gift_card_code est requis pour un paiement giftcard",
-          );
-        }
+        // if (!giftCardCode) {
+        //   throw new createHttpError.BadRequest(
+        //     "gift_card_code est requis pour un paiement giftcard",
+        //   );
+        // }
         const giftCard = await findGiftCardByCode(giftCardCode, {
           transaction: t,
         });
@@ -1221,7 +1266,19 @@ export const updateTransaction = async (
       }
       const meta =
         e.method === "giftcard" ? { gift_card_code: e.gift_card_code } : {};
-      await transaction.createPayment({ ...e, metadata: meta }, { transaction: t }); // add new payments
+      const gift =
+        e.method === "giftcard"
+          ? await findGiftCardByCode(e.gift_card_code, { transaction: t })
+          : null;
+      await transaction.createPayment(
+        {
+          method: e.method,
+          amount: e.amount,
+          metadata: meta,
+          gift_card_id: gift?.id ?? null,
+        },
+        { transaction: t },
+      );
     }
     const storedMethod =
       newPayments && newPayments.length === 1
@@ -1293,10 +1350,15 @@ export const updateTransaction = async (
         { model: TransactionPayment, as: "payments" },
         { model: LabeledItem, as: "items" },
         { model: TransactionGlobalPromotion, as: "globalPromotions" },
-      ],
+      ], transaction: t
     });
   });
 
+  logAction("sales", "sale.updated", {
+    saleId: result.id,
+    total_amount: result.total_amount,
+    userId: req.user.id,
+  });
   res.json(
     apiData(toSalesTransactionDto(result), {
       message: " transaction mise à jour",
@@ -1343,13 +1405,19 @@ export const removeTransaction = async (
       ],
     
   })
-  if (toDelete.CashSession?.status != "open" && toDelete.CashSession?.user_id != req.user.id)
+  if (toDelete.CashSession?.status != "open" || toDelete.CashSession?.user_id != req.user.id)
     throw new createHttpError.Forbidden("trop tard pour modifier")
   if (toDelete.refunds && toDelete.refunds?.length > 0)
     throw new createHttpError.Forbidden("transaction a deja ete remboursee")
-  await TransactionGlobalPromotion.destroy({ where: { transaction_id: id } });//TODO remove after migration, fail because sqlite hasnt  ondelete cascade
-  await toDelete.destroy();
+  await db.sequelize.transaction(async (t) => {
+    await TransactionGlobalPromotion.destroy({ where: { transaction_id: id }, transaction: t });//TODO remove after migration, fail because sqlite hasnt  ondelete cascade
+    await toDelete.destroy({ transaction: t });
+  });
 
+  logAction("sales", "sale.deleted", {
+    saleId: id,
+    userId: req.user.id,
+  });
   res.json(
     apiMessage("Transaction supprimée") satisfies DeleteSalesTransactionResponse,
   );

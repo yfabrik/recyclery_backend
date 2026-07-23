@@ -7,6 +7,7 @@ import {
 } from "sequelize";
 import type { Models } from "../models/db-types.js";
 import db from "../models/index.js";
+import { withTransaction } from "../utils/transaction.js";
 import { getGiftCardBalanceInTx, toAmount } from "./giftCardLedger.js";
 import { findByPkOrThrow } from "./sequelize.js";
 
@@ -70,7 +71,7 @@ export const issueGiftCard = async ({
 
   }
 
-  const run = async (transaction: Transaction) => {
+  return withTransaction(sequelize, externalTransaction, async (transaction) => {
     if (!linkedTransactionId) {
       //TODO a refaire
       const openedSession = await CashSession.findOne({
@@ -120,10 +121,32 @@ export const issueGiftCard = async ({
     );
 
     return giftCard;
-  };
+  });
+};
 
-  if (externalTransaction) return run(externalTransaction);
-  return sequelize.transaction(run);
+/**
+ * True if the card has any non-issue ledger movement or a payment usage.
+ */
+export const isGiftCardUsed = async (
+  giftCardId: Models["GiftCard"]["id"],
+  options?: { transaction?: Transaction | null },
+) => {
+  const t = options?.transaction ?? null;
+  const nonIssue = await GiftCardTransaction.count({
+    where: {
+      gift_card_id: giftCardId,
+      type: { [Op.ne]: "issue" },
+    },
+    transaction: t,
+  });
+  if (nonIssue > 0) return true;
+
+  const { TransactionPayment } = db;
+  const payments = await TransactionPayment.count({
+    where: { gift_card_id: giftCardId },
+    transaction: t,
+  });
+  return payments > 0;
 };
 
 /**
@@ -134,14 +157,10 @@ export const issueGiftCard = async ({
 export const getGiftCardBalance = async (
   giftCardId: Models["GiftCard"]["id"],
   options?: CreateOptions,
-) => {
-  if (options?.transaction) {
-    return getGiftCardBalanceInTx(giftCardId, options.transaction);
-  }
-  return sequelize.transaction((transaction) =>
+) =>
+  withTransaction(sequelize, options?.transaction, (transaction) =>
     getGiftCardBalanceInTx(giftCardId, transaction),
   );
-};
 
 /**
  * Debit gift card for a sale transaction.
@@ -167,7 +186,7 @@ export const chargeGiftCard = async ({
     throw new createHttpError.BadRequest("charge amount must be > 0");
   }
 
-  const run = async (transaction: Transaction) => {
+  return withTransaction(sequelize, externalTransaction, async (transaction) => {
     const { giftCard, currentBalance } = await getGiftCardBalanceInTx(
       giftCardId,
       transaction,
@@ -189,9 +208,7 @@ export const chargeGiftCard = async ({
       },
       { transaction },
     );
-  };
-  if (externalTransaction) return run(externalTransaction);
-  return sequelize.transaction(run);
+  });
 };
 
 /**
@@ -210,7 +227,7 @@ export const recreditGiftCard = async ({
     throw new createHttpError.BadRequest("recredit amount must be > 0");
   }
 
-  const run = async (transaction: Transaction) => {
+  return withTransaction(sequelize, externalTransaction, async (transaction) => {
     const giftCard = await findByPkOrThrow(
       GiftCard,
       giftCardId,
@@ -230,9 +247,7 @@ export const recreditGiftCard = async ({
       },
       { transaction },
     );
-  };
-  if (externalTransaction) return run(externalTransaction);
-  return sequelize.transaction(run);
+  });
 };
 
 export const findGiftCardByCode = async (

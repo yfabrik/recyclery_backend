@@ -64,15 +64,17 @@ module.exports = {
       },
       cash_session_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
         references: {
           model: "CashSessions",
           key: "id",
         },
-        onDelete: "SET NULL",
+        onDelete: "RESTRICT",
         onUpdate: "CASCADE",
       },
       created_by: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: true,
         references: {
           model: "Users",
           key: "id",

@@ -56,10 +56,14 @@ export default class EcoOrganism extends Model<
     this.belongsToMany(models.Category, {
       through: "ecoOrg_categoryIn",
       as: "inCategories",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.belongsToMany(models.Category, {
       through: "ecoOrg_categorySell",
       as: "sellCategories",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
   }
 

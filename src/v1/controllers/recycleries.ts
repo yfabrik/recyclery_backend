@@ -24,7 +24,7 @@ import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
 import type { ModelWhere } from "../../models/db-types.js";
-import { toCashRegisterDto } from "../../mappers/cashRegister.js";
+import { toCashRegisterListDto } from "../../mappers/cashRegister.js";
 import {
   toRecycleryDto,
   toRecycleryStatsDto,
@@ -61,21 +61,12 @@ export const listRecycleries = async (req: Request, res: Response) => {
       required: false,
       where: { category: "vente" },
     });
-  if (filter.include.includes("caisses")){
-
+  if (filter.include.includes("caisses")) {
     include.push(
       {
         model: CashRegister,
         required: false,
         as: "caisses",
-        // separate:true
-        include: [
-          {
-            model: CashSession,
-            as: "sessions",
-            required: false,
-          },
-        ],
       },
       { model: User, as: "manager" },
     );
@@ -186,7 +177,7 @@ export const listCaissesRecyclerie = async (req: Request, res: Response) => {
   const caisses = await listCaisses(id);
 
   res.json(
-    apiData(caisses.map(toCashRegisterDto)) satisfies ListRecycleryCashRegistersResponse,
+    apiData(caisses.map((register) => toCashRegisterListDto(register.get({ plain: true })))) satisfies ListRecycleryCashRegistersResponse,
   );
 };
 

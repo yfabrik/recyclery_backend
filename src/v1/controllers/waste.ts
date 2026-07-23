@@ -13,7 +13,6 @@ import type {
   ListWasteResponse,
   UpdateWasteResponse,
   WasteStatsCategoryResponse,
-  WasteStatsDto,
   WasteStatsResponse,
 } from "@recyclerie/api/responses/waste";
 import {
@@ -31,7 +30,7 @@ import {
 
 import db from "../../models/index.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
-import { toWasteDto } from "../../mappers/waste.js";
+import { toWasteDto, toWasteStatsDto } from "../../mappers/waste.js";
 import { type ModelWhere, type RequestWithUser } from "./types.js";
 
 const { Category, EcoOrganism, User, WasteDisposal } = db;
@@ -171,7 +170,13 @@ export const wasteStats = async (req: Request, res: Response) => {
   });
 
   res.json(
-    apiData((stats?.toJSON() ?? null) as WasteStatsDto | null) satisfies WasteStatsResponse,
+    apiData(
+      toWasteStatsDto(
+        (stats?.get({ plain: true }) ?? null) as Parameters<
+          typeof toWasteStatsDto
+        >[0],
+      ),
+    ) satisfies WasteStatsResponse,
   );
 };
 
@@ -217,6 +222,14 @@ export const wasteStatsCategory = async (req: Request, res: Response) => {
   });
 
   res.json(
-    apiData(stats.map((row) => row.toJSON() as WasteStatsDto)) satisfies WasteStatsCategoryResponse,
+    apiData(
+      stats.map((row) =>
+        toWasteStatsDto(
+          row.get({ plain: true }) as NonNullable<
+            Parameters<typeof toWasteStatsDto>[0]
+          >,
+        )!,
+      ),
+    ) satisfies WasteStatsCategoryResponse,
   );
 };

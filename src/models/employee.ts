@@ -84,16 +84,30 @@ export default class Employee extends Model<
       foreignKey: "employeeId",
       otherKey: "recycleryId",
       as: "stores",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
-    this.belongsToMany(models.Task, { through: "employee_task" });
-    this.belongsToMany(models.TaskSchedule, { through: "employee_schedule" });
+    this.belongsToMany(models.Task, {
+      through: "employee_task",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
+    this.belongsToMany(models.TaskSchedule, {
+      through: "employee_schedule",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
     this.hasMany(models.EmployeeWorkdays, {
       foreignKey: "employee_id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.belongsToMany(models.Skill, {
       foreignKey: "employeeId",
       through: "employee_skill",
       as: "skills",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
   }
 

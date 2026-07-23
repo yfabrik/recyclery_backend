@@ -1,23 +1,26 @@
+import type { Weekday } from "@recyclerie/api/enums";
 import type {
   AvailableEmployeeDto,
   PlanningStatsDto,
   PlanningStatsOverviewDto,
   StoreHoursDto,
   TaskScheduleDto,
+  TaskScheduleRefDto,
 } from "@recyclerie/api/responses/taskSchedule";
 
 import type Employee from "../models/employee.js";
 import type Recyclery from "../models/recyclery.js";
 import type Task from "../models/task.js";
 import type TaskSchedule from "../models/taskschedule.js";
+import { toIsoDateTime, toIsoTime } from "../utils/dates.js";
 import { toEmployeeDto } from "./employees.js";
 import { toRecycleryRef } from "./refs.js";
+import { toNumber, toOptionalNumber, toNumberOrUndefined } from "./serialize.js";
 import { toTaskDto } from "./tasks.js";
-import { toIsoDate } from "./serialize.js";
-import { stripUndefined, type MapperInput } from "./types.js";
+import type { MapperInput } from "./types.js";
 
 type TaskScheduleMapperInput = MapperInput<TaskSchedule> & {
-  day_of_week?: string | null;
+  day_of_week?: Weekday | number | null;
   Tasks?: Array<MapperInput<Task>>;
   tasks?: Array<MapperInput<Task>>;
   Employees?: Array<MapperInput<Employee>>;
@@ -44,56 +47,82 @@ export const toTaskScheduleDto = (
 ): TaskScheduleDto => {
   const tasks = model.Tasks ?? model.tasks;
 
-  return stripUndefined({
+  return ({
     id: model.id,
     name: model.name,
-    description: model.description ?? null,
+    description: model.description ,
     category: model.category,
-    priority: (model.priority ?? null) as TaskScheduleDto["priority"],
-    required_skills: model.required_skills ?? null,
-    location: model.location ?? null,
-    equipment_needed: model.equipment_needed ?? null,
-    hourly_rate: model.hourly_rate,
+    priority: (model.priority ) as TaskScheduleDto["priority"],
+    required_skills: model.required_skills,
+    location: model.location,
+    equipment_needed: model.equipment_needed ,
+    hourly_rate: model.hourly_rate? toNumber(model.hourly_rate):null,
     is_recurring: model.is_recurring,
-    recurrence_pattern: model.recurrence_pattern ?? null,
-    scheduled_date: toIsoDate(model.scheduled_date),
-    start_time: toIsoDate(model.start_time),
-    end_time: toIsoDate(model.end_time),
-    notes: model.notes ?? null,
-    status: model.status ?? null,
-    store_id: model.store_id ?? null,
-    collection_point_id: model.collection_point_id ?? null,
-    day_of_week: model.day_of_week ?? null,
-    createdAt: toIsoDate(model.createdAt),
-    updatedAt: toIsoDate(model.updatedAt),
+    recurrence_pattern: model.recurrence_pattern ,
+    scheduled_date: toIsoDateTime(model.scheduled_date),
+    start_time: toIsoDateTime(model.start_time),
+    end_time: toIsoDateTime(model.end_time),
+    notes: model.notes ,
+    status: model.status,
+    store_id: model.store_id ,
+    collection_point_id: model.collection_point_id ,
+    day_of_week: (model.day_of_week ?? null) as Weekday | null,
+    createdAt: toIsoDateTime(model.createdAt),
+    updatedAt: toIsoDateTime(model.updatedAt),
     Tasks: tasks?.map(toTaskDto),
-    Recyclery: toRecycleryRef(model.Recyclery) ?? null,
+    Recyclery: toRecycleryRef(model.Recyclery) ,
     Employees: model.Employees?.map(toEmployeeDto),
   }) satisfies TaskScheduleDto;
+};
+
+
+type TaskScheduleRefInput = MapperInput<TaskSchedule> & {
+  day_of_week?: Weekday | number | null;
+};
+
+export const toTaskScheduleRef = (
+  value: TaskScheduleRefInput,
+): TaskScheduleRefDto | undefined => {
+  if (typeof value.id !== "number") return undefined;
+
+  return {
+    id: value.id,
+    name: String(value.name ?? ""),
+    is_recurring: value.is_recurring,
+    category: value.category,
+    scheduled_date: toIsoDateTime(value.scheduled_date),
+    start_time: toIsoDateTime(value.start_time),
+    end_time: toIsoDateTime(value.end_time),
+    day_of_week: (value.day_of_week ?? null) as Weekday | null,
+    recurrence_pattern:
+      value.recurrence_pattern,
+    collection_point_id: value.collection_point_id ,
+    store_id: value.store_id,
+  } satisfies TaskScheduleRefDto;
 };
 
 export const toStoreHoursDto = (
   schedule: TaskScheduleMapperInput,
 ): StoreHoursDto =>
-  stripUndefined({
+  ({
     id: schedule.id,
-    name: schedule.name,
-    day_of_week: schedule.day_of_week ?? null,
+    name: schedule.name ,
+    day_of_week: (schedule.day_of_week) as Weekday | null,
     is_open: true,
-    open_time: toIsoDate(schedule.start_time),
-    close_time: toIsoDate(schedule.end_time),
+    open_time: toIsoTime(schedule.start_time),
+    close_time: toIsoTime(schedule.end_time),
     is_24h: false,
-    notes: schedule.notes ?? "",
-    store_id: schedule.store_id ?? null,
-    createdAt: toIsoDate(schedule.createdAt),
-    updatedAt: toIsoDate(schedule.updatedAt),
+    notes: schedule.notes ,
+    store_id: schedule.store_id ,
+    createdAt: toIsoDateTime(schedule.createdAt),
+    updatedAt: toIsoDateTime(schedule.updatedAt),
   }) satisfies StoreHoursDto;
 
 export const toAvailableEmployeeDto = (
   employee: AvailableEmployeeInput,
 ): AvailableEmployeeDto => {
   const base = toEmployeeDto(employee);
-  return stripUndefined({
+  return ({
     ...base,
     is_available: employee.is_available,
     has_conflicts: employee.has_conflicts,
@@ -106,12 +135,12 @@ export const toPlanningStatsOverviewDto = (
   stats: PlanningStatsOverviewRow | null | undefined,
 ): PlanningStatsOverviewDto | null => {
   if (stats == null) return null;
-  return stripUndefined({
-    total_schedules: stats.total_schedules,
-    scheduled_count: stats.scheduled_count,
-    in_progress_count: stats.in_progress_count,
-    completed_count: stats.completed_count,
-    cancelled_count: stats.cancelled_count,
+  return ({
+    total_schedules: toNumberOrUndefined(stats.total_schedules),
+    scheduled_count: toOptionalNumber(stats.scheduled_count),
+    in_progress_count: toOptionalNumber(stats.in_progress_count),
+    completed_count: toOptionalNumber(stats.completed_count),
+    cancelled_count: toOptionalNumber(stats.cancelled_count),
   }) satisfies PlanningStatsOverviewDto;
 };
 

@@ -63,17 +63,21 @@ export default class WasteDisposal extends Model<
   static associate(models: ModelStatics) {
     this.belongsTo(models.Category, {
       as: "category",
-      foreignKey: "category_id",
+      foreignKey: { name: "category_id", allowNull: false },
     });
     this.belongsTo(models.Category, {
       as: "subcategory",
-      foreignKey: "subcategory_id",
+      foreignKey: { name: "subcategory_id", allowNull: true },
     });
     this.belongsTo(models.EcoOrganism, {
       as: "eco_organism",
-      foreignKey: "eco_organism_id",
+      foreignKey: { name: "eco_organism_id", allowNull: true },
     });
-    this.belongsTo(models.User, { foreignKey: "created_by" });
+    this.belongsTo(models.User, {
+      foreignKey: { name: "created_by", allowNull: false },
+      onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
+    });
   }
 
   static initModel(sequelize: Sequelize) {

@@ -41,6 +41,8 @@ export default class Skill extends Model<
       foreignKey: "skillId",
       as: "employees",
       through: "employee_skill",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
   }
 

@@ -2,7 +2,6 @@ import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
-  Transaction,
   type BelongsToGetAssociationMixin,
   type BelongsToManyAddAssociationMixin,
   type BelongsToManyGetAssociationsMixin,
@@ -19,6 +18,7 @@ import {
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
+import { withTransaction } from "../utils/transaction.js";
 import type CashRegister from "./cashregister.ts";
 import type CashSession from "./cashsession.js";
 import type CollectionPoint from "./collectionpoint.ts";
@@ -112,27 +112,34 @@ export default class Recyclery extends Model<
     this.hasMany(models.LabeledItem, { foreignKey: "recyclery_id" });
     this.hasMany(models.Donation, { foreignKey: "recyclery_id" });
     this.hasMany(models.Task, {
-      onDelete: "CASCADE",
       foreignKey: "store_id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.hasMany(models.TaskSchedule, {
-      onDelete: "CASCADE",
       foreignKey: "store_id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.belongsToMany(models.Employee, {
       through: models.EmployeeStore,
       foreignKey: "recycleryId",
       otherKey: "employeeId",
       as: "employees",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.belongsTo(models.User, {
       foreignKey: "manager_id",
       as: "manager",
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
     });
     this.hasMany(models.CashRegister, {
       foreignKey: "recyclery_id",
       as: { singular: "caisse", plural: "caisses" },
       onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.hasMany(models.CollectionPoint, { foreignKey: "recyclery_id" });
     this.belongsToMany(models.Promotion, {
@@ -140,6 +147,8 @@ export default class Recyclery extends Model<
       foreignKey: "storeId",
       otherKey: "promotionId",
       as: "promotions",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
   }
 
@@ -182,48 +191,71 @@ export default class Recyclery extends Model<
             if (!instance.changed("name") && !instance.changed("is_active"))
               return;
 
-            const run = async (tx: Transaction) => {
-              const schedules = await instance.getTaskSchedules({
-                where: { category: "vente" },
-                transaction: tx,
-              });
-              for (const schedule of schedules) {
-                await schedule.update(
-                  {
-                    is_recurring: instance.is_active,
-                    name: `vente-${instance.name}`,
-                  },
-                  { transaction: tx },
-                );
-              }
-            };
-            if (options.transaction) {
-              await run(options.transaction);
-            } else {
-              await instance.sequelize.transaction(run);
-            }
+            await withTransaction(
+              instance.sequelize!,
+              options.transaction,
+              async (tx) => {
+                const schedules = await instance.getTaskSchedules({
+                  where: { category: "vente" },
+                  transaction: tx,
+                });
+                for (const schedule of schedules) {
+                  await schedule.update(
+                    {
+                      is_recurring: instance.is_active,
+                      name: `vente-${instance.name}`,
+                    },
+                    { transaction: tx },
+                  );
+                }
+              },
+            );
           },
           beforeDestroy: async (recyclery) => {
-            const cashRegister = recyclery.sequelize.models
-              .CashRegister as ModelStatic<CashRegister>;
-            const sessions = recyclery.sequelize.models
+            const CashSession = recyclery.sequelize.models
               .CashSession as ModelStatic<CashSession>;
-            if (cashRegister) {
-              const caisses = await recyclery.getCaisses({
-                include: [
-                  {
-                    model: sessions,
-                    as: "sessions",
-                    where: { status: "open" },
-                    required: true,
-                  },
-                ],
-              });
-              if (Array.isArray(caisses) && caisses.length > 0) {
-                throw new createHttpError[424](
-                  `Impossible de supprimer la recyclerie car les caisses: "${caisses.map((caisse) => caisse.name)}" sont ouvertes`,
-                );
-              }
+            const CashRegister = recyclery.sequelize.models
+              .CashRegister as ModelStatic<CashRegister>;
+            const SalesTransaction = recyclery.sequelize.models
+              .SalesTransaction as ModelStatic<
+              import("./salestransaction.ts").default
+            >;
+
+            const openCaisses = await recyclery.getCaisses({
+              include: [
+                {
+                  model: CashSession,
+                  as: "sessions",
+                  where: { status: "open" },
+                  required: true,
+                },
+              ],
+            });
+            if (Array.isArray(openCaisses) && openCaisses.length > 0) {
+              throw new createHttpError[424](
+                `Impossible de supprimer la recyclerie car les caisses: "${openCaisses.map((caisse) => caisse.name)}" sont ouvertes`,
+              );
+            }
+
+            const salesCount = await SalesTransaction.count({
+              include: [
+                {
+                  model: CashSession,
+                  required: true,
+                  include: [
+                    {
+                      model: CashRegister,
+                      required: true,
+                      where: { recyclery_id: recyclery.id },
+                    },
+                  ],
+                },
+              ],
+            });
+            if (salesCount > 0) {
+              throw new createHttpError[424](
+                "Impossible de supprimer la recyclerie car des ventes sont liées aux caisses",
+              );
             }
           },
         },

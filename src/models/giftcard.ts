@@ -1,3 +1,4 @@
+import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
@@ -7,6 +8,7 @@ import {
   type BelongsToManySetAssociationsMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
+  type DestroyOptions,
   type ForeignKey,
   type HasManyAddAssociationMixin,
   type HasManyGetAssociationsMixin,
@@ -52,7 +54,7 @@ export default class GiftCard extends Model<
 
   declare issuedTransaction?: NonAttribute<SalesTransaction | null>;
   declare issuedRefundTransaction?: NonAttribute<SalesTransaction | null>;
-  declare createdBy?: NonAttribute<User | null>;
+  declare createdBy?: NonAttribute<User>;
   declare transactions?: NonAttribute<
     Array<SalesTransaction & { GiftCardTransaction: GiftCardTransaction }>
   >;
@@ -100,25 +102,40 @@ export default class GiftCard extends Model<
     this.belongsTo(models.SalesTransaction, {
       as: "issuedTransaction",
       foreignKey: "issued_transaction_id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.belongsTo(models.SalesTransaction, {
       as: "issuedRefundTransaction",
       foreignKey: "issued_refund_transaction_id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
-    this.belongsTo(models.User, { as: "createdBy", foreignKey: "created_by" });
+    this.belongsTo(models.User, {
+      as: "createdBy",
+      foreignKey: { name: "created_by", allowNull: true },
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    });
     this.belongsToMany(models.SalesTransaction, {
       through: models.GiftCardTransaction,
       foreignKey: "gift_card_id",
       otherKey: "sales_transaction_id",
       as: "transactions",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.hasMany(models.GiftCardTransaction, {
       foreignKey: "gift_card_id",
       as: "movements",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     this.hasMany(models.TransactionPayment, {
       foreignKey: "gift_card_id",
       as: "paymentUsages",
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
     });
   }
 
@@ -190,7 +207,18 @@ export default class GiftCard extends Model<
             }
           },
         },
-        hooks: {},
+        hooks: {
+          beforeDestroy: async (_card, options) => {
+            const opts = options as DestroyOptions & {
+              cascadeFromSale?: boolean;
+            };
+            if (!opts.cascadeFromSale) {
+              throw new createHttpError[424](
+                "Impossible de supprimer une carte cadeau directement; supprimez la vente qui l'a émise",
+              );
+            }
+          },
+        },
         indexes: [
           { unique: true, fields: ["code"] },
           { fields: ["status"] },

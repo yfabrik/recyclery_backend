@@ -37,6 +37,7 @@ module.exports = {
       },
       manager_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: true,
         references: {
           model: "Users",
           key: "id",

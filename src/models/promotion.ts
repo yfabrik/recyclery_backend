@@ -47,12 +47,14 @@ export default class Promotion extends Model<
   >;
 
   static associate(models: ModelStatics) {
-    this.belongsTo(models.Category, { foreignKey: "category_id" });
+    this.belongsTo(models.Category, { foreignKey: {name:"category_id",allowNull: false} });
     this.belongsToMany(models.Recyclery, {
       through: "promotion_store",
       foreignKey: "promotionId",
       otherKey: "storeId",
       as: "stores",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
   }
 

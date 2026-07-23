@@ -40,6 +40,7 @@ module.exports = {
       },
       category_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
         references: {
           model: "Categories",
           key: "id",
@@ -47,6 +48,7 @@ module.exports = {
       },
       subcategory_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: true,
         references: {
           model: "Categories",
           key: "id",
@@ -54,6 +56,7 @@ module.exports = {
       },
       eco_organism_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: true,
         references: {
           model: "EcoOrganisms",
           key: "id",
@@ -61,10 +64,13 @@ module.exports = {
       },
       created_by: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
         references: {
           model: "Users",
           key: "id",
         },
+        onDelete: "RESTRICT",
+        onUpdate: "CASCADE",
       },
       createdAt: {
         allowNull: false,
@@ -75,8 +81,12 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.addIndex("WasteDisposals", ["disposal_date"]);
+    await queryInterface.addIndex("WasteDisposals", ["category_id"]);
+    await queryInterface.addIndex("WasteDisposals", ["eco_organism_id"]);
   },
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     await queryInterface.dropTable("WasteDisposals");
   },
 };

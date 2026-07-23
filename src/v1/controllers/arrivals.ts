@@ -42,7 +42,7 @@ import {
 import type { ModelWhere, RequestWithUser } from "./types.ts";
 
 import db from "../../models/index.js";
-import logger from "../../services/logger.js";
+import { logAction } from "../../services/auditLog.js";
 
 const { Arrival, Category, CollectionPoint, User } = db;
 
@@ -157,9 +157,13 @@ export const createArrival = async (req: RequestWithUser, res: Response) => {
     ...data,
     processed_by: req.user.id,
   });
-  logger.info(
-    `new arrival ${arrival.id}:${arrival.weight}kg, ${arrival.source_type},by ${req.user.username}`,
-  );
+  logAction("arrivals", "arrival.created", {
+    arrivalId: arrival.id,
+    weight: arrival.weight,
+    source_type: arrival.source_type,
+    userId: req.user.id,
+    username: req.user.username,
+  });
   res.status(201).json(
     apiCreated(toArrivalDto(arrival), {
       message: "Arrivage créé avec succès",
@@ -176,6 +180,10 @@ export const updateArrival = async (req: RequestWithUser, res: Response) => {
     ...data,
   });
 
+  logAction("arrivals", "arrival.updated", {
+    arrivalId: arrival.id,
+    userId: req.user.id,
+  });
   res.json(
     apiMessage("Arrivage mis à jour avec succès") satisfies UpdateArrivalResponse,
   );
@@ -185,6 +193,10 @@ export const deleteArrival = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const arrival = await findByPkOrThrow(Arrival, id, "Arrivage non trouvé");
   await arrival.destroy();
+  logAction("arrivals", "arrival.deleted", {
+    arrivalId: arrival.id,
+    userId: req.user.id,
+  });
   res.json(
     apiMessage("Arrivage supprimé avec succès") satisfies DeleteArrivalResponse,
   );

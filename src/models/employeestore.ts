@@ -11,6 +11,7 @@ import {
   type Sequelize,
   type WhereOptions,
 } from "sequelize";
+import { withTransaction } from "../utils/transaction.js";
 import type { Models } from "./db-types.ts";
 import type Employee from "./employee.js";
 import type Recyclery from "./recyclery.js";
@@ -93,16 +94,19 @@ export default class EmployeeStore extends Model<
         hooks: {
           async afterCreate(instance, options) {
             if (!instance.is_primary || instance.employeeId == null) return;
-            const opts = options.transaction
-              ? { transaction: options.transaction }
-              : {};
-            await unsetOtherPrimaries(
-              EmployeeStore,
-              {
-                employeeIds: [instance.employeeId],
-                excludeId: instance.recycleryId,
-              }, //TODO revoir
-              opts,
+            await withTransaction(
+              sequelize,
+              options.transaction,
+              async (transaction) => {
+                await unsetOtherPrimaries(
+                  EmployeeStore,
+                  {
+                    employeeIds: [instance.employeeId],
+                    excludeId: instance.recycleryId,
+                  }, //TODO revoir
+                  { transaction },
+                );
+              },
             );
           },
 
@@ -113,14 +117,17 @@ export default class EmployeeStore extends Model<
             const employeeIds = [
               ...new Set(withPrimary.map((r) => r.employeeId)),
             ];
-            const opts = options.transaction
-              ? { transaction: options.transaction }
-              : {};
             if (employeeIds.length) {
-              await unsetOtherPrimaries(
-                EmployeeStore,
-                { employeeIds, excludeId: null },
-                opts,
+              await withTransaction(
+                sequelize,
+                options.transaction,
+                async (transaction) => {
+                  await unsetOtherPrimaries(
+                    EmployeeStore,
+                    { employeeIds, excludeId: null },
+                    { transaction },
+                  );
+                },
               );
             }
             //USELESS ?
@@ -142,16 +149,19 @@ export default class EmployeeStore extends Model<
               instance.employeeId == null
             )
               return;
-            const opts = options.transaction
-              ? { transaction: options.transaction }
-              : {};
-            await unsetOtherPrimaries(
-              EmployeeStore,
-              {
-                employeeIds: [instance.employeeId],
-                excludeId: instance.recycleryId,
+            await withTransaction(
+              sequelize,
+              options.transaction,
+              async (transaction) => {
+                await unsetOtherPrimaries(
+                  EmployeeStore,
+                  {
+                    employeeIds: [instance.employeeId],
+                    excludeId: instance.recycleryId,
+                  },
+                  { transaction },
+                );
               },
-              opts,
             );
           },
 
@@ -160,30 +170,33 @@ export default class EmployeeStore extends Model<
             const attrs = (options as { attributes?: { is_primary?: boolean } })
               .attributes;
             if (!attrs || attrs.is_primary !== true) return;
-            const txnOpts = options.transaction
-              ? { transaction: options.transaction }
-              : {};
-            const whereOpt: WhereOptions<EmployeeStore> = {};
-            const rows = await EmployeeStore.findAll({
-              where: whereOpt,
-              attributes: ["employeeId"],
-              raw: true,
-              ...txnOpts,
-            });
-            const employeeIds = [
-              ...new Set(
-                rows
-                  .map((r) => r.employeeId)
-                  .filter((id): id is number => id != null),
-              ),
-            ];
-            if (employeeIds.length) {
-              await unsetOtherPrimaries(
-                EmployeeStore,
-                { employeeIds, excludeId: null },
-                txnOpts,
-              );
-            }
+            await withTransaction(
+              sequelize,
+              options.transaction,
+              async (transaction) => {
+                const whereOpt: WhereOptions<EmployeeStore> = {};
+                const rows = await EmployeeStore.findAll({
+                  where: whereOpt,
+                  attributes: ["employeeId"],
+                  raw: true,
+                  transaction,
+                });
+                const employeeIds = [
+                  ...new Set(
+                    rows
+                      .map((r) => r.employeeId)
+                      .filter((id): id is number => id != null),
+                  ),
+                ];
+                if (employeeIds.length) {
+                  await unsetOtherPrimaries(
+                    EmployeeStore,
+                    { employeeIds, excludeId: null },
+                    { transaction },
+                  );
+                }
+              },
+            );
           },
         },
       },

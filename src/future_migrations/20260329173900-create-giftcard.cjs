@@ -52,7 +52,7 @@ module.exports = {
           model: "SalesTransactions",
           key: "id",
         },
-        onDelete: "SET NULL",
+        onDelete: "CASCADE",
         onUpdate: "CASCADE",
       },
       issued_refund_transaction_id: {
@@ -62,7 +62,7 @@ module.exports = {
           model: "SalesTransactions",
           key: "id",
         },
-        onDelete: "SET NULL",
+        onDelete: "CASCADE",
         onUpdate: "CASCADE",
       },
       created_by: {

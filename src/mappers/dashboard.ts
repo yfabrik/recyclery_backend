@@ -4,13 +4,12 @@ import type {
   DashboardStatsDto,
   DashboardStoreDto,
   DashboardStoreHistoryDto,
-  DashboardStoreMonthStatsDto,
   DashboardStorePeriodStatsDto,
   DashboardStoreStatsBlockDto,
 } from "@recyclerie/api/responses/dashboard";
 
-import { toIsoDate } from "./serialize.js";
 import { asEmail, asPhone } from "./brands.js";
+import { toIsoDateTime } from "./serialize.js";
 
 export const toDashboardStatsDto = (stats: DashboardStatsDto): DashboardStatsDto =>
   stats;
@@ -26,14 +25,18 @@ export const toDashboardChartsDto = (
 const toPeriodStats = (period: {
   transactions: number;
   revenue: number;
+  averageTransaction: number;
+  sessions: number;
   start: Date;
   end: Date;
 }): DashboardStorePeriodStatsDto =>
   ({
     transactions: period.transactions,
     revenue: period.revenue,
-    start: toIsoDate(period.start),
-    end: toIsoDate(period.end),
+    averageTransaction: period.averageTransaction,
+    sessions: period.sessions,
+    start: toIsoDateTime(period.start),
+    end: toIsoDateTime(period.end),
   }) satisfies DashboardStorePeriodStatsDto;
 
 const toMonthStats = (month: {
@@ -43,15 +46,15 @@ const toMonthStats = (month: {
   sessions: number;
   start: Date;
   end: Date;
-}): DashboardStoreMonthStatsDto =>
+}): DashboardStorePeriodStatsDto =>
   ({
     transactions: month.transactions,
     revenue: month.revenue,
     averageTransaction: month.averageTransaction,
     sessions: month.sessions,
-    start: toIsoDate(month.start),
-    end: toIsoDate(month.end),
-  }) satisfies DashboardStoreMonthStatsDto;
+    start: toIsoDateTime(month.start),
+    end: toIsoDateTime(month.end),
+  }) satisfies DashboardStorePeriodStatsDto;
 
 export const toDashboardStoreStatsBlockDto = (
   stats: {
@@ -66,6 +69,8 @@ export const toDashboardStoreStatsBlockDto = (
     lastMonth: {
       transactions: number;
       revenue: number;
+      averageTransaction: number;
+      sessions: number;
       start: Date;
       end: Date;
     };

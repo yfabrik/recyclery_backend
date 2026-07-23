@@ -17,12 +17,14 @@ module.exports = {
       arrival_date: {
         type: Sequelize.DATE,
         defaultValue: Sequelize.NOW,
+        allowNull: false,
       },
       arrival_time: {
         type: Sequelize.TIME,
       },
       source_type: {
         type: Sequelize.ENUM("point", "apport", "house_clearance"),
+        allowNull: false,
       },
       source_details: {
         type: Sequelize.TEXT,
@@ -33,9 +35,11 @@ module.exports = {
       status: {
         type: Sequelize.ENUM("received"),
         defaultValue: "received",
+        allowNull: false,
       },
       category_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
         references: {
           model: "Categories",
           key: "id",
@@ -43,6 +47,7 @@ module.exports = {
       },
       subcategory_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: true,
         references: {
           model: "Categories",
           key: "id",
@@ -50,17 +55,23 @@ module.exports = {
       },
       collection_point_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: true,
         references: {
           model: "CollectionPoints",
           key: "id",
         },
+        onDelete: "RESTRICT",
+        onUpdate: "CASCADE",
       },
       processed_by: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
         references: {
           model: "Users",
           key: "id",
         },
+        onDelete: "RESTRICT",
+        onUpdate: "CASCADE",
       },
       createdAt: {
         allowNull: false,
@@ -71,8 +82,12 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.addIndex("Arrivals", ["category_id"]);
+    await queryInterface.addIndex("Arrivals", ["status"]);
+    await queryInterface.addIndex("Arrivals", ["createdAt"]);
   },
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     await queryInterface.dropTable("Arrivals");
   },
 };

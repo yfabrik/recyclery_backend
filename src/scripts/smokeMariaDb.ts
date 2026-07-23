@@ -2,7 +2,7 @@ import "dotenv/config";
 import db from "../models/index.js";
 import { QueryTypes } from "sequelize";
 
-const EXPECTED_MIGRATION_COUNT = 31;
+const EXPECTED_MIGRATION_COUNT = 37;
 
 await db.sequelize.authenticate();
 const metaRows = await db.sequelize.query<{ count: number | string }>(

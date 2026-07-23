@@ -10,13 +10,14 @@ import type CollectionPoint from "../models/collectionpoint.js";
 import type User from "../models/user.js";
 import { toCollectionPointRef } from "./collectionPoints.js";
 import { toCategoryRef, toUserRef } from "./refs.js";
-import { toIsoDate, toNumber } from "./serialize.js";
-import { stripUndefined, type MapperInput } from "./types.js";
+import { toNumber, toOptionalNumber, toNumberOrUndefined, requireUserId } from "./serialize.js";
+import { toIsoDateTime, toIsoTime } from "../utils/dates.js";
+import type {  MapperInput } from "./types.js";
 
 type ArrivalMapperInput = MapperInput<Arrival> & {
   categorie?: MapperInput<Category>;
   subcategorie?: MapperInput<Category> | null;
-  User?: MapperInput<User>;
+  User?: MapperInput<User> | null;
   CollectionPoint?: MapperInput<CollectionPoint> | null;
 };
 
@@ -37,24 +38,25 @@ export interface ArrivalCategoryStatsRow {
 }
 
 export const toArrivalDto = (model: ArrivalMapperInput): ArrivalDto =>
-  stripUndefined({
+  ({
     id: model.id,
     weight: toNumber(model.weight),
-    arrival_date: toIsoDate(model.arrival_date),
-    arrival_time: model.arrival_time != null ? String(model.arrival_time) : null,
+    arrival_date: toIsoDateTime(model.arrival_date),
+    arrival_time:
+      model.arrival_time != null ? toIsoTime(model.arrival_time) : null,
     source_type: model.source_type,
-    source_details: model.source_details ?? null,
-    notes: model.notes ?? null,
+    source_details: model.source_details ,
+    notes: model.notes ,
     status: model.status,
-    processed_by: model.processed_by,
+    processed_by: requireUserId(model.processed_by),
     category_id: model.category_id,
-    subcategory_id: model.subcategory_id ?? null,
-    collection_point_id: model.collection_point_id ?? null,
-    createdAt: toIsoDate(model.createdAt),
-    updatedAt: toIsoDate(model.updatedAt),
-    categorie: toCategoryRef(model.categorie),
+    subcategory_id: model.subcategory_id,
+    collection_point_id: model.collection_point_id,
+    createdAt: toIsoDateTime(model.createdAt),
+    updatedAt: toIsoDateTime(model.updatedAt),
+    categorie: toCategoryRef(model.categorie),//TODO not  ref => full
     subcategorie: toCategoryRef(model.subcategorie) ?? null,
-    User: toUserRef(model.User),
+    User: toUserRef(model.User),//TODO full or ref without password
     CollectionPoint: toCollectionPointRef(model.CollectionPoint) ?? null,
   }) satisfies ArrivalDto;
 
@@ -72,22 +74,22 @@ export const toArrivalStatsDto = (
       processed: 0,
     };
   }
-  return stripUndefined({
-    total_arrivals: value.total_arrivals,
-    total_weight: value.total_weight,
-    from_collection_points: value.from_collection_points,
-    volunteer_donations: value.volunteer_donations,
-    house_clearances: value.house_clearances,
-    pending_processing: value.pending_processing,
-    processed: value.processed,
+  return ({
+    total_arrivals: toNumberOrUndefined(value.total_arrivals),
+    total_weight: toOptionalNumber(value.total_weight),
+    from_collection_points: toOptionalNumber(value.from_collection_points),
+    volunteer_donations: toOptionalNumber(value.volunteer_donations),
+    house_clearances: toOptionalNumber(value.house_clearances),
+    pending_processing: toOptionalNumber(value.pending_processing),
+    processed: toOptionalNumber(value.processed),
   }) satisfies ArrivalStatsDto;
 };
 
 export const toArrivalCategoryStatsDto = (
   value: ArrivalCategoryStatsRow | null | undefined,
 ): ArrivalCategoryStatsDto =>
-  stripUndefined({
-    count: value?.count,
-    total_weight: value?.total_weight,
+  ({
+    count: toNumberOrUndefined(value?.count),
+    total_weight: toOptionalNumber(value?.total_weight),
     categorie: toCategoryRef(value?.categorie),
   }) satisfies ArrivalCategoryStatsDto;

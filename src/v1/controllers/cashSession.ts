@@ -90,7 +90,17 @@ export const listCashSessions = async (req: Request, res: Response) => {
   });
 
   res.json(
-    apiData(sessions.map(toCashSessionDto)) satisfies ListCashSessionsResponse,
+    apiData(
+      sessions.map((session) => {
+        const plain = session.get({ plain: true }) as typeof session & {
+          transactions_count?: number | string;
+          total_sales?: number | string;
+          SalesTransactions?: unknown;
+        };
+        const { SalesTransactions: _sales, ...rest } = plain;
+        return toCashSessionDto(rest);
+      }),
+    ) satisfies ListCashSessionsResponse,
   );
 };
 

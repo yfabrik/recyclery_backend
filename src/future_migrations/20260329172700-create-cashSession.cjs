@@ -12,6 +12,7 @@ module.exports = {
       },
       cash_register_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
         references: {
           model: "CashRegisters",
           key: "id",
@@ -21,11 +22,12 @@ module.exports = {
       },
       user_id: {
         type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
         references: {
           model: "Users",
           key: "id",
         },
-        onDelete: "SET NULL",
+        onDelete: "RESTRICT",
         onUpdate: "CASCADE",
       },
       opening_amount: {
@@ -58,8 +60,13 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+
+    await queryInterface.addIndex("CashSessions", ["cash_register_id"]);
+    await queryInterface.addIndex("CashSessions", ["user_id", "status"]);
+    await queryInterface.addIndex("CashSessions", ["status"]);
+    await queryInterface.addIndex("CashSessions", ["createdAt"]);
   },
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     await queryInterface.dropTable("CashSessions");
   },
 };

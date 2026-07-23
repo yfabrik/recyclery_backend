@@ -12,7 +12,7 @@ const config = JSON.parse(readFileSync(configPath, "utf8")) as {
 
 const SQLITE_PATH =
   process.env.SQLITE_SOURCE_PATH ??
-  path.resolve(__dirname, "../../database/database2.sqlite");
+  path.resolve(__dirname, "../../database/bak_current.sqlite");
 
 const SKIP_TABLES = new Set([
   "Roles",

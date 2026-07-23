@@ -31,7 +31,9 @@ import {
 } from "@recyclerie/api/types/response";
 import type { Request, Response } from "express";
 import {
-  toEcoOrganismDto
+  toEcoOrganismDto,
+  toEcoOrganismStatsDto,
+  type EcoOrganismStatsRow,
 } from "../../mappers/ecoOrganism.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import { idSchema } from "../../services/zod.js";
@@ -628,7 +630,7 @@ export const getQuarterStatSell = async (
 };
 
 export const ecoOrgaStats = async (_req: Request, res: Response) => {
-  const stats = await EcoOrganism.findOne({
+  const stats = (await EcoOrganism.findOne({
     attributes: [
       [fn("COUNT", col("*")), "total_eco_organisms"],
       [
@@ -640,10 +642,11 @@ export const ecoOrgaStats = async (_req: Request, res: Response) => {
         "inactive_eco_organisms",
       ],
     ],
-  });
+    raw: true,
+  })) as EcoOrganismStatsRow | null;
 
   res.json(
-    apiData(stats?.get({plain:true})) satisfies EcoOrganismStatsResponse,
+    apiData(toEcoOrganismStatsDto(stats)) satisfies EcoOrganismStatsResponse,
   );
 };
 

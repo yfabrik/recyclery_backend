@@ -1,3 +1,6 @@
+///////////////////////////
+//prevent circular dependency
+///////////////////////////
 import type { CategoryRefDto } from "@recyclerie/api/responses/categories";
 import type { EcoOrganismRefDto } from "@recyclerie/api/responses/ecoOrganism";
 import type { RecycleryRefDto } from "@recyclerie/api/responses/recycleries";
