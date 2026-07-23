@@ -16,7 +16,7 @@ import {
 import { toIsoDateTime, toOptionalNumber, toNumberOrUndefined } from "./serialize.js";
 import type { MapperInput } from "./types.js";
 
-type LabeledItemMapperInput = MapperInput<LabeledItem> & {
+export type LabeledItemMapperInput = MapperInput<LabeledItem> & {
   barcode: string;
   category?: MapperInput<Category>;
   subcategory?: MapperInput<Category> | null;

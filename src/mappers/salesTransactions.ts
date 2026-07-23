@@ -12,7 +12,6 @@ import type { CashSessionDto } from "@recyclerie/api/responses/cashSession";
 import type CashRegister from "../models/cashregister.js";
 import type CashSession from "../models/cashsession.js";
 import type GiftCard from "../models/giftcard.js";
-import type LabeledItem from "../models/labeleditem.js";
 import type SalesTransaction from "../models/salestransaction.js";
 import type TransactionGlobalPromotion from "../models/transactionGlobalPromotion.js";
 import type TransactionItem from "../models/transactionitem.js";
@@ -21,7 +20,7 @@ import type User from "../models/user.js";
 import { asEmail, asPostal } from "./brands.js";
 import { toCashRegisterRefDto } from "./cashRegister.js";
 import { toGiftCardSummaryDto } from "./giftCards.js";
-import { toLabeledItemDto } from "./items.js";
+import { toLabeledItemDto, type LabeledItemMapperInput } from "./items.js";
 import { toUserRef } from "./refs.js";
 import {
   toIsoDateTime,
@@ -40,7 +39,7 @@ type TransactionItemLineMapperInput = MapperInput<TransactionItem> & {
   total_price?: number | string;
 };
 
-type SalesTransactionItemMapperInput = MapperInput<LabeledItem> & {
+type SalesTransactionItemMapperInput = LabeledItemMapperInput & {
   TransactionItem?: TransactionItemLineMapperInput | null;
 };
 

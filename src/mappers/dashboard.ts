@@ -4,7 +4,6 @@ import type {
   DashboardStatsDto,
   DashboardStoreDto,
   DashboardStoreHistoryDto,
-  DashboardStoreMonthStatsDto,
   DashboardStorePeriodStatsDto,
   DashboardStoreStatsBlockDto,
 } from "@recyclerie/api/responses/dashboard";
@@ -26,12 +25,16 @@ export const toDashboardChartsDto = (
 const toPeriodStats = (period: {
   transactions: number;
   revenue: number;
+  averageTransaction: number;
+  sessions: number;
   start: Date;
   end: Date;
 }): DashboardStorePeriodStatsDto =>
   ({
     transactions: period.transactions,
     revenue: period.revenue,
+    averageTransaction: period.averageTransaction,
+    sessions: period.sessions,
     start: toIsoDateTime(period.start),
     end: toIsoDateTime(period.end),
   }) satisfies DashboardStorePeriodStatsDto;
@@ -43,7 +46,7 @@ const toMonthStats = (month: {
   sessions: number;
   start: Date;
   end: Date;
-}): DashboardStoreMonthStatsDto =>
+}): DashboardStorePeriodStatsDto =>
   ({
     transactions: month.transactions,
     revenue: month.revenue,
@@ -51,7 +54,7 @@ const toMonthStats = (month: {
     sessions: month.sessions,
     start: toIsoDateTime(month.start),
     end: toIsoDateTime(month.end),
-  }) satisfies DashboardStoreMonthStatsDto;
+  }) satisfies DashboardStorePeriodStatsDto;
 
 export const toDashboardStoreStatsBlockDto = (
   stats: {
@@ -66,6 +69,8 @@ export const toDashboardStoreStatsBlockDto = (
     lastMonth: {
       transactions: number;
       revenue: number;
+      averageTransaction: number;
+      sessions: number;
       start: Date;
       end: Date;
     };
