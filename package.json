@@ -37,7 +37,8 @@
     "sqlite3": "^5.1.7",
     "winston": "^3.18.3",
     "zod": "^4.3.5",
-    "@recyclerie/api": "git+ssh://git@github.com/yfabrik/api-recyclerie.git#v0.3.0"
+    "@recyclerie/api": "git+ssh://git@github.com/yfabrik/api-recyclerie.git#v0.5.0"
+
   },
   "devDependencies": {
     "@babel/core": "^7.29.6",
