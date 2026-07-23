@@ -309,6 +309,18 @@ export default class SalesTransaction extends Model<
                   .GiftCardTransaction as ModelStatic<GiftCardTransaction>;
                 const TransactionPaymentModel = sale.sequelize.models
                   .TransactionPayment as ModelStatic<TransactionPayment>;
+                const TransactionItemModel = sale.sequelize.models
+                  .TransactionItem as ModelStatic<TransactionItem>;
+                // Destroy through-table rows via Sequelize so TransactionItem
+                // afterDestroy can restore LabeledItem status. DB ON DELETE
+                // CASCADE would skip those instance hooks.
+                const saleItems = await TransactionItemModel.findAll({
+                  where: { transaction_id: sale.id },
+                  transaction: t,
+                });
+                for (const saleItem of saleItems) {
+                  await saleItem.destroy({ transaction: t });
+                }
                 const issued = await GiftCardModel.findAll({
                   where: {
                     [Op.or]: [
