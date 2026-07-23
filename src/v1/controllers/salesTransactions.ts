@@ -27,6 +27,7 @@ import {
   apiPaginated,
 } from "@recyclerie/api/types/response";
 import type { Request, Response } from "express";
+import { logAction } from "../../services/auditLog.js";
 import {
   chargeGiftCard,
   findGiftCardByCode,
@@ -551,6 +552,14 @@ export const createTransaction = async (
     return sale;
   });
 
+  logAction("sales", "sale.created", {
+    saleId: result.id,
+    total_amount: result.total_amount,
+    cash_session_id: result.cash_session_id,
+    payment_method: result.payment_method,
+    itemCount: result.items?.length ?? data.items.length,
+    userId: req.user.id,
+  });
   // Example response:
   // {
   //   "success": true,
@@ -828,6 +837,14 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
     return { refund, giftCard: refundGiftCard };
   });
 
+  logAction("refunds", "refund.created", {
+    refundId: result.refund.id,
+    parentTransactionId: id,
+    total_amount: result.refund.total_amount,
+    cash_session_id: result.refund.cash_session_id,
+    payment_method: result.refund.payment_method,
+    userId: req.user.id,
+  });
   // Example response:
   // {
   //   "success": true,
@@ -1337,6 +1354,11 @@ export const updateTransaction = async (
     });
   });
 
+  logAction("sales", "sale.updated", {
+    saleId: result.id,
+    total_amount: result.total_amount,
+    userId: req.user.id,
+  });
   res.json(
     apiData(toSalesTransactionDto(result), {
       message: " transaction mise à jour",
@@ -1392,6 +1414,10 @@ export const removeTransaction = async (
     await toDelete.destroy({ transaction: t });
   });
 
+  logAction("sales", "sale.deleted", {
+    saleId: id,
+    userId: req.user.id,
+  });
   res.json(
     apiMessage("Transaction supprimée") satisfies DeleteSalesTransactionResponse,
   );
