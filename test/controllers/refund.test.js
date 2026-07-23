@@ -16,6 +16,8 @@ import { expectHttpError, makeReq, makeRes } from "./helpers.js";
 const { Category, LabeledItem } = db;
 
 describe("refund rules", () => {
+  /** @type {import("../../src/models/user.js").default} */
+  let user;
   let userId;
   let sessionId;
   let categoryId;
@@ -24,7 +26,7 @@ describe("refund rules", () => {
   beforeAll(async () => {
     await db.sequelize.sync({ force: true });
 
-    const user = await createUser({ role: "admin" });
+    user = await createUser({ role: "admin" });
     userId = user.id;
     const recyclery = await createRecyclery();
     recycleryId = recyclery.id;
@@ -61,7 +63,7 @@ describe("refund rules", () => {
         createRefund(
           makeReq({
             params: { id: 999 },
-            user: { id: userId, role: "admin" },
+            user,
             body: {
               cash_session_id: sessionId,
               total_amount: 10,
@@ -98,7 +100,7 @@ describe("refund rules", () => {
     const saleRes = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: makeSaleBody({
           sessionId,
           items: [makeItemPayload(item)],
@@ -114,7 +116,7 @@ describe("refund rules", () => {
         createRefund(
           makeReq({
             params: { id: saleId },
-            user: { id: userId, role: "admin" },
+            user,
             body: {
               cash_session_id: sessionId,
               total_amount: 990,
@@ -143,7 +145,7 @@ describe("refund rules", () => {
     const saleRes = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: makeSaleBody({
           sessionId,
           items: [makeItemPayload(item, { quantity: 2 })],
@@ -157,7 +159,7 @@ describe("refund rules", () => {
     await createRefund(
       makeReq({
         params: { id: saleId },
-        user: { id: userId, role: "admin" },
+        user,
         body: {
           cash_session_id: sessionId,
           total_amount: 20,
@@ -179,7 +181,7 @@ describe("refund rules", () => {
         createRefund(
           makeReq({
             params: { id: saleId },
-            user: { id: userId, role: "admin" },
+            user,
             body: {
               cash_session_id: sessionId,
               total_amount: 40,
@@ -208,7 +210,7 @@ describe("refund rules", () => {
     const saleRes = makeRes();
     await createTransaction(
       makeReq({
-        user: { id: userId, role: "admin" },
+        user,
         body: makeSaleBody({
           sessionId,
           items: [makeItemPayload(item, { quantity: 4 })],
@@ -222,7 +224,7 @@ describe("refund rules", () => {
     await createRefund(
       makeReq({
         params: { id: saleId },
-        user: { id: userId, role: "admin" },
+        user,
         body: {
           cash_session_id: sessionId,
           total_amount: 30,
@@ -239,7 +241,7 @@ describe("refund rules", () => {
     await createRefund(
       makeReq({
         params: { id: saleId },
-        user: { id: userId, role: "admin" },
+        user,
         body: {
           cash_session_id: sessionId,
           total_amount: 15,
@@ -259,7 +261,7 @@ describe("refund rules", () => {
     await createRefund(
       makeReq({
         params: { id: saleId },
-        user: { id: userId, role: "admin" },
+        user,
         body: {
           cash_session_id: sessionId,
           total_amount: 15,
@@ -279,7 +281,7 @@ describe("refund rules", () => {
         createRefund(
           makeReq({
             params: { id: saleId },
-            user: { id: userId, role: "admin" },
+            user,
             body: {
               cash_session_id: sessionId,
               total_amount: 15,

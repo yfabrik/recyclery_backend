@@ -32,6 +32,10 @@ const {
 } = db;
 
 describe("salesTransactions review regressions", () => {
+  /** @type {import("../../src/models/user.js").default} */
+  let owner;
+  /** @type {import("../../src/models/user.js").default} */
+  let other;
   let ownerId;
   let otherUserId;
   let sessionId;
@@ -43,8 +47,8 @@ describe("salesTransactions review regressions", () => {
   beforeAll(async () => {
     await db.sequelize.sync({ force: true });
 
-    const owner = await createUser({ role: "admin" });
-    const other = await createUser({ role: "employee" });
+    owner = await createUser({ role: "admin" });
+    other = await createUser({ role: "employee" });
     ownerId = owner.id;
     otherUserId = other.id;
 
@@ -148,7 +152,7 @@ describe("salesTransactions review regressions", () => {
           removeTransaction(
             makeReq({
               params: { id: saleId },
-              user: { id: otherUserId, role: "employee" },
+              user: other,
             }),
             makeRes(),
           ),
@@ -178,7 +182,7 @@ describe("salesTransactions review regressions", () => {
           removeTransaction(
             makeReq({
               params: { id: saleId },
-              user: { id: ownerId, role: "admin" },
+              user: owner,
             }),
             makeRes(),
           ),
@@ -195,7 +199,7 @@ describe("salesTransactions review regressions", () => {
       await createRefund(
         makeReq({
           params: { id: saleId },
-          user: { id: ownerId, role: "admin" },
+          user: owner,
           body: {
             cash_session_id: sessionId,
             total_amount: 20,
@@ -213,7 +217,7 @@ describe("salesTransactions review regressions", () => {
           removeTransaction(
             makeReq({
               params: { id: saleId },
-              user: { id: ownerId, role: "admin" },
+              user: owner,
             }),
             makeRes(),
           ),
@@ -229,7 +233,7 @@ describe("salesTransactions review regressions", () => {
       await removeTransaction(
         makeReq({
           params: { id: saleId },
-          user: { id: ownerId, role: "admin" },
+          user: owner,
         }),
         res,
       );
@@ -257,7 +261,7 @@ describe("salesTransactions review regressions", () => {
         await createRefund(
           makeReq({
             params: { id: saleId },
-            user: { id: ownerId, role: "admin" },
+            user: owner,
             body: {
               cash_session_id: sessionId,
               total_amount: 30,
@@ -275,7 +279,7 @@ describe("salesTransactions review regressions", () => {
             createRefund(
               makeReq({
                 params: { id: saleId },
-                user: { id: ownerId, role: "admin" },
+                user: owner,
                 body: {
                   cash_session_id: sessionId,
                   total_amount: 15,
@@ -334,7 +338,7 @@ describe("salesTransactions review regressions", () => {
         await createRefund(
           makeReq({
             params: { id: saleId },
-            user: { id: ownerId, role: "admin" },
+            user: owner,
             body: {
               cash_session_id: sessionId,
               total_amount: expectedRefund,
@@ -398,7 +402,7 @@ describe("salesTransactions review regressions", () => {
         await createRefund(
           makeReq({
             params: { id: saleId },
-            user: { id: ownerId, role: "admin" },
+            user: owner,
             body: {
               cash_session_id: sessionId,
               total_amount: expectedAmount,
@@ -442,7 +446,7 @@ describe("salesTransactions review regressions", () => {
           createRefund(
             makeReq({
               params: { id: saleId },
-              user: { id: ownerId, role: "admin" },
+              user: owner,
               body: {
                 cash_session_id: sessionId,
                 total_amount: 10,
@@ -483,7 +487,7 @@ describe("salesTransactions review regressions", () => {
       await updateTransaction(
         makeReq({
           params: { id: saleId },
-          user: { id: ownerId, role: "admin" },
+          user: owner,
           body: makeSaleBody({
             sessionId,
             items: [line],
@@ -520,7 +524,7 @@ describe("salesTransactions review regressions", () => {
       await updateTransaction(
         makeReq({
           params: { id: saleId },
-          user: { id: ownerId, role: "admin" },
+          user: owner,
           body: makeSaleBody({
             sessionId,
             items: [line],
@@ -544,7 +548,7 @@ describe("salesTransactions review regressions", () => {
       await updateTransaction(
         makeReq({
           params: { id: saleId },
-          user: { id: ownerId, role: "admin" },
+          user: owner,
           body: makeSaleBody({
             sessionId,
             items: [line],
@@ -582,7 +586,7 @@ describe("salesTransactions review regressions", () => {
           updateTransaction(
             makeReq({
               params: { id: saleId },
-              user: { id: otherUserId, role: "employee" },
+              user: other,
               body: makeSaleBody({
                 sessionId: otherSessionId,
                 items: [line],
@@ -623,7 +627,7 @@ describe("salesTransactions review regressions", () => {
         await createRefund(
           makeReq({
             params: { id: saleId },
-            user: { id: ownerId, role: "admin" },
+            user: owner,
             body: {
               cash_session_id: statsSession.id,
               total_amount: 40,
@@ -643,7 +647,7 @@ describe("salesTransactions review regressions", () => {
         await transactionsStats(
           makeReq({
             query: { store_id: String(recycleryId) },
-            user: { id: ownerId, role: "admin" },
+            user: owner,
           }),
           statsRes,
         );
