@@ -990,8 +990,16 @@ export const transactionsStats = async (req: Request, res: Response) => {
       [fn("SUM", col("amount")), "total"],
       [fn("COUNT", col("method")), "count"],
     ],
-    where,
-    include,
+    
+    include: [
+      {
+        model: SalesTransaction,
+        where,
+        include,
+        required: true,
+        attributes: [],
+      },
+    ],
     group: ["method"],
     raw: true,
   })) as unknown as PaymentMethodRow[];
