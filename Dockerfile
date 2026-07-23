@@ -1,6 +1,7 @@
 FROM node:latest AS build
 
 ENV NODE_ENV=development
+ENV TZ=Europe/Paris
 
 WORKDIR /home/node/app
 
@@ -19,6 +20,7 @@ RUN npx tsc --noCheck
 FROM node:latest
 
 ENV NODE_ENV=production
+ENV TZ=Europe/Paris
 
 WORKDIR /home/node/app
 
