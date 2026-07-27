@@ -91,7 +91,7 @@ export default class Task extends Model<
     });
     this.belongsTo(models.Recyclery, {
       foreignKey: "store_id",
-      onDelete: "CASCADE",
+      onDelete: "SET NULL",
       onUpdate: "CASCADE",
     });
     this.belongsTo(models.CollectionPoint, {

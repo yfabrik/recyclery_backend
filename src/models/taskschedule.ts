@@ -104,12 +104,12 @@ export default class TaskSchedule extends Model<
     });
     this.belongsTo(models.Recyclery, {
       foreignKey: "store_id",
-      onDelete: "CASCADE",
+      onDelete: "SET NULL",
       onUpdate: "CASCADE",
     });
     this.belongsTo(models.CollectionPoint, {
       foreignKey: "collection_point_id",
-      onDelete: "CASCADE",
+      onDelete: "SET NULL",
       onUpdate: "CASCADE",
     });
     this.belongsToMany(models.Employee, {
@@ -479,6 +479,7 @@ export default class TaskSchedule extends Model<
                   | undefined;
                 if (Task) {
                   const now = new Date();
+                  // Preserve past tasks as historical records (unlink from schedule).
                   const result = await Task.update(
                     { schedule_id: null },
                     {
@@ -490,9 +491,23 @@ export default class TaskSchedule extends Model<
                     },
                   );
                   const updatedCount = result[0];
+                  // Tasks.schedule_id may be CASCADE or SET NULL depending on DB;
+                  // always delete future tasks explicitly after unlinking past.
+                  const deletedFutureCount = await Task.destroy({
+                    where: {
+                      schedule_id: schedule.id,
+                      scheduled_date: { [Op.gte]: now },
+                    },
+                    transaction,
+                  });
                   if (updatedCount > 0) {
                     logger.info(
                       `Set schedule_id to null for ${updatedCount} past task(s) when destroying schedule ${schedule.id}`,
+                    );
+                  }
+                  if (deletedFutureCount > 0) {
+                    logger.info(
+                      `Deleted ${deletedFutureCount} future task(s) when destroying schedule ${schedule.id}`,
                     );
                   }
                 } else {

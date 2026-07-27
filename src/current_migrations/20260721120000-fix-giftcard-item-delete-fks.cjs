@@ -53,7 +53,7 @@ module.exports = {
            AND k.REFERENCED_TABLE_NAME = :referencedTable`,
         {
           replacements: { table, column, referencedTable },
-          type: sequelize.QueryTypes.SELECT,
+          type: Sequelize.QueryTypes.SELECT,
         },
       );
 

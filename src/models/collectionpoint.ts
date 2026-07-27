@@ -2,6 +2,7 @@ import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
+  Op,
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
@@ -11,6 +12,7 @@ import {
   type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
+  type ModelStatic,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
@@ -18,6 +20,7 @@ import {
   COLLECTION_POINT_TYPES,
   type CollectionPointType,
 } from "../constants/dbEnums.js";
+import logger from "../services/logger.js";
 import { withTransaction } from "../utils/transaction.js";
 import type Arrival from "./arrival.ts";
 import type { ModelStatics } from "./db-types.ts";
@@ -70,7 +73,7 @@ export default class CollectionPoint extends Model<
     this.belongsTo(models.Recyclery, { foreignKey: "recyclery_id" });
     this.hasMany(models.TaskSchedule, {
       foreignKey: "collection_point_id",
-      onDelete: "CASCADE",
+      onDelete: "SET NULL",
       onUpdate: "CASCADE",
     });
     this.hasMany(models.Task, {
@@ -161,13 +164,78 @@ export default class CollectionPoint extends Model<
               },
             );
           },
-          beforeDestroy: async (collectionPoint) => {
+          beforeDestroy: async (collectionPoint, options) => {
             const arrivals = await collectionPoint.countArrivals();
             if (arrivals > 0) {
               throw new createHttpError[424](
                 "Impossible de supprimer un point de collecte qui a des arrivages",
               );
             }
+
+            // Destroy owned schedules via Sequelize first; TaskSchedules.collection_point_id
+            // is SET NULL at DB so selective category cleanup must run in app hooks.
+            await withTransaction(
+              collectionPoint.sequelize!,
+              options.transaction,
+              async (transaction) => {
+
+                const Task = collectionPoint.sequelize.models.Task as
+                  | ModelStatic<Task>
+                  | undefined;
+                if (!Task) return;
+                // delete all point tasks
+                const deletedPointTasks = await Task.destroy({
+                  where: {
+                    collection_point_id: collectionPoint.id,
+                    category: "point",
+                  },
+                  transaction,
+                });
+                if (deletedPointTasks > 0) {
+                  logger.info(
+                    `Deleted ${deletedPointTasks} point task(s) when destroying collection point ${collectionPoint.id}`,
+                  );
+                }
+
+                const schedules = await collectionPoint.getTaskSchedules({
+                  transaction,
+                });
+                for (const schedule of schedules) {
+                  await schedule.destroy({ transaction });
+                }
+
+                // const now = new Date();
+                // const pastNullified = (
+                //   await Task.update(
+                //     { collection_point_id: null },
+                //     {
+                //       where: {
+                //         collection_point_id: collectionPoint.id,
+                //         scheduled_date: { [Op.lt]: now },
+                //       },
+                //       transaction,
+                //     },
+                //   )
+                // )[0];
+                // const deletedFuture = await Task.destroy({
+                //   where: {
+                //     collection_point_id: collectionPoint.id,
+                //     scheduled_date: { [Op.gte]: now },
+                //   },
+                //   transaction,
+                // });
+                // if (pastNullified > 0) {
+                //   logger.info(
+                //     `Set collection_point_id to null for ${pastNullified} past task(s) when destroying collection point ${collectionPoint.id}`,
+                //   );
+                // }
+                // if (deletedFuture > 0) {
+                //   logger.info(
+                //     `Deleted ${deletedFuture} future task(s) when destroying collection point ${collectionPoint.id}`,
+                //   );
+                // }
+              },
+            );
           },
         },
       },

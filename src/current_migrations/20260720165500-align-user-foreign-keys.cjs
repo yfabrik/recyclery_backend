@@ -37,7 +37,7 @@ module.exports = {
     // Peer remap for CashSessions.user_id (same idea as repairDbOrphans)
     const nullSessions = await sequelize.query(
       `SELECT id, cash_register_id FROM CashSessions WHERE user_id IS NULL`,
-      { type: sequelize.QueryTypes.SELECT },
+      { type: Sequelize.QueryTypes.SELECT },
     );
     for (const session of nullSessions) {
       const peers = await sequelize.query(
@@ -50,7 +50,7 @@ module.exports = {
          LIMIT 1`,
         {
           replacements: { reg: session.cash_register_id },
-          type: sequelize.QueryTypes.SELECT,
+           type: Sequelize.QueryTypes.SELECT ,
         },
       );
       if (!peers[0]?.user_id) {
@@ -168,7 +168,7 @@ module.exports = {
            AND k.REFERENCED_TABLE_NAME = 'Users'`,
         {
           replacements: { table, column },
-          type: sequelize.QueryTypes.SELECT,
+          type: Sequelize.QueryTypes.SELECT,
         },
       );
 

@@ -99,7 +99,7 @@ export const addHoraire = async (req: Request, res: Response) => {
         scheduled_date,
         start_time,
         end_time,
-        notes: null,
+        notes: data.notes ?? null,
         status: "a",
         store_id: data.store_id,
       },
@@ -136,13 +136,13 @@ export const updateHoraire = async (req: Request, res: Response) => {
   await db.sequelize.transaction(async (t) => {
     await schedule.update(
       {
-        name: "vente-" + schedule.Recyclery?.name,
+        // name: "vente-" + schedule.Recyclery?.name,// c'est le store qui set le name
         scheduled_date,
         start_time,
         end_time,
-        notes: null,
+        notes: data.notes ?? null,
         status: "a",
-        store_id: data.store_id,
+        // store_id: data.store_id,//sert a rien de changer le store, ça revient a suppr la task schedule
         is_recurring: data.is_recurring,
       },
       { transaction: t },

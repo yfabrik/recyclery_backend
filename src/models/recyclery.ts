@@ -2,6 +2,7 @@ import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
+  Op,
   type BelongsToGetAssociationMixin,
   type BelongsToManyAddAssociationMixin,
   type BelongsToManyGetAssociationsMixin,
@@ -31,6 +32,7 @@ import type Task from "./task.ts";
 import type TaskSchedule from "./taskschedule.ts";
 import type User from "./user.ts";
 import type EmployeeStore from "./employeestore.js";
+import logger from "../services/logger.js";
 
 export default class Recyclery extends Model<
   InferAttributes<Recyclery>,
@@ -113,12 +115,12 @@ export default class Recyclery extends Model<
     this.hasMany(models.Donation, { foreignKey: "recyclery_id" });
     this.hasMany(models.Task, {
       foreignKey: "store_id",
-      onDelete: "CASCADE",
+      onDelete: "SET NULL",
       onUpdate: "CASCADE",
     });
     this.hasMany(models.TaskSchedule, {
       foreignKey: "store_id",
-      onDelete: "CASCADE",
+      onDelete: "SET NULL",
       onUpdate: "CASCADE",
     });
     this.belongsToMany(models.Employee, {
@@ -211,15 +213,15 @@ export default class Recyclery extends Model<
               },
             );
           },
-          beforeDestroy: async (recyclery) => {
+          beforeDestroy: async (recyclery, options) => {
             const CashSession = recyclery.sequelize.models
               .CashSession as ModelStatic<CashSession>;
             const CashRegister = recyclery.sequelize.models
               .CashRegister as ModelStatic<CashRegister>;
             const SalesTransaction = recyclery.sequelize.models
               .SalesTransaction as ModelStatic<
-              import("./salestransaction.ts").default
-            >;
+                import("./salestransaction.ts").default
+              >;
 
             const openCaisses = await recyclery.getCaisses({
               include: [
@@ -257,6 +259,84 @@ export default class Recyclery extends Model<
                 "Impossible de supprimer la recyclerie car des ventes sont liées aux caisses",
               );
             }
+
+
+            withTransaction(
+              recyclery.sequelize!,
+              options.transaction,
+              async (transaction) => {
+                //delete vente schedules
+                // set null other schedules
+
+
+                // goes first so delete all vente tasks
+                const Task = recyclery.sequelize.models.Task as
+                  | ModelStatic<Task>
+                  | undefined;
+                if (!Task) return;
+                // const now = new Date();
+                // const pastNullified = (
+                //   await Task.update(
+                //     { store_id: null },
+                //     {
+                //       where: {
+                //         store_id: recyclery.id,
+                //         category: "vente",
+                //         scheduled_date: { [Op.lt]: now },
+                //       },
+                //       transaction,
+                //     },
+                //   )
+                // )[0];
+                const deletedTasks = await Task.destroy({
+                  where: {
+                    store_id: recyclery.id,
+                    category: "vente",
+                    // scheduled_date: { [Op.gte]: now },
+                  },
+                  transaction,
+                });
+                // if (pastNullified > 0) {
+                //   logger.info(
+                //     `Set store_id to null for ${pastNullified} past vente task(s) when destroying recyclery ${recyclery.id}`,
+                //   );
+                // }
+                if (deletedTasks > 0) {
+                  logger.info(
+                    `Deleted ${deletedTasks} future vente task(s) when destroying recyclery ${recyclery.id}`,
+                  );
+                }
+
+                const schedules = await recyclery.getTaskSchedules({
+                  where: { category: "vente" }, transaction
+                })
+                for (const schedule of schedules) {
+                  await schedule.destroy({ transaction });
+                }
+
+                // const Schedule = recyclery.sequelize.models.TaskSchedule as
+                //   | ModelStatic<TaskSchedule>
+                //   | undefined;
+                // if (!Schedule) return;
+                // const otherSchedules = await Schedule.update(
+                //   { store_id: null },
+                //   { where: { store_id: recyclery.id, category: { [Op.not]: "vente" } }, transaction },
+                // );
+                // if (otherSchedules[0] > 0) {
+                //   logger.info(
+                //     `Set store_id to null for ${otherSchedules[0]} other task(s) when destroying recyclery ${recyclery.id}`,
+                //   );
+                // }
+                // const otherTasks = await Task.update(
+                //   { store_id: null },
+                //   { where: { store_id: recyclery.id, category: { [Op.not]: "vente" } }, transaction },
+                // );
+                // if (otherTasks[0] > 0) {
+                //   logger.info(
+                //     `Set store_id to null for ${otherTasks[0]} other task(s) when destroying recyclery ${recyclery.id}`,
+                //   );
+                // }
+              })
           },
         },
       },

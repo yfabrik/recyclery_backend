@@ -98,8 +98,8 @@ export const updatePointPrecense = async (req: Request, res: Response) => {
         end_time,
         notes: data.notes ?? null,
         is_recurring: data.is_present,
-        store_id: data.store_id,
-        collection_point_id: data.collection_point_id,
+        // store_id: data.store_id, //c'est le collection point qui set le store_id
+        // collection_point_id: data.collection_point_id, //sert a rien de changer le point de collecte, ça revient a suppr la task schedule
       },
       { transaction: t },
     );
