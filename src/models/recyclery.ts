@@ -2,7 +2,6 @@ import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
-  Op,
   type BelongsToGetAssociationMixin,
   type BelongsToManyAddAssociationMixin,
   type BelongsToManyGetAssociationsMixin,
@@ -17,8 +16,9 @@ import {
   type InferCreationAttributes,
   type ModelStatic,
   type NonAttribute,
-  type Sequelize,
+  type Sequelize
 } from "sequelize";
+import logger from "../services/logger.js";
 import { withTransaction } from "../utils/transaction.js";
 import type CashRegister from "./cashregister.ts";
 import type CashSession from "./cashsession.js";
@@ -26,13 +26,12 @@ import type CollectionPoint from "./collectionpoint.ts";
 import type { ModelStatics } from "./db-types.ts";
 import type Donation from "./donation.ts";
 import type Employee from "./employee.ts";
+import type EmployeeStore from "./employeestore.js";
 import type LabeledItem from "./labeleditem.ts";
 import type Promotion from "./promotion.ts";
 import type Task from "./task.ts";
 import type TaskSchedule from "./taskschedule.ts";
 import type User from "./user.ts";
-import type EmployeeStore from "./employeestore.js";
-import logger from "../services/logger.js";
 
 export default class Recyclery extends Model<
   InferAttributes<Recyclery>,

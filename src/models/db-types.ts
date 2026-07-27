@@ -29,6 +29,7 @@ import type TransactionPayment from "./transactionpayment.js";
 import type User from "./user.js";
 import type WasteDisposal from "./wasteDisposal.js";
 import type TransactionGlobalPromotion from "./transactionGlobalPromotion.js";
+import type EmployeeVacation from "./employeeVacation.js";
 
 /**
  * App-layer typing convention:
@@ -62,6 +63,7 @@ export type Models = {
   WasteDisposal: WasteDisposal;
   Skill: Skill;
   TransactionGlobalPromotion: TransactionGlobalPromotion;
+  EmployeeVacation: EmployeeVacation;
 };
 
 export type ModelStatics = {

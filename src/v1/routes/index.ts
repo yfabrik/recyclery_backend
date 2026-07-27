@@ -56,3 +56,4 @@ router.use(
 router.use("/employees", (await import("./employees.js")).router);
 router.use("/promotions", (await import("./promotions.js")).router);
 router.use("/skills", (await import("./skills.js")).router);
+router.use("/vacations", (await import("./vacations.js")).router);
