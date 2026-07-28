@@ -1,6 +1,7 @@
 import {
   DataTypes,
   Model,
+  Op,
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
@@ -16,6 +17,7 @@ import {
 } from "../constants/dbEnums.js";
 import type { ModelStatics } from "./db-types.ts";
 import type Employee from "./employee.ts";
+import createHttpError from "http-errors";
 
 export default class EmployeeVacation extends Model<
   InferAttributes<EmployeeVacation>,
@@ -69,6 +71,20 @@ export default class EmployeeVacation extends Model<
         sequelize,
         modelName: "EmployeeVacation",
         indexes: [{ fields: ["employee_id"] }],
+        hooks: {
+          beforeCreate: async (vacation, options) => {
+           const conflicts = await EmployeeVacation.findAll({
+            where:{
+                employee_id: vacation.employee_id,
+                start_date: { [Op.lte]: vacation.end_date },
+                end_date: { [Op.gte]: vacation.start_date },
+            }
+           })
+           if (conflicts.length > 0) {
+            throw new createHttpError.Conflict("plusieurs vacances ne peuvent pas être au même moment");
+           }
+          },
+        },
       },
     );
   }

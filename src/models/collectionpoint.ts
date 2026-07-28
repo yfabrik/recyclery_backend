@@ -2,7 +2,6 @@ import createHttpError from "http-errors";
 import {
   DataTypes,
   Model,
-  Op,
   type BelongsToGetAssociationMixin,
   type BelongsToSetAssociationMixin,
   type CreationOptional,
@@ -14,7 +13,7 @@ import {
   type InferCreationAttributes,
   type ModelStatic,
   type NonAttribute,
-  type Sequelize,
+  type Sequelize
 } from "sequelize";
 import {
   COLLECTION_POINT_TYPES,
