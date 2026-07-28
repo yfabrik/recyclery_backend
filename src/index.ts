@@ -117,7 +117,7 @@ app.listen(5000, () => {
     process.exit(1);
   });
 
-  console.log(`server started on http://0.0.0.0:5000`);
+  logger.info(`server started on http://0.0.0.0:5000`);
 
   // Schedule task generation cron job
   // Runs daily at 2:00 AM to generate tasks for the next month
