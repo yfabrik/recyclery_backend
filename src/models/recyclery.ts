@@ -260,7 +260,7 @@ export default class Recyclery extends Model<
             }
 
 
-            withTransaction(
+            await withTransaction(
               recyclery.sequelize!,
               options.transaction,
               async (transaction) => {
