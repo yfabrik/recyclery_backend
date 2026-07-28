@@ -25,7 +25,8 @@ module.exports = {
           model: "Recycleries",
           key: "id",
         },
-        onDelete: "CASCADE",
+        // Selective cleanup in Recyclery.beforeDestroy (vente delete, others null).
+        onDelete: "SET NULL",
         onUpdate: "CASCADE",
       },
       collection_point_id: {

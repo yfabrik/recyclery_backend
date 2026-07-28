@@ -9,6 +9,7 @@
  *   --sales-created-by    SalesTransactions.created_by from CashSessions.user_id
  *   --categories          Null/dangling category_id on items/arrivals/waste → archive
  *   --employee-task       Delete employee_task rows with missing Employee/Task
+ *   --orphan-schedules    Delete vente (null store) / point (null collection point) schedules+tasks
  *   --audit               Remaining-orphan report only (or after selected repairs)
  *   --all                 All repairs + audit
  *
@@ -16,6 +17,7 @@
  *   tsx src/scripts/repairDbOrphans.ts --cash-sessions
  *   tsx src/scripts/repairDbOrphans.ts --apply --sales-created-by --categories
  *   tsx src/scripts/repairDbOrphans.ts --apply --employee-task
+ *   tsx src/scripts/repairDbOrphans.ts --apply --orphan-schedules
  *   tsx src/scripts/repairDbOrphans.ts --audit
  *
  * Does not invent LabeledItems.created_by or remap subcategory_id.
@@ -50,12 +52,32 @@ const q = async <T extends object>(
   sql: string,
   replacements?: Record<string, unknown>,
   transaction?: Transaction,
-): Promise<T[]> =>
-  sequelize.query<T>(sql, {
-    type: QueryTypes.SELECT,
-    replacements,
-    transaction,
-  });
+): Promise<T[]> => {
+  const options: {
+    type: QueryTypes.SELECT;
+    replacements?: Record<string, unknown>;
+    transaction?: Transaction;
+  } = { type: QueryTypes.SELECT };
+  if (replacements !== undefined) options.replacements = replacements;
+  if (transaction !== undefined) options.transaction = transaction;
+  return sequelize.query<T>(sql, options);
+};
+
+/** INSERT / UPDATE / DELETE — always set QueryTypes so overloads resolve. */
+const exec = async (
+  sql: string,
+  replacements?: Record<string, unknown>,
+  transaction?: Transaction,
+) => {
+  const options: {
+    type: QueryTypes;
+    replacements?: Record<string, unknown>;
+    transaction?: Transaction;
+  } = { type: QueryTypes.RAW };
+  if (replacements !== undefined) options.replacements = replacements;
+  if (transaction !== undefined) options.transaction = transaction;
+  return sequelize.query(sql, options);
+};
 
 const count = async (
   sql: string,
@@ -185,12 +207,10 @@ async function repairCashSessions(transaction?: Transaction) {
       continue;
     }
     if (APPLY) {
-      await sequelize.query(
+      await exec(
         `UPDATE CashSessions SET user_id = :userId, updatedAt = ${sqlNow()} WHERE id = :id`,
-        {
-          replacements: { userId: peer, id: session.id },
-          transaction,
-        },
+        { userId: peer, id: session.id },
+        transaction,
       );
     }
     updated += 1;
@@ -248,7 +268,7 @@ async function repairSalesCreatedBy(transaction?: Transaction) {
   console.log(`  fixable from session.user_id (incl. peer remap): ${fixable}`);
 
   if (APPLY && before > 0) {
-    await sequelize.query(
+    await exec(
       `
       UPDATE SalesTransactions st
       INNER JOIN CashSessions cs ON cs.id = st.cash_session_id
@@ -256,7 +276,8 @@ async function repairSalesCreatedBy(transaction?: Transaction) {
       SET st.created_by = cs.user_id, st.updatedAt = ${sqlNow()}
       WHERE ${brokenCreatedByWhere("st", "created_by")}
       `,
-      { transaction },
+      undefined,
+      transaction,
     );
   }
 
@@ -296,7 +317,7 @@ async function ensureTrashCategory(
     return -1;
   }
 
-  await sequelize.query(
+  await exec(
     `
     INSERT INTO Categories
       (name, description, icon, defaultWeight, defaultPrice, IO, priceBasedOnWeight,
@@ -304,10 +325,8 @@ async function ensureTrashCategory(
     VALUES
       (:name, :description, NULL, 0, 0, 0, 0, NULL, NULL, NULL, ${sqlNow()}, ${sqlNow()})
     `,
-    {
-      replacements: { name: TRASH_NAME, description: TRASH_DESCRIPTION },
-      transaction,
-    },
+    { name: TRASH_NAME, description: TRASH_DESCRIPTION },
+    transaction,
   );
   const created = await q<IdRow>(
     `
@@ -348,14 +367,15 @@ async function remapCategoryId(
 
   // SQLite-friendly UPDATE (no MySQL-style table alias in SET).
   // NULL category_id never matches Categories.id, so NOT EXISTS covers null + dangling.
-  await sequelize.query(
+  await exec(
     `
     UPDATE \`${table}\`
     SET category_id = :trashId, updatedAt = ${sqlNow()}
     WHERE category_id IS NULL
       OR NOT EXISTS (SELECT 1 FROM Categories c WHERE c.id = category_id)
     `,
-    { replacements: { trashId }, transaction },
+    { trashId },
+    transaction,
   );
   console.log(`  bound ${before} row(s) → archive ${trashId}`);
 }
@@ -416,7 +436,7 @@ async function cleanupEcoOrgJoins(transaction?: Transaction) {
         DELETE j FROM \`${table}\` j
         WHERE NOT EXISTS (SELECT 1 FROM Categories c WHERE c.id = j.CategoryId)
         `;
-      await sequelize.query(deleteSql, { transaction });
+      await exec(deleteSql, undefined, transaction);
       console.log(`  deleted ${n} dangling join row(s) from ${table}`);
     }
   }
@@ -500,12 +520,205 @@ async function repairEmployeeTask(transaction?: Transaction) {
       WHERE NOT EXISTS (SELECT 1 FROM Employees e WHERE e.id = et.EmployeeId)
          OR NOT EXISTS (SELECT 1 FROM Tasks t WHERE t.id = et.TaskId)
       `;
-  await sequelize.query(deleteSql, { transaction });
+  await exec(deleteSql, undefined, transaction);
   console.log(`  deleted ${before} invalid employee_task row(s)`);
 }
 
+async function deleteRowsByIds(
+  table: string,
+  ids: number[],
+  transaction?: Transaction,
+) {
+  if (ids.length === 0) return;
+  // Chunk to keep SQLite/MariaDB parameter lists manageable.
+  const chunkSize = 400;
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize);
+    await exec(`DELETE FROM \`${table}\` WHERE id IN (:ids)`, { ids: chunk }, transaction);
+  }
+}
+
+async function deleteJoinByTaskIds(
+  taskIds: number[],
+  transaction?: Transaction,
+) {
+  if (taskIds.length === 0) return;
+  if (!(await tableExists("employee_task", transaction))) return;
+  const chunkSize = 400;
+  for (let i = 0; i < taskIds.length; i += chunkSize) {
+    const chunk = taskIds.slice(i, i + chunkSize);
+    await exec(
+      `DELETE FROM employee_task WHERE TaskId IN (:ids)`,
+      { ids: chunk },
+      transaction,
+    );
+  }
+}
+
+/** Sequelize often names BelongsToMany FKs as ModelNameId — detect column. */
+async function scheduleJoinFkColumn(
+  transaction?: Transaction,
+): Promise<string | null> {
+  if (!(await tableExists("employee_schedule", transaction))) return null;
+  if (isSqlite()) {
+    const cols = await q<{ name: string }>(
+      `PRAGMA table_info(employee_schedule)`,
+      undefined,
+      transaction,
+    );
+    const names = cols.map((c) => c.name);
+    if (names.includes("TaskScheduleId")) return "TaskScheduleId";
+    if (names.includes("taskScheduleId")) return "taskScheduleId";
+    if (names.includes("TaskSchedule_id")) return "TaskSchedule_id";
+    if (names.includes("schedule_id")) return "schedule_id";
+    return null;
+  }
+  const cols = await q<{ COLUMN_NAME: string }>(
+    `
+    SELECT COLUMN_NAME
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'employee_schedule'
+    `,
+    undefined,
+    transaction,
+  );
+  const names = cols.map((c) => c.COLUMN_NAME);
+  if (names.includes("TaskScheduleId")) return "TaskScheduleId";
+  if (names.includes("taskScheduleId")) return "taskScheduleId";
+  if (names.includes("schedule_id")) return "schedule_id";
+  return null;
+}
+
+async function repairOrphanSchedules(transaction?: Transaction) {
+  logSection(
+    `6. Orphan vente/point schedules+tasks → delete ${APPLY ? "(APPLY)" : "(dry-run)"}`,
+  );
+
+  const venteScheduleWhere = `category = 'vente' AND store_id IS NULL`;
+  const venteTaskWhere = `category = 'vente' AND store_id IS NULL`;
+  const pointScheduleWhere = `category = 'point' AND collection_point_id IS NULL`;
+  const pointTaskWhere = `category = 'point' AND collection_point_id IS NULL`;
+
+  const venteSchedules = await count(
+    `SELECT COUNT(*) AS c FROM TaskSchedules WHERE ${venteScheduleWhere}`,
+    undefined,
+    transaction,
+  );
+  const venteTasks = await count(
+    `SELECT COUNT(*) AS c FROM Tasks WHERE ${venteTaskWhere}`,
+    undefined,
+    transaction,
+  );
+  const pointSchedules = await count(
+    `SELECT COUNT(*) AS c FROM TaskSchedules WHERE ${pointScheduleWhere}`,
+    undefined,
+    transaction,
+  );
+  const pointTasks = await count(
+    `SELECT COUNT(*) AS c FROM Tasks WHERE ${pointTaskWhere}`,
+    undefined,
+    transaction,
+  );
+
+  const venteScheduleIds = await sampleIds(
+    `SELECT id FROM TaskSchedules WHERE ${venteScheduleWhere} ORDER BY id`,
+    undefined,
+    transaction,
+  );
+  const venteTaskIds = await sampleIds(
+    `SELECT id FROM Tasks WHERE ${venteTaskWhere} ORDER BY id`,
+    undefined,
+    transaction,
+  );
+  const pointScheduleIds = await sampleIds(
+    `SELECT id FROM TaskSchedules WHERE ${pointScheduleWhere} ORDER BY id`,
+    undefined,
+    transaction,
+  );
+  const pointTaskIds = await sampleIds(
+    `SELECT id FROM Tasks WHERE ${pointTaskWhere} ORDER BY id`,
+    undefined,
+    transaction,
+  );
+
+  console.log(
+    `  TaskSchedules vente + store_id IS NULL: ${venteSchedules}` +
+      (venteScheduleIds.length
+        ? ` (sample: ${venteScheduleIds.join(", ")})`
+        : ""),
+  );
+  console.log(
+    `  Tasks vente + store_id IS NULL: ${venteTasks}` +
+      (venteTaskIds.length ? ` (sample: ${venteTaskIds.join(", ")})` : ""),
+  );
+  console.log(
+    `  TaskSchedules point + collection_point_id IS NULL: ${pointSchedules}` +
+      (pointScheduleIds.length
+        ? ` (sample: ${pointScheduleIds.join(", ")})`
+        : ""),
+  );
+  console.log(
+    `  Tasks point + collection_point_id IS NULL: ${pointTasks}` +
+      (pointTaskIds.length ? ` (sample: ${pointTaskIds.join(", ")})` : ""),
+  );
+
+  const total =
+    venteSchedules + venteTasks + pointSchedules + pointTasks;
+  if (total === 0) return;
+  if (!APPLY) {
+    console.log(`  would delete ${total} schedule/task row(s)`);
+    return;
+  }
+
+  const allScheduleIds = (
+    await q<IdRow>(
+      `
+      SELECT id FROM TaskSchedules
+      WHERE (${venteScheduleWhere}) OR (${pointScheduleWhere})
+      ORDER BY id
+      `,
+      undefined,
+      transaction,
+    )
+  ).map((r) => r.id);
+  const allTaskIds = (
+    await q<IdRow>(
+      `
+      SELECT id FROM Tasks
+      WHERE (${venteTaskWhere}) OR (${pointTaskWhere})
+      ORDER BY id
+      `,
+      undefined,
+      transaction,
+    )
+  ).map((r) => r.id);
+
+  await deleteJoinByTaskIds(allTaskIds, transaction);
+
+  const scheduleFk = await scheduleJoinFkColumn(transaction);
+  if (scheduleFk && allScheduleIds.length) {
+    const chunkSize = 400;
+    for (let i = 0; i < allScheduleIds.length; i += chunkSize) {
+      const chunk = allScheduleIds.slice(i, i + chunkSize);
+      await exec(
+        `DELETE FROM employee_schedule WHERE \`${scheduleFk}\` IN (:ids)`,
+        { ids: chunk },
+        transaction,
+      );
+    }
+  }
+
+  // Tasks first (may still reference schedules), then schedules.
+  await deleteRowsByIds("Tasks", allTaskIds, transaction);
+  await deleteRowsByIds("TaskSchedules", allScheduleIds, transaction);
+
+  console.log(
+    `  deleted ${allTaskIds.length} task(s) and ${allScheduleIds.length} schedule(s)`,
+  );
+}
+
 async function auditReport(transaction?: Transaction) {
-  logSection("6. Audit (report-only)");
+  logSection("7. Audit (report-only)");
 
   console.log("\n  -- LabeledItems.created_by (left null by design) --");
   await logAudit(
@@ -858,6 +1071,32 @@ async function auditReport(transaction?: Transaction) {
     }
   }
 
+  console.log("\n  -- Orphan vente/point schedules & tasks (null parent FK) --");
+  await logAudit(
+    "TaskSchedules vente + store_id IS NULL",
+    `SELECT COUNT(*) AS c FROM TaskSchedules WHERE category = 'vente' AND store_id IS NULL`,
+    `SELECT id FROM TaskSchedules WHERE category = 'vente' AND store_id IS NULL ORDER BY id`,
+    transaction,
+  );
+  await logAudit(
+    "Tasks vente + store_id IS NULL",
+    `SELECT COUNT(*) AS c FROM Tasks WHERE category = 'vente' AND store_id IS NULL`,
+    `SELECT id FROM Tasks WHERE category = 'vente' AND store_id IS NULL ORDER BY id`,
+    transaction,
+  );
+  await logAudit(
+    "TaskSchedules point + collection_point_id IS NULL",
+    `SELECT COUNT(*) AS c FROM TaskSchedules WHERE category = 'point' AND collection_point_id IS NULL`,
+    `SELECT id FROM TaskSchedules WHERE category = 'point' AND collection_point_id IS NULL ORDER BY id`,
+    transaction,
+  );
+  await logAudit(
+    "Tasks point + collection_point_id IS NULL",
+    `SELECT COUNT(*) AS c FROM Tasks WHERE category = 'point' AND collection_point_id IS NULL`,
+    `SELECT id FROM Tasks WHERE category = 'point' AND collection_point_id IS NULL ORDER BY id`,
+    transaction,
+  );
+
   console.log("\n  -- category_id still null/dangling (should be 0 after apply) --");
   for (const table of [
     "LabeledItems",
@@ -879,6 +1118,7 @@ type RepairKey =
   | "sales-created-by"
   | "categories"
   | "employee-task"
+  | "orphan-schedules"
   | "audit";
 
 const REPAIR_FLAGS: Record<Exclude<RepairKey, "audit">, string> = {
@@ -886,6 +1126,7 @@ const REPAIR_FLAGS: Record<Exclude<RepairKey, "audit">, string> = {
   "sales-created-by": "--sales-created-by",
   categories: "--categories",
   "employee-task": "--employee-task",
+  "orphan-schedules": "--orphan-schedules",
 };
 
 const REPAIR_LABELS: Record<RepairKey, string> = {
@@ -897,6 +1138,8 @@ const REPAIR_LABELS: Record<RepairKey, string> = {
     "Null/dangling category_id on items/arrivals/waste → archive category",
   "employee-task":
     "Delete employee_task rows with missing Employee or Task",
+  "orphan-schedules":
+    "Delete vente (null store_id) / point (null collection_point_id) schedules+tasks",
   audit: "Remaining / other orphans report",
 };
 
@@ -908,6 +1151,7 @@ const parseRepairSelectionFromArgv = (): RepairKey[] | null => {
       "sales-created-by",
       "categories",
       "employee-task",
+      "orphan-schedules",
       "audit",
     ];
   }
@@ -930,6 +1174,7 @@ const promptRepairSelection = async (): Promise<RepairKey[]> => {
     "sales-created-by",
     "categories",
     "employee-task",
+    "orphan-schedules",
     "audit",
   ];
 
@@ -986,6 +1231,7 @@ const runSelectedRepairs = async (
   if (run.has("sales-created-by")) await repairSalesCreatedBy(transaction);
   if (run.has("categories")) await repairCategories(transaction);
   if (run.has("employee-task")) await repairEmployeeTask(transaction);
+  if (run.has("orphan-schedules")) await repairOrphanSchedules(transaction);
   if (run.has("audit")) await auditReport(transaction);
 };
 

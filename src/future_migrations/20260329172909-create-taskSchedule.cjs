@@ -16,7 +16,8 @@ module.exports = {
           model: "Recycleries",
           key: "id",
         },
-        onDelete: "CASCADE",
+        // Selective cleanup in Recyclery.beforeDestroy (vente delete, others null).
+        onDelete: "SET NULL",
         onUpdate: "CASCADE",
       },
       collection_point_id: {
@@ -25,7 +26,8 @@ module.exports = {
           model: "CollectionPoints",
           key: "id",
         },
-        onDelete: "CASCADE",
+        // Selective cleanup in CollectionPoint.beforeDestroy (point delete, others null).
+        onDelete: "SET NULL",
         onUpdate: "CASCADE",
       },
       is_recurring: {

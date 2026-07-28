@@ -55,6 +55,7 @@ const PERMISSIONS = {
     promotions: readOnlyPerms(),
     skills: modulePerms(),
     "gift-cards": modulePerms(),
+    "vacations": noPerms(),
   },
   manager: {
     recycleries: modulePerms(),
@@ -86,6 +87,7 @@ const PERMISSIONS = {
     promotions: modulePerms(),
     skills: modulePerms(),
     "gift-cards": modulePerms(),
+    "vacations": modulePerms(),
   },
   admin: {
     recycleries: modulePerms(),
@@ -117,6 +119,7 @@ const PERMISSIONS = {
     promotions: modulePerms(),
     skills: modulePerms(),
     "gift-cards": modulePerms(),
+    "vacations": modulePerms(),
   },
 };
 

@@ -12,6 +12,7 @@ import type TransactionGlobalPromotion from "../models/transactionGlobalPromotio
 import type TransactionPayment from "../models/transactionpayment.js";
 import type User from "../models/user.js";
 import type WasteDisposal from "../models/wasteDisposal.js";
+import type EmployeeVacation from "../models/employeeVacation.js";
 import {
   ARRIVAL_SOURCE_TYPES,
   ARRIVAL_STATUSES,
@@ -30,6 +31,7 @@ import {
   TASK_CATEGORIES,
   TRANSACTION_TYPES,
   USER_ROLES,
+  VACATION_REASONS,
   WASTE_DISPOSAL_TYPES,
 } from "./dbEnums.js";
 
@@ -61,3 +63,4 @@ void (
   >[]
 );
 void (WASTE_DISPOSAL_TYPES satisfies readonly WasteDisposal["disposal_type"][]);
+void (VACATION_REASONS satisfies readonly EmployeeVacation["reason"][]);

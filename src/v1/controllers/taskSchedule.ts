@@ -27,14 +27,15 @@ import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
-import { weekday, endOfDay, startOfDay } from "../../utils/dates.js";
+import { weekday, endOfDay, startOfDay, dayjs } from "../../utils/dates.js";
+import { getWeekNumber } from "@recyclerie/api/domain/date";
 
 import { formatWhereDateRange } from "../../helpers.js";
 import type { ModelWhere } from "../../models/db-types.js";
 import { toAvailableEmployeeDto, toPlanningStatsDto, toTaskScheduleDto, type PlanningStatsOverviewRow } from "../../mappers/taskSchedule.js";
 import { toTaskDto } from "../../mappers/tasks.js";
 
-const { Recyclery, Task, TaskSchedule, Employee, EmployeeWorkdays } = db;
+const { Recyclery, Task, TaskSchedule, Employee, EmployeeWorkdays, EmployeeVacation } = db;
 
 export const listSchedules = async (req: Request, res: Response) => {
   const category =
@@ -333,39 +334,52 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
   const taskDate = new Date(currentSchedule.scheduled_date);
   const dayOfWeek = weekday(taskDate);
 
+  //TODO changer pour dayjs
+  // console.log(getWeekNumber(taskDate), dayjs(taskDate).week());
   const newYear = new Date(taskDate.getFullYear(), 0, 1);
   const dayNumber = Math.floor((+taskDate - +newYear) / (24 * 60 * 60 * 1000));
   const weekNumber = Math.ceil((taskDate.getDay() + 1 + dayNumber) / 7);
+  // console.log(weekNumber);
+
+  const start = startOfDay(currentSchedule.scheduled_date).toDate();
+  const end = endOfDay(currentSchedule.scheduled_date).toDate();
+
+  const workdayInclude = {
+    model: EmployeeWorkdays,
+    attributes: [],
+    required: true,
+    where: {
+      day_of_week: dayOfWeek,
+      is_working: true,
+      week: weekNumber % 2 ? "week2" : "week1",
+    },
+  };
+
+  // LEFT JOIN vacations covering the day, then keep rows with no match
+  const vacationExcludeInclude = {
+    model: EmployeeVacation,
+    as: "vacations",
+    attributes: [],
+    required: false,
+    where: {
+      start_date: { [Op.lte]: end },
+      end_date: { [Op.gte]: start },
+    },
+  };
+
   if (!schedule.store_id)
     allEmployees = await Employee.findAll({
-      include: [
-        {
-          model: EmployeeWorkdays,
-          // as:"horaires",
-          attributes: [],
-          required: true, // INNER JOIN
-          where: {
-            day_of_week: dayOfWeek,
-            is_working: true, // or 1
-            week: weekNumber % 2 ? "week2" : "week1",
-          },
-        },
-      ],
+      subQuery: false,
+      where: { "$vacations.id$": { [Op.is]: null } },
+      include: [workdayInclude, vacationExcludeInclude],
     });
   else
     allEmployees = await Employee.findAll({
+      subQuery: false,
+      where: { "$vacations.id$": { [Op.is]: null } },
       include: [
-        {
-          model: EmployeeWorkdays,
-          // as:"horaires",
-          attributes: [],
-          required: true, // INNER JOIN
-          where: {
-            day_of_week: dayOfWeek,
-            is_working: true, // or 1
-            week: weekNumber % 2 ? "week2" : "week1",
-          },
-        },
+        workdayInclude,
+        vacationExcludeInclude,
         {
           model: Recyclery,
           as: "stores",
@@ -377,9 +391,6 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
 
   // Pour chaque employé, vérifier s'il est disponible
   const availableEmployees = [];
-
-  const start = startOfDay(currentSchedule.scheduled_date).toDate();
-  const end = endOfDay(currentSchedule.scheduled_date).toDate();
 
   for (const employee of allEmployees) {
     // Vérifier les conflits d'horaires pour cet employé

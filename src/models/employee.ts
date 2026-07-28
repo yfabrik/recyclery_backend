@@ -7,6 +7,7 @@ import {
   type BelongsToManySetAssociationsMixin,
   type CreationOptional,
   type HasManyAddAssociationMixin,
+  type HasManyCreateAssociationMixin,
   type HasManyGetAssociationsMixin,
   type InferAttributes,
   type InferCreationAttributes,
@@ -20,6 +21,7 @@ import type Skill from "./skill.ts";
 import type Task from "./task.ts";
 import type TaskSchedule from "./taskschedule.ts";
 import type EmployeeStore from "./employeestore.js";
+import type EmployeeVacation from "./employeeVacation.js";
 
 export default class Employee extends Model<
   InferAttributes<Employee>,
@@ -36,6 +38,7 @@ export default class Employee extends Model<
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
+  declare vacations?: NonAttribute<EmployeeVacation[]>;
   declare EmployeeWorkdays?: NonAttribute<EmployeeWorkdays[]>;
   declare stores?: NonAttribute<
     Array<Recyclery & { EmployeeStore: NonAttribute<EmployeeStore> }>
@@ -78,6 +81,8 @@ export default class Employee extends Model<
   declare setSkills: BelongsToManySetAssociationsMixin<Skill, Skill["id"]>;
   declare addSkill: BelongsToManyAddAssociationMixin<Skill, Skill["id"]>;
 
+  declare createVacation: HasManyCreateAssociationMixin<EmployeeVacation>;
+
   static associate(models: ModelStatics) {
     this.belongsToMany(models.Recyclery, {
       through: models.EmployeeStore,
@@ -108,6 +113,12 @@ export default class Employee extends Model<
       as: "skills",
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
+    });
+    this.hasMany(models.EmployeeVacation, {
+      foreignKey: "employee_id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+      as: "vacations",
     });
   }
 

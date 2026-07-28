@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import createHttpError from "http-errors";
-import { Op, type Includeable } from "sequelize";import {
+import { Op, type Includeable } from "sequelize"; 
+import {
   assignEmployeeToTaskBodySchema,
   taskDataSchema,
   taskListFilterSchema,
@@ -44,8 +45,9 @@ export const listTasks = async (req: Request, res: Response) => {
           : null;
   const data = taskListFilterSchema.parse({
     ...req.query,
-    category: defaultCategory,
+    // category: defaultCategory,
   });
+  data.category = defaultCategory ?? data.category
 
   const where: ModelWhere<typeof Task> = {};
   const dateRange = formatWhereDateRange(data.date_from, data.date_to);

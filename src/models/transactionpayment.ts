@@ -87,8 +87,7 @@ export default class TransactionPayment extends Model<
         ],
         hooks: {
           beforeCreate: async (instance, options) => {
-            console.log("in payment hook before create");
-            return withTransaction(
+            return  await withTransaction(
               sequelize,
               options.transaction,
               async (transaction) => {

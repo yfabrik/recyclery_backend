@@ -243,7 +243,6 @@ const normalizePayments = (data: Data) => {
 export const listTransactions = async (req: Request, res: Response) => {
   const filter = transactionListFilterSchema.parse(req.query);
   const pagination = parsePaginationQuery(req.query);
-  console.log(filter);
 
   const where: ModelWhere<typeof SalesTransaction> = {};
   if (filter.transaction_number) where.id = Number(filter.transaction_number);
