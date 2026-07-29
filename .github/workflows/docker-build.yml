@@ -3,6 +3,9 @@ name: Docker Build
 on:
   workflow_call:
     outputs:
+      image-ref:
+        description: Ephemeral GHCR tag for the built image
+        value: ${{ jobs.build.outputs.image-ref }}
       image-tags:
         description: GHCR tags for the built image
         value: ${{ jobs.build.outputs.image-tags }}
@@ -10,11 +13,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     outputs:
+      image-ref: ${{ steps.ci-tag.outputs.image-ref }}
       image-tags: ${{ steps.meta.outputs.tags }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Set CI image ref
+        id: ci-tag
+        run: |
+          set -euo pipefail
+          repo="$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          echo "image-ref=ghcr.io/${repo}:ci-${{ github.run_id }}" >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata (tags, labels)
         id: meta
@@ -22,21 +36,17 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
 
-      - name: Build Docker image
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push CI image
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: false
-          load: true
-          tags: recyclerie:ci
+          push: true
+          tags: ${{ steps.ci-tag.outputs.image-ref }}
           labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Save Docker image
-        run: docker save recyclerie:ci | gzip > docker-image.tar.gz
-
-      - name: Upload Docker image
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: docker-image.tar.gz
-          retention-days: 1

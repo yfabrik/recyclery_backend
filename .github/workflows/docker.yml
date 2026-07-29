@@ -13,6 +13,7 @@ on:
       - ".github/workflows/docker-build.yml"
       - ".github/workflows/docker-health.yml"
       - ".github/workflows/docker-push.yml"
+      - ".github/workflows/docker-cleanup.yml"
   pull_request:
     paths: *docker-paths
   workflow_dispatch:
@@ -22,22 +23,45 @@ jobs:
     uses: ./.github/workflows/docker-build.yml
     permissions:
       contents: read
+      packages: write
+    secrets: inherit
 
   health:
     needs: build
     uses: ./.github/workflows/docker-health.yml
     permissions:
       contents: read
+      packages: read
+    secrets: inherit
+    with:
+      image-ref: ${{ needs.build.outputs.image-ref }}
 
   push:
     needs:
       - build
       - health
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && needs.health.result == 'success'
     uses: ./.github/workflows/docker-push.yml
     permissions:
       packages: write
       contents: read
     secrets: inherit
     with:
+      image-ref: ${{ needs.build.outputs.image-ref }}
       image-tags: ${{ needs.build.outputs.image-tags }}
+
+  cleanup:
+    needs:
+      - build
+      - health
+      - push
+    # Always remove the ephemeral CI image after a successful build,
+    # even when push was skipped (PRs) or health/push failed.
+    if: always() && needs.build.result == 'success'
+    uses: ./.github/workflows/docker-cleanup.yml
+    permissions:
+      packages: write
+      contents: read
+    secrets: inherit
+    with:
+      image-ref: ${{ needs.build.outputs.image-ref }}
