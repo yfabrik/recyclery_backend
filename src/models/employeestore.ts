@@ -93,7 +93,7 @@ export default class EmployeeStore extends Model<
         ],
         hooks: {
           async afterCreate(instance, options) {
-            if (!instance.is_primary || instance.employeeId == null) return;
+            if (!instance.is_primary) return;
             await withTransaction(
               sequelize,
               options.transaction,

@@ -50,28 +50,17 @@ export const issueGiftCard = async ({
   metadata = null,
   transaction: externalTransaction = null,
 }: GiftCreate & { transaction?: Transaction | null }) => {
+
   const amount = toAmount(initialValue);
   if (!Number.isFinite(amount) || amount < 0) {
     throw new createHttpError.BadRequest(
       "initial gift card value must be >= 0",
     );
   }
-  let linkedTransactionId = issuedTransactionId || issuedRefundTransactionId;
-  if (!linkedTransactionId) {
-    const openedSession = await CashSession.findOne({
-      where: {
-        status: "open",
-        user_id: createdBy,
-      },
-    });
-    if (!openedSession)
-      throw new createHttpError.BadRequest(
-        "gift card issuance requires a linked sales transaction id",
-      );
-
-  }
-
+  
+  
   return withTransaction(sequelize, externalTransaction, async (transaction) => {
+    let linkedTransactionId = issuedTransactionId || issuedRefundTransactionId;
     if (!linkedTransactionId) {
       //TODO a refaire
       const openedSession = await CashSession.findOne({
