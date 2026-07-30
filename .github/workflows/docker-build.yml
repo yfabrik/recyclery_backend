@@ -21,7 +21,7 @@ jobs:
       image-tags: ${{ steps.meta.outputs.tags }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set CI image ref
         id: ci-tag
@@ -32,7 +32,7 @@ jobs:
 
       - name: Extract metadata (tags, labels)
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository }}
 
@@ -50,3 +50,13 @@ jobs:
           push: true
           tags: ${{ steps.ci-tag.outputs.image-ref }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Save Docker image
+        run: docker save recyclerie:ci | gzip > docker-image.tar.gz
+
+      - name: Upload Docker image
+        uses: actions/upload-artifact@v7
+        with:
+          name: docker-image
+          path: docker-image.tar.gz
+          retention-days: 1
