@@ -118,7 +118,6 @@ export const listCategories = async (req: Request, res: Response) => {
       insideWhere.IO = literal(`subcategories.IO & ${IOValues.SELL} != 0`);
     const insideInclude = [];
     if (filters.include.includes("promo"))
-      //TODO PK ça marche pas ?
       insideInclude.push({ ...includePromo });
     include.push({
       model: Category,
@@ -175,7 +174,7 @@ export const createCategorie = async (req: Request, res: Response) => {
   );
 
   if (existingCategory)
-    throw new createHttpError[404]("Une catégorie avec ce nom existe déjà"); //TODO hook
+    throw new createHttpError[404]("Une catégorie avec ce nom existe déjà"); //TODO not needed ? db handle it
 
   const category = await Category.create({
     ...data,
@@ -209,7 +208,7 @@ export const updateCategorie = async (req: Request, res: Response) => {
   );
 
   if (existingCategory && existingCategory.id != category.id)
-    throw new createHttpError[404]("Une catégorie avec ce nom existe déjà"); //TODO make hook
+    throw new createHttpError[404]("Une catégorie avec ce nom existe déjà"); //TODO not needed ? db handle it
 
   await category.update({
     ...data,
