@@ -51,12 +51,3 @@ jobs:
           tags: ${{ steps.ci-tag.outputs.image-ref }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Save Docker image
-        run: docker save recyclerie:ci | gzip > docker-image.tar.gz
-
-      - name: Upload Docker image
-        uses: actions/upload-artifact@v7
-        with:
-          name: docker-image
-          path: docker-image.tar.gz
-          retention-days: 1
