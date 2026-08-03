@@ -3,8 +3,12 @@ name: Docker Push
 on:
   workflow_call:
     inputs:
+      image-ref:
+        description: Ephemeral GHCR image ref produced by the build job
+        required: true
+        type: string
       image-tags:
-        description: GHCR tags produced during the build job
+        description: Final GHCR tags to publish
         required: true
         type: string
 
@@ -16,14 +20,6 @@ jobs:
       contents: read
 
     steps:
-      - name: Download Docker image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-
-      - name: Load Docker image
-        run: gunzip -c docker-image.tar.gz | docker load
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
         with:
@@ -31,7 +27,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push Docker image
+      - name: Pull CI image
+        run: |
+          set -euo pipefail
+          docker pull "${{ inputs.image-ref }}"
+          docker tag "${{ inputs.image-ref }}" recyclerie:ci
+
+      - name: Push final tags
         run: |
           set -euo pipefail
           mapfile -t tags <<< "${{ inputs.image-tags }}"

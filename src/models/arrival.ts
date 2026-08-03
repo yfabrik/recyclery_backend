@@ -41,9 +41,9 @@ export default class Arrival extends Model<
   declare subcategory_id: ForeignKey<Category["id"] | null>;
   declare collection_point_id: ForeignKey<CollectionPoint["id"] | null>;
 
-  declare categorie?: NonAttribute<Category>;//TODO if category deleted  arrival still survive ?y
-  declare subcategorie?: NonAttribute<Category>;//TODO if subcategory deleted  arrival still survive ?y
-  declare CollectionPoint?: NonAttribute<CollectionPoint>;//TODO if collection point deleted  arrival still survive ?y
+  declare categorie?: NonAttribute<Category>;
+  declare subcategorie?: NonAttribute<Category>;
+  declare CollectionPoint?: NonAttribute<CollectionPoint>;
   declare User?: NonAttribute<User>;
 
   declare getCategorie: BelongsToGetAssociationMixin<Category>;

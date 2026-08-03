@@ -37,11 +37,11 @@ export default class CashSession extends Model<
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  declare cash_register_id: ForeignKey<CashRegister["id"]>;//TODO if cashregister deleted  cashsession still survive ?n
+  declare cash_register_id: ForeignKey<CashRegister["id"]>;
   declare user_id: ForeignKey<User["id"]>;
 
   declare CashRegister?: NonAttribute<CashRegister >;
-  declare SalesTransactions?: NonAttribute<SalesTransaction[]>;//TODO if salestransaction deleted  cashsession still survive ?y
+  declare SalesTransactions?: NonAttribute<SalesTransaction[]>;
   declare User?: NonAttribute<User >;
 
   declare getCashRegister: BelongsToGetAssociationMixin<CashRegister>;

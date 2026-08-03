@@ -586,7 +586,7 @@ export const createTransaction = async (
 export const createRefund = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const user = req.user;
-  const cashSessions = await user.getCashSessions({where: {status: "open"}});
+  const cashSessions = await user.getCashSessions({ where: { status: "open" } });
   if (cashSessions.length === 0) {
     throw new createHttpError.BadRequest("aucune caisse ouverte trouvée");
   }
@@ -877,9 +877,21 @@ export const listRefunds = async (req: Request, res: Response) => {
           model: SalesTransaction,
           as: "refunds",
           required: false,
-          include: [{ model: LabeledItem, as: "items" }],
+          include: [
+            { model: LabeledItem, as: "items" },
+            { model: TransactionPayment, as: "payments" },
+            {
+              model: CashSession, include: [
+                {
+                  model: CashRegister,
+                  include: [{ model: Recyclery }]
+                },
+                { model: User },
+              ]
+            },
+          ],
         },
-        { model: LabeledItem, as: "items" },
+
       ],
     },
   );
@@ -1006,7 +1018,7 @@ export const transactionsStats = async (req: Request, res: Response) => {
       [fn("SUM", col("amount")), "total"],
       [fn("COUNT", col("method")), "count"],
     ],
-    
+
     include: [
       {
         model: SalesTransaction,
@@ -1402,8 +1414,8 @@ export const removeTransaction = async (
         },
         { model: SalesTransaction, as: "refunds" },
       ],
-    
-  })
+
+    })
   if (toDelete.CashSession?.status != "open" || toDelete.CashSession?.user_id != req.user.id)
     throw new createHttpError.Forbidden("trop tard pour modifier")
   if (toDelete.refunds && toDelete.refunds?.length > 0)

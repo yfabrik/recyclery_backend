@@ -2,10 +2,18 @@ name: Docker Health Check
 
 on:
   workflow_call:
+    inputs:
+      image-ref:
+        description: GHCR image ref to pull and health-check
+        required: true
+        type: string
 
 jobs:
   health:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
 
     services:
       mariadb:
@@ -41,13 +49,18 @@ jobs:
       - name: Apply database migrations
         run: npm ci  && npm i sequelize-cli && npx sequelize-cli db:migrate
 
-      - name: Download Docker image
-        uses: actions/download-artifact@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          name: docker-image
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Load Docker image
-        run: gunzip -c docker-image.tar.gz | docker load
+      - name: Pull CI image
+        run: |
+          set -euo pipefail
+          docker pull "${{ inputs.image-ref }}"
+          docker tag "${{ inputs.image-ref }}" recyclerie:ci
 
       - name: Container health check
         run: |

@@ -39,10 +39,10 @@ export default class Category extends Model<
 
   declare parent_id: ForeignKey<number | null>;
 
-  declare subcategories?: NonAttribute<Category[]>;//TODO if subcategory deleted  category still survive ?y
-  declare parent?: NonAttribute<Category>;//TODO if parent deleted  category still survive ?n
-  declare LabeledItems?: NonAttribute<LabeledItem[]>;//TODO if labeleditem deleted  category still survive ?y
-  declare Promotions?: NonAttribute<Promotion[]>;//TODO if promotion deleted  category still survive ?y
+  declare subcategories?: NonAttribute<Category[]>;
+  declare parent?: NonAttribute<Category>;
+  declare LabeledItems?: NonAttribute<LabeledItem[]>;
+  declare Promotions?: NonAttribute<Promotion[]>;
 
   declare getSubcategories: HasManyGetAssociationsMixin<Category>;
   declare addSubcategory: HasManyAddAssociationMixin<Category, Category["id"]>;

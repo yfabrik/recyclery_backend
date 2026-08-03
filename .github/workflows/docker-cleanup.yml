@@ -1,0 +1,86 @@
+name: Docker Finish
+
+on:
+  workflow_call:
+    inputs:
+      image-ref:
+        description: Ephemeral GHCR CI image ref to remove
+        required: true
+        type: string
+
+jobs:
+  finish:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Delete ephemeral CI image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          image_ref="${{ inputs.image-ref }}"
+          # Expect ghcr.io/owner/repo:ci-<run_id>
+          tag="${image_ref##*:}"
+          repo_path="${image_ref#ghcr.io/}"
+          repo_path="${repo_path%:*}"
+          owner="${repo_path%%/*}"
+          package_name="${repo_path#*/}"
+          package_name_encoded="${package_name//'/'/%2F}"
+
+          echo "Looking up GHCR package version for tag ${tag} (${owner}/${package_name})"
+
+          fetch_versions() {
+            local scope="$1"
+            curl -sS -o /tmp/ghcr-versions.json -w "%{http_code}" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/${scope}/${owner}/packages/container/${package_name_encoded}/versions?per_page=100"
+          }
+
+          scope="orgs"
+          status="$(fetch_versions "${scope}")"
+          if [ "${status}" = "404" ]; then
+            scope="users"
+            status="$(fetch_versions "${scope}")"
+          fi
+
+          if [ "${status}" != "200" ]; then
+            echo "Could not list package versions (HTTP ${status}); skipping cleanup"
+            cat /tmp/ghcr-versions.json || true
+            exit 0
+          fi
+
+          version_id="$(jq -r \
+            --arg tag "${tag}" \
+            '.[] | select(.metadata.container.tags | index($tag)) | .id' \
+            /tmp/ghcr-versions.json | head -n1)"
+
+          if [ -z "${version_id}" ] || [ "${version_id}" = "null" ]; then
+            echo "No package version found for tag ${tag}; nothing to delete"
+            exit 0
+          fi
+
+          other_tags="$(jq -r \
+            --arg tag "${tag}" \
+            --argjson id "${version_id}" \
+            '.[] | select(.id == $id) | .metadata.container.tags[] | select(. != $tag)' \
+            /tmp/ghcr-versions.json)"
+
+          if [ -n "${other_tags}" ]; then
+            # Same digest already has published tags; deleting the version would
+            # remove those too. Extra tags on one digest do not use extra storage.
+            echo "Version ${version_id} also has published tags; leaving it in place:"
+            echo "${other_tags}"
+            exit 0
+          fi
+
+          curl -fsS -X DELETE \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/${scope}/${owner}/packages/container/${package_name_encoded}/versions/${version_id}"
+
+          echo "Deleted package version ${version_id} (tag ${tag})"

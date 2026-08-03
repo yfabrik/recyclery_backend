@@ -22,6 +22,7 @@ import { toCollectionPointDto } from "../../mappers/collectionPoints.js";
 import type { ModelWhere } from "../../models/db-types.js";
 import db from "../../models/index.js";
 import logger from "../../services/logger.js";
+import type { Includeable } from "sequelize";
 
 const { CollectionPoint, TaskSchedule, Recyclery } = db;
 
@@ -29,17 +30,22 @@ export const listCollectionPoints = async (req: Request, res: Response) => {
   const filter = collectionPointFilterSchema.parse(req.query);
 
   const where: ModelWhere<typeof CollectionPoint> = {};
+  const include: Includeable[] = [{ model: Recyclery }];
   if (typeof filter.active_only == "boolean")
     where.is_active = filter.active_only;
+  if (filter.include.includes("horaires"))
+    include.push({ model: TaskSchedule, where: { category: "point" } });
 
   const collection_points = await CollectionPoint.findAll({
     where,
-    include: [{ model: Recyclery }, { model: TaskSchedule }],
+    include,
     order: [["name", "ASC"]],
   });
 
   res.json(
-    apiData(collection_points.map(toCollectionPointDto)) satisfies ListCollectionPointsResponse,
+    apiData(
+      collection_points.map(toCollectionPointDto),
+    ) satisfies ListCollectionPointsResponse,
   );
 };
 
@@ -56,7 +62,9 @@ export const detailCollectionPoint = async (req: Request, res: Response) => {
   );
 
   res.json(
-    apiData(toCollectionPointDto(point)) satisfies DetailCollectionPointResponse,
+    apiData(
+      toCollectionPointDto(point),
+    ) satisfies DetailCollectionPointResponse,
   );
 };
 
@@ -112,7 +120,9 @@ export const deleteCollectionPoint = async (req: Request, res: Response) => {
   await point.destroy();
 
   res.json(
-    apiMessage("Point de collecte supprimé avec succès") satisfies DeleteCollectionPointResponse,
+    apiMessage(
+      "Point de collecte supprimé avec succès",
+    ) satisfies DeleteCollectionPointResponse,
   );
 };
 
