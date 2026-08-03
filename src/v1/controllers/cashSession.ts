@@ -33,6 +33,7 @@ import {
   toOptionalCashSessionDto,
   toCashSessionStatsItemDto,
 } from "../../mappers/cashSession.js";
+import { sumCashInPayments } from "@recyclerie/api/domain/cart";
 
 const {
   CashSession,
@@ -203,30 +204,10 @@ export const closeCashSession = async (req: RequestWithUser, res: Response) => {
       },
     ],
   });
-
-  //TODO le calcul est similaire dans le front, faut verifier clean le calcul et merge dans utils
-  const totalSales = sales.reduce((prev, current) => {
-    if (current.payment_method == "cash")
-      return current.transactionType == "sell"
-        ? prev + current.total_amount
-        : prev - current.total_amount;
-    if (
-      !current.payments ||
-      current.payments.filter((payment) => payment.method == "cash").length == 0
-    )
-      return prev;
-
-    const cashPayment = current.payments.reduce(
-      (acc, pay) => (pay.method == "cash" ? acc : acc - pay.amount),
-      current.total_amount,
-    );
-    return current.transactionType == "sell"
-      ? prev + cashPayment
-      : prev - cashPayment;
-  }, 0);
+const totalCashSales= sumCashInPayments(sales)
 
   // const totalSales = parseFloat(String(sales[0]?.total_sales ?? 0));
-  const expected = session.opening_amount + totalSales;
+  const expected = session.opening_amount + totalCashSales;
   const difference = data.closing_amount - expected;
 
   await session.update({
