@@ -47,6 +47,9 @@ export const computeGiftCardStatus = (
   initialValue: number,
   movementSum: number,
 ): GiftCardStatus => {
+  if (giftCard.status === "cancelled") {
+    return "cancelled";
+  }
   if (giftCard.expires_at && giftCard.expires_at < new Date()) {
     return "expired";
   }
