@@ -41,6 +41,7 @@ import {
 import { type ModelWhere, type RequestWithUser } from "./types.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 const { GiftCard, GiftCardTransaction } = db;
+
 export const listGiftCards = async (req: Request, res: Response) => {
   const filter = giftCardListFilterSchema.parse(req.query);
   const pagination = parsePaginationQuery(req.query);
@@ -72,6 +73,7 @@ export const listGiftCards = async (req: Request, res: Response) => {
     ) satisfies ListGiftCardsResponse,
   );
 };
+
 export const createGiftCard = async (req: RequestWithUser, res: Response) => {
   const data = giftCardIssueSchema.parse(req.body);
   const card = await issueGiftCard({
@@ -92,12 +94,14 @@ export const createGiftCard = async (req: RequestWithUser, res: Response) => {
     }) satisfies CreateGiftCardResponse,
   );
 };
+
 export const getGiftCardByCode = async (req: Request, res: Response) => {
   const code = giftCardCodeParamSchema.parse(req.params.code);
   const card = await findGiftCardByCode(code);
   if (!card) throw new createHttpError.NotFound("gift card introuvable");
   res.json(apiData(toGiftCardDto(card)) satisfies DetailGiftCardResponse);
 };
+
 export const getGiftCardCurrentBalance = async (
   req: Request,
   res: Response,
@@ -116,6 +120,7 @@ export const getGiftCardCurrentBalance = async (
     ) satisfies GiftCardBalanceResponse,
   );
 };
+
 export const createGiftCardCharge = async (
   req: RequestWithUser,
   res: Response,
@@ -135,6 +140,7 @@ export const createGiftCardCharge = async (
     }) satisfies CreateGiftCardMovementResponse,
   );
 };
+
 export const createGiftCardRecredit = async (
   req: RequestWithUser,
   res: Response,
