@@ -55,21 +55,21 @@ const buildLabeledItemIncludes = (
   return [
     expandCategory
       ? {
-        model: Category,
-        as: "category",
-        include: [
-          {
-            model: Category,
-            as: "subcategories",
-            attributes: ["id", "name", "parent_id", "description", "icon"],
-          },
-        ],
-      }
+          model: Category,
+          as: "category",
+          include: [
+            {
+              model: Category,
+              as: "subcategories",
+              attributes: ["id", "name", "parent_id", "description", "icon"],
+            },
+          ],
+        }
       : {
-        model: Category,
-        as: "category",
-        attributes: ["id", "name"],
-      },
+          model: Category,
+          as: "category",
+          attributes: ["id", "name"],
+        },
     {
       model: Category,
       as: "subcategory",
@@ -91,13 +91,10 @@ export const listLabeledItem = async (req: Request, res: Response) => {
   const dateRange = formatWhereDateRange(date_from, date_to);
   const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
-      ...filter,
-      ...(dateRange && { createdAt: dateRange }),
-      [Op.or]: [
-        { description: likeQuery },
-        { id: likeQuery },
-      ],
-    }
+        ...filter,
+        ...(dateRange && { createdAt: dateRange }),
+        [Op.or]: [{ description: likeQuery }, { id: likeQuery }],
+      }
     : { ...filter, ...(dateRange && { createdAt: dateRange }) };
   const labeledItems = await LabeledItem.findAndCountAll({
     where,
@@ -115,10 +112,10 @@ export const listLabeledItem = async (req: Request, res: Response) => {
       labeledItems.rows.map(toLabeledItemDto),
       pagination.paginated
         ? buildPaginationMeta(
-          pagination.page,
-          pagination.perPage,
-          labeledItems.count,
-        )
+            pagination.page,
+            pagination.perPage,
+            labeledItems.count,
+          )
         : buildUnpaginatedMeta(labeledItems.count),
     ) satisfies ListLabeledItemsResponse,
   );
@@ -133,38 +130,59 @@ export const getItemFromBarcode = async (req: Request, res: Response) => {
   });
 
   if (!item) throw new createHttpError[404]("Article non trouvé");
-  res.json(
-    apiData(toLabeledItemDto(item)) satisfies DetailLabeledItemResponse,
-  );
+  res.json(apiData(toLabeledItemDto(item)) satisfies DetailLabeledItemResponse);
 };
 
 export const createLabeledItem = async (
   req: RequestWithUser,
   res: Response,
 ) => {
-  const data = labeledItemDataSchema.parse(req.body);
+  const {
+    quantity,
+    name: _name,
+    location: _location,
+    arrival_id: _arrivalId,
+    purchase_price: _purchasePrice,
+    selling_price: _sellingPrice,
+    ...attrs
+  } = labeledItemDataSchema.parse(req.body);
 
-  const category = await Category.findByPk(data.category_id);
-  const sub =
-    data.subcategory_id != null
-      ? await Category.findByPk(data.subcategory_id)
-      : data.subcategory_id;
-  if (!data.name) {
-    data.name = category ? category.name : "Article";
-    if (sub) data.name += `> ${sub.name}`;
-  }
-  const item = await LabeledItem.create({
-    ...data,
-    created_by: req.user.id,
-  });
+  // const category = await findByPkOrThrow(
+  //   Category,
+  //   attrs.category_id,
+  //   "categorie non trouvée",
+  //   { include: [{ model: Category, as: "subcategories" }] },
+  // );
+  // let sub: typeof category | undefined;
+  // if (category.subcategories && category.subcategories.length > 0) {
+  //   if(!attrs.subcategory_id)throw new createHttpError[400]("Sous-categorie manquante");
+  //   sub = category.subcategories.find(sub => sub.id === attrs.subcategory_id);
+  //   if(!sub) throw new createHttpError[400]("Sous-categorie non trouvée");
+  // }
+  // const name = `${category.name}${sub ? `> ${sub.name}` : ""}`;
+
+  const created = await LabeledItem.bulkCreate(
+    Array.from({ length: quantity }, () => ({
+      ...attrs,
+      created_by: req.user.id,
+    })),
+  );
+
   const include = parseItemInclude(req.query);
+  let items = created;
   if (include.length > 0) {
-    await item.reload({ include: buildLabeledItemIncludes(include) });
+    items = await LabeledItem.findAll({
+      where: { id: { [Op.in]: created.map((item) => item.id) } },
+      include: buildLabeledItemIncludes(include),
+    });
   }
 
   res.status(201).json(
-    apiCreated(toLabeledItemDto(item), {
-      message: "Article créé avec succès",
+    apiCreated(items.map(toLabeledItemDto), {
+      message:
+        quantity > 1
+          ? `${quantity} articles créés avec succès`
+          : "Article créé avec succès",
     }) satisfies CreateLabeledItemResponse,
   );
 };
@@ -172,7 +190,15 @@ export const createLabeledItem = async (
 export const updateItem = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
 
-  const data = labeledItemDataSchema.parse(req.body);
+  const {
+    quantity: _quantity,
+    name: _name,
+    location: _location,
+    arrival_id: _arrivalId,
+    purchase_price: _purchasePrice,
+    selling_price: _sellingPrice,
+    ...data
+  } = labeledItemDataSchema.parse(req.body);
 
   const item = await findByPkOrThrow(LabeledItem, id, "item non trouvé");
   await item.update({
@@ -198,7 +224,9 @@ export const deleteLabeledItem = async (req: Request, res: Response) => {
   await toDelete.destroy();
 
   res.json(
-    apiMessage("Article supprimé avec succès") satisfies DeleteLabeledItemResponse,
+    apiMessage(
+      "Article supprimé avec succès",
+    ) satisfies DeleteLabeledItemResponse,
   );
 };
 
@@ -212,24 +240,29 @@ export const tagItemAsSell = async (req: RequestWithUser, res: Response) => {
   });
 
   res.json(
-    apiMessage("Article marqué comme vendu") satisfies TagLabeledItemSoldResponse,
+    apiMessage(
+      "Article marqué comme vendu",
+    ) satisfies TagLabeledItemSoldResponse,
   );
 };
 
 export const itemsStats = async (req: Request, res: Response) => {
-  const { search, page: _page, include: _include, date_from, date_to, ...filter } =
-    labeledItemStatsFilterSchema.parse(req.query);
+  const {
+    search,
+    page: _page,
+    include: _include,
+    date_from,
+    date_to,
+    ...filter
+  } = labeledItemStatsFilterSchema.parse(req.query);
   const likeQuery = search ? { [Op.like]: `%${search}%` } : null;
   const dateRange = formatWhereDateRange(date_from, date_to);
   const where: ModelWhere<typeof LabeledItem> = likeQuery
     ? {
-      ...filter,
-      ...(dateRange && { createdAt: dateRange }),
-      [Op.or]: [
-        { description: likeQuery },
-        { id: likeQuery },
-      ],
-    }
+        ...filter,
+        ...(dateRange && { createdAt: dateRange }),
+        [Op.or]: [{ description: likeQuery }, { id: likeQuery }],
+      }
     : { ...filter, ...(dateRange && { createdAt: dateRange }) };
 
   const stats = await LabeledItem.findAll({
@@ -253,6 +286,10 @@ export const itemsStats = async (req: Request, res: Response) => {
   });
   //FIXME failing here
   res.json(
-    apiData(toLabeledItemStatsDto(stats[0]?.get({ plain: true }) as LabeledItemStatsRow | undefined)) satisfies LabeledItemStatsResponse,
+    apiData(
+      toLabeledItemStatsDto(
+        stats[0]?.get({ plain: true }) as LabeledItemStatsRow | undefined,
+      ),
+    ) satisfies LabeledItemStatsResponse,
   );
 };

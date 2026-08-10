@@ -63,15 +63,47 @@ describe("item controller functions", () => {
       expect.objectContaining({
         success: true,
         message: "Article créé avec succès",
-        data: expect.objectContaining({
-        id: expect.any(Number),
-        description:
-          "Ordinateur portable Dell Latitude E5420, Intel Core i5, 8GB RAM, 500GB HDD, écran 14 pouces",
-        category_id: 1,
-        weight: 2.5,
-        }),
+        data: [
+          expect.objectContaining({
+            id: expect.any(Number),
+            description:
+              "Ordinateur portable Dell Latitude E5420, Intel Core i5, 8GB RAM, 500GB HDD, écran 14 pouces",
+            category_id: 1,
+            weight: 2.5,
+          }),
+        ],
       }),
     );
+  });
+
+  it("should create multiple labeled items when quantity is set", async () => {
+    const body = {
+      description: "Bulk labeled items",
+      category_id: 1,
+      subcategory_id: 2,
+      weight: 1,
+      price: 10,
+      recyclery_id: 1,
+      quantity: 3,
+    };
+    const req = {
+      query: {},
+      user: { id: 1, role: "admin" },
+      body,
+    };
+    const res = {
+      json: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+    };
+
+    await createLabeledItem(req, res);
+
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.success).toBe(true);
+    expect(payload.message).toBe("3 articles créés avec succès");
+    expect(payload.data).toHaveLength(3);
+    const ids = payload.data.map((item) => item.id);
+    expect(new Set(ids).size).toBe(3);
   });
 
   it("should include category subcategories when requested", async () => {
@@ -96,7 +128,8 @@ describe("item controller functions", () => {
     await createLabeledItem(req, res);
 
     const payload = res.json.mock.calls[0][0];
-    expect(payload.data.category.subcategories).toEqual(
+    expect(payload.data).toHaveLength(1);
+    expect(payload.data[0].category.subcategories).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 2, name: "Ordinateurs" }),
       ]),
