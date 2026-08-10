@@ -358,6 +358,17 @@ export default class SalesTransaction extends Model<
                     cascadeFromSale: true,
                   } as DestroyOptions & { cascadeFromSale?: boolean });
                 }
+                // SQLite FKs often lack ON DELETE CASCADE; destroy dependents
+                // explicitly. individualHooks restores gift-card balances on charge/recredit.
+                await GiftCardTransactionModel.destroy({
+                  where: { sales_transaction_id: sale.id },
+                  transaction: t,
+                  individualHooks: true,
+                });
+                await TransactionPaymentModel.destroy({
+                  where: { sales_transaction_id: sale.id },
+                  transaction: t,
+                });
               },
             );
           },

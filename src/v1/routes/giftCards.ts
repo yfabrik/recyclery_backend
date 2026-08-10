@@ -6,6 +6,7 @@ import {
   createGiftCardRecredit,
   getGiftCardByCode,
   getGiftCardCurrentBalance,
+  invalidateGiftCard,
   listGiftCards,
 } from "../controllers/giftCards.js";
 
@@ -28,3 +29,5 @@ router.post("/:id/charge", asyncHandler(createGiftCardCharge));
 
 // POST - Register a gift card recredit movement
 router.post("/:id/recredit", asyncHandler(createGiftCardRecredit));
+
+router.delete("/:id", asyncHandler(invalidateGiftCard));

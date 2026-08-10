@@ -16,29 +16,23 @@ export const getGiftCardBalanceInTx = async (
     GiftCard,
     giftCardId,
     "gift card not found",
-    queryOptions,
+    {
+      ...queryOptions,
+      // Needed for current_value virtual (initial_value + non-issue movements).
+      // Do not reload afterward — reload drops associations.
+      include: [{ association: "movements", required: false }],
+    },
   );
 
-  const giftCardTransactionModel = giftCard.sequelize.models.GiftCardTransaction;
-  if (!giftCardTransactionModel) {
-    throw new Error("GiftCardTransaction model not found");
-  }
-
-  const movementSum =
-    (await giftCardTransactionModel.sum("amount", {
-      where: { gift_card_id: giftCardId },
-      ...queryOptions,
-    })) || 0;
-
   const initialValue = toAmount(giftCard.initial_value);
-  const normalizedMovementSum = toAmount(movementSum);
+  const currentBalance = toAmount(giftCard.current_value);
 
   return {
     giftCard,
     initialValue,
-    movementSum: normalizedMovementSum,
-    // Ledger is source of truth: issue movement seeds initial value.
-    currentBalance: normalizedMovementSum,
+    // Status rules compare ledger total to initial_value.
+    movementSum: currentBalance,
+    currentBalance,
   };
 };
 
@@ -47,6 +41,9 @@ export const computeGiftCardStatus = (
   initialValue: number,
   movementSum: number,
 ): GiftCardStatus => {
+  if (giftCard.status === "cancelled") {
+    return "cancelled";
+  }
   if (giftCard.expires_at && giftCard.expires_at < new Date()) {
     return "expired";
   }

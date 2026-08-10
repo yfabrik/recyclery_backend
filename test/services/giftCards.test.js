@@ -186,4 +186,38 @@ describe("giftCards service", () => {
       }),
     ).rejects.toThrow("gift card is expired");
   });
+
+  it("rejects charge and recredit on cancelled card", async () => {
+    const user = await createUser();
+    const issueTx = await createSaleTransaction({ userId: user.id });
+    const usageTx = await createSaleTransaction({ userId: user.id });
+    const refundTx = await createSaleTransaction({ userId: user.id });
+
+    const card = await issueGiftCard({
+      code: `GC-CANCELLED-${Date.now()}`,
+      initialValue: 20,
+      issuedTransactionId: issueTx.id,
+      createdBy: user.id,
+    });
+
+    await card.update({ status: "cancelled" });
+
+    await expect(
+      chargeGiftCard({
+        giftCardId: card.id,
+        salesTransactionId: usageTx.id,
+        amount: 1,
+        createdBy: user.id,
+      }),
+    ).rejects.toThrow("gift card is cancelled");
+
+    await expect(
+      recreditGiftCard({
+        giftCardId: card.id,
+        salesTransactionId: refundTx.id,
+        amount: 1,
+        createdBy: user.id,
+      }),
+    ).rejects.toThrow("gift card is cancelled");
+  });
 });

@@ -11,7 +11,13 @@ import { withTransaction } from "../utils/transaction.js";
 import { getGiftCardBalanceInTx, toAmount } from "./giftCardLedger.js";
 import { findByPkOrThrow } from "./sequelize.js";
 
-const { GiftCard, GiftCardTransaction, CashSession, SalesTransaction, sequelize } = db;
+const {
+  GiftCard,
+  GiftCardTransaction,
+  CashSession,
+  SalesTransaction,
+  sequelize,
+} = db;
 
 const assertGiftCardUsable = (giftCard: Models["GiftCard"]) => {
   if (giftCard.status === "cancelled") {
@@ -24,6 +30,8 @@ const assertGiftCardUsable = (giftCard: Models["GiftCard"]) => {
     throw new createHttpError.BadRequest("gift card is expired");
   }
 };
+
+//TODO shopuld comefrom api package ?
 type GiftCreate = {
   code?: string;
   initialValue: number;
@@ -50,67 +58,85 @@ export const issueGiftCard = async ({
   metadata = null,
   transaction: externalTransaction = null,
 }: GiftCreate & { transaction?: Transaction | null }) => {
-
   const amount = toAmount(initialValue);
   if (!Number.isFinite(amount) || amount < 0) {
     throw new createHttpError.BadRequest(
       "initial gift card value must be >= 0",
     );
   }
-  
-  
-  return withTransaction(sequelize, externalTransaction, async (transaction) => {
-    let linkedTransactionId = issuedTransactionId || issuedRefundTransactionId;
-    if (!linkedTransactionId) {
-      //TODO a refaire
-      const openedSession = await CashSession.findOne({
-        where: {
-          status: "open",
-          user_id: createdBy,
+
+  //TODO FIXME si pas de linkedtransaction au depart y'a une transaction créé mais pas linké a la giftcard directement mais a travers giftcardtransaction,
+  //devrait avoir l"id dans issuedtransaction_id
+  return withTransaction(
+    sequelize,
+    externalTransaction,
+    async (transaction) => {
+      // if (!linkedTransactionId) {
+      //   //TODO a refaire
+      //   const openedSession = await CashSession.findOne({
+      //     where: {
+      //       status: "open",
+      //       user_id: createdBy,
+      //     },
+      //   });
+      //   if (!openedSession) throw new createHttpError.BadRequest(
+      //     "gift card issuance requires a linked session",
+      //   );
+      //   linkedTransactionId = (await SalesTransaction.create({
+      //     cash_session_id: openedSession.id,
+      //     payment_method: "cash",//TODO let user choose
+      //     created_by: createdBy,
+      //     total_amount_before_promotion: amount,
+      //     total_amount: amount,
+      //     payment_amount: amount,
+      //     transactionType: "sell",
+      //   }, { transaction })).id;
+      // }
+      const giftCard = await GiftCard.create(
+        {
+          ...(code != null ? { code } : {}), //TODO osef du code en fait, faudra update les test aussi
+          initial_value: amount,
+          expires_at: expiresAt != null ? new Date(expiresAt) : null,
+          issued_transaction_id: issuedTransactionId, //TODO est ce qu'elles ont un interet, vu qu'on les retrouve avec la linked table et que y'a potentielment aucune transaction set
+          issued_refund_transaction_id: issuedRefundTransactionId,
+          created_by: createdBy,
+          note,
+          recipient_name: recipientName,
+          recipient_email: recipientEmail,
         },
-      });
-      if (!openedSession) throw new createHttpError.BadRequest(
-        "gift card issuance requires a linked sales transaction id",
+        { transaction },
       );
-      linkedTransactionId = (await SalesTransaction.create({
-        cash_session_id: openedSession.id,
-        payment_method: "cash",
-        created_by: createdBy,
-        total_amount_before_promotion: amount,
-        total_amount: amount,
-        payment_amount: amount,
-        transactionType: "sell",
-      }, { transaction })).id;
-    }
-    const giftCard = await GiftCard.create(
-      {
-        ...(code != null ? { code } : {}),
-        initial_value: amount,
-        expires_at: expiresAt != null ? new Date(expiresAt) : null,
-        issued_transaction_id: issuedTransactionId,
-        issued_refund_transaction_id: issuedRefundTransactionId,
-        created_by: createdBy,
-        note,
-        recipient_name: recipientName,
-        recipient_email: recipientEmail,
-      },
-      { transaction },
-    );
 
-    await GiftCardTransaction.create(
-      {
-        gift_card_id: giftCard.id,
-        sales_transaction_id: linkedTransactionId,
-        type: "issue",
-        amount,
-        created_by: createdBy,
-        metadata,
-      },
-      { transaction },
-    );
+      //vente ou refund
+      const linkedTransactionId =
+        issuedTransactionId || issuedRefundTransactionId;
+      if (linkedTransactionId) {
+        const openedSession = await CashSession.findOne({
+          where: {
+            status: "open",
+            user_id: createdBy,
+          },
+        });
+        if (!openedSession)
+          throw new createHttpError.BadRequest(
+            "gift card issuance requires a linked session",
+          );
+        await GiftCardTransaction.create(
+          {
+            gift_card_id: giftCard.id,
+            sales_transaction_id: linkedTransactionId,
+            type: "issue",
+            amount,
+            created_by: createdBy,//TODO needed? y'a deja dans la giftcard et transaction ? meme si ça marche pas on peut remonter a  la cashsession
+            metadata,
+          },
+          { transaction },
+        );
+      }
 
-    return giftCard;
-  });
+      return giftCard;
+    },
+  );
 };
 
 /**
@@ -175,29 +201,32 @@ export const chargeGiftCard = async ({
     throw new createHttpError.BadRequest("charge amount must be > 0");
   }
 
-  return withTransaction(sequelize, externalTransaction, async (transaction) => {
-    const { giftCard, currentBalance } = await getGiftCardBalanceInTx(
-      giftCardId,
-      transaction,
-    );
-    assertGiftCardUsable(giftCard);
+  return withTransaction(
+    sequelize,
+    externalTransaction,
+    async (transaction) => {
+      const { giftCard, currentBalance } = await getGiftCardBalanceInTx(
+        giftCardId,
+        transaction,
+      );
+      assertGiftCardUsable(giftCard);
+      if (currentBalance < debit) {
+        throw new createHttpError.BadRequest("insufficient gift card balance");
+      }
 
-    if (currentBalance < debit) {
-      throw new createHttpError.BadRequest("insufficient gift card balance");
-    }
-
-    return GiftCardTransaction.create(
-      {
-        gift_card_id: giftCardId,
-        sales_transaction_id: salesTransactionId,
-        type: "charge",
-        amount: -debit,
-        created_by: createdBy,
-        metadata,
-      },
-      { transaction },
-    );
-  });
+      return GiftCardTransaction.create(
+        {
+          gift_card_id: giftCardId,
+          sales_transaction_id: salesTransactionId,
+          type: "charge",
+          amount: -debit,
+          created_by: createdBy,
+          metadata,
+        },
+        { transaction },
+      );
+    },
+  );
 };
 
 /**
@@ -216,27 +245,31 @@ export const recreditGiftCard = async ({
     throw new createHttpError.BadRequest("recredit amount must be > 0");
   }
 
-  return withTransaction(sequelize, externalTransaction, async (transaction) => {
-    const giftCard = await findByPkOrThrow(
-      GiftCard,
-      giftCardId,
-      "gift card not found",
-      { transaction },
-    );
-    assertGiftCardUsable(giftCard);
+  return withTransaction(
+    sequelize,
+    externalTransaction,
+    async (transaction) => {
+      const giftCard = await findByPkOrThrow(
+        GiftCard,
+        giftCardId,
+        "gift card not found",
+        { transaction },
+      );
+      assertGiftCardUsable(giftCard);
 
-    return GiftCardTransaction.create(
-      {
-        gift_card_id: giftCardId,
-        sales_transaction_id: salesTransactionId,
-        type: "refund_recredit",
-        amount: credit,
-        created_by: createdBy,
-        metadata,
-      },
-      { transaction },
-    );
-  });
+      return GiftCardTransaction.create(
+        {
+          gift_card_id: giftCardId,
+          sales_transaction_id: salesTransactionId,
+          type: "refund_recredit",
+          amount: credit,
+          created_by: createdBy,
+          metadata,
+        },
+        { transaction },
+      );
+    },
+  );
 };
 
 export const findGiftCardByCode = async (

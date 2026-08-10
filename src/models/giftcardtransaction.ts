@@ -14,12 +14,17 @@ import {
   GIFT_CARD_TRANSACTION_TYPES,
   type GiftCardTransactionType,
 } from "../constants/dbEnums.js";
-import { syncGiftCardStatus } from "../services/giftCardLedger.js";
+import {
+  getGiftCardBalanceInTx,
+  syncGiftCardStatus,
+  toAmount,
+} from "../services/giftCardLedger.js";
 import { withTransaction } from "../utils/transaction.js";
 import type { ModelStatics } from "./db-types.ts";
 import GiftCard from "./giftcard.js";
 import type SalesTransaction from "./salestransaction.ts";
 import type User from "./user.ts";
+import createHttpError from "http-errors";
 
 export default class GiftCardTransaction extends Model<
   InferAttributes<GiftCardTransaction>,
@@ -113,6 +118,28 @@ export default class GiftCardTransaction extends Model<
               instance.sequelize!,
               options.transaction,
               (tx) => syncGiftCardStatus(instance.gift_card_id, tx),
+            );
+          },
+          beforeDestroy: async (instance, options) => {
+            if (instance.type === "issue") {
+              throw new createHttpError.BadRequest(
+                "cannot delete issue transaction, delete the gift card instead",
+              );
+            }
+            await withTransaction(
+              instance.sequelize!,
+              options.transaction,
+              async (tx) => {
+                const { currentBalance } = await getGiftCardBalanceInTx(
+                  instance.gift_card_id,
+                  tx,
+                );
+                if (currentBalance - toAmount(instance.amount) < 0) {
+                  throw new createHttpError[424](
+                    "Impossible de supprimer: le solde de la carte cadeau deviendrait négatif",
+                  );
+                }
+              },
             );
           },
           afterDestroy: async (instance, options) => {

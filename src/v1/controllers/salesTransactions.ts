@@ -482,8 +482,6 @@ export const createTransaction = async (
     for await (const payment of payments.filter(
       (p) => p.method === "giftcard",
     )) {
-      // zod schema validated giftcardcode exist
-      //TODO maybe we can change type so it infer giftcard not null when method giftcard
       const giftCardCode = payment.gift_card_code;
       // if (!giftCardCode) {
       //   throw new createHttpError.BadRequest(
@@ -512,7 +510,7 @@ export const createTransaction = async (
           method: "giftcard",
           amount: payment.amount,
           gift_card_id: giftCard.id,
-          metadata: { gift_card_code: giftCardCode }, //TODO source sale payment + user in meta ?
+          metadata: { gift_card_code: giftCardCode }, //TODO source sale payment + user in meta ?BAD
         },
         { transaction: t },
       );
@@ -1253,7 +1251,6 @@ export const updateTransaction = async (
     for (const e of edit2) {
       //create giftcard payment
       if (e.method == "giftcard") {
-        //TODO deja check in zod refine mais comme c'est mal typé la suite raise error
         const giftCardCode = e.gift_card_code;
         // if (!giftCardCode) {
         //   throw new createHttpError.BadRequest(

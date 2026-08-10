@@ -2,7 +2,9 @@ import type { Request, Response } from "express";
 import { Op } from "sequelize";
 import type {
   DashboardActivitiesResponse,
+  DashboardActivityDto,
   DashboardChartsResponse,
+  DashboardStatsDto,
   DashboardStatsResponse,
   DashboardStoreHistoryResponse,
   DashboardStoreStatsResponse,
@@ -56,20 +58,6 @@ function formatDate(dateString: string | Date) {
   });
 }
 
-type stats = {
-  totalItems: number;
-  availableItems: number;
-  soldThisMonth: number;
-  totalRevenue: number;
-  pendingDonations: number;
-  scheduledCollections: number;
-  categoriesCount: number;
-  usersCount: number;
-  lastMonthRevenue: number;
-  lastMonthSales: number;
-  thisMonthRevenue: number;
-  thisMonthSales: number;
-};
 
 const profit = (transactions: Models["SalesTransaction"][]) => {
   return transactions.reduce((prev, current) => {
@@ -83,7 +71,7 @@ const profit = (transactions: Models["SalesTransaction"][]) => {
 
 export const dashboardStats = async (_req: Request, res: Response) => {
   // Statistiques principales
-  const stats = {} as stats;
+  const stats = {} as DashboardStatsDto;
 
   // 1. Nombre total d'articles
   stats.totalItems = await LabeledItem.count();
@@ -99,10 +87,13 @@ export const dashboardStats = async (_req: Request, res: Response) => {
   const lastMonthFirstDay = lastMonthToday.startOf("month");
   // 3. Articles vendus ce mois - vérifier d'abord les transactions
   const currentMonth = today.format("YYYY-MM");
+
+  
   const month_transactions = await SalesTransaction.findAll({
     where: { createdAt: { [Op.gt]: currentMonth } },
     include: [{ model: LabeledItem, as: "items" }],
   });
+
 
   stats.soldThisMonth = month_transactions.reduce((prev, current) => {
     return (
@@ -162,19 +153,9 @@ export const dashboardStats = async (_req: Request, res: Response) => {
   res.json(apiData(stats) satisfies DashboardStatsResponse);
 };
 
-type activity = {
-  id: string;
-  type: string;
-  description: string;
-  amount: string;
-  time: string;
-  icon: string;
-  color: string;
-  status: string;
-  statusColor: string;
-};
+
 export const dashboardActivities = async (_req: Request, res: Response) => {
-  const activities = [] as activity[];
+  const activities = [] as DashboardActivityDto[];
 
   // 1. Ventes récentes
   const recentSales = await LabeledItem.findAll({
@@ -339,6 +320,15 @@ const getMonthTransactions = async (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs
     sessions: sessions,
     start: startDate.toDate(),
     end: endDate.toDate(),
+    itemsSold:month_transactions.reduce((prev, current) => {
+      return (
+        prev +
+        (current.items?.reduce(
+          (p, v) => p + (v.TransactionItem?.quantity ?? 0),
+          0,
+        ) ?? 0)
+      );
+    }, 0),
   }
 
 }
@@ -352,88 +342,11 @@ const statsMonth = async (
   const todayLastMonth = today.subtract(1, "month");
   const firstDayOfLastMonth = todayLastMonth.startOf("month");
 
-  const caissesId = store.caisses?.map((caisse) => caisse.id);
-  const currentMonthTransactions = await getMonthTransactions(firstDayOfMonth, today, store);
+   const currentMonthTransactions = await getMonthTransactions(firstDayOfMonth, today, store);
   const lastMonthTransactions = await getMonthTransactions(firstDayOfLastMonth, todayLastMonth, store);
 
-  const month_transactions = await SalesTransaction.findAll({
-    where: {
-      createdAt: {
-        [Op.between]: [
-          firstDayOfMonth.format("YYYY-MM-DD"),
-          today.format("YYYY-MM-DD"),
-        ],
-      },
-    },
-    include: [
-      {
-        model: CashSession,
-        where: {
-          cash_register_id: { [Op.in]: caissesId },
-        },
-        required: true,
-      },
-      {
-        model: LabeledItem,
-        as: "items",
-      },
-    ],
-  });
+  const revenueGrowth= lastMonthTransactions.revenue>0 ?((currentMonthTransactions.revenue - lastMonthTransactions.revenue) / lastMonthTransactions.revenue) * 100 : 0;
 
-  const currentMonthSales = month_transactions.length;
-
-  const currentRevenue = profit(month_transactions);
-
-  // Utiliser les transactions de vente
-  const lastMonthRevenueResult = await SalesTransaction.findAll({
-    where: {
-      createdAt: {
-        [Op.between]: [
-          firstDayOfLastMonth.format("YYYY-MM-DD"),
-          todayLastMonth.format("YYYY-MM-DD"),
-        ],
-      },
-    },
-    include: [
-      {
-        model: CashSession,
-        where: {
-          cash_register_id: { [Op.in]: caissesId },
-        },
-        required: true,
-      },
-      {
-        model: LabeledItem,
-        as: "items",
-      },
-    ],
-  });
-  const lastMonthRevenue = profit(lastMonthRevenueResult);
-
-  const sessions = await CashSession.count({
-    where: {
-      createdAt: {
-        [Op.between]: [
-          firstDayOfMonth.format("YYYY-MM-DD"),
-          today.format("YYYY-MM-DD"),
-        ],
-      },
-    },
-    include: [
-      {
-        model: CashRegister,
-        where: { recyclery_id: store.id },
-        required: true,
-      },
-    ],
-  });
-
-  // Calculer l'évolution par rapport au mois dernier
-  // const revenueGrowth =
-  //   lastMonthRevenue > 0
-  //     ? ((currentRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
-  //     : 0;
-  const revenueGrowth = lastMonthRevenue > 0 ? ((currentMonthTransactions.revenue - lastMonthTransactions.revenue) / lastMonthTransactions.revenue) * 100 : 0;
   return {
     currentMonth: {
       ...currentMonthTransactions
@@ -443,15 +356,7 @@ const statsMonth = async (
     },
     items: {
       available: 0, // Temporairement fixé à 0
-      sold: month_transactions.reduce((prev, current) => {
-        return (
-          prev +
-          (current.items?.reduce(
-            (p, v) => p + (v.TransactionItem?.quantity ?? 0),
-            0,
-          ) ?? 0)
-        );
-      }, 0),
+      sold: currentMonthTransactions.itemsSold,
     },
     growth: {
       revenue: revenueGrowth,

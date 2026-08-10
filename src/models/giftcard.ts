@@ -163,9 +163,11 @@ export default class GiftCard extends Model<
         current_value: {
           type: DataTypes.VIRTUAL,
           get(this: GiftCard) {
+            //TODO should send null or undefined if no movements ?
             const fromMovements = this.movements?.reduce(
-              (prev, current) => prev + Number(current.amount),
-              0,
+              (prev, current) =>
+                current.type === "issue" ? prev : prev + Number(current.amount),
+              this.initial_value ?? 0,
             );
             return fromMovements ?? Number(this.initial_value ?? 0);
           },
@@ -198,6 +200,7 @@ export default class GiftCard extends Model<
         validate: {
           singleIssuanceOrigin() {
             if (
+              //TODO les 2 field sont pas reelment needed, on peut savoir la source depuis la join table giftcardtransaction type=issue
               this.issued_transaction_id != null &&
               this.issued_refund_transaction_id != null
             ) {
