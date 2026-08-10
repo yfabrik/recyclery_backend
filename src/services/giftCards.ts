@@ -94,7 +94,7 @@ export const issueGiftCard = async ({
       // }
       const giftCard = await GiftCard.create(
         {
-          // ...(code != null ? { code } : {}), //TODO osef du code en fait
+          ...(code != null ? { code } : {}), //TODO osef du code en fait, faudra update les test aussi
           initial_value: amount,
           expires_at: expiresAt != null ? new Date(expiresAt) : null,
           issued_transaction_id: issuedTransactionId, //TODO est ce qu'elles ont un interet, vu qu'on les retrouve avec la linked table et que y'a potentielment aucune transaction set
@@ -210,7 +210,6 @@ export const chargeGiftCard = async ({
         transaction,
       );
       assertGiftCardUsable(giftCard);
-
       if (currentBalance < debit) {
         throw new createHttpError.BadRequest("insufficient gift card balance");
       }
