@@ -40,7 +40,8 @@ import {
 } from "../../mappers/giftCards.js";
 import { type ModelWhere, type RequestWithUser } from "./types.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
-const { GiftCard, GiftCardTransaction } = db;
+import type { Models } from "../../models/db-types.js";
+const { GiftCard, GiftCardTransaction, CashSession, SalesTransaction } = db;
 
 export const listGiftCards = async (req: Request, res: Response) => {
   const filter = giftCardListFilterSchema.parse(req.query);
@@ -126,7 +127,8 @@ export const createGiftCardCharge = async (
   res: Response,
 ) => {
   const id = idSchema().parse(req.params.id);
-  const data = giftCardMovementSchema.parse(req.body);
+  const data = giftCardMovementSchema.parse(req.body);//TODO changegiftcardmovementschema to include sales_transaction_id ? conflict avec creditgiftcard
+  if(!data.sales_transaction_id)throw new createHttpError.BadRequest("sales transaction id is required");
   const movement = await chargeGiftCard({
     giftCardId: id,
     salesTransactionId: data.sales_transaction_id,
@@ -147,9 +149,41 @@ export const createGiftCardRecredit = async (
 ) => {
   const id = idSchema().parse(req.params.id);
   const data = giftCardMovementSchema.parse(req.body);
+  let linkedTransaction: Models["SalesTransaction"];
+  if (!data.sales_transaction_id) {
+    const PAYMENT_METHOD = "cash"; //TODO let user choose
+    const TRANSACTION_TYPE = "sell";
+    const openedSession = await CashSession.findOne({
+      where: {
+        status: "open",
+        user_id: req.user.id,
+      },
+    });
+    if (!openedSession)
+      throw new createHttpError.BadRequest("session ouverte requise");
+    linkedTransaction = await SalesTransaction.create({
+      cash_session_id: openedSession.id,
+      payment_method: PAYMENT_METHOD,
+      created_by: req.user.id,
+      total_amount_before_promotion: data.amount,
+      total_amount: data.amount,
+      payment_amount: data.amount,
+      transactionType: TRANSACTION_TYPE,
+    });
+    await linkedTransaction.createPayment({
+      amount: data.amount,
+      method: PAYMENT_METHOD,
+    });
+  } else {
+    linkedTransaction = await findByPkOrThrow(
+      SalesTransaction,
+      data.sales_transaction_id,
+      "transaction introuvable",
+    );
+  }
   const movement = await recreditGiftCard({
     giftCardId: id,
-    salesTransactionId: data.sales_transaction_id,
+    salesTransactionId: linkedTransaction.id,
     amount: data.amount,
     createdBy: req.user.id,
     metadata: data.metadata || null,
