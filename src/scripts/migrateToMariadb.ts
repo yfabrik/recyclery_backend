@@ -1,14 +1,14 @@
 import "dotenv/config";
-import { readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { QueryTypes, Sequelize } from "sequelize";
+import { QueryTypes, Sequelize, type Options } from "sequelize";
+import {
+  COPY_ORDER,
+  countFutureMigrations,
+  normalizeRowValue,
+} from "./migrateToMariadb.helpers.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const configPath = path.resolve(__dirname, "../../config/config.json");
-const config = JSON.parse(readFileSync(configPath, "utf8")) as {
-  development: Record<string, unknown>;
-};
 
 const SQLITE_PATH =
   process.env.SQLITE_SOURCE_PATH ??
@@ -20,40 +20,6 @@ const SKIP_TABLES = new Set([
   "sqlite_sequence",
   "transaction_global_promotions",
 ]);
-
-const COPY_ORDER = [
-  "Users",
-  "Recycleries",
-  "Employees",
-  "Skills",
-  "Categories",
-  "TaskTemplates",
-  "EcoOrganisms",
-  "Promotions",
-  "CashRegisters",
-  "CollectionPoints",
-  "Donations",
-  "WasteDisposals",
-  "EmployeeWorkdays",
-  "employee_store",
-  "employee_skill",
-  "promotion_store",
-  "ecoOrg_categoryIn",
-  "ecoOrg_categorySell",
-  "LabeledItems",
-  "CashSessions",
-  "TaskSchedules",
-  "Tasks",
-  "employee_task",
-  "employee_schedule",
-  "SalesTransactions",
-  "transaction_items",
-  "GiftCards",
-  "giftcard_transactions",
-  "transaction_payments",
-  "TransactionGlobalPromotions",
-  "Arrivals",
-] as const;
 
 const JOIN_TABLE_KEYS: Record<string, [string, string]> = {
   employee_store: ["employeeId", "recycleryId"],
@@ -110,77 +76,6 @@ const FK_ORPHAN_CHECKS: Array<{
 function fail(message: string): never {
   console.error(`\n[FAIL] ${message}`);
   process.exit(1);
-}
-
-const TIME_COLUMNS = new Set(["arrival_time"]);
-
-function toMariaDbTime(value: unknown): unknown {
-  if (value == null) return value;
-  if (typeof value === "number" || (typeof value === "string" && /^\d+$/.test(value))) {
-    const d = new Date(Number(value));
-    if (!Number.isNaN(d.getTime())) {
-      return d.toISOString().slice(11, 19);
-    }
-  }
-  if (typeof value === "string") {
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toISOString().slice(11, 19);
-    }
-  }
-  if (value instanceof Date) {
-    return value.toISOString().slice(11, 19);
-  }
-  return value;
-}
-
-function toMariaDbDateTime(value: unknown): unknown {
-  if (value == null) return value;
-  if (value instanceof Date) {
-    return value.toISOString().slice(0, 23).replace("T", " ");
-  }
-  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value.trim())) {
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toISOString().slice(0, 23).replace("T", " ");
-    }
-  }
-  return value;
-}
-
-function normalizeValue(value: unknown): unknown {
-  if (value instanceof Buffer) return value.toString("utf8");
-  if (typeof value === "object" && value !== null && !(value instanceof Date)) {
-    return JSON.stringify(value);
-  }
-  return toMariaDbDateTime(value);
-}
-
-function normalizeRowValue(
-  row: Record<string, unknown>,
-  sourceCol: string,
-  targetCol?: string,
-): unknown {
-  const col = targetCol ?? sourceCol;
-  let value = row[sourceCol];
-  if (
-    value == null &&
-    (col.endsWith("_at") || col.endsWith("At")) &&
-    row.createdAt != null
-  ) {
-    value = row.createdAt;
-  }
-  if (TIME_COLUMNS.has(col)) {
-    let time = toMariaDbTime(value);
-    if (
-      typeof time !== "string" ||
-      !/^\d{2}:\d{2}:\d{2}$/.test(time)
-    ) {
-      time = toMariaDbTime(row.arrival_date);
-    }
-    return time;
-  }
-  return normalizeValue(value);
 }
 
 function quoteId(name: string, dialect: "sqlite" | "mariadb") {
@@ -666,6 +561,65 @@ async function verifyIntegrity(source: Sequelize, target: Sequelize) {
   console.log("\nAll integrity checks passed.");
 }
 
+function parsePositiveInt(raw: string | undefined, fallback: number): number {
+  if (raw === undefined || raw === "") return fallback;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
+}
+
+function createMariaDbTarget(): Sequelize {
+  const dbUrl = process.env.DB_URL;
+  const logging = false;
+  if (dbUrl !== undefined && dbUrl !== "") {
+    const options = {
+      dialect: "mariadb",
+      logging,
+    } as const satisfies Options;
+    return new Sequelize(dbUrl, options);
+  }
+
+  const database = process.env.DB_NAME;
+  const username = process.env.DB_USER;
+  if (database === undefined || database === "" || username === undefined || username === "") {
+    fail("Set DB_URL, or DB_NAME and DB_USER, for the MariaDB target");
+  }
+
+  const options = {
+    host: process.env.DB_HOST ?? "127.0.0.1",
+    port: parsePositiveInt(process.env.DB_PORT, 3306),
+    dialect: "mariadb",
+    logging,
+  } as const satisfies Options;
+
+  return new Sequelize(
+    database,
+    username,
+    process.env.DB_PASSWORD ?? "",
+    options,
+  );
+}
+
+function describeMariaDbTarget(): string {
+  const dbUrl = process.env.DB_URL;
+  if (dbUrl !== undefined && dbUrl !== "") {
+    try {
+      const parsed = new URL(dbUrl);
+      const user = parsed.username || "(user)";
+      const host = parsed.hostname;
+      const port = parsed.port || "3306";
+      const db = parsed.pathname.replace(/^\//, "");
+      return `mariadb://${user}@${host}:${port}/${db}`;
+    } catch {
+      return "mariadb (DB_URL)";
+    }
+  }
+  const user = process.env.DB_USER ?? "(user)";
+  const host = process.env.DB_HOST ?? "127.0.0.1";
+  const port = process.env.DB_PORT ?? "3306";
+  const db = process.env.DB_NAME ?? "";
+  return `mariadb://${user}@${host}:${port}/${db}`;
+}
+
 async function main() {
   const source = new Sequelize({
     dialect: "sqlite",
@@ -673,35 +627,23 @@ async function main() {
     logging: false,
   });
 
-  const dev = config.development;
-  const target = new Sequelize(
-    (dev.database as string) ?? "recyclerie",
-    (dev.username as string) ?? "recyclerie",
-    (dev.password as string) ?? "recyclerie_dev",
-    {
-      host: (dev.host as string) ?? "127.0.0.1",
-      port: (dev.port as number) ?? 3306,
-      dialect: "mariadb",
-      logging: false,
-    },
-  );
+  const target = createMariaDbTarget();
 
   try {
     await source.authenticate();
     await target.authenticate();
     console.log(`Source: ${SQLITE_PATH}`);
-    console.log(
-      `Target: mariadb://${dev.username}@${dev.host}:${dev.port}/${dev.database}`,
-    );
+    console.log(`Target: ${describeMariaDbTarget()}`);
 
+    const expectedMigrations = countFutureMigrations();
     const meta = await queryRows<{ c: number | string }>(
       target,
       "SELECT COUNT(*) AS c FROM SequelizeMeta",
     );
     const applied = Number(meta[0]?.c ?? 0);
-    if (applied < 31) {
+    if (applied !== expectedMigrations) {
       fail(
-        `Target has ${applied}/31 migrations. Run: npm run db:migrate`,
+        `Target has ${applied}/${expectedMigrations} migrations. Run: npm run db:migrate:mariadb`,
       );
     }
 

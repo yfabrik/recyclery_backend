@@ -1,8 +1,9 @@
 import "dotenv/config";
 import db from "../models/index.js";
 import { QueryTypes } from "sequelize";
+import { countFutureMigrations } from "./migrateToMariadb.helpers.js";
 
-const EXPECTED_MIGRATION_COUNT = 37;
+const EXPECTED_MIGRATION_COUNT = countFutureMigrations();
 
 await db.sequelize.authenticate();
 const metaRows = await db.sequelize.query<{ count: number | string }>(
