@@ -5,7 +5,10 @@ import { QueryTypes, Sequelize, type Options } from "sequelize";
 import {
   COPY_ORDER,
   countFutureMigrations,
+  expectedIdBounds,
+  idBoundsEqual,
   normalizeRowValue,
+  type IdBoundRange,
 } from "./migrateToMariadb.helpers.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -311,6 +314,20 @@ function buildColumnMapping(
 }
 
 const skippedByTable: Record<string, number> = {};
+const copiedIdBoundsByTable: Record<string, IdBoundRange> = {};
+
+function noteCopiedId(table: string, row: Record<string, unknown>) {
+  if (row.id == null) return;
+  const id = Number(row.id);
+  if (!Number.isFinite(id)) return;
+  const existing = copiedIdBoundsByTable[table];
+  if (existing === undefined) {
+    copiedIdBoundsByTable[table] = { min: id, max: id };
+    return;
+  }
+  if (existing.min == null || id < existing.min) existing.min = id;
+  if (existing.max == null || id > existing.max) existing.max = id;
+}
 
 async function copyTable(
   source: Sequelize,
@@ -399,6 +416,7 @@ async function copyTable(
         `INSERT INTO ${quoteId(targetTable, "mariadb")} (${quotedCols}) VALUES (${placeholders})`,
         { replacements: values },
       );
+      noteCopiedId(table, row);
       copied += 1;
     }
   } finally {
@@ -457,9 +475,19 @@ async function verifyIntegrity(source: Sequelize, target: Sequelize) {
     if (await hasIdColumn(source, table)) {
       const s = await idBounds(source, table);
       const t = await idBounds(target, resolved);
-      if (s.min !== t.min || s.max !== t.max) {
+      const skipped = skippedByTable[table] ?? 0;
+      const expected = expectedIdBounds({
+        source: s,
+        copied: copiedIdBoundsByTable[table],
+        skipped,
+      });
+      if (!idBoundsEqual(expected, t)) {
         errors.push(
           `${table}: id bounds source(min=${s.min},max=${s.max}) != target(min=${t.min},max=${t.max})`,
+        );
+      } else if (skipped > 0) {
+        console.log(
+          `  [OK] ${table}: id bounds copied(min=${expected.min},max=${expected.max}) (${skipped} invalid rows skipped)`,
         );
       }
     }
