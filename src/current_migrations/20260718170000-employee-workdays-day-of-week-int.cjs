@@ -4,13 +4,11 @@
  * Map EmployeeWorkdays.day_of_week from English STRING → INTEGER 0–6 (Sun=0).
  * No data loss: aborts if any value cannot be mapped.
  *
- * MariaDB connector v3 + Sequelize 6: untyped raw SELECTs and
- * queryInterface.removeColumn() throw:
- *   TypeError: Cannot delete property 'meta' of [object Array]
- * because sequelize/lib/dialects/mariadb/query.js does `delete data.meta`
- * on a non-configurable `meta` from the connector. Fixed below with
- * QueryTypes.SELECT and raw ALTER … DROP COLUMN. Sequelize v7 supports
- * mariadb@3 properly; until then avoid removeColumn / untyped SELECT.
+ * Sequelize 6 + mariadb@3 cannot delete non-configurable `data.meta`
+ * (TypeError: Cannot delete property 'meta' of [object Array] in
+ * sequelize/lib/dialects/mariadb/query.js). We stay on mariadb@2.5.
+ * The commented QueryTypes.SELECT and raw ALTER TABLE … DROP COLUMN
+ * blocks are the workaround if the connector is upgraded before Sequelize 7.
  *
  * @type {import('sequelize-cli').Migration}
  */
@@ -67,18 +65,18 @@ module.exports = {
       END
     `);
 
-    // Broken on mariadb@3 + Sequelize 6 (untyped query → formatResults delete data.meta):
-    // const [rows] = await queryInterface.sequelize.query(`
-    //   SELECT id, day_of_week FROM EmployeeWorkdays
-    //   WHERE day_of_week_int IS NULL
-    // `);
-    const rows = await queryInterface.sequelize.query(
-      `
+    const [rows] = await queryInterface.sequelize.query(`
       SELECT id, day_of_week FROM EmployeeWorkdays
       WHERE day_of_week_int IS NULL
-    `,
-      { type: Sequelize.QueryTypes.SELECT },
-    );
+    `);
+    // Sequelize 6 + mariadb@3 workaround (untyped query → formatResults delete data.meta):
+    // const rows = await queryInterface.sequelize.query(
+    //   `
+    //   SELECT id, day_of_week FROM EmployeeWorkdays
+    //   WHERE day_of_week_int IS NULL
+    // `,
+    //   { type: Sequelize.QueryTypes.SELECT },
+    // );
     if (Array.isArray(rows) && rows.length > 0) {
       const sample = rows
         .slice(0, 10)
@@ -89,26 +87,26 @@ module.exports = {
       );
     }
 
-    // Broken on mariadb@3 + Sequelize 6 (removeColumn runs SHOW/KEY queries as raw):
-    // await queryInterface.removeColumn(table, "day_of_week");
-    {
-      const dialect = queryInterface.sequelize.getDialect();
-      if (dialect === "sqlite") {
-        const indexes = await queryInterface.showIndex(table);
-        for (const index of indexes) {
-          const fields = (index.fields || []).map(
-            (f) => f.attribute || f.name || f,
-          );
-          if (fields.includes("day_of_week") && index.name) {
-            await queryInterface.removeIndex(table, index.name);
-          }
-        }
-      }
-      const q = (name) => queryInterface.quoteIdentifier(name);
-      await queryInterface.sequelize.query(
-        `ALTER TABLE ${q(table)} DROP COLUMN ${q("day_of_week")}`,
-      );
-    }
+    await queryInterface.removeColumn(table, "day_of_week");
+    // Sequelize 6 + mariadb@3 workaround (removeColumn runs SHOW/KEY queries as raw):
+    // {
+    //   const dialect = queryInterface.sequelize.getDialect();
+    //   if (dialect === "sqlite") {
+    //     const indexes = await queryInterface.showIndex(table);
+    //     for (const index of indexes) {
+    //       const fields = (index.fields || []).map(
+    //         (f) => f.attribute || f.name || f,
+    //       );
+    //       if (fields.includes("day_of_week") && index.name) {
+    //         await queryInterface.removeIndex(table, index.name);
+    //       }
+    //     }
+    //   }
+    //   const q = (name) => queryInterface.quoteIdentifier(name);
+    //   await queryInterface.sequelize.query(
+    //     `ALTER TABLE ${q(table)} DROP COLUMN ${q("day_of_week")}`,
+    //   );
+    // }
     await queryInterface.renameColumn(table, "day_of_week_int", "day_of_week");
 
     // Enforce NOT NULL where dialect supports changeColumn
@@ -161,28 +159,28 @@ module.exports = {
       END
     `);
 
-    // Broken on mariadb@3 + Sequelize 6 (same delete data.meta issue):
-    // const [rows] = await queryInterface.sequelize.query(`
-    //   SELECT id FROM EmployeeWorkdays WHERE day_of_week_str IS NULL
-    // `);
-    const rows = await queryInterface.sequelize.query(
-      `SELECT id FROM EmployeeWorkdays WHERE day_of_week_str IS NULL`,
-      { type: Sequelize.QueryTypes.SELECT },
-    );
+    const [rows] = await queryInterface.sequelize.query(`
+      SELECT id FROM EmployeeWorkdays WHERE day_of_week_str IS NULL
+    `);
+    // Sequelize 6 + mariadb@3 workaround (same delete data.meta issue):
+    // const rows = await queryInterface.sequelize.query(
+    //   `SELECT id FROM EmployeeWorkdays WHERE day_of_week_str IS NULL`,
+    //   { type: Sequelize.QueryTypes.SELECT },
+    // );
     if (Array.isArray(rows) && rows.length > 0) {
       throw new Error(
         `Cannot reverse-map day_of_week for ${rows.length} row(s)`,
       );
     }
 
-    // Broken on mariadb@3 + Sequelize 6:
-    // await queryInterface.removeColumn(table, "day_of_week");
-    {
-      const q = (name) => queryInterface.quoteIdentifier(name);
-      await queryInterface.sequelize.query(
-        `ALTER TABLE ${q(table)} DROP COLUMN ${q("day_of_week")}`,
-      );
-    }
+    await queryInterface.removeColumn(table, "day_of_week");
+    // Sequelize 6 + mariadb@3 workaround:
+    // {
+    //   const q = (name) => queryInterface.quoteIdentifier(name);
+    //   await queryInterface.sequelize.query(
+    //     `ALTER TABLE ${q(table)} DROP COLUMN ${q("day_of_week")}`,
+    //   );
+    // }
     await queryInterface.renameColumn(table, "day_of_week_str", "day_of_week");
 
     try {

@@ -36,6 +36,7 @@ export const toGiftCardTransactionDto = (
 export const toGiftCardDto = (model: GiftCardMapperInput): GiftCardDto => {
   const movements = model.movements?.map(toGiftCardTransactionDto);
 
+  //TODO FIXME current_value est virtual, pas besoin de le calculer ici
   const currentValue =
     model.current_value != null
       ? toNumber(model.current_value)

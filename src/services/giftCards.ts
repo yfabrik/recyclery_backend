@@ -65,33 +65,11 @@ export const issueGiftCard = async ({
     );
   }
 
-  //TODO FIXME si pas de linkedtransaction au depart y'a une transaction créé mais pas linké a la giftcard directement mais a travers giftcardtransaction,
-  //devrait avoir l"id dans issuedtransaction_id
   return withTransaction(
     sequelize,
     externalTransaction,
     async (transaction) => {
-      // if (!linkedTransactionId) {
-      //   //TODO a refaire
-      //   const openedSession = await CashSession.findOne({
-      //     where: {
-      //       status: "open",
-      //       user_id: createdBy,
-      //     },
-      //   });
-      //   if (!openedSession) throw new createHttpError.BadRequest(
-      //     "gift card issuance requires a linked session",
-      //   );
-      //   linkedTransactionId = (await SalesTransaction.create({
-      //     cash_session_id: openedSession.id,
-      //     payment_method: "cash",//TODO let user choose
-      //     created_by: createdBy,
-      //     total_amount_before_promotion: amount,
-      //     total_amount: amount,
-      //     payment_amount: amount,
-      //     transactionType: "sell",
-      //   }, { transaction })).id;
-      // }
+   
       const giftCard = await GiftCard.create(
         {
           ...(code != null ? { code } : {}), //TODO osef du code en fait, faudra update les test aussi
