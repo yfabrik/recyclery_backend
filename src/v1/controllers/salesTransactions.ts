@@ -794,6 +794,7 @@ export const createRefund = async (req: RequestWithUser, res: Response) => {
           issuedRefundTransactionId: refund.id,
           createdBy: req.user.id,
           metadata: { source: "refund_issue", parentTransactionId: id },
+          // expiresAt: null,
           transaction: t,
         });
 
@@ -1379,7 +1380,6 @@ export const removeTransaction = async (
   res: Response,
 ) => {
   const id = idSchema().parse(req.params.id);
-  //TODO change status for items, ensure payments deleted,
   //TODO send 403 if transaction exist but where fail ???
   // const toDelete = await findByPkOrThrow(
   //   SalesTransaction,

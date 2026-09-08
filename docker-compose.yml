@@ -1,0 +1,85 @@
+services:
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: recyclerie_root
+      MARIADB_DATABASE: recyclerie
+      MARIADB_USER: recyclerie
+      MARIADB_PASSWORD: recyclerie_dev
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./scripts/chartbrew-user.sql:/docker-entrypoint-initdb.d/chartbrew-user.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chartbrew-db:
+    image: mysql:8.4
+    restart: unless-stopped
+    container_name: chartbrew-db
+    environment:
+      MYSQL_DATABASE: chartbrew
+      MYSQL_USER: chartbrew
+      MYSQL_PASSWORD: chartbrew_dev
+      MYSQL_RANDOM_ROOT_PASSWORD: "true"
+    volumes:
+      - chartbrew_db2:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chartbrew-redis:
+    container_name: chartbrew-redis
+    image: redis:alpine
+    restart: unless-stopped
+    command: redis-server --requirepass chartbrew_redis
+    environment:
+      REDISCLI_AUTH: chartbrew_redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chartbrew:
+    image: razvanilin/chartbrew
+    restart: unless-stopped
+    container_name: chartbrew
+    ports:
+      - "4018:4018"
+      - "4019:4019"
+    environment:
+      CB_API_HOST: "0.0.0.0"
+      CB_API_PORT: "4019"
+      CB_DB_HOST: chartbrew-db
+      CB_DB_PORT: "3306"
+      CB_DB_NAME: chartbrew
+      CB_DB_USERNAME: chartbrew
+      CB_DB_PASSWORD: chartbrew_dev
+      CB_DB_DIALECT: mysql
+      CB_REDIS_HOST: chartbrew-redis
+      CB_REDIS_PORT: "6379"
+      CB_REDIS_PASSWORD: chartbrew_redis
+      CB_ENCRYPTION_KEY: f4eb476e5f01009754fe4f55b5b45414bb672b156aa362426bb5ab4500d7259c
+      CB_BULLMQ_USERNAME: chartbrew
+      CB_BULLMQ_PASSWORD: chartbrew_queues
+      CB_ALLOW_PRIVATE_NETWORK_CALLS: "true"
+      VITE_APP_CLIENT_HOST: http://localhost:4018
+      VITE_APP_CLIENT_PORT: "4018"
+      VITE_APP_API_HOST: http://localhost:4019
+    depends_on:
+      chartbrew-db:
+        condition: service_healthy
+      chartbrew-redis:
+        condition: service_healthy
+
+volumes:
+  mariadb_data:
+  chartbrew_db2:

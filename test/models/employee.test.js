@@ -40,5 +40,22 @@ describe("Employee Model", () => {
       const found = await Employee.findByPk(id);
       expect(found).toBeNull();
     });
+
+    it("should cascade-delete workdays when an employee is destroyed", async () => {
+      const { EmployeeWorkdays } = db;
+      const created = await createEmployee({
+        nom: "HasWorkday",
+        prenom: "Y",
+      });
+      const w = await EmployeeWorkdays.create({
+        employee_id: created.id,
+        day_of_week: 1,
+        is_working: true,
+        start_time: "09:00",
+        end_time: "17:00",
+      });
+      await created.destroy();
+      expect(await EmployeeWorkdays.findByPk(w.id)).toBeNull();
+    });
   });
 });

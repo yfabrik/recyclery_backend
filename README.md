@@ -54,14 +54,17 @@ Copy [`.env.example`](.env.example) to `.env`. The app **will not start** withou
 - **Test:** in-memory SQLite (`db.sync` in tests only)
 - **Production:** MariaDB connection via `DB_URL`
 
-Schema is managed with [sequelize-cli](https://github.com/sequelize/cli) migrations in `src/future_migrations/`:
+Schema is managed with [sequelize-cli](https://github.com/sequelize/cli) migrations:
+
+- **SQLite (current prod):** `src/current_migrations/` via `npm run db:migrate` ([`.sequelizerc.cjs`](.sequelizerc.cjs))
+- **MariaDB (greenfield):** `src/future_migrations/` via `npm run db:migrate:mariadb` ([`.sequelizerc.mariadb.cjs`](.sequelizerc.mariadb.cjs))
 
 ```bash
 docker compose up -d
-npx sequelize-cli db:migrate
+npm run db:migrate:mariadb
 ```
 
-Copy existing SQLite data to MariaDB:
+Copy existing SQLite data to MariaDB (`DB_URL` or `DB_NAME`/`DB_USER`; optional `SQLITE_SOURCE_PATH`):
 
 ```bash
 npm run db:migrate-data
@@ -69,23 +72,28 @@ npm run db:migrate-data
 
 On startup the app verifies migrations have been applied and optionally seeds a default admin when `DEFAULT_*` vars are set and no users exist.
 
-Config paths are in [`.sequelizerc.cjs`](.sequelizerc.cjs).
+## Chartbrew (read-only dashboards)
 
-## ChartBrew (read-only dashboards)
+`docker compose up -d` starts Chartbrew with its own MySQL and Redis alongside MariaDB.
 
-Create a read-only user after migrations:
+- UI: http://localhost:4018
+- API: http://localhost:4019
+
+The recyclerie read-only user is created on first MariaDB volume init. If the volume already exists:
 
 ```bash
-docker compose exec -T mariadb mariadb -u root -p recyclerie < scripts/chartbrew-user.sql
+docker compose exec -T mariadb mariadb -u root -precyclerie_root < scripts/chartbrew-user.sql
 ```
 
-Then in ChartBrew, add a **MySQL/MariaDB** connection:
+Then in Chartbrew, add a **MySQL/MariaDB** connection (Chartbrew runs on the same Docker network):
 
-- Host: `127.0.0.1` (or your production host)
+- Host: `mariadb`
 - Port: `3306`
 - Database: `recyclerie`
 - User: `chartbrew`
 - Password: value from `scripts/chartbrew-user.sql`
+
+Paste [`scripts/chartbrew-agent-context.md`](scripts/chartbrew-agent-context.md) into Chartbrew’s AI / dataset description so it can generate SQL (schema, joins, revenue rules, examples).
 
 ## Docker
 
