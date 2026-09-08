@@ -52,6 +52,28 @@ export const COPY_ORDER = [
 
 export type CopyTable = (typeof COPY_ORDER)[number];
 
+export type IdBoundRange = { min: number | null; max: number | null };
+
+export function idBoundsEqual(a: IdBoundRange, b: IdBoundRange): boolean {
+  const eq = (left: number | null, right: number | null) => {
+    if (left == null && right == null) return true;
+    if (left == null || right == null) return false;
+    return Number(left) === Number(right);
+  };
+  return eq(a.min, b.min) && eq(a.max, b.max);
+}
+
+export function expectedIdBounds(args: {
+  source: IdBoundRange;
+  copied: IdBoundRange | undefined;
+  skipped: number;
+}): IdBoundRange {
+  if (args.skipped > 0) {
+    return args.copied ?? { min: null, max: null };
+  }
+  return args.source;
+}
+
 const TIME_ONLY = /^\d{2}:\d{2}:\d{2}$/;
 const DIGITS_ONLY = /^\d+$/;
 const DATE_PREFIX = /^\d{4}-\d{2}-\d{2}/;
