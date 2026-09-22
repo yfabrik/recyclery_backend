@@ -192,6 +192,10 @@ export const updateArrival = async (req: RequestWithUser, res: Response) => {
 export const deleteArrival = async (req: RequestWithUser, res: Response) => {
   const id = idSchema().parse(req.params.id);
   const arrival = await findByPkOrThrow(Arrival, id, "Arrivage non trouvé");
+  //refuse to delete the arrivals of other
+  //refuse to delete after 30min createdAt ?
+  if(arrival.processed_by!= req.user.id) throw new createHttpError.Forbidden("not your arrival")
+  if (new Date(arrival.createdAt.getTime()+1000*60*30)<new Date()) throw new createHttpError.Forbidden("too late to change")
   await arrival.destroy();
   logAction("arrivals", "arrival.deleted", {
     arrivalId: arrival.id,
