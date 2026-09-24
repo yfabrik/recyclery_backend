@@ -8,7 +8,7 @@
  *   --cash-sessions       CashSessions.user_id from peer users on same register
  *   --sales-created-by    SalesTransactions.created_by from CashSessions.user_id
  *   --categories          Null/dangling category_id on items/arrivals/waste → archive
- *   --employee-task       Delete employee_task rows with missing Employee/Task
+ *   --employee-task       Delete employee_task rows with missing Employee/Task, and orphan time ranges
  *   --orphan-schedules    Delete vente (null store) / point (null collection point) schedules+tasks
  *   --audit               Remaining-orphan report only (or after selected repairs)
  *   --all                 All repairs + audit
@@ -462,7 +462,52 @@ const brokenEmployeeTaskWhere = `
   OR NOT EXISTS (SELECT 1 FROM Tasks t WHERE t.id = et.TaskId)
 `;
 
+const orphanTimeRangeWhere = `
+  NOT EXISTS (
+    SELECT 1 FROM employee_task et
+    WHERE et.EmployeeId = r.EmployeeId AND et.TaskId = r.TaskId
+  )
+`;
+
 async function repairEmployeeTask(transaction?: Transaction) {
+  await repairEmployeeTaskJoinRows(transaction);
+  await repairOrphanTimeRanges(transaction);
+}
+
+/** Time ranges whose Assignment (employee_task row) is gone. */
+async function repairOrphanTimeRanges(transaction?: Transaction) {
+  if (!(await tableExists("employee_task_time_range", transaction))) return;
+
+  const before = await count(
+    `SELECT COUNT(*) AS c FROM employee_task_time_range r WHERE ${orphanTimeRangeWhere}`,
+    undefined,
+    transaction,
+  );
+  console.log(
+    `  employee_task_time_range without employee_task parent: ${before}`,
+  );
+  if (before === 0) return;
+  if (!APPLY) {
+    console.log(`  would delete ${before} time range(s)`);
+    return;
+  }
+
+  await exec(
+    `
+    DELETE FROM employee_task_time_range
+    WHERE NOT EXISTS (
+      SELECT 1 FROM employee_task et
+      WHERE et.EmployeeId = employee_task_time_range.EmployeeId
+        AND et.TaskId = employee_task_time_range.TaskId
+    )
+    `,
+    undefined,
+    transaction,
+  );
+  console.log(`  deleted ${before} orphan time range(s)`);
+}
+
+async function repairEmployeeTaskJoinRows(transaction?: Transaction) {
   logSection(
     `5. Invalid employee_task rows → delete ${APPLY ? "(APPLY)" : "(dry-run)"}`,
   );
@@ -1137,7 +1182,7 @@ const REPAIR_LABELS: Record<RepairKey, string> = {
   categories:
     "Null/dangling category_id on items/arrivals/waste → archive category",
   "employee-task":
-    "Delete employee_task rows with missing Employee or Task",
+    "Delete employee_task rows with missing Employee or Task, and time ranges whose employee_task row is gone",
   "orphan-schedules":
     "Delete vente (null store_id) / point (null collection_point_id) schedules+tasks",
   audit: "Remaining / other orphans report",

@@ -68,12 +68,40 @@ const FK_ORPHAN_CHECKS: Array<{
   },
   { table: "employee_task", column: "EmployeeId", parent: "Employees" },
   { table: "employee_task", column: "TaskId", parent: "Tasks" },
+  {
+    table: "employee_task_time_range",
+    column: "EmployeeId",
+    parent: "Employees",
+  },
+  { table: "employee_task_time_range", column: "TaskId", parent: "Tasks" },
   { table: "employee_schedule", column: "EmployeeId", parent: "Employees" },
   {
     table: "employee_schedule",
     column: "TaskScheduleId",
     parent: "TaskSchedules",
   },
+];
+
+/** Composite FKs: the (column1, column2) pair must exist in the parent table. */
+const PAIR_ORPHAN_CHECKS: Array<{
+  table: string;
+  columns: [string, string];
+  parent: string;
+}> = [
+  {
+    table: "employee_task_time_range",
+    columns: ["EmployeeId", "TaskId"],
+    parent: "employee_task",
+  },
+];
+
+/**
+ * The import empties each target table and refills it from SQLite. A source
+ * without one of these would leave the target's own (backfilled) rows behind,
+ * so the SQLite migration must have run first.
+ */
+const REQUIRED_SOURCE_TABLES: Array<{ table: string; whenPresent: string }> = [
+  { table: "employee_task_time_range", whenPresent: "employee_task" },
 ];
 
 function fail(message: string): never {
@@ -254,6 +282,20 @@ const JOIN_TABLE_FK_CHECKS: Record<
     { column: "EmployeeId", parent: "Employees" },
     { column: "TaskScheduleId", parent: "TaskSchedules" },
   ],
+  employee_task_time_range: [
+    { column: "EmployeeId", parent: "Employees" },
+    { column: "TaskId", parent: "Tasks" },
+  ],
+};
+
+const JOIN_TABLE_PAIR_CHECKS: Record<
+  string,
+  { columns: [string, string]; parent: string }
+> = {
+  employee_task_time_range: {
+    columns: ["EmployeeId", "TaskId"],
+    parent: "employee_task",
+  },
 };
 
 const COLUMN_ALIASES: Record<string, Record<string, string>> = {
@@ -268,6 +310,21 @@ const COLUMN_ALIASES: Record<string, Record<string, string>> = {
 
 function resolveTargetTable(table: string): string {
   return TABLE_NAME_ALIASES[table] ?? table;
+}
+
+async function getValidPairs(
+  sequelize: Sequelize,
+  table: string,
+  columns: [string, string],
+): Promise<Set<string>> {
+  if (!(await tableExists(sequelize, table))) return new Set();
+  const q = (name: string) =>
+    quoteId(name, sequelize.getDialect() as "sqlite" | "mariadb");
+  const rows = await queryRows<Record<string, number | string>>(
+    sequelize,
+    `SELECT ${q(columns[0])} AS a, ${q(columns[1])} AS b FROM ${q(table)}`,
+  );
+  return new Set(rows.map((row) => `${Number(row.a)}/${Number(row.b)}`));
 }
 
 async function getValidIds(
@@ -381,6 +438,11 @@ async function copyTable(
     parentIdSets[check.parent] ??= await getValidIds(target, check.parent);
   }
 
+  const pairCheck = JOIN_TABLE_PAIR_CHECKS[table];
+  const validPairs = pairCheck
+    ? await getValidPairs(target, pairCheck.parent, pairCheck.columns)
+    : undefined;
+
   await target.query("SET FOREIGN_KEY_CHECKS = 0");
   await target.query(`DELETE FROM ${quoteId(targetTable, "mariadb")}`);
   let copied = 0;
@@ -388,7 +450,7 @@ async function copyTable(
   try {
     for (const row of data) {
       const values = columnMapping.map((pair) =>
-        normalizeRowValue(row, pair.source, pair.target),
+        normalizeRowValue(row, pair.source, pair.target, table),
       );
       const violatesNotNull = columnMapping.some(
         (pair, index) =>
@@ -408,6 +470,13 @@ async function copyTable(
           return !parentIdSets[check.parent]?.has(id);
         });
         if (invalidJoin) {
+          skippedRows += 1;
+          continue;
+        }
+      }
+      if (pairCheck && validPairs) {
+        const [first, second] = pairCheck.columns;
+        if (!validPairs.has(`${Number(row[first])}/${Number(row[second])}`)) {
           skippedRows += 1;
           continue;
         }
@@ -542,6 +611,28 @@ async function verifyIntegrity(source: Sequelize, target: Sequelize) {
     }
   }
 
+  for (const check of PAIR_ORPHAN_CHECKS) {
+    if (!(await tableExists(target, check.table))) continue;
+    const [c1, c2] = check.columns;
+    const q = (name: string) => quoteId(name, "mariadb");
+    const rows = await queryRows<{ c: number | string }>(
+      target,
+      `SELECT COUNT(*) AS c FROM ${q(check.table)} j
+       LEFT JOIN ${q(check.parent)} p ON j.${q(c1)} = p.${q(c1)} AND j.${q(c2)} = p.${q(c2)}
+       WHERE p.${q(c1)} IS NULL`,
+    );
+    const orphans = Number(rows[0]?.c ?? 0);
+    if (orphans > 0) {
+      errors.push(
+        `${check.table}.(${c1}, ${c2}): ${orphans} orphan pair(s) missing from ${check.parent}`,
+      );
+    } else {
+      console.log(
+        `  [OK] ${check.table}.(${c1}, ${c2}): every pair exists in ${check.parent}`,
+      );
+    }
+  }
+
   const aggregateChecks = [
     {
       label: "SalesTransactions.total_amount",
@@ -673,6 +764,17 @@ async function main() {
       fail(
         `Target has ${applied}/${expectedMigrations} migrations. Run: npm run db:migrate:mariadb`,
       );
+    }
+
+    for (const { table, whenPresent } of REQUIRED_SOURCE_TABLES) {
+      if (
+        (await tableExists(source, whenPresent)) &&
+        !(await tableExists(source, table))
+      ) {
+        fail(
+          `Source has ${whenPresent} but no ${table}. Run the SQLite migrations first: npm run db:migrate`,
+        );
+      }
     }
 
     console.log("\n=== Pre-copy row counts (source) ===");
