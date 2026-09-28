@@ -1,13 +1,13 @@
 import type { Request, Response } from "express";
 import createHttpError from "http-errors";
-import { Op, type Includeable } from "sequelize"; 
+import { Op, type Includeable } from "sequelize";
 import {
   assignEmployeeToTaskBodySchema,
   taskDataSchema,
   taskListFilterSchema,
 } from "@recyclerie/api/schemas/tasks";
+import { timeRangeBodySchema } from "@recyclerie/api/schemas/timeRanges";
 import type {
-  AssignEmployeeTaskResponse,
   CreateTaskResponse,
   DeleteTaskResponse,
   DetailTaskResponse,
@@ -16,23 +16,47 @@ import type {
   TaskEmployeesResponse,
   UpdateTaskResponse,
 } from "@recyclerie/api/responses/tasks";
+import type {
+  AssignEmployeeTaskRangeResponse,
+  CreateTimeRangeResponse,
+  DeleteTimeRangeResponse,
+  TaskAvailableEmployeesResponse,
+  UpdateTimeRangeResponse,
+} from "@recyclerie/api/responses/timeRanges";
 import {
   apiCreated,
   apiData,
   apiMessage,
 } from "@recyclerie/api/types/response";
+import {
+  firstFreeWindow,
+  minutesToTime,
+  timeToMinutes,
+  TIME_RANGE_VIOLATION_MESSAGES,
+  validateTimeRange,
+  type MinuteWindow,
+} from "@recyclerie/api/domain/timeRange";
 
 import { formatWhereDateRange } from "../../helpers.js";
 
 import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { ModelWhere } from "../../models/db-types.ts";
+import {
+  buildTimeRangeContext,
+  clampTimeRangesToWindow,
+  findEmployeeRangesForDate,
+  findEmployeeWorkdaysForDate,
+  getBiWeek,
+  taskWindow,
+} from "../../services/timeRanges.js";
+import { endOfDay, startOfDay, weekday } from "../../utils/dates.js";
 
 import db from "../../models/index.js";
-import { toEmployeeDto } from "../../mappers/employees.js";
+import { toTaskAssignedEmployeeDto, toTaskAvailableEmployeeDto, toTimeRangeDto } from "../../mappers/timeRanges.js";
 import { toTaskDto } from "../../mappers/tasks.js";
 
-const { Task, TaskSchedule, Employee, Recyclery } = db;
+const { Task, TaskSchedule, Employee, EmployeeWorkdays, EmployeeVacation, EmployeeTaskTimeRange, Recyclery } = db;
 
 export const listTasks = async (req: Request, res: Response) => {
   const defaultCategory =
@@ -168,9 +192,13 @@ export const updateTask = async (req: Request, res: Response) => {
     name = store.name + "-" + name;
   }
 
-  await existing.update({
-    ...data,
-    name,
+  await db.sequelize.transaction(async (transaction) => {
+    const previousWindow = taskWindow(existing);
+    await existing.update({ ...data, name }, { transaction });
+    const newWindow = taskWindow(existing);
+    if (newWindow.start !== previousWindow.start || newWindow.end !== previousWindow.end) {
+      await clampTimeRangesToWindow(EmployeeTaskTimeRange, [existing], newWindow, transaction);
+    }
   });
 
   res.json(
@@ -198,36 +226,79 @@ export const getUsersFromTask = async (req: Request, res: Response) => {
   const tasks = await findByPkOrThrow(Task, taskId, "tache non trouvé", {
     include: [{ model: Employee }],
   });
+  const ranges = await EmployeeTaskTimeRange.findAll({ where: { TaskId: taskId } });
+  const rangesByEmployeeId = new Map<number, typeof ranges>();
+  for (const range of ranges) {
+    const forEmployee = rangesByEmployeeId.get(range.EmployeeId) ?? [];
+    forEmployee.push(range);
+    rangesByEmployeeId.set(range.EmployeeId, forEmployee);
+  }
+
   res.json(
     apiData(
-      (tasks.Employees ?? []).map(toEmployeeDto),
+      (tasks.Employees ?? []).map((employee) =>
+        toTaskAssignedEmployeeDto(employee, rangesByEmployeeId.get(employee.id) ?? []),
+      ),
     ) satisfies TaskEmployeesResponse,
   );
 };
 
 export const addUserToTask = async (req: Request, res: Response) => {
   const taskId = idSchema().parse(req.params.taskId);
-  const { employee_id } = assignEmployeeToTaskBodySchema.parse(req.body);
+  const { employee_id, start_time, end_time } = assignEmployeeToTaskBodySchema.parse(req.body);
 
-  const task = await findByPkOrThrow(Task, taskId, "Tâche non trouvée");
-
+  const task = await findByPkOrThrow(Task, taskId, "Tâche non trouvée", {
+    include: [{ model: Employee, where: { id: employee_id }, required: false }],
+  });
   const employee = await findByPkOrThrow(
     Employee,
     employee_id,
     "Employé non trouvé",
   );
 
-  //FIXME
-  // if (task.hasUser(employee))
-  //   return res.status(400).json({
-  //     success: false,
-  //     message: "Cet employé est déjà assigné à cette tâche",
-  //   });
+  if (task.Employees && task.Employees.length > 0) {
+    throw new createHttpError.Conflict("Cet employé est déjà assigné à cette tâche");
+  }
 
-  await task.addEmployee(employee);
+  const range = await db.sequelize.transaction(async (transaction) => {
+    const context = await buildTimeRangeContext(
+      { EmployeeWorkdays, EmployeeTaskTimeRange, Task },
+      { employeeId: employee.id, task, transaction },
+    );
+
+    let window: MinuteWindow;
+    if (start_time !== undefined && end_time !== undefined) {
+      window = { start: timeToMinutes(start_time), end: timeToMinutes(end_time) };
+      const check = validateTimeRange(window, context);
+      if (!check.ok) {
+        throw new createHttpError.Conflict(TIME_RANGE_VIOLATION_MESSAGES[check.reason]);
+      }
+    } else {
+      const free = firstFreeWindow(context);
+      if (!free) {
+        throw new createHttpError.Conflict(
+          "Aucune plage horaire disponible pour cet employé sur cette tâche",
+        );
+      }
+      window = free;
+    }
+
+    await task.addEmployee(employee, { transaction });
+    return EmployeeTaskTimeRange.create(
+      {
+        EmployeeId: employee.id,
+        TaskId: task.id,
+        start_time: minutesToTime(window.start),
+        end_time: minutesToTime(window.end),
+      },
+      { transaction },
+    );
+  });
 
   res.json(
-    apiMessage("Employé assigné avec succès") satisfies AssignEmployeeTaskResponse,
+    apiCreated(toTimeRangeDto(range), {
+      message: "Employé assigné avec succès",
+    }) satisfies AssignEmployeeTaskRangeResponse,
   );
 };
 
@@ -240,5 +311,158 @@ export const removeUserFromTask = async (req: Request, res: Response) => {
 
   res.json(
     apiMessage("Employé retiré avec succès") satisfies RemoveEmployeeTaskResponse,
+  );
+};
+
+export const getAvailableEmployeesForTask = async (req: Request, res: Response) => {
+  const taskId = idSchema().parse(req.params.taskId);
+  const task = await findByPkOrThrow(Task, taskId, "Tâche non trouvée");
+
+  const start = startOfDay(task.scheduled_date).toDate();
+  const end = endOfDay(task.scheduled_date).toDate();
+
+  const workdayInclude = {
+    model: EmployeeWorkdays,
+    attributes: [],
+    required: true,
+    where: {
+      day_of_week: weekday(task.scheduled_date),
+      is_working: true,
+      week: getBiWeek(task.scheduled_date),
+    },
+  };
+
+  // LEFT JOIN vacations covering the day, then keep rows with no match
+  const vacationExcludeInclude = {
+    model: EmployeeVacation,
+    as: "vacations",
+    attributes: [],
+    required: false,
+    where: {
+      start_date: { [Op.lte]: end },
+      end_date: { [Op.gte]: start },
+    },
+  };
+
+  const include: Includeable[] = [workdayInclude, vacationExcludeInclude];
+  if (task.store_id) {
+    include.push({
+      model: Recyclery,
+      as: "stores",
+      where: { id: task.store_id },
+      required: true,
+    });
+  }
+
+  const candidates = await Employee.findAll({
+    subQuery: false,
+    where: { "$vacations.id$": { [Op.is]: null } },
+    include,
+  });
+
+  const employees = await Promise.all(
+    candidates.map(async (employee) => {
+      const [workdays, busyRanges] = await Promise.all([
+        findEmployeeWorkdaysForDate(EmployeeWorkdays, employee.id, task.scheduled_date),
+        findEmployeeRangesForDate(EmployeeTaskTimeRange, Task, employee.id, task.scheduled_date, {
+          excludeTaskId: task.id,
+        }),
+      ]);
+      return toTaskAvailableEmployeeDto(employee, workdays, busyRanges);
+    }),
+  );
+
+  res.json(apiData(employees) satisfies TaskAvailableEmployeesResponse);
+};
+
+export const createTimeRange = async (req: Request, res: Response) => {
+  const taskId = idSchema().parse(req.params.taskId);
+  const employeeId = idSchema().parse(req.params.employeeId);
+  const { start_time, end_time } = timeRangeBodySchema.parse(req.body);
+
+  const task = await findByPkOrThrow(Task, taskId, "Tâche non trouvée", {
+    include: [{ model: Employee, where: { id: employeeId }, required: false }],
+  });
+  if (!task.Employees || task.Employees.length === 0) {
+    throw new createHttpError.NotFound("Assignation non trouvée");
+  }
+
+  const range = await db.sequelize.transaction(async (transaction) => {
+    const context = await buildTimeRangeContext(
+      { EmployeeWorkdays, EmployeeTaskTimeRange, Task },
+      { employeeId, task, transaction },
+    );
+    const window: MinuteWindow = { start: timeToMinutes(start_time), end: timeToMinutes(end_time) };
+    const check = validateTimeRange(window, context);
+    if (!check.ok) {
+      throw new createHttpError.Conflict(TIME_RANGE_VIOLATION_MESSAGES[check.reason]);
+    }
+    return EmployeeTaskTimeRange.create(
+      { EmployeeId: employeeId, TaskId: taskId, start_time, end_time },
+      { transaction },
+    );
+  });
+
+  res.json(apiCreated(toTimeRangeDto(range)) satisfies CreateTimeRangeResponse);
+};
+
+export const updateTimeRange = async (req: Request, res: Response) => {
+  const taskId = idSchema().parse(req.params.taskId);
+  const employeeId = idSchema().parse(req.params.employeeId);
+  const rangeId = idSchema().parse(req.params.rangeId);
+  const { start_time, end_time } = timeRangeBodySchema.parse(req.body);
+
+  const task = await findByPkOrThrow(Task, taskId, "Tâche non trouvée");
+
+  const updated = await db.sequelize.transaction(async (transaction) => {
+    const range = await EmployeeTaskTimeRange.findOne({
+      where: { id: rangeId, TaskId: taskId, EmployeeId: employeeId },
+      transaction,
+    });
+    if (!range) throw new createHttpError.NotFound("Plage horaire non trouvée");
+
+    const context = await buildTimeRangeContext(
+      { EmployeeWorkdays, EmployeeTaskTimeRange, Task },
+      { employeeId, task, excludeRangeId: rangeId, transaction },
+    );
+    const window: MinuteWindow = { start: timeToMinutes(start_time), end: timeToMinutes(end_time) };
+    const check = validateTimeRange(window, context);
+    if (!check.ok) {
+      throw new createHttpError.Conflict(TIME_RANGE_VIOLATION_MESSAGES[check.reason]);
+    }
+    await range.update({ start_time, end_time }, { transaction });
+    return range;
+  });
+
+  res.json(apiData(toTimeRangeDto(updated)) satisfies UpdateTimeRangeResponse);
+};
+
+export const deleteTimeRange = async (req: Request, res: Response) => {
+  const taskId = idSchema().parse(req.params.taskId);
+  const employeeId = idSchema().parse(req.params.employeeId);
+  const rangeId = idSchema().parse(req.params.rangeId);
+
+  const task = await findByPkOrThrow(Task, taskId, "Tâche non trouvée");
+
+  await db.sequelize.transaction(async (transaction) => {
+    const range = await EmployeeTaskTimeRange.findOne({
+      where: { id: rangeId, TaskId: taskId, EmployeeId: employeeId },
+      transaction,
+    });
+    if (!range) throw new createHttpError.NotFound("Plage horaire non trouvée");
+
+    await range.destroy({ transaction });
+
+    const remaining = await EmployeeTaskTimeRange.count({
+      where: { TaskId: taskId, EmployeeId: employeeId },
+      transaction,
+    });
+    if (remaining === 0) {
+      await task.removeEmployee(employeeId, { transaction });
+    }
+  });
+
+  res.json(
+    apiMessage("Plage horaire supprimée avec succès") satisfies DeleteTimeRangeResponse,
   );
 };

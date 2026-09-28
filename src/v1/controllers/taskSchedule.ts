@@ -1,5 +1,5 @@
 import createHttpError from "http-errors";
-import { col, fn, literal, Op } from "sequelize";
+import { col, fn, literal } from "sequelize";
 import {
   assignEmployeeToScheduleBodySchema,
   taskScheduleDataSchema,
@@ -8,7 +8,6 @@ import {
 } from "@recyclerie/api/schemas/taskSchedule";
 import type {
   AssignEmployeeScheduleResponse,
-  AvailableEmployeesResponse,
   CreateTaskScheduleResponse,
   DeleteTaskScheduleResponse,
   DetailTaskScheduleResponse,
@@ -27,15 +26,14 @@ import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
-import { weekday, endOfDay, startOfDay, dayjs } from "../../utils/dates.js";
-import { getWeekNumber } from "@recyclerie/api/domain/date";
+import { weekday } from "../../utils/dates.js";
 
 import { formatWhereDateRange } from "../../helpers.js";
 import type { ModelWhere } from "../../models/db-types.js";
-import { toAvailableEmployeeDto, toPlanningStatsDto, toTaskScheduleDto, type PlanningStatsOverviewRow } from "../../mappers/taskSchedule.js";
+import { toPlanningStatsDto, toTaskScheduleDto, type PlanningStatsOverviewRow } from "../../mappers/taskSchedule.js";
 import { toTaskDto } from "../../mappers/tasks.js";
 
-const { Recyclery, Task, TaskSchedule, Employee, EmployeeWorkdays, EmployeeVacation } = db;
+const { Recyclery, Task, TaskSchedule, Employee, EmployeeWorkdays } = db;
 
 export const listSchedules = async (req: Request, res: Response) => {
   const category =
@@ -231,6 +229,11 @@ export const getEmployeeSchedule = async (req: Request, res: Response) => {
   );
 };
 
+/**
+ * @deprecated Bypasses Time range validation (creates an Assignment with no
+ * range at all). Use `POST /api/tasks/:id/employees` instead. Kept only for
+ * whatever still calls the deprecated `/api/planning/:scheduleId/employees`.
+ */
 export const addEmployeeToSchedule = async (req: Request, res: Response) => {
   const scheduleId = idSchema("ID tâche du planning requis").parse(
     req.params.scheduleId,
@@ -290,6 +293,12 @@ export const addEmployeeToSchedule = async (req: Request, res: Response) => {
   );
 };
 
+/**
+ * @deprecated Bypasses Time range validation (removes the Assignment without
+ * regard for its ranges). Use `DELETE /api/tasks/:id/employees/:employeeId`
+ * instead. Kept only for whatever still calls the deprecated
+ * `/api/planning/:scheduleId/employees`.
+ */
 export const removeEmployeeFromSchedule = async (
   req: Request,
   res: Response,
@@ -313,143 +322,6 @@ export const removeEmployeeFromSchedule = async (
 
   res.json(
     apiMessage("Employé retiré avec succès") satisfies DeleteTaskScheduleResponse,
-  );
-};
-
-export const findAvailableEMployee = async (req: Request, res: Response) => {
-  const scheduleId = idSchema().parse(req.params.scheduleId);
-
-  // Récupérer les détails de la tâche
-  const schedule = await findByPkOrThrow(Task, scheduleId, "Tâche non trouvée", {
-    include: [{ model: Employee }],
-  });
-
-  const currentSchedule = schedule;
-
-  // Récupérer les employés du magasin ET présents ce jour-là
-  // Si pas de store_id, afficher tous les employés présents
-  let allEmployees;
-
-  // Déterminer le jour de la semaine de la tâche
-  const taskDate = new Date(currentSchedule.scheduled_date);
-  const dayOfWeek = weekday(taskDate);
-
-  //TODO changer pour dayjs
-  // console.log(getWeekNumber(taskDate), dayjs(taskDate).week());
-  const newYear = new Date(taskDate.getFullYear(), 0, 1);
-  const dayNumber = Math.floor((+taskDate - +newYear) / (24 * 60 * 60 * 1000));
-  const weekNumber = Math.ceil((taskDate.getDay() + 1 + dayNumber) / 7);
-  // console.log(weekNumber);
-
-  const start = startOfDay(currentSchedule.scheduled_date).toDate();
-  const end = endOfDay(currentSchedule.scheduled_date).toDate();
-
-  const workdayInclude = {
-    model: EmployeeWorkdays,
-    attributes: [],
-    required: true,
-    where: {
-      day_of_week: dayOfWeek,
-      is_working: true,
-      week: weekNumber % 2 ? "week2" : "week1",
-    },
-  };
-
-  // LEFT JOIN vacations covering the day, then keep rows with no match
-  const vacationExcludeInclude = {
-    model: EmployeeVacation,
-    as: "vacations",
-    attributes: [],
-    required: false,
-    where: {
-      start_date: { [Op.lte]: end },
-      end_date: { [Op.gte]: start },
-    },
-  };
-
-  if (!schedule.store_id)
-    allEmployees = await Employee.findAll({
-      subQuery: false,
-      where: { "$vacations.id$": { [Op.is]: null } },
-      include: [workdayInclude, vacationExcludeInclude],
-    });
-  else
-    allEmployees = await Employee.findAll({
-      subQuery: false,
-      where: { "$vacations.id$": { [Op.is]: null } },
-      include: [
-        workdayInclude,
-        vacationExcludeInclude,
-        {
-          model: Recyclery,
-          as: "stores",
-          where: { id: schedule.store_id },
-          required: true,
-        },
-      ],
-    });
-
-  // Pour chaque employé, vérifier s'il est disponible
-  const availableEmployees = [];
-
-  for (const employee of allEmployees) {
-    // Vérifier les conflits d'horaires pour cet employé
-
-    const conflicts = await Task.findAll({
-      where: {
-        // assigned_to: employee.id,
-        scheduled_date: { [Op.between]: [start, end] },
-        id: { [Op.ne]: scheduleId },
-
-        // start_time: { [Op.lt]: currentSchedule.end_time },
-        // end_time: { [Op.gt]: currentSchedule.start_time },
-      },
-      include: [
-        {
-          model: Employee,
-          where: { id: employee.id },
-          required: true,
-        },
-      ],
-    });
-    const toMinutes = (v: Date | number) => {
-      const d = v instanceof Date ? v : new Date(v);
-      return d.getHours() * 60 + d.getMinutes();
-    };
-    const newStart = toMinutes(schedule.start_time);
-    const newEnd = toMinutes(schedule.end_time);
-
-    const hasOverlap = conflicts.filter((e) => {
-      if (!e.scheduled_date || !e.start_time || !e.end_time) return false;
-      const start = toMinutes(e.start_time);
-      const end = toMinutes(e.end_time);
-      return start < newEnd && end > newStart;
-    });
-
-    // Vérifier si l'employé est déjà assigné à cette tâche
-    //FIXME
-    // const alreadyAssigned = await TaskSchedule.findAll({
-    //   // where: { schedule_id: scheduleId, employee_id: employee.id },
-    // });
-
-    availableEmployees.push({
-      ...employee.get({ plain: true }),
-      is_available: hasOverlap.length === 0,
-      has_conflicts: hasOverlap.length > 0,
-      conflicts: hasOverlap,
-      already_assigned: schedule.Employees?.some((u) => u.id == employee.id),
-    });
-  }
-
-  res.json(
-    apiData(
-      availableEmployees.map((employee) =>
-        toAvailableEmployeeDto({
-          ...employee,
-          already_assigned: Boolean(employee.already_assigned),
-        }),
-      ),
-    ) satisfies AvailableEmployeesResponse,
   );
 };
 
