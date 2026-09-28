@@ -7,12 +7,15 @@
  * loaded by `models/index.js`, so importing the `db` singleton here would be
  * a circular import.
  */
+import createHttpError from "http-errors";
 import { Op, type ModelStatic, type Transaction } from "sequelize";
 import {
   clipWindow,
   minutesToTime,
   timeToMinutes,
+  validateTimeRange,
   TIME_RANGE_MIN_MINUTES,
+  TIME_RANGE_VIOLATION_MESSAGES,
   type MinuteWindow,
   type TimeRangeContext,
 } from "@recyclerie/api/domain/timeRange";
@@ -150,6 +153,14 @@ export async function buildTimeRangeContext(
   };
 }
 
+/** Throws the 409 for `range`'s first broken rule, in French, from the validator's own reasons. */
+export function assertValidTimeRange(range: MinuteWindow, context: TimeRangeContext): void {
+  const check = validateTimeRange(range, context);
+  if (!check.ok) {
+    throw new createHttpError.Conflict(TIME_RANGE_VIOLATION_MESSAGES[check.reason]);
+  }
+}
+
 /**
  * Clamps every Time range on `tasks` into `window`, drops ranges left under
  * the minimum, and removes an Assignment left with none.
@@ -170,12 +181,21 @@ export async function clampTimeRangesToWindow(
   });
   if (ranges.length === 0) return;
 
-  const survivingCount = new Map<string, number>();
+  interface AssignmentTally {
+    taskId: number;
+    employeeId: number;
+    survivingCount: number;
+  }
+  const tallies = new Map<string, AssignmentTally>();
   const idsToDelete: number[] = [];
 
   for (const range of ranges) {
     const assignmentKey = `${range.TaskId}:${range.EmployeeId}`;
-    if (!survivingCount.has(assignmentKey)) survivingCount.set(assignmentKey, 0);
+    let tally = tallies.get(assignmentKey);
+    if (!tally) {
+      tally = { taskId: range.TaskId, employeeId: range.EmployeeId, survivingCount: 0 };
+      tallies.set(assignmentKey, tally);
+    }
 
     const previousStart = timeToMinutes(range.start_time);
     const previousEnd = timeToMinutes(range.end_time);
@@ -185,7 +205,7 @@ export async function clampTimeRangesToWindow(
       idsToDelete.push(range.id);
       continue;
     }
-    survivingCount.set(assignmentKey, (survivingCount.get(assignmentKey) ?? 0) + 1);
+    tally.survivingCount += 1;
 
     const { start, end } = clipped;
     if (start !== previousStart || end !== previousEnd) {
@@ -203,11 +223,10 @@ export async function clampTimeRangesToWindow(
     });
   }
 
-  for (const [assignmentKey, count] of survivingCount) {
-    if (count > 0) continue;
-    const [taskIdText, employeeIdText] = assignmentKey.split(":");
-    const task = taskById.get(Number(taskIdText));
+  for (const { taskId, employeeId, survivingCount } of tallies.values()) {
+    if (survivingCount > 0) continue;
+    const task = taskById.get(taskId);
     if (!task) continue;
-    await task.removeEmployee(Number(employeeIdText), { transaction });
+    await task.removeEmployee(employeeId, { transaction });
   }
 }

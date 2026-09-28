@@ -32,8 +32,6 @@ import {
   firstFreeWindow,
   minutesToTime,
   timeToMinutes,
-  TIME_RANGE_VIOLATION_MESSAGES,
-  validateTimeRange,
   type MinuteWindow,
 } from "@recyclerie/api/domain/timeRange";
 
@@ -43,6 +41,7 @@ import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { ModelWhere } from "../../models/db-types.ts";
 import {
+  assertValidTimeRange,
   buildTimeRangeContext,
   clampTimeRangesToWindow,
   findEmployeeRangesForDate,
@@ -269,10 +268,7 @@ export const addUserToTask = async (req: Request, res: Response) => {
     let window: MinuteWindow;
     if (start_time !== undefined && end_time !== undefined) {
       window = { start: timeToMinutes(start_time), end: timeToMinutes(end_time) };
-      const check = validateTimeRange(window, context);
-      if (!check.ok) {
-        throw new createHttpError.Conflict(TIME_RANGE_VIOLATION_MESSAGES[check.reason]);
-      }
+      assertValidTimeRange(window, context);
     } else {
       const free = firstFreeWindow(context);
       if (!free) {
@@ -393,10 +389,7 @@ export const createTimeRange = async (req: Request, res: Response) => {
       { employeeId, task, transaction },
     );
     const window: MinuteWindow = { start: timeToMinutes(start_time), end: timeToMinutes(end_time) };
-    const check = validateTimeRange(window, context);
-    if (!check.ok) {
-      throw new createHttpError.Conflict(TIME_RANGE_VIOLATION_MESSAGES[check.reason]);
-    }
+    assertValidTimeRange(window, context);
     return EmployeeTaskTimeRange.create(
       { EmployeeId: employeeId, TaskId: taskId, start_time, end_time },
       { transaction },
@@ -426,10 +419,7 @@ export const updateTimeRange = async (req: Request, res: Response) => {
       { employeeId, task, excludeRangeId: rangeId, transaction },
     );
     const window: MinuteWindow = { start: timeToMinutes(start_time), end: timeToMinutes(end_time) };
-    const check = validateTimeRange(window, context);
-    if (!check.ok) {
-      throw new createHttpError.Conflict(TIME_RANGE_VIOLATION_MESSAGES[check.reason]);
-    }
+    assertValidTimeRange(window, context);
     await range.update({ start_time, end_time }, { transaction });
     return range;
   });

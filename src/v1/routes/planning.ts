@@ -36,8 +36,7 @@ router.get("/employee/:employee_id", asyncHandler(getEmployeeSchedule));
 // Récupérer les statistiques du planning
 router.get("/stats/overview", asyncHandler(planningStats));
 
-// Récupérer les employés assignés à une tâche spécifique du planning
-// @deprecated stub kept for the deprecated planning routes below; always returns [].
+// @deprecated Bypasses Time range validation (a stub that always returns []) — must not be used.
 router.get(
   "/:scheduleId/employees",
   asyncHandler(async (req, res) => {
@@ -63,10 +62,10 @@ router.get(
   }),
 );
 
-// @deprecated Bypasses Time range validation — use POST /api/tasks/:id/employees instead.
+// @deprecated Bypasses Time range validation — must not be used. Use POST /api/tasks/:id/employees instead.
 router.post("/:scheduleId/employees", asyncHandler(addEmployeeToSchedule));
 
-// @deprecated Bypasses Time range validation — use DELETE /api/tasks/:id/employees/:employeeId instead.
+// @deprecated Bypasses Time range validation — must not be used. Use DELETE /api/tasks/:id/employees/:employeeId instead.
 router.delete(
   "/:scheduleId/employees/:employeeId",
   asyncHandler(removeEmployeeFromSchedule),

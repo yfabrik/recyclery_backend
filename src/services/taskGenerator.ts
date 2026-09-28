@@ -13,6 +13,11 @@ import type { DateYMD } from "../date.js";
  * This function should be called periodically (e.g., daily) to ensure
  * that future tasks are always available for recurring schedules
  *
+ * Only ever bulk-creates brand new Tasks (never updates an existing one's
+ * start_time/end_time), so there is nothing here for the Task-edit Time range
+ * clamp (see services/timeRanges.ts) to run against: a new Task has no
+ * Assignment yet.
+ *
  * @param db - Database models instance
  */
 export async function generateFutureTasks(db: DB) {
