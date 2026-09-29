@@ -27,8 +27,7 @@ import { findByPkOrThrow } from "../../services/sequelize.js";
 import type { Request, Response } from "express";
 
 import db from "../../models/index.js";
-import { weekday, endOfDay, startOfDay, dayjs } from "../../utils/dates.js";
-import { getWeekNumber } from "@recyclerie/api/domain/date";
+import { weekday, endOfDay, startOfDay, getWeekNumber } from "../../utils/dates.js";
 
 import { formatWhereDateRange } from "../../helpers.js";
 import type { ModelWhere } from "../../models/db-types.js";
@@ -336,14 +335,17 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
 
   //TODO changer pour dayjs
   // console.log(getWeekNumber(taskDate), dayjs(taskDate).week());
-  const newYear = new Date(taskDate.getFullYear(), 0, 1);
-  const dayNumber = Math.floor((+taskDate - +newYear) / (24 * 60 * 60 * 1000));
-  const weekNumber = Math.ceil((taskDate.getDay() + 1 + dayNumber) / 7);
-  // console.log(weekNumber);
+  // const newYear = new Date(taskDate.getFullYear(), 0, 1);
+  // const dayNumber = Math.floor((+taskDate - +newYear) / (24 * 60 * 60 * 1000));
+  // const weekNumber = Math.ceil((taskDate.getDay() + 1 + dayNumber) / 7);
+  // console.log(dayjs(taskDate).week());
+  const weekNumber = getWeekNumber(taskDate)
+
 
   const start = startOfDay(currentSchedule.scheduled_date).toDate();
   const end = endOfDay(currentSchedule.scheduled_date).toDate();
 
+  console.log("week",weekNumber % 2 ? "week2" : "week1")
   const workdayInclude = {
     model: EmployeeWorkdays,
     attributes: [],

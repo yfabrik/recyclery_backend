@@ -68,7 +68,7 @@ export const listTasks = async (req: Request, res: Response) => {
   if (data.store_id) where.store_id = data.store_id;
 
   const include: Includeable[] = [];
-  if (data.include.includes("user"))
+  if (data.include.includes("user"))//TODO rename to employee
     include.push({
       model: Employee,
     });
