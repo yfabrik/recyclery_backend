@@ -40,6 +40,7 @@ export const COPY_ORDER = [
   "TaskSchedules",
   "Tasks",
   "employee_task",
+  "employee_task_time_range",
   "employee_schedule",
   "SalesTransactions",
   "transaction_items",
@@ -127,13 +128,35 @@ function isTimeColumn(col: string): boolean {
   return col === "arrival_time";
 }
 
+/** Tables whose start_time / end_time are TIME columns (Tasks' are DATETIME). */
+const TIME_OF_DAY_TABLES = new Set(["employee_task_time_range"]);
+
+const TIME_TEXT = /^(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?$/;
+
+/** SQLite hands TIME back as the text that was written: "HH:MM" or "HH:MM:SS". */
+export function normalizeTimeText(value: unknown): unknown {
+  if (typeof value === "string") {
+    const match = TIME_TEXT.exec(value.trim());
+    if (match) return `${match[1]}:${match[2]}:${match[3] ?? "00"}`;
+  }
+  return toMariaDbTime(value);
+}
+
 export function normalizeRowValue(
   row: Record<string, unknown>,
   sourceCol: string,
   targetCol?: string,
+  table?: string,
 ): unknown {
   const col = targetCol ?? sourceCol;
   let value = row[sourceCol];
+  if (
+    table !== undefined &&
+    TIME_OF_DAY_TABLES.has(table) &&
+    (col === "start_time" || col === "end_time")
+  ) {
+    return normalizeTimeText(value);
+  }
   if (
     value == null &&
     (col.endsWith("_at") || col.endsWith("At")) &&

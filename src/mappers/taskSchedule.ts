@@ -1,6 +1,5 @@
 import type { Weekday } from "@recyclerie/api/enums";
 import type {
-  AvailableEmployeeDto,
   PlanningStatsDto,
   PlanningStatsOverviewDto,
   StoreHoursDto,
@@ -25,13 +24,6 @@ type TaskScheduleMapperInput = MapperInput<TaskSchedule> & {
   tasks?: Array<MapperInput<Task>>;
   Employees?: Array<MapperInput<Employee>>;
   Recyclery?: MapperInput<Recyclery> | null;
-};
-
-type AvailableEmployeeInput = MapperInput<Employee> & {
-  is_available: boolean;
-  has_conflicts: boolean;
-  conflicts: Array<MapperInput<Task>>;
-  already_assigned?: boolean;
 };
 
 export interface PlanningStatsOverviewRow {
@@ -117,19 +109,6 @@ export const toStoreHoursDto = (
     createdAt: toIsoDateTime(schedule.createdAt),
     updatedAt: toIsoDateTime(schedule.updatedAt),
   }) satisfies StoreHoursDto;
-
-export const toAvailableEmployeeDto = (
-  employee: AvailableEmployeeInput,
-): AvailableEmployeeDto => {
-  const base = toEmployeeDto(employee);
-  return ({
-    ...base,
-    is_available: employee.is_available,
-    has_conflicts: employee.has_conflicts,
-    conflicts: employee.conflicts.map(toTaskDto),
-    already_assigned: Boolean(employee.already_assigned),
-  }) satisfies AvailableEmployeeDto;
-};
 
 export const toPlanningStatsOverviewDto = (
   stats: PlanningStatsOverviewRow | null | undefined,

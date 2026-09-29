@@ -13,6 +13,7 @@ import type Donation from "./donation.js";
 import type EcoOrganism from "./ecoorganism.js";
 import type Employee from "./employee.js";
 import type EmployeeStore from "./employeestore.js";
+import type EmployeeTaskTimeRange from "./employeetasktimerange.js";
 import type EmployeeWorkdays from "./employeeworkdays.js";
 import type GiftCard from "./giftcard.js";
 import type GiftCardTransaction from "./giftcardtransaction.js";
@@ -47,6 +48,7 @@ export type Models = {
   EcoOrganism: EcoOrganism;
   Employee: Employee;
   EmployeeStore: EmployeeStore;
+  EmployeeTaskTimeRange: EmployeeTaskTimeRange;
   EmployeeWorkdays: EmployeeWorkdays;
   GiftCard: GiftCard;
   GiftCardTransaction: GiftCardTransaction;
