@@ -16,6 +16,7 @@ export {
   toOptionalIsoDateTime,
   weekday,
   weekdaySortKey,
+  getWeekNumber,
   WEEKDAY_LABELS_FR,
   WEEKDAYS_MONDAY_FIRST,
 } from "@recyclerie/api/domain/date";

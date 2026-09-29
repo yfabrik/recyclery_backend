@@ -9,7 +9,6 @@ import {
   getEmployeeSchedule,
   addEmployeeToSchedule,
   removeEmployeeFromSchedule,
-  findAvailableEMployee,
   planningStats,
 } from "../../src/v1/controllers/taskSchedule";
 const {

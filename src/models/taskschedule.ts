@@ -25,11 +25,13 @@ import {
 } from "sequelize";
 import logger from "../services/logger.js";
 import { generateTasksFromSchedule } from "../services/taskScheduleUtils.js";
+import { clampTimeRangesToWindow, taskWindow } from "../services/timeRanges.js";
 import { weekday } from "../utils/dates.js";
 import { withTransaction } from "../utils/transaction.js";
 import type CollectionPoint from "./collectionpoint.ts";
 import type { ModelStatics } from "./db-types.ts";
 import type Employee from "./employee.ts";
+import type EmployeeTaskTimeRange from "./employeetasktimerange.ts";
 import type Recyclery from "./recyclery.ts";
 import type Task from "./task.ts";
 import {
@@ -218,6 +220,7 @@ export default class TaskSchedule extends Model<
       Task: ModelStatic<Task>,
       schedule: TaskSchedule,
       now: Date,
+      futureTasks: Task[],
       options?: InstanceUpdateOptions<TaskSchedule>,
     ) => {
       const fieldsToUpdate: Partial<InferAttributes<Task>> = {};
@@ -286,18 +289,35 @@ export default class TaskSchedule extends Model<
         }
       }
       if (Object.keys(fieldsToUpdate).length === 0) return;
+      const transaction = options?.transaction ?? null;
       const result = await Task.update(fieldsToUpdate, {
         where: {
           schedule_id: schedule.id,
           scheduled_date: { [Op.gte]: now },
         },
-        transaction: options?.transaction ?? null,
+        transaction,
       });
       const updatedCount = result[0];
       if (updatedCount > 0) {
         logger.info(
           `Updated ${updatedCount} future task(s) for schedule ${schedule.id} with fields: ${Object.keys(fieldsToUpdate).join(", ")}`,
         );
+      }
+      if (
+        ("start_time" in fieldsToUpdate || "end_time" in fieldsToUpdate)
+        && transaction
+        && futureTasks.length > 0
+      ) {
+        const EmployeeTaskTimeRangeModel = schedule.sequelize.models
+          .EmployeeTaskTimeRange as ModelStatic<EmployeeTaskTimeRange> | undefined;
+        if (EmployeeTaskTimeRangeModel) {
+          await clampTimeRangesToWindow(
+            EmployeeTaskTimeRangeModel,
+            futureTasks,
+            taskWindow(schedule),
+            transaction,
+          );
+        }
       }
     };
 
@@ -465,7 +485,7 @@ export default class TaskSchedule extends Model<
                   }
                   return;
                 }
-                await updateFutureTasksFields(Task, schedule, now, opts);
+                await updateFutureTasksFields(Task, schedule, now, futureTasks, opts);
               },
             );
           },

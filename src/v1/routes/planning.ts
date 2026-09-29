@@ -5,7 +5,6 @@ import {
   addEmployeeToSchedule,
   createSchedule,
   deleteSchedule,
-  findAvailableEMployee,
   findSchedule,
   getEmployeeSchedule,
   listSchedules,
@@ -37,7 +36,7 @@ router.get("/employee/:employee_id", asyncHandler(getEmployeeSchedule));
 // Récupérer les statistiques du planning
 router.get("/stats/overview", asyncHandler(planningStats));
 
-// Récupérer les employés assignés à une tâche spécifique du planning
+// @deprecated Bypasses Time range validation (a stub that always returns []) — must not be used.
 router.get(
   "/:scheduleId/employees",
   asyncHandler(async (req, res) => {
@@ -63,16 +62,10 @@ router.get(
   }),
 );
 
-// Assigner un employé à une tâche spécifique du planning
+// @deprecated Bypasses Time range validation — must not be used. Use POST /api/tasks/:id/employees instead.
 router.post("/:scheduleId/employees", asyncHandler(addEmployeeToSchedule));
 
-// Récupérer les employés disponibles pour une tâche spécifique (en tenant compte des conflits d'horaires)
-router.get(
-  "/:scheduleId/available-employees",
-  asyncHandler(findAvailableEMployee),
-);
-
-// Retirer un employé d'une tâche spécifique du planning
+// @deprecated Bypasses Time range validation — must not be used. Use DELETE /api/tasks/:id/employees/:employeeId instead.
 router.delete(
   "/:scheduleId/employees/:employeeId",
   asyncHandler(removeEmployeeFromSchedule),
