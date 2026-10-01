@@ -1,5 +1,5 @@
 import createHttpError from "http-errors";
-import { col, fn, literal } from "sequelize";
+import { col, fn, literal, Op } from "sequelize";
 import {
   assignEmployeeToScheduleBodySchema,
   taskScheduleDataSchema,
@@ -33,7 +33,7 @@ import type { ModelWhere } from "../../models/db-types.js";
 import { toPlanningStatsDto, toTaskScheduleDto, type PlanningStatsOverviewRow } from "../../mappers/taskSchedule.js";
 import { toTaskDto } from "../../mappers/tasks.js";
 
-const { Recyclery, Task, TaskSchedule, Employee, EmployeeWorkdays } = db;
+const { Recyclery, Task, TaskSchedule, Employee, EmployeeWorkdays,EmployeeVacation } = db;
 
 export const listSchedules = async (req: Request, res: Response) => {
   const category =
@@ -202,6 +202,10 @@ export const deleteSchedule = async (req: Request, res: Response) => {
   );
 };
 
+/**
+ * 
+ * @deprecated it doesnt work, employee are assigned to a task not to a reccurence
+ */
 export const getEmployeeSchedule = async (req: Request, res: Response) => {
   // const employee_id = idSchema().parse(req.params.employee_id);
 
@@ -343,19 +347,11 @@ export const findAvailableEMployee = async (req: Request, res: Response) => {
   const taskDate = new Date(currentSchedule.scheduled_date);
   const dayOfWeek = weekday(taskDate);
 
-  //TODO changer pour dayjs
-  // console.log(getWeekNumber(taskDate), dayjs(taskDate).week());
-  // const newYear = new Date(taskDate.getFullYear(), 0, 1);
-  // const dayNumber = Math.floor((+taskDate - +newYear) / (24 * 60 * 60 * 1000));
-  // const weekNumber = Math.ceil((taskDate.getDay() + 1 + dayNumber) / 7);
-  // console.log(dayjs(taskDate).week());
-  const weekNumber = getWeekNumber(taskDate)
-
+  const weekNumber = getWeekNumber(taskDate);
 
   const start = startOfDay(currentSchedule.scheduled_date).toDate();
   const end = endOfDay(currentSchedule.scheduled_date).toDate();
 
-  console.log("week",weekNumber % 2 ? "week2" : "week1")
   const workdayInclude = {
     model: EmployeeWorkdays,
     attributes: [],

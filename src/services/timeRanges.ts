@@ -19,7 +19,7 @@ import {
   type MinuteWindow,
   type TimeRangeContext,
 } from "@recyclerie/api/domain/timeRange";
-import { endOfDay, startOfDay, weekday } from "../utils/dates.js";
+import { endOfDay, getWeekNumber, startOfDay, weekday } from "../utils/dates.js";
 import type EmployeeTaskTimeRangeModel from "../models/employeetasktimerange.ts";
 import type EmployeeWorkdaysModel from "../models/employeeworkdays.ts";
 import type TaskModel from "../models/task.ts";
@@ -47,9 +47,7 @@ export const taskWindow = (task: {
  * (`findAvailableEMployee`): parity of the day's ordinal position in the year.
  */
 export const getBiWeek = (date: Date): "week1" | "week2" => {
-  const newYear = new Date(date.getFullYear(), 0, 1);
-  const dayNumber = Math.floor((+date - +newYear) / (24 * 60 * 60 * 1000));
-  const weekNumber = Math.ceil((date.getDay() + 1 + dayNumber) / 7);
+  const weekNumber = getWeekNumber(date);
   return weekNumber % 2 ? "week2" : "week1";
 };
 
