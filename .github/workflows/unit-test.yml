@@ -21,3 +21,4 @@ jobs:
         env:
           JWT_SECRET: ci-test-jwt-secret
           NODE_ENV: test
+          TZ: Europe/Paris
