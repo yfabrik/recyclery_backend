@@ -13,12 +13,12 @@ import { expectHttpError, makeReq, makeRes } from "./helpers.js";
 
 const { Task, EmployeeWorkdays, EmployeeVacation, EmployeeTaskTimeRange } = db;
 
-// Sunday 2030-06-02: day_of_week 0, "week1" under the app's bi-week split,
-// and — under TZ=Europe/Paris summer time — 07:00Z/15:00Z read back as the
-// local 09:00/17:00 used throughout these fixtures.
+// Sunday 2030-06-02: day_of_week 0, dayjs week 23 (odd) → "week2" under the
+// app's bi-week split, and — under TZ=Europe/Paris summer time — 07:00Z/15:00Z
+// read back as the local 09:00/17:00 used throughout these fixtures.
 const SCHEDULED_DATE = new Date("2030-06-02");
 const DAY_OF_WEEK = 0;
-const WEEK = "week1";
+const WEEK = "week2";
 
 // No store on purpose: keeps the Store filter in getAvailableEmployeesForTask
 // out of the way for tests that don't care about it.
