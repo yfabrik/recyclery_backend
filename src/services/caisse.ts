@@ -4,6 +4,13 @@ import type { Models, ModelWhere } from "../models/db-types.js";
 
 const { CashRegister, CashSession, Recyclery } = db;
 
+/**
+ * @deprecated Whole file. `ListCashRegistersOptions` duplicates `CashRegisterFilter`
+ * from `@recyclerie/api/schemas/cashRegister`, and `findOpenSession` is unused.
+ * Move the remaining logic into the cash register controller.
+ */
+
+/** @deprecated Use `CashRegisterFilter` from `@recyclerie/api/schemas/cashRegister`. */
 export type ListCashRegistersOptions = {
   store_id?: Models["Recyclery"]["id"];
   is_active?: boolean;
@@ -12,6 +19,8 @@ export type ListCashRegistersOptions = {
 /**
  * List cash registers with store_name / total_sessions / last_session aggregates.
  * Sessions are joined only for COUNT/MAX (attributes: []), so nested sessions are not serialized.
+ *
+ * @deprecated Part of the deprecated `services/caisse.ts`.
  */
 export const findCashRegistersWithAggregates = async (
   options: ListCashRegistersOptions = {},
@@ -51,7 +60,11 @@ export const findCashRegistersWithAggregates = async (
   });
 };
 
-/** Active registers for a store (recyclery nested caisses list endpoint). */
+/**
+ * Active registers for a store (recyclery nested caisses list endpoint).
+ *
+ * @deprecated Part of the deprecated `services/caisse.ts`.
+ */
 export const listCaisses = async (store_id: Models["Recyclery"]["id"]) =>
   findCashRegistersWithAggregates({ store_id, is_active: true });
 
