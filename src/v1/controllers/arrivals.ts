@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import createHttpError from "http-errors";
 import { col, fn, literal } from "sequelize";
 import {
+  arrivalCategoryStatsFilterSchema,
   arrivalDataSchema,
   arrivalDateFilterSchema,
   arrivalFilterSchema,
@@ -251,25 +252,42 @@ export const statsSummary = async (req: RequestWithUser, res: Response) => {
 };
 
 export const statsByCategories = async (req: Request, res: Response) => {
-  const data = arrivalDateFilterSchema.parse(req.query);
+  const { date_from, date_to, category_id, source_type, collection_point_id } =
+    arrivalCategoryStatsFilterSchema.parse(req.query);
 
   const where: ModelWhere<typeof Arrival> = {};
-  const dateRange = formatWhereDateRange(data.date_from, data.date_to);
+  const dateRange = formatWhereDateRange(date_from, date_to);
   if (dateRange) where.arrival_date = dateRange;
+  if (category_id) where.category_id = category_id;
+  if (source_type) where.source_type = source_type;
+  if (source_type === "point" && collection_point_id) {
+    where.collection_point_id = collection_point_id;
+  }
 
   const stats = await Arrival.findAll({
-    attributes: {
-      include: [
-        [fn("COUNT", col("*")), "count"],
-        [fn("SUM", col("weight")), "total_weight"],
-      ],
-    },
-    include: [{ model: Category, as: "categorie" }],
+    attributes: [
+      [fn("COUNT", col("Arrival.id")), "count"],
+      [fn("SUM", col("Arrival.weight")), "total_weight"],
+    ],
+    include: [
+      {
+        model: Category,
+        as: "categorie",
+        attributes: ["id", "name", "description", "icon", "parent_id"],
+      },
+    ],
+    where,
+    group: [col("categorie.id")],
+    order: [[col("categorie.name"), "ASC"]],
   });
 
   res.json(
     apiData(
-      stats.map((row) => toArrivalCategoryStatsDto(row as ArrivalCategoryStatsRow)),
+      stats.map((row) =>
+        toArrivalCategoryStatsDto(
+          row.get({ plain: true }) as ArrivalCategoryStatsRow,
+        ),
+      ),
     ) satisfies ArrivalCategoryStatsResponse,
   );
 };

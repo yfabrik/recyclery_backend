@@ -6,6 +6,7 @@ import {
   deleteArrival,
   detailArrival,
   listArrivals,
+  statsByCategories,
   updateArrival,
 } from "../../src/v1/controllers/arrivals";
 import { makeReq, makeRes, expectHttpError } from "./helpers.js";
@@ -385,5 +386,73 @@ describe("arrival controller functions", () => {
       res.json.mock.calls[0][0].data.id,
     );
     expect(arrival.collection_point_id).toBeNull();
+  });
+});
+
+describe("arrival statsByCategories", () => {
+  const stats = async (query) => {
+    const res = makeRes();
+    await statsByCategories(makeReq({ query }), res);
+    return res.json.mock.calls[0][0].data;
+  };
+  const byName = (rows, name) => rows.find((r) => r.categorie?.name === name);
+
+  beforeAll(async () => {
+    const textile = await Category.create({ name: "Textile", IO: IOValues.IN });
+    const otherPoint = await CollectionPoint.create({
+      name: "Point Nord",
+      address: "1 Rue Nord",
+      city: "Orgelet",
+      postal_code: "39270",
+    });
+    const base = { processed_by: 1, arrival_time: "10:00" };
+    await Arrival.bulkCreate([
+      { ...base, category_id: textile.id, weight: 10, arrival_date: new Date("2025-06-10"), source_type: "point", collection_point_id: 1 },
+      { ...base, category_id: textile.id, weight: 5, arrival_date: new Date("2025-06-11"), source_type: "point", collection_point_id: otherPoint.id },
+      { ...base, category_id: textile.id, weight: 2, arrival_date: new Date("2025-06-12"), source_type: "apport" },
+      { ...base, category_id: 1, subcategory_id: 2, weight: 7, arrival_date: new Date("2025-06-12"), source_type: "apport" },
+      { ...base, category_id: 1, subcategory_id: 2, weight: 3, arrival_date: new Date("2025-07-20"), source_type: "point", collection_point_id: 1 },
+    ]);
+  });
+
+  const june = { date_from: "2025-06-01", date_to: "2025-06-30" };
+
+  it("groups count and weight per category", async () => {
+    const rows = await stats(june);
+    expect(rows).toHaveLength(2);
+    expect(byName(rows, "Textile")).toMatchObject({ count: 3, total_weight: 17 });
+    expect(byName(rows, "Électronique")).toMatchObject({ count: 1, total_weight: 7 });
+  });
+
+  it("applies the date range", async () => {
+    const rows = await stats({ date_from: "2025-07-01", date_to: "2025-07-31" });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ count: 1, total_weight: 3 });
+  });
+
+  it("filters by category_id", async () => {
+    const textile = await Category.findOne({ where: { name: "Textile" } });
+    const rows = await stats({ ...june, category_id: textile.id });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ count: 3, total_weight: 17 });
+  });
+
+  it("filters by source_type", async () => {
+    const rows = await stats({ ...june, source_type: "point" });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ count: 2, total_weight: 15 });
+    expect(rows[0].categorie.name).toBe("Textile");
+  });
+
+  it("filters by collection_point_id when source_type is point", async () => {
+    const rows = await stats({ ...june, source_type: "point", collection_point_id: 1 });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ count: 1, total_weight: 10 });
+  });
+
+  it("ignores collection_point_id when source_type is not point", async () => {
+    const rows = await stats({ ...june, source_type: "apport", collection_point_id: 1 });
+    expect(rows).toHaveLength(2);
+    expect(byName(rows, "Textile")).toMatchObject({ count: 1, total_weight: 2 });
   });
 });
