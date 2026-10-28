@@ -37,7 +37,7 @@
     "sequelize": "^6.37.8",
     "sqlite3": "^5.1.7",
     "winston": "^3.18.3",
-    "zod": "^4.3.5",
+    "zod": "^4.6.7",
     "@recyclerie/api": "git+ssh://git@github.com/yfabrik/api-recyclerie.git#v0.5.5"
   },
   "devDependencies": {
