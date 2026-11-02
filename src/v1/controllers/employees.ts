@@ -21,8 +21,12 @@ import {
 } from "@recyclerie/api/types/response";
 import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
-import { classifyEmployeeTask, type HeldRange } from "../../services/employeeTasks.js";
-import { isVacationOnDate } from "../../services/vacations.js";
+import {
+  classifyEmployeeTask,
+  compareByWindowThenTask,
+  type HeldRange,
+} from "../../services/employeeTasks.js";
+import { findEmployeeVacationsBetween, isVacationOnDate } from "../../services/vacations.js";
 import {
   findEmployeeWorkdaysForDate,
   taskWindow,
@@ -34,7 +38,7 @@ import { toTimeRangeDto, toWorkWindowDto } from "../../mappers/timeRanges.js";
 import { toEmployeeVacationDto } from "../../mappers/vacations.js";
 import { formatWhereDateRange } from "../../helpers.js";
 import type { ModelWhere } from "../../models/db-types.ts";
-import { endOfDay, startOfDay, toIsoDate } from "../../utils/dates.js";
+import { startOfDay, toIsoDate } from "../../utils/dates.js";
 import type { Request, Response } from "express";
 import { Op } from "sequelize";
 
@@ -193,14 +197,7 @@ export const listEmployeeTasks = async (req: Request, res: Response) => {
     ]);
   }
 
-  const vacations = await EmployeeVacation.findAll({
-    where: {
-      employee_id: employee.id,
-      start_date: { [Op.lte]: endOfDay(date_to).toDate() },
-      end_date: { [Op.gte]: startOfDay(date_from).toDate() },
-    },
-    order: [["start_date", "ASC"]],
-  });
+  const vacations = await findEmployeeVacationsBetween(EmployeeVacation, employee.id, date_from, date_to);
 
   const days = await Promise.all(
     eachIsoDate(date_from, date_to).map(async (date) => {
@@ -217,14 +214,14 @@ export const listEmployeeTasks = async (req: Request, res: Response) => {
       const vacation = vacations.find((candidate) => isVacationOnDate(candidate, date));
 
       const rows = (tasksByDate.get(date) ?? [])
-        .map((task) => ({ task, window: taskWindow(task) }))
-        .sort((a, b) => a.window.start - b.window.start || a.window.end - b.window.end || a.task.id - b.task.id)
-        .flatMap(({ task, window }) => {
+        .map((task) => ({ task, taskId: task.id, ...taskWindow(task) }))
+        .sort(compareByWindowThenTask)
+        .flatMap(({ task, start, end }) => {
           const taskDto = taskDtoById.get(task.id);
           if (!taskDto) return [];
           const classification = classifyEmployeeTask({
             taskId: task.id,
-            task: window,
+            task: { start, end },
             workWindows,
             ranges,
             onVacation: vacation !== undefined,

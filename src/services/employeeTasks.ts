@@ -14,6 +14,12 @@ export interface HeldRange extends MinuteWindow {
   taskId: number;
 }
 
+/** Orders Tasks (or the Time ranges holding them) by start, then end, then Task id. */
+export const compareByWindowThenTask = (
+  a: MinuteWindow & { taskId: number },
+  b: MinuteWindow & { taskId: number },
+): number => a.start - b.start || a.end - b.end || a.taskId - b.taskId;
+
 export type EmployeeTaskClassification =
   | { status: "assigned" | "assignable"; freeWindows: MinuteWindow[] }
   | { status: "unavailable"; reason: "outside-hours" | "vacation"; freeWindows: [] }
@@ -51,7 +57,7 @@ export function classifyEmployeeTask(input: {
   }
 
   const blocker = [...otherRanges]
-    .sort((a, b) => a.start - b.start || a.end - b.end || a.taskId - b.taskId)
+    .sort(compareByWindowThenTask)
     .find((range) => withinHours.some((window) => overlap(window, range)));
   return {
     status: "unavailable",
