@@ -22,6 +22,7 @@ import {
 import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import { classifyEmployeeTask, type HeldRange } from "../../services/employeeTasks.js";
+import { isVacationOnDate } from "../../services/vacations.js";
 import {
   findEmployeeWorkdaysForDate,
   taskWindow,
@@ -213,12 +214,7 @@ export const listEmployeeTasks = async (req: Request, res: Response) => {
         end: timeToMinutes(workday.end_time),
       }));
       const ranges = rangesByDate.get(date) ?? [];
-      // Same day rule as the available-employees endpoint's Vacation filter.
-      const vacation = vacations.find(
-        (candidate) =>
-          candidate.start_date <= endOfDay(date).toDate() &&
-          candidate.end_date >= startOfDay(date).toDate(),
-      );
+      const vacation = vacations.find((candidate) => isVacationOnDate(candidate, date));
 
       const rows = (tasksByDate.get(date) ?? [])
         .map((task) => ({ task, window: taskWindow(task) }))
@@ -226,7 +222,13 @@ export const listEmployeeTasks = async (req: Request, res: Response) => {
         .flatMap(({ task, window }) => {
           const taskDto = taskDtoById.get(task.id);
           if (!taskDto) return [];
-          const classification = classifyEmployeeTask({ taskId: task.id, task: window, workWindows, ranges });
+          const classification = classifyEmployeeTask({
+            taskId: task.id,
+            task: window,
+            workWindows,
+            ranges,
+            onVacation: vacation !== undefined,
+          });
           const timeRanges = (rangesByTaskId.get(task.id) ?? [])
             .sort((a, b) => timeToMinutes(a.start_time) - timeToMinutes(b.start_time))
             .map(toTimeRangeDto);

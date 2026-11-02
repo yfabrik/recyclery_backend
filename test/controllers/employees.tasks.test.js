@@ -439,7 +439,7 @@ describe("employees controller: listEmployeeTasks", () => {
       expect(monday.rows[0].freeWindows).toEqual([{ start_time: "09:00", end_time: "17:00" }]);
     });
 
-    it("reports a Vacation covering the day without turning anything unavailable yet", async () => {
+    it("reports a Vacation covering the day, first and last day included, and not the day after", async () => {
       const { store, employee } = await createStaffedEmployee();
       const vacation = await EmployeeVacation.create({
         employee_id: employee.id,
@@ -453,8 +453,63 @@ describe("employees controller: listEmployeeTasks", () => {
 
       expect(day.vacation).toMatchObject({ id: vacation.id, reason: "sick", start_date: SUNDAY, end_date: SUNDAY });
       expect(next.vacation).toBeNull();
-      // Ticket 06 turns this into a "vacation" reason; for now the rules ignore Vacations.
-      expect(day.rows[0].status).toBe("assignable");
+    });
+
+    describe("on a Vacation day", () => {
+      const onVacation = async () => {
+        const { store, employee } = await createStaffedEmployee();
+        await EmployeeVacation.create({
+          employee_id: employee.id,
+          reason: "paid_vacation",
+          start_date: new Date("2030-06-01"),
+          end_date: new Date(SUNDAY),
+        });
+        return { store, employee };
+      };
+
+      it("reports the vacation reason for a Task the Employee does not hold", async () => {
+        const { store, employee } = await onVacation();
+        await createTask({ store_id: store.id });
+
+        const [row] = await sundayRows(employee.id);
+
+        expect(row).toMatchObject({ status: "unavailable", reason: "vacation", freeWindows: [], timeRanges: [] });
+        expect(row.blockedBy).toBeUndefined();
+      });
+
+      it("prefers the vacation reason over outside hours and busy", async () => {
+        const { store, employee } = await onVacation();
+        const held = await createTask({ store_id: store.id, from: "09:00", to: "12:00" });
+        await assign(held, employee, ["09:00", "12:00"]);
+        await createTask({ store_id: store.id, from: "10:00", to: "11:00" }); // busy without the Vacation
+        await createTask({ store_id: store.id, from: "18:00", to: "19:00" }); // outside hours without it
+
+        const rows = await sundayRows(employee.id);
+
+        expect(rows.map((row) => row.reason)).toEqual([undefined, "vacation", "vacation"]);
+      });
+
+      it("keeps a Task the Employee still holds as assigned", async () => {
+        const { store, employee } = await onVacation();
+        const held = await createTask({ store_id: store.id });
+        await assign(held, employee, ["09:00", "12:00"]);
+
+        const [row] = await sundayRows(employee.id);
+
+        expect(row).toMatchObject({ task: { id: held.id }, status: "assigned" });
+        expect(row.reason).toBeUndefined();
+        expect(row.timeRanges).toHaveLength(1);
+      });
+
+      it("leaves the next day assignable", async () => {
+        const { store, employee } = await onVacation();
+        await createWorkday(employee.id, "09:00:00", "17:00:00", { day_of_week: 1 });
+        await createTask({ store_id: store.id, date: MONDAY });
+
+        const [, monday] = await days(employee.id, { date_from: SUNDAY, date_to: MONDAY });
+
+        expect(monday.rows[0]).toMatchObject({ status: "assignable" });
+      });
     });
 
     it("answers 400 when a date is missing", async () => {
