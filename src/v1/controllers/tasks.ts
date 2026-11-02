@@ -107,6 +107,16 @@ export const listTasks = async (req: Request, res: Response) => {
     order: [["createdAt", "DESC"]],
   });
 
+  if (data.include.includes("timeRanges")) {
+    const ranges = await EmployeeTaskTimeRange.findAll({
+      where: { TaskId: { [Op.in]: tasks.map((task) => task.id) } },
+    });
+    const rangesByTask = Map.groupBy(ranges, (range) => range.TaskId);
+    // No Sequelize association: attach them the way an include would.
+    for (const task of tasks)
+      Object.assign(task, { timeRanges: rangesByTask.get(task.id) ?? [] });
+  }
+
   res.json(
     apiData(tasks.map(toTaskDto)) satisfies ListTasksResponse,
   );
