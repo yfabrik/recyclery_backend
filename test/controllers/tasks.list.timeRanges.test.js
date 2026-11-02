@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, describe, expect, it } from "@jest/globals";
+import { beforeAll, describe, expect, it } from "@jest/globals";
 import db from "../../src/models/index";
 import {
   addUserToTask,
@@ -76,10 +76,6 @@ beforeAll(async () => {
   );
   await assign(taskB.id, employee1.id, "11:00", "12:00");
   await assign(taskA.id, employee2.id, "09:00", "12:00");
-});
-
-afterAll(async () => {
-  // Global teardown handles database cleanup
 });
 
 const rangeSummaries = (task) =>
