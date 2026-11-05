@@ -49,7 +49,8 @@ import {
   getBiWeek,
   taskWindow,
 } from "../../services/timeRanges.js";
-import { endOfDay, startOfDay, weekday } from "../../utils/dates.js";
+import { assertNotOnVacation, vacationCoversDate } from "../../services/vacations.js";
+import { weekday } from "../../utils/dates.js";
 
 import db from "../../models/index.js";
 import { toTaskAssignedEmployeeDto, toTaskAvailableEmployeeDto, toTimeRangeDto } from "../../mappers/timeRanges.js";
@@ -106,6 +107,16 @@ export const listTasks = async (req: Request, res: Response) => {
     where,
     order: [["createdAt", "DESC"]],
   });
+
+  if (data.include.includes("timeRanges")) {
+    const ranges = await EmployeeTaskTimeRange.findAll({
+      where: { TaskId: { [Op.in]: tasks.map((task) => task.id) } },
+    });
+    const rangesByTask = Map.groupBy(ranges, (range) => range.TaskId);
+    // No Sequelize association: attach them the way an include would.
+    for (const task of tasks)
+      Object.assign(task, { timeRanges: rangesByTask.get(task.id) ?? [] });
+  }
 
   res.json(
     apiData(tasks.map(toTaskDto)) satisfies ListTasksResponse,
@@ -260,6 +271,7 @@ export const addUserToTask = async (req: Request, res: Response) => {
   }
 
   const range = await db.sequelize.transaction(async (transaction) => {
+    await assertNotOnVacation(EmployeeVacation, employee.id, task.scheduled_date, transaction);
     const context = await buildTimeRangeContext(
       { EmployeeWorkdays, EmployeeTaskTimeRange, Task },
       { employeeId: employee.id, task, transaction },
@@ -314,9 +326,6 @@ export const getAvailableEmployeesForTask = async (req: Request, res: Response) 
   const taskId = idSchema().parse(req.params.taskId);
   const task = await findByPkOrThrow(Task, taskId, "Tâche non trouvée");
 
-  const start = startOfDay(task.scheduled_date).toDate();
-  const end = endOfDay(task.scheduled_date).toDate();
-
   const workdayInclude = {
     model: EmployeeWorkdays,
     attributes: [],
@@ -334,10 +343,7 @@ export const getAvailableEmployeesForTask = async (req: Request, res: Response) 
     as: "vacations",
     attributes: [],
     required: false,
-    where: {
-      start_date: { [Op.lte]: end },
-      end_date: { [Op.gte]: start },
-    },
+    where: vacationCoversDate(task.scheduled_date),
   };
 
   const include: Includeable[] = [workdayInclude, vacationExcludeInclude];
@@ -384,6 +390,7 @@ export const createTimeRange = async (req: Request, res: Response) => {
   }
 
   const range = await db.sequelize.transaction(async (transaction) => {
+    await assertNotOnVacation(EmployeeVacation, employeeId, task.scheduled_date, transaction);
     const context = await buildTimeRangeContext(
       { EmployeeWorkdays, EmployeeTaskTimeRange, Task },
       { employeeId, task, transaction },
