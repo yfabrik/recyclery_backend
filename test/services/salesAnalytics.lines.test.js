@@ -103,6 +103,20 @@ describe("loadLines and sumLinesByCategory", () => {
     expect(net).toBeCloseTo(totals.sales.amount - totals.refunds.amount, 9);
     expect(net).toBeCloseTo(36, 9);
   });
+
+  it("gives each line its share of the whole-transaction discount, the way it shares the amount", async () => {
+    const lines = await loadLines(scope());
+    const share = (kind, category) =>
+      lines.find((l) => l.kind === kind && l.categoryId === category.id)
+        .wholeTransactionDiscount;
+
+    // 5 € off a 50 € Sale: Vaisselle 30, Romans 10 and Jouets 10 after its promotion.
+    expect(share("sale", vaisselle)).toBeCloseTo(3, 9);
+    expect(share("sale", romans)).toBeCloseTo(1, 9);
+    expect(share("sale", jouets)).toBeCloseTo(1, 9);
+    // A Refund stores no discount of its own: its amount is already net of it.
+    expect(share("refund", romans)).toBe(0);
+  });
 });
 
 describe("loadLines when a transaction's lines are worth 0", () => {

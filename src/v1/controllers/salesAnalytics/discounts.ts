@@ -35,41 +35,16 @@ const ratio = (numerator: number, denominator: number) =>
 const wholeTransactionDiscountOf = (sale: AnalyticsTransaction) =>
   sale.amountBeforeDiscount - sale.amount;
 
-/**
- * Each Sale line's share of its Sale's whole-transaction discount, pro rata
- * to line value (by quantity when every line is worth 0), the way `loadLines`
- * shares `total_amount`.
- */
-const wholeTransactionDiscountShares = (
-  sales: AnalyticsTransaction[],
-  saleLines: AnalyticsLine[],
-) => {
-  const discounts = new Map(sales.map((sale) => [sale.id, wholeTransactionDiscountOf(sale)]));
-  const sums = new Map<number, { value: number; quantity: number }>();
-  for (const line of saleLines) {
-    const sum = sums.get(line.transactionId) ?? { value: 0, quantity: 0 };
-    sum.value += line.value;
-    sum.quantity += line.quantity;
-    sums.set(line.transactionId, sum);
-  }
-  return saleLines.map((line) => {
-    const sum = sums.get(line.transactionId) ?? { value: 0, quantity: 0 };
-    const share =
-      sum.value > 0 ? line.value / sum.value : ratio(line.quantity, sum.quantity);
-    return { line, wholeTransaction: (discounts.get(line.transactionId) ?? 0) * share };
-  });
-};
-
+/** Each line carries its share of its Sale's whole-transaction discount (`loadLines`). */
 const topCategories = (
   tree: CategoryTree,
-  sales: AnalyticsTransaction[],
   saleLines: AnalyticsLine[],
 ): SalesDiscountCategoryDto[] => {
   const byCategory = new Map<
     number | null,
     { name: string; categoryPromotion: number; wholeTransaction: number }
   >();
-  for (const { line, wholeTransaction } of wholeTransactionDiscountShares(sales, saleLines)) {
+  for (const line of saleLines) {
     const top = categoryPath(tree, line.categoryId)[0];
     const id = top?.id ?? null;
     const entry = byCategory.get(id) ?? {
@@ -78,7 +53,7 @@ const topCategories = (
       wholeTransaction: 0,
     };
     entry.categoryPromotion += line.listValue - line.value;
-    entry.wholeTransaction += wholeTransaction;
+    entry.wholeTransaction += line.wholeTransactionDiscount;
     byCategory.set(id, entry);
   }
   return [...byCategory.entries()]
@@ -187,7 +162,7 @@ export const computeDiscounts = async (
     gross_revenue: roundCurrency(grossRevenue),
     share_of_gross_revenue: ratio(totalDiscount, grossRevenue),
     sales_count: sales.length,
-    top_categories: topCategories(tree, sales, saleLines),
+    top_categories: topCategories(tree, saleLines),
     whole_transaction_discounts: wholeTransactionDiscounts(sales, promotions, storeNames),
   };
 };

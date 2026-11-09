@@ -24,12 +24,19 @@ export type AnalyticsLine = {
    * prices, not what was paid back).
    */
   net: number;
+  /**
+   * The line's share of its transaction's whole-transaction discount
+   * (`total_amount_before_promotion − total_amount`), pro rata like `net`.
+   * 0 on Refund lines: a Refund's amount is already net of it.
+   */
+  wholeTransactionDiscount: number;
 };
 
 type LineRow = {
   transactionId: number | string;
   transactionType: string;
   transactionAmount: number | string;
+  transactionAmountBeforeDiscount: number | string;
   storeId: number | string;
   quantity: number | string;
   price: number | string;
@@ -46,7 +53,8 @@ const toNumberOrNull = (value: number | string | null) =>
 /**
  * Sale and Refund lines in scope. Line values are computed in JS with the
  * till's own `getCartLinePrice` (the SQL `totalPriceExpr` is wrong on
- * SQLite), then each transaction's amount is shared over its lines.
+ * SQLite), then each transaction's amount and whole-transaction discount are
+ * shared over its lines. The one pro-rata share of the analytics routes.
  */
 export const loadLines = async (scope: LoadScope): Promise<AnalyticsLine[]> => {
   const rows = (await TransactionItem.findAll({
@@ -54,6 +62,7 @@ export const loadLines = async (scope: LoadScope): Promise<AnalyticsLine[]> => {
       [col("TransactionItem.transaction_id"), "transactionId"],
       [col("SalesTransaction.transactionType"), "transactionType"],
       [col("SalesTransaction.total_amount"), "transactionAmount"],
+      [col("SalesTransaction.total_amount_before_promotion"), "transactionAmountBeforeDiscount"],
       [col("SalesTransaction.CashSession.CashRegister.recyclery_id"), "storeId"],
       "quantity",
       "price",
@@ -87,6 +96,7 @@ export const loadLines = async (scope: LoadScope): Promise<AnalyticsLine[]> => {
       listValue: getCartLinePrice({ ...cartLine, promotion: 0 }),
       value: getCartLinePrice(cartLine),
       transactionAmount: Number(row.transactionAmount),
+      transactionAmountBeforeDiscount: Number(row.transactionAmountBeforeDiscount),
     };
   });
 
@@ -97,7 +107,7 @@ export const loadLines = async (scope: LoadScope): Promise<AnalyticsLine[]> => {
     sums.quantity += line.quantity;
     byTransaction.set(line.transactionId, sums);
   }
-  return lines.map(({ transactionAmount, ...line }) => {
+  return lines.map(({ transactionAmount, transactionAmountBeforeDiscount, ...line }) => {
     const sums = byTransaction.get(line.transactionId) ?? { value: 0, quantity: 0 };
     // Lines all worth 0 (MariaDB's DECIMAL(10,0) `price` drops the cents of a
     // 0.40 € item): share by quantity so the amount is not lost.
@@ -107,7 +117,11 @@ export const loadLines = async (scope: LoadScope): Promise<AnalyticsLine[]> => {
         : sums.quantity > 0
           ? line.quantity / sums.quantity
           : 0;
-    return { ...line, net: transactionAmount * share };
+    return {
+      ...line,
+      net: transactionAmount * share,
+      wholeTransactionDiscount: (transactionAmountBeforeDiscount - transactionAmount) * share,
+    };
   });
 };
 
