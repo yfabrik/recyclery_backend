@@ -147,12 +147,13 @@ export async function recordSale(
  * A `sell` with no lines, as the Gift card page writes for a top-up. Not a
  * Sale for the analytics.
  * @param {{ id: number }} session
- * @param {{ at: string | Date, amount: number }} opts
+ * @param {{ at: string | Date, amount: number, status?: "completed" | "pending" | "cancelled" }} opts
  */
-export async function recordLinelessSell(session, { at, amount }) {
+export async function recordLinelessSell(session, { at, amount, status = "completed" }) {
   const createdAt = new Date(at);
   return SalesTransaction.create({
     transactionType: "sell",
+    status,
     total_amount_before_promotion: amount,
     total_amount: amount,
     payment_method: "cash",

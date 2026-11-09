@@ -7,6 +7,7 @@ import { Op, col } from "sequelize";
 import type {
   GiftCardStatus,
   GiftCardTransactionType,
+  SalesTransactionStatus,
   TransactionType,
 } from "../../constants/dbEnums.js";
 import db from "../../models/index.js";
@@ -18,8 +19,11 @@ import { storeInclude, type LoadScope } from "./scope.js";
  * actually written:
  *
  * - Every movement is tied to a sales transaction, whose own cash session
- *   gives its Store. Movements count as written, whatever that transaction's
- *   status, so balances match the card's own (`current_value`).
+ *   gives its Store. The period figures (issued by origin, used) count only
+ *   the movements of `completed` transactions: `pending` and `cancelled` are
+ *   excluded everywhere. Balances (expired, outstanding) keep every movement,
+ *   whatever its transaction's status: they are the card's own ledger
+ *   balance (`current_value`), what the card is really worth at the till.
  * - A card created by hand on the Gift card page has no `issue` movement: it
  *   is dated `issued_at` and worth `initial_value`.
  * - An `issue` or `refund_recredit` movement on a `refund` is store credit; on
@@ -50,6 +54,8 @@ export type LedgerMovement = {
   occurredAt: Date;
   /** Tells a top-up (`refund_recredit` on a sell) from store credit (on a Refund). */
   transactionType: TransactionType;
+  /** Only the movements of `completed` transactions count in the period figures. */
+  transactionStatus: SalesTransactionStatus;
   /** The Store of the transaction's own cash session. */
   storeId: number;
 };
@@ -71,6 +77,7 @@ type MovementRow = {
   amount: number | string;
   occurredAt: string | Date;
   transactionType: TransactionType;
+  transactionStatus: SalesTransactionStatus;
   storeId: number | string;
 };
 
@@ -92,6 +99,7 @@ export const loadGiftCardLedger = async (before: Date): Promise<GiftCardLedger> 
         "amount",
         [col("GiftCardTransaction.occurred_at"), "occurredAt"],
         [col("SalesTransaction.transactionType"), "transactionType"],
+        [col("SalesTransaction.status"), "transactionStatus"],
         [col("SalesTransaction.CashSession.CashRegister.recyclery_id"), "storeId"],
       ],
       where: { [Op.or]: [{ occurred_at: { [Op.lt]: before } }, { type: "issue" }] },
@@ -122,6 +130,7 @@ export const loadGiftCardLedger = async (before: Date): Promise<GiftCardLedger> 
       amount: Number(row.amount),
       occurredAt: new Date(row.occurredAt),
       transactionType: row.transactionType,
+      transactionStatus: row.transactionStatus,
       storeId: Number(row.storeId),
     })),
   };
@@ -176,7 +185,9 @@ const cardHistory = (ledger: GiftCardLedger) => {
 /**
  * Gift card figures of one range. With a Store, only the movements are
  * filtered (through their transaction's Store); cards created by hand,
- * expiries and the outstanding balance are network-wide.
+ * expiries and the outstanding balance are network-wide. Expiries and the
+ * outstanding balance read the whole ledger; the other figures only the
+ * movements of completed transactions.
  */
 export const giftCardFigures = (
   ledger: GiftCardLedger,
@@ -204,7 +215,10 @@ export const giftCardFigures = (
     return left > 0 ? [left] : [];
   });
   const inScope = ledger.movements.filter(
-    (m) => inBounds(m.occurredAt, bounds) && (storeId == null || m.storeId === storeId),
+    (m) =>
+      m.transactionStatus === "completed" &&
+      inBounds(m.occurredAt, bounds) &&
+      (storeId == null || m.storeId === storeId),
   );
   const amounts = (type: GiftCardTransactionType, transactionType: TransactionType) =>
     inScope
