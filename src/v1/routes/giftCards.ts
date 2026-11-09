@@ -9,6 +9,7 @@ import {
   invalidateGiftCard,
   listGiftCards,
 } from "../controllers/giftCards.js";
+import { giftCardAnalytics } from "../controllers/salesAnalytics/giftCards.js";
 
 export const router = Router();
 
@@ -17,6 +18,9 @@ router.post("/", asyncHandler(createGiftCard));
 
 // GET - List gift cards
 router.get("/", asyncHandler(listGiftCards));
+
+// GET - Sales analytics figures (declared before any `/:id` route)
+router.get("/analytics", asyncHandler(giftCardAnalytics));
 
 // GET - Find gift card by scan code
 router.get("/code/:code", asyncHandler(getGiftCardByCode));
