@@ -40,3 +40,22 @@ export const categoryPath = (
   }
   return path;
 };
+
+/**
+ * The category a line counts under when listing one level of the tree: its
+ * top-level category when `parentId` is null; otherwise the child of
+ * `parentId` on its path, or `parentId` itself for an item attached directly
+ * to it. `null`: no category (top level only). `undefined`: not under
+ * `parentId`.
+ */
+export const categoryAtLevel = (
+  tree: CategoryTree,
+  categoryId: number | null,
+  parentId: number | null,
+): CategoryNode | null | undefined => {
+  const path = categoryPath(tree, categoryId);
+  if (parentId == null) return path[0] ?? null;
+  const index = path.findIndex((node) => node.id === parentId);
+  if (index === -1) return undefined;
+  return path[index + 1] ?? path[index];
+};

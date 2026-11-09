@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middlewares/asyncHandler.js";
+import { salesAnalyticsCategories } from "../controllers/salesAnalytics/categories.js";
 import { salesAnalyticsKpis } from "../controllers/salesAnalytics/kpis.js";
 import { salesAnalyticsPostalCodes } from "../controllers/salesAnalytics/postalCodes.js";
 import { salesAnalyticsHeatmap } from "../controllers/salesAnalytics/heatmap.js";
@@ -16,3 +17,4 @@ router.get("/heatmap", asyncHandler(salesAnalyticsHeatmap));
 router.get("/payment-methods", asyncHandler(salesAnalyticsPaymentMethods));
 router.get("/stores", asyncHandler(salesAnalyticsStores));
 router.get("/timeline", asyncHandler(salesAnalyticsTimeline));
+router.get("/categories", asyncHandler(salesAnalyticsCategories));
