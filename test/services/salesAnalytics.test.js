@@ -2,6 +2,7 @@ import { describe, expect, it } from "@jest/globals";
 import {
   comparisonRange,
   parisDayBounds,
+  transactionKind,
 } from "../../src/services/salesAnalytics/index";
 
 const range = (date_from, date_to) => ({ date_from, date_to });
@@ -141,5 +142,12 @@ describe("comparisonRange", () => {
         comparisonRange(range("2026-03-01", "2026-03-01"), "custom", "previous"),
       ).toEqual(range("2026-02-28", "2026-02-28"));
     });
+  });
+});
+
+describe("transactionKind", () => {
+  it("reads a sell as a Sale and a refund as a Refund", () => {
+    expect(transactionKind("sell")).toBe("sale");
+    expect(transactionKind("refund")).toBe("refund");
   });
 });

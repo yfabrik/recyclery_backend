@@ -1,14 +1,20 @@
 import { getCartLinePrice } from "@recyclerie/api/domain/cart";
 import { col } from "sequelize";
+import type { TransactionType } from "../../constants/dbEnums.js";
 import db from "../../models/index.js";
-import { transactionInclude, type LoadScope } from "./scope.js";
+import {
+  transactionInclude,
+  transactionKind,
+  type LoadScope,
+  type TransactionKind,
+} from "./scope.js";
 
 const { LabeledItem, TransactionItem } = db;
 
 /** A Sale or Refund line in scope, valued. */
 export type AnalyticsLine = {
   transactionId: number;
-  kind: "sale" | "refund";
+  kind: TransactionKind;
   storeId: number;
   quantity: number;
   /** The item's most specific category: `subcategory_id`, else `category_id`. Null when it has none. */
@@ -34,7 +40,7 @@ export type AnalyticsLine = {
 
 type LineRow = {
   transactionId: number | string;
-  transactionType: string;
+  transactionType: TransactionType;
   transactionAmount: number | string;
   transactionAmountBeforeDiscount: number | string;
   storeId: number | string;
@@ -89,7 +95,7 @@ export const loadLines = async (scope: LoadScope): Promise<AnalyticsLine[]> => {
     };
     return {
       transactionId: Number(row.transactionId),
-      kind: row.transactionType === "refund" ? ("refund" as const) : ("sale" as const),
+      kind: transactionKind(row.transactionType),
       storeId: Number(row.storeId),
       quantity: cartLine.quantity,
       categoryId: toNumberOrNull(row.subcategoryId) ?? toNumberOrNull(row.categoryId),

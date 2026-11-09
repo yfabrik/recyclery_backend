@@ -1,8 +1,15 @@
 import { sumCashInPayments } from "@recyclerie/api/domain/cart";
 import type { PaymentMethod, SalesPaymentMethod } from "@recyclerie/api/enums";
 import { col } from "sequelize";
+import type { TransactionType } from "../../constants/dbEnums.js";
 import db from "../../models/index.js";
-import { transactionInclude, transactionScope, type LoadScope } from "./scope.js";
+import {
+  transactionInclude,
+  transactionKind,
+  transactionScope,
+  type LoadScope,
+  type TransactionKind,
+} from "./scope.js";
 
 const { SalesTransaction, TransactionPayment } = db;
 
@@ -19,7 +26,7 @@ export type MethodAmount = {
 /** One method of a Sale or Refund in scope. */
 export type AnalyticsPayment = MethodAmount & {
   transactionId: number;
-  kind: "sale" | "refund";
+  kind: TransactionKind;
   /** The Store of the transaction's own cash session. */
   storeId: number;
 };
@@ -70,7 +77,7 @@ export const amountsByMethod = (transaction: PaidTransaction): MethodAmount[] =>
 
 type TransactionRow = {
   id: number | string;
-  transactionType: string;
+  transactionType: TransactionType;
   total_amount: number | string;
   payment_method: SalesPaymentMethod;
   storeId: number | string;
@@ -113,7 +120,7 @@ export const loadPayments = async (scope: LoadScope): Promise<AnalyticsPayment[]
   const rowsByTransaction = Map.groupBy(payments, (row) => Number(row.transactionId));
   return transactions.flatMap((row) => {
     const transactionId = Number(row.id);
-    const kind = row.transactionType === "refund" ? ("refund" as const) : ("sale" as const);
+    const kind = transactionKind(row.transactionType);
     const storeId = Number(row.storeId);
     return amountsByMethod({
       amount: Number(row.total_amount),

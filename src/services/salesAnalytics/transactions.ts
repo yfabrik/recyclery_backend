@@ -1,15 +1,21 @@
 import type { IsoDate } from "@recyclerie/api";
 import { col } from "sequelize";
 import db from "../../models/index.js";
+import type { TransactionType } from "../../constants/dbEnums.js";
 import { toIsoDate, toIsoTime } from "../../utils/dates.js";
-import { transactionScope, type LoadScope } from "./scope.js";
+import {
+  transactionKind,
+  transactionScope,
+  type LoadScope,
+  type TransactionKind,
+} from "./scope.js";
 
 const { SalesTransaction } = db;
 
 /** A Sale or a Refund in scope, as plain numbers. */
 export type AnalyticsTransaction = {
   id: number;
-  kind: "sale" | "refund";
+  kind: TransactionKind;
   createdAt: Date;
   /** `total_amount`: positive for Refunds too. */
   amount: number;
@@ -24,7 +30,7 @@ export type AnalyticsTransaction = {
 
 type TransactionRow = {
   id: number;
-  transactionType: string;
+  transactionType: TransactionType;
   createdAt: string | Date;
   total_amount: number | string;
   total_amount_before_promotion: number | string;
@@ -57,7 +63,7 @@ export const loadTransactions = async (
   })) as unknown as TransactionRow[];
   return rows.map((row) => ({
     id: Number(row.id),
-    kind: row.transactionType === "refund" ? "refund" : "sale",
+    kind: transactionKind(row.transactionType),
     // SQLite returns the text it stores, MariaDB a Date.
     createdAt: new Date(row.createdAt),
     amount: Number(row.total_amount),
