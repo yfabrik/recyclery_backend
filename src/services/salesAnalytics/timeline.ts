@@ -72,6 +72,8 @@ export const timelineBuckets = (
 ): (DateRange | null)[] => {
   const step = timelineStep(current);
   const buckets = rangeBuckets(current, step);
+  // Spec: "the same buckets shifted". A longer comparison range (1–31 Mar vs
+  // 1–30 Apr) loses its extra trailing days; each bucket keeps its real dates.
   if (step === "month") {
     const months = monthIndex(range.date_from) - monthIndex(current.date_from);
     return buckets.map((bucket) => {
