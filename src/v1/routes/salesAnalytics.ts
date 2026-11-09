@@ -7,6 +7,7 @@ import { salesAnalyticsHeatmap } from "../controllers/salesAnalytics/heatmap.js"
 import { salesAnalyticsPaymentMethods } from "../controllers/salesAnalytics/paymentMethods.js";
 import { salesAnalyticsStores } from "../controllers/salesAnalytics/stores.js";
 import { salesAnalyticsTimeline } from "../controllers/salesAnalytics/timeline.js";
+import { salesAnalyticsDiscounts } from "../controllers/salesAnalytics/discounts.js";
 
 /** Mounted at `/sales-transactions/analytics`, before `/:id`. */
 export const router = Router();
@@ -18,3 +19,4 @@ router.get("/payment-methods", asyncHandler(salesAnalyticsPaymentMethods));
 router.get("/stores", asyncHandler(salesAnalyticsStores));
 router.get("/timeline", asyncHandler(salesAnalyticsTimeline));
 router.get("/categories", asyncHandler(salesAnalyticsCategories));
+router.get("/discounts", asyncHandler(salesAnalyticsDiscounts));
