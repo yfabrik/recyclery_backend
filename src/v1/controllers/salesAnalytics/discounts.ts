@@ -2,7 +2,7 @@ import { roundCurrency } from "@recyclerie/api/domain/cart";
 import {
   WHOLE_TRANSACTION_DISCOUNT_GROUPS,
   wholeTransactionDiscountKey,
-  type StoredGlobalPromotion,
+  type StoredWholeTransactionDiscount,
 } from "@recyclerie/api/domain/notableDiscounts";
 import type {
   SalesDiscountCategoryDto,
@@ -11,7 +11,7 @@ import type {
   WholeTransactionDiscountFiguresDto,
   WholeTransactionDiscountStoreDto,
 } from "@recyclerie/api/responses/salesAnalytics";
-import { loadGlobalPromotions } from "../../../services/salesAnalytics/globalPromotions.js";
+import { loadWholeTransactionDiscounts } from "../../../services/salesAnalytics/wholeTransactionDiscounts.js";
 import { loadStoreNames } from "../../../services/salesAnalytics/storeNames.js";
 import {
   categoryPath,
@@ -112,11 +112,11 @@ const byStore = (
  */
 const wholeTransactionDiscounts = (
   sales: AnalyticsTransaction[],
-  promotions: Map<number, StoredGlobalPromotion>,
+  discounts: Map<number, StoredWholeTransactionDiscount>,
   storeNames: Map<number, string> | null,
 ): WholeTransactionDiscountDto[] => {
   const byKey = Map.groupBy(sales, (sale) =>
-    wholeTransactionDiscountKey(promotions.get(sale.id)),
+    wholeTransactionDiscountKey(discounts.get(sale.id)),
   );
   return WHOLE_TRANSACTION_DISCOUNT_GROUPS.map(({ key, label }) => {
     const discounted = byKey.get(key) ?? [];
@@ -133,11 +133,11 @@ const wholeTransactionDiscounts = (
 export const computeDiscounts = async (
   scope: SalesAnalyticsScope,
 ): Promise<SalesDiscountsDto> => {
-  const [transactions, lines, tree, promotions, storeNames] = await Promise.all([
+  const [transactions, lines, tree, discounts, storeNames] = await Promise.all([
     loadTransactions(scope),
     loadLines(scope),
     loadCategoryTree(),
-    loadGlobalPromotions(scope),
+    loadWholeTransactionDiscounts(scope),
     scope.storeId == null ? loadStoreNames() : null,
   ]);
   // Discounts count on Sales only: a Refund never gives one back.
@@ -163,7 +163,7 @@ export const computeDiscounts = async (
     share_of_gross_revenue: ratio(totalDiscount, grossRevenue),
     sales_count: sales.length,
     top_categories: topCategories(tree, saleLines),
-    whole_transaction_discounts: wholeTransactionDiscounts(sales, promotions, storeNames),
+    whole_transaction_discounts: wholeTransactionDiscounts(sales, discounts, storeNames),
   };
 };
 
