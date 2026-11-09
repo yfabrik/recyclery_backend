@@ -78,6 +78,42 @@ describe("comparisonRange", () => {
       expect(
         comparisonRange(range("2026-04-01", "2026-06-30"), "quarter", "previous"),
       ).toEqual(range("2026-01-01", "2026-03-31"));
+      expect(
+        comparisonRange(range("2026-01-01", "2026-03-31"), "quarter", "previous"),
+      ).toEqual(range("2025-10-01", "2025-12-31"));
+    });
+
+    it("shifts a partial quarter by three months, even when it ends on a month end", () => {
+      expect(
+        comparisonRange(range("2026-10-01", "2026-11-30"), "quarter", "previous"),
+      ).toEqual(range("2026-07-01", "2026-08-30"));
+      expect(
+        comparisonRange(range("2026-01-01", "2026-02-28"), "quarter", "previous"),
+      ).toEqual(range("2025-10-01", "2025-11-28"));
+    });
+
+    it("shifts a month to date by one month, clamped to the end of the shorter month", () => {
+      expect(
+        comparisonRange(range("2026-03-01", "2026-03-30"), "month", "previous"),
+      ).toEqual(range("2026-02-01", "2026-02-28"));
+      expect(
+        comparisonRange(range("2026-05-01", "2026-05-30"), "month", "previous"),
+      ).toEqual(range("2026-04-01", "2026-04-30"));
+    });
+
+    it("shifts a month range that does not start on the 1st, even when it ends on a month end", () => {
+      expect(
+        comparisonRange(range("2026-04-15", "2026-04-30"), "month", "previous"),
+      ).toEqual(range("2026-03-15", "2026-03-30"));
+    });
+
+    it("compares a whole week and a whole year with the whole unit before", () => {
+      expect(
+        comparisonRange(range("2026-03-02", "2026-03-08"), "week", "previous"),
+      ).toEqual(range("2026-02-23", "2026-03-01"));
+      expect(
+        comparisonRange(range("2025-01-01", "2025-12-31"), "year", "previous"),
+      ).toEqual(range("2024-01-01", "2024-12-31"));
     });
 
     it("shifts a week by seven days", () => {
