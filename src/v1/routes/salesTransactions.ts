@@ -13,8 +13,12 @@ import {
   transactionStatsPostalCode,
   updateTransaction,
 } from "../controllers/salesTransactions.js";
+import { router as analyticsRouter } from "./salesAnalytics.js";
 
 export const router = Router();
+
+// GET - Statistiques de vente (page Suivi des Ventes), avant /:id
+router.use("/analytics", analyticsRouter);
 
 // GET - Récupérer les statistiques de résumé
 router.get("/stats/summary", asyncHandler(transactionsStats));
