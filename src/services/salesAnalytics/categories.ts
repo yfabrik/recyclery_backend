@@ -1,9 +1,12 @@
+import type { Models } from "../../models/db-types.js";
 import db from "../../models/index.js";
 
 const { Category } = db;
 
-export type CategoryNode = { id: number; name: string; parent_id: number | null };
-export type CategoryTree = Map<number, CategoryNode>;
+type CategoryId = Models["Category"]["id"];
+
+export type CategoryNode = { id: CategoryId; name: string; parent_id: CategoryId | null };
+export type CategoryTree = Map<CategoryId, CategoryNode>;
 
 /** Label of lines whose item has no category. */
 export const NO_CATEGORY_LABEL = "Sans catégorie";
@@ -28,10 +31,10 @@ export const loadCategoryTree = async (): Promise<CategoryTree> => {
  */
 export const categoryPath = (
   tree: CategoryTree,
-  categoryId: number | null,
+  categoryId: CategoryId | null,
 ): CategoryNode[] => {
   const path: CategoryNode[] = [];
-  const seen = new Set<number>();
+  const seen = new Set<CategoryId>();
   let node = categoryId == null ? undefined : tree.get(categoryId);
   while (node && !seen.has(node.id)) {
     seen.add(node.id);
@@ -50,8 +53,8 @@ export const categoryPath = (
  */
 export const categoryAtLevel = (
   tree: CategoryTree,
-  categoryId: number | null,
-  parentId: number | null,
+  categoryId: CategoryId | null,
+  parentId: CategoryId | null,
 ): CategoryNode | null | undefined => {
   const path = categoryPath(tree, categoryId);
   if (parentId == null) return path[0] ?? null;

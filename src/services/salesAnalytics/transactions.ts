@@ -2,6 +2,7 @@ import type { IsoDate } from "@recyclerie/api";
 import { col } from "sequelize";
 import z from "zod";
 import { TRANSACTION_TYPES } from "../../constants/dbEnums.js";
+import type { Models } from "../../models/db-types.js";
 import db from "../../models/index.js";
 import { toIsoDate, toIsoTime } from "../../utils/dates.js";
 import { dateColumn, numberColumn, parseRawRows } from "./rawRows.js";
@@ -16,7 +17,7 @@ const { SalesTransaction } = db;
 
 /** A Sale or a Refund in scope, as plain numbers. */
 export type AnalyticsTransaction = {
-  id: number;
+  id: Models["SalesTransaction"]["id"];
   kind: TransactionKind;
   createdAt: Date;
   /** `total_amount`: positive for Refunds too. */
@@ -24,9 +25,9 @@ export type AnalyticsTransaction = {
   /** `total_amount_before_promotion`: before the whole-transaction discount. */
   amountBeforeDiscount: number;
   /** The Store of the transaction's own cash session. */
-  storeId: number;
+  storeId: Models["Recyclery"]["id"];
   /** For a Refund, the Sale it refunds. */
-  refundedSaleId: number | null;
+  refundedSaleId: Models["SalesTransaction"]["id"] | null;
   postalCode: string | null;
 };
 

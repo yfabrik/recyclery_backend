@@ -15,6 +15,7 @@ import {
   type SalesTransactionStatus,
   type TransactionType,
 } from "../../constants/dbEnums.js";
+import type { Models } from "../../models/db-types.js";
 import db from "../../models/index.js";
 import type { UtcBounds } from "./ranges.js";
 import { dateColumn, numberColumn, parseRawRows } from "./rawRows.js";
@@ -43,7 +44,7 @@ const { GiftCard, GiftCardTransaction, SalesTransaction } = db;
 
 /** A gift card, as plain values. */
 export type LedgerCard = {
-  id: number;
+  id: Models["GiftCard"]["id"];
   initialValue: number;
   issuedAt: Date;
   expiresAt: Date | null;
@@ -53,7 +54,7 @@ export type LedgerCard = {
 
 /** A gift card movement, with the transaction it is tied to. */
 export type LedgerMovement = {
-  giftCardId: number;
+  giftCardId: Models["GiftCard"]["id"];
   type: GiftCardTransactionType;
   /** Signed: `charge` is negative. */
   amount: number;
@@ -63,7 +64,7 @@ export type LedgerMovement = {
   /** Only the movements of `completed` transactions count in the period figures. */
   transactionStatus: SalesTransactionStatus;
   /** The Store of the transaction's own cash session. */
-  storeId: number;
+  storeId: Models["Recyclery"]["id"];
 };
 
 export type GiftCardLedger = { cards: LedgerCard[]; movements: LedgerMovement[] };
@@ -152,8 +153,8 @@ const figure = (amounts: number[]): GiftCardFigureDto => ({
  * initial value from its issue, plus every non-issue movement so far.
  */
 const cardHistory = (ledger: GiftCardLedger) => {
-  const issueDates = new Map<number, Date>();
-  const movementsByCard = new Map<number, LedgerMovement[]>();
+  const issueDates = new Map<LedgerCard["id"], Date>();
+  const movementsByCard = new Map<LedgerCard["id"], LedgerMovement[]>();
   for (const m of ledger.movements) {
     if (m.type === "issue") {
       issueDates.set(m.giftCardId, m.occurredAt);

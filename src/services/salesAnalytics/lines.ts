@@ -2,6 +2,7 @@ import { getCartLinePrice } from "@recyclerie/api/domain/cart";
 import { col } from "sequelize";
 import z from "zod";
 import { TRANSACTION_TYPES } from "../../constants/dbEnums.js";
+import type { Models } from "../../models/db-types.js";
 import db from "../../models/index.js";
 import { numberColumn, parseRawRows } from "./rawRows.js";
 import {
@@ -15,12 +16,12 @@ const { LabeledItem, TransactionItem } = db;
 
 /** A Sale or Refund line in scope, valued. */
 export type AnalyticsLine = {
-  transactionId: number;
+  transactionId: Models["SalesTransaction"]["id"];
   kind: TransactionKind;
-  storeId: number;
+  storeId: Models["Recyclery"]["id"];
   quantity: number;
   /** The item's most specific category: `subcategory_id`, else `category_id`. Null when it has none. */
-  categoryId: number | null;
+  categoryId: Models["Category"]["id"] | null;
   /** Value before Category promotion (bundle prices included). */
   listValue: number;
   /** **Line value**: after Category promotion, before whole-transaction discount (`total_price`). */
@@ -142,7 +143,7 @@ export const itemsSold = (lines: AnalyticsLine[]) =>
 export type LineTotals = Pick<AnalyticsLine, "quantity" | "listValue" | "value" | "net">;
 
 export type CategoryLineTotals = {
-  categoryId: number | null;
+  categoryId: AnalyticsLine["categoryId"];
   sales: LineTotals;
   refunds: LineTotals;
 };
@@ -154,7 +155,7 @@ const emptyTotals = (): LineTotals => ({ quantity: 0, listValue: 0, value: 0, ne
  * with `categoryPath`. `Σ (sales.net − refunds.net)` is net revenue.
  */
 export const sumLinesByCategory = (lines: AnalyticsLine[]): CategoryLineTotals[] => {
-  const byCategory = new Map<number | null, CategoryLineTotals>();
+  const byCategory = new Map<AnalyticsLine["categoryId"], CategoryLineTotals>();
   for (const line of lines) {
     const entry = byCategory.get(line.categoryId) ?? {
       categoryId: line.categoryId,

@@ -8,6 +8,7 @@ import {
 } from "@recyclerie/api/enums";
 import { col } from "sequelize";
 import z from "zod";
+import type { Models } from "../../models/db-types.js";
 import db from "../../models/index.js";
 import { numberColumn, parseRawRows } from "./rawRows.js";
 import {
@@ -32,10 +33,10 @@ export type MethodAmount = {
 
 /** One method of a Sale or Refund in scope. */
 export type AnalyticsPayment = MethodAmount & {
-  transactionId: number;
+  transactionId: Models["SalesTransaction"]["id"];
   kind: TransactionKind;
   /** The Store of the transaction's own cash session. */
-  storeId: number;
+  storeId: Models["Recyclery"]["id"];
 };
 
 /** A transaction with its payment rows, as plain numbers. */
