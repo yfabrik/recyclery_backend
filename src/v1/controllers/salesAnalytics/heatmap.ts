@@ -1,6 +1,9 @@
 import { roundCurrency } from "@recyclerie/api/domain/cart";
 import type { Weekday } from "@recyclerie/api/enums";
-import type { SalesHeatmapDto } from "@recyclerie/api/responses/salesAnalytics";
+import type {
+  SalesAnalyticsHeatmapResponse,
+  SalesHeatmapDto,
+} from "@recyclerie/api/responses/salesAnalytics";
 import {
   loadTransactions,
   parisHour,
@@ -52,4 +55,4 @@ export const computeHeatmap = async (
 };
 
 /** `GET /sales-transactions/analytics/heatmap` */
-export const salesAnalyticsHeatmap = salesAnalyticsRoute(computeHeatmap);
+export const salesAnalyticsHeatmap = salesAnalyticsRoute<SalesAnalyticsHeatmapResponse>(computeHeatmap);

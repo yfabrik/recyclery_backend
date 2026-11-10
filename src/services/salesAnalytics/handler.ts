@@ -56,20 +56,33 @@ const scopeFor = (
 
 type Handler = (req: Request, res: Response) => Promise<void>;
 
+/** The response of any analytics route. */
+type AnyAnalyticsResponse = SalesAnalyticsResponse<unknown>;
+
+/** The figures one range of a route's response carries (`current`, `comparison`). */
+type FiguresOf<R extends AnyAnalyticsResponse> = R["data"]["current"];
+
 /**
  * Express handler for an analytics route: parses the query (the common one,
  * or `schema`), runs `compute` once for the current range and once for the
  * comparison range, and answers `{ ranges, current, comparison }`.
+ *
+ * `R` is the route's response alias from `@recyclerie/api` (the front types
+ * its route with the same one): `salesAnalyticsRoute<SalesAnalyticsKpisResponse>(computeKpis)`.
+ * It has to be named: left out, `compute` could return nothing but `never`.
  */
-export function salesAnalyticsRoute<T>(
-  compute: (scope: SalesAnalyticsScope) => Promise<T>,
+export function salesAnalyticsRoute<R extends AnyAnalyticsResponse = never>(
+  compute: (scope: SalesAnalyticsScope) => Promise<FiguresOf<R>>,
 ): Handler;
-export function salesAnalyticsRoute<T, Q extends SalesAnalyticsQuery>(
-  compute: (scope: SalesAnalyticsScope<Q>) => Promise<T>,
+export function salesAnalyticsRoute<
+  R extends AnyAnalyticsResponse = never,
+  Q extends SalesAnalyticsQuery = SalesAnalyticsQuery,
+>(
+  compute: (scope: SalesAnalyticsScope<Q>) => Promise<FiguresOf<R>>,
   schema: SalesAnalyticsQuerySchema<Q>,
 ): Handler;
-export function salesAnalyticsRoute<T>(
-  compute: (scope: SalesAnalyticsScope) => Promise<T>,
+export function salesAnalyticsRoute<R extends AnyAnalyticsResponse>(
+  compute: (scope: SalesAnalyticsScope) => Promise<FiguresOf<R>>,
   schema: SalesAnalyticsQuerySchema<SalesAnalyticsQuery> = salesAnalyticsQuerySchema,
 ): Handler {
   return async (req, res) => {
@@ -84,7 +97,7 @@ export function salesAnalyticsRoute<T>(
         ranges: request.ranges,
         current: currentFigures,
         comparison: comparisonFigures,
-      }) satisfies SalesAnalyticsResponse<T>,
+      }) satisfies SalesAnalyticsResponse<FiguresOf<R>>,
     );
   };
 }

@@ -1,6 +1,7 @@
 import { roundCurrency } from "@recyclerie/api/domain/cart";
 import { SALES_PAYMENT_METHODS, type SalesPaymentMethod } from "@recyclerie/api/enums";
 import type {
+  SalesAnalyticsPaymentMethodsResponse,
   SalesPaymentMethodDto,
   SalesPaymentMethodsDto,
 } from "@recyclerie/api/responses/salesAnalytics";
@@ -55,4 +56,6 @@ export const computePaymentMethods = async (
 };
 
 /** `GET /sales-transactions/analytics/payment-methods` */
-export const salesAnalyticsPaymentMethods = salesAnalyticsRoute(computePaymentMethods);
+export const salesAnalyticsPaymentMethods = salesAnalyticsRoute<SalesAnalyticsPaymentMethodsResponse>(
+  computePaymentMethods,
+);

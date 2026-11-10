@@ -1,5 +1,6 @@
 import { roundCurrency } from "@recyclerie/api/domain/cart";
 import type {
+  SalesAnalyticsCategoriesResponse,
   SalesCategoriesDto,
   SalesCategoryRowDto,
 } from "@recyclerie/api/responses/salesAnalytics";
@@ -111,7 +112,7 @@ export const computeCategories = async (
 };
 
 /** `GET /sales-transactions/analytics/categories` */
-export const salesAnalyticsCategories = salesAnalyticsRoute(
-  computeCategories,
-  salesCategoriesQuerySchema,
-);
+export const salesAnalyticsCategories = salesAnalyticsRoute<
+  SalesAnalyticsCategoriesResponse,
+  SalesCategoriesQuery
+>(computeCategories, salesCategoriesQuerySchema);

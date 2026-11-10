@@ -1,5 +1,6 @@
 import { roundCurrency } from "@recyclerie/api/domain/cart";
 import type {
+  SalesAnalyticsPostalCodesResponse,
   SalesPostalCodeDto,
   SalesPostalCodesDto,
 } from "@recyclerie/api/responses/salesAnalytics";
@@ -90,4 +91,6 @@ export const computePostalCodes = async (
 };
 
 /** `GET /sales-transactions/analytics/postal-codes` */
-export const salesAnalyticsPostalCodes = salesAnalyticsRoute(computePostalCodes);
+export const salesAnalyticsPostalCodes = salesAnalyticsRoute<SalesAnalyticsPostalCodesResponse>(
+  computePostalCodes,
+);

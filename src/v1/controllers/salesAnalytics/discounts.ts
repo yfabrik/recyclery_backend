@@ -5,6 +5,7 @@ import {
   type StoredWholeTransactionDiscount,
 } from "@recyclerie/api/domain/notableDiscounts";
 import type {
+  SalesAnalyticsDiscountsResponse,
   SalesDiscountCategoryDto,
   SalesDiscountsDto,
   WholeTransactionDiscountDto,
@@ -172,4 +173,4 @@ export const computeDiscounts = async (
 };
 
 /** `GET /sales-transactions/analytics/discounts` */
-export const salesAnalyticsDiscounts = salesAnalyticsRoute(computeDiscounts);
+export const salesAnalyticsDiscounts = salesAnalyticsRoute<SalesAnalyticsDiscountsResponse>(computeDiscounts);
