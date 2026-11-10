@@ -1051,8 +1051,8 @@ export const transactionsStats = async (req: Request, res: Response) => {
   // Stats grouped by category: sum of quantity and sum of total_price from transaction items
   // total_price is virtual in TransactionItem (price*extraItems*(1-promo) + (bundlePrice|price)*bundles*(1-promo))
   const totalPriceExpr = literal(`(
-    (TransactionItem.price * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN TransactionItem.quantity % TransactionItem.bundleQuantity ELSE TransactionItem.quantity END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100))
-    + (COALESCE(TransactionItem.bundlePrice, TransactionItem.price) * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN FLOOR(TransactionItem.quantity / TransactionItem.bundleQuantity) ELSE 0 END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100))
+    (TransactionItem.price * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN TransactionItem.quantity % TransactionItem.bundleQuantity ELSE TransactionItem.quantity END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100.0))
+    + (COALESCE(TransactionItem.bundlePrice, TransactionItem.price) * (CASE WHEN TransactionItem.bundleQuantity IS NOT NULL AND TransactionItem.bundleQuantity != 0 THEN FLOOR(TransactionItem.quantity / TransactionItem.bundleQuantity) ELSE 0 END) * (1 - COALESCE(TransactionItem.promotionValue, 0) / 100.0))
   )`);
   const byCategory = (await TransactionItem.findAll({
     attributes: [
