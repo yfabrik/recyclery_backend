@@ -1,37 +1,60 @@
 import type { IsoDate } from "@recyclerie/api";
 import { col } from "sequelize";
+import z from "zod";
+import { TRANSACTION_TYPES } from "../../constants/dbEnums.js";
+import type { Models } from "../../models/db-types.js";
 import db from "../../models/index.js";
 import { toIsoDate, toIsoTime } from "../../utils/dates.js";
-import { transactionScope, type LoadScope } from "./scope.js";
+import { dateColumn, numberColumn, parseRawRows } from "./rawRows.js";
+import {
+  transactionKind,
+  transactionScope,
+  type LoadScope,
+  type TransactionKind,
+} from "./scope.js";
 
 const { SalesTransaction } = db;
 
 /** A Sale or a Refund in scope, as plain numbers. */
 export type AnalyticsTransaction = {
-  id: number;
-  kind: "sale" | "refund";
+  id: Models["SalesTransaction"]["id"];
+  kind: TransactionKind;
   createdAt: Date;
   /** `total_amount`: positive for Refunds too. */
   amount: number;
   /** `total_amount_before_promotion`: before the whole-transaction discount. */
   amountBeforeDiscount: number;
   /** The Store of the transaction's own cash session. */
-  storeId: number;
+  storeId: Models["Recyclery"]["id"];
   /** For a Refund, the Sale it refunds. */
-  refundedSaleId: number | null;
+  refundedSaleId: Models["SalesTransaction"]["id"] | null;
   postalCode: string | null;
 };
 
-type TransactionRow = {
-  id: number;
-  transactionType: string;
-  createdAt: string | Date;
-  total_amount: number | string;
-  total_amount_before_promotion: number | string;
-  transactionId: number | null;
-  customer_postal_code: string | null;
-  storeId: number | string;
-};
+/** A `loadTransactions` row, as an `AnalyticsTransaction`. */
+const transactionRow = z
+  .object({
+    id: numberColumn,
+    transactionType: z.enum(TRANSACTION_TYPES),
+    createdAt: dateColumn,
+    total_amount: numberColumn,
+    total_amount_before_promotion: numberColumn,
+    transactionId: numberColumn.nullable(),
+    customer_postal_code: z.string().nullable(),
+    storeId: numberColumn,
+  })
+  .transform(
+    (row): AnalyticsTransaction => ({
+      id: row.id,
+      kind: transactionKind(row.transactionType),
+      createdAt: row.createdAt,
+      amount: row.total_amount,
+      amountBeforeDiscount: row.total_amount_before_promotion,
+      storeId: row.storeId,
+      refundedSaleId: row.transactionId,
+      postalCode: row.customer_postal_code,
+    }),
+  );
 
 /**
  * Sales and Refunds in scope. SQL only filters; sum, bucket and split the rows
@@ -40,7 +63,7 @@ type TransactionRow = {
 export const loadTransactions = async (
   scope: LoadScope,
 ): Promise<AnalyticsTransaction[]> => {
-  const rows = (await SalesTransaction.findAll({
+  const rows = await SalesTransaction.findAll({
     attributes: [
       "id",
       "transactionType",
@@ -54,18 +77,8 @@ export const loadTransactions = async (
     ...transactionScope(scope),
     order: [["createdAt", "ASC"]],
     raw: true,
-  })) as unknown as TransactionRow[];
-  return rows.map((row) => ({
-    id: Number(row.id),
-    kind: row.transactionType === "refund" ? "refund" : "sale",
-    // SQLite returns the text it stores, MariaDB a Date.
-    createdAt: new Date(row.createdAt),
-    amount: Number(row.total_amount),
-    amountBeforeDiscount: Number(row.total_amount_before_promotion),
-    storeId: Number(row.storeId),
-    refundedSaleId: row.transactionId == null ? null : Number(row.transactionId),
-    postalCode: row.customer_postal_code,
-  }));
+  });
+  return parseRawRows(transactionRow, rows);
 };
 
 /** Number of transactions and their summed amount. */

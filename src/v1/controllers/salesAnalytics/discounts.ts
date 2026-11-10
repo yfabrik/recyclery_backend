@@ -2,25 +2,29 @@ import { roundCurrency } from "@recyclerie/api/domain/cart";
 import {
   WHOLE_TRANSACTION_DISCOUNT_GROUPS,
   wholeTransactionDiscountKey,
-  type StoredGlobalPromotion,
+  type StoredWholeTransactionDiscount,
 } from "@recyclerie/api/domain/notableDiscounts";
 import type {
+  SalesAnalyticsDiscountsResponse,
   SalesDiscountCategoryDto,
   SalesDiscountsDto,
   WholeTransactionDiscountDto,
   WholeTransactionDiscountFiguresDto,
   WholeTransactionDiscountStoreDto,
 } from "@recyclerie/api/responses/salesAnalytics";
-import { loadGlobalPromotions } from "../../../services/salesAnalytics/globalPromotions.js";
-import { loadStoreNames } from "../../../services/salesAnalytics/storeNames.js";
+import { loadWholeTransactionDiscounts } from "../../../services/salesAnalytics/wholeTransactionDiscounts.js";
 import {
-  categoryPath,
+  categoryAtLevel,
   loadCategoryTree,
   loadLines,
+  loadStores,
   loadTransactions,
   NO_CATEGORY_LABEL,
+  ratio,
   salesAnalyticsRoute,
+  sumLinesByCategory,
   type AnalyticsLine,
+  type AnalyticsStore,
   type AnalyticsTransaction,
   type CategoryTree,
   type SalesAnalyticsScope,
@@ -28,57 +32,32 @@ import {
 
 const TOP_CATEGORIES = 5;
 
-const ratio = (numerator: number, denominator: number) =>
-  denominator > 0 ? numerator / denominator : 0;
-
 /** The amount a Sale's whole-transaction discount removed. Nothing stores it. */
 const wholeTransactionDiscountOf = (sale: AnalyticsTransaction) =>
   sale.amountBeforeDiscount - sale.amount;
 
 /**
- * Each Sale line's share of its Sale's whole-transaction discount, pro rata
- * to line value (by quantity when every line is worth 0), the way `loadLines`
- * shares `total_amount`.
+ * Sale lines rolled up to their top-level category. Each line carries its
+ * share of its Sale's whole-transaction discount (`loadLines`).
  */
-const wholeTransactionDiscountShares = (
-  sales: AnalyticsTransaction[],
-  saleLines: AnalyticsLine[],
-) => {
-  const discounts = new Map(sales.map((sale) => [sale.id, wholeTransactionDiscountOf(sale)]));
-  const sums = new Map<number, { value: number; quantity: number }>();
-  for (const line of saleLines) {
-    const sum = sums.get(line.transactionId) ?? { value: 0, quantity: 0 };
-    sum.value += line.value;
-    sum.quantity += line.quantity;
-    sums.set(line.transactionId, sum);
-  }
-  return saleLines.map((line) => {
-    const sum = sums.get(line.transactionId) ?? { value: 0, quantity: 0 };
-    const share =
-      sum.value > 0 ? line.value / sum.value : ratio(line.quantity, sum.quantity);
-    return { line, wholeTransaction: (discounts.get(line.transactionId) ?? 0) * share };
-  });
-};
-
 const topCategories = (
   tree: CategoryTree,
-  sales: AnalyticsTransaction[],
   saleLines: AnalyticsLine[],
 ): SalesDiscountCategoryDto[] => {
   const byCategory = new Map<
-    number | null,
+    AnalyticsLine["categoryId"],
     { name: string; categoryPromotion: number; wholeTransaction: number }
   >();
-  for (const { line, wholeTransaction } of wholeTransactionDiscountShares(sales, saleLines)) {
-    const top = categoryPath(tree, line.categoryId)[0];
+  for (const { categoryId, sales } of sumLinesByCategory(saleLines)) {
+    const top = categoryAtLevel(tree, categoryId, null);
     const id = top?.id ?? null;
     const entry = byCategory.get(id) ?? {
       name: top?.name ?? NO_CATEGORY_LABEL,
       categoryPromotion: 0,
       wholeTransaction: 0,
     };
-    entry.categoryPromotion += line.listValue - line.value;
-    entry.wholeTransaction += wholeTransaction;
+    entry.categoryPromotion += sales.listValue - sales.value;
+    entry.wholeTransaction += sales.wholeTransactionDiscount;
     byCategory.set(id, entry);
   }
   return [...byCategory.entries()]
@@ -117,7 +96,7 @@ const discountFigures = (
 
 const byStore = (
   sales: AnalyticsTransaction[],
-  storeNames: Map<number, string>,
+  storeNames: Map<AnalyticsStore["id"], string>,
 ): WholeTransactionDiscountStoreDto[] =>
   [...Map.groupBy(sales, (sale) => sale.storeId)]
     .map(([storeId, storeSales]) => ({
@@ -137,11 +116,11 @@ const byStore = (
  */
 const wholeTransactionDiscounts = (
   sales: AnalyticsTransaction[],
-  promotions: Map<number, StoredGlobalPromotion>,
-  storeNames: Map<number, string> | null,
+  discounts: Map<number, StoredWholeTransactionDiscount>,
+  storeNames: Map<AnalyticsStore["id"], string> | null,
 ): WholeTransactionDiscountDto[] => {
   const byKey = Map.groupBy(sales, (sale) =>
-    wholeTransactionDiscountKey(promotions.get(sale.id)),
+    wholeTransactionDiscountKey(discounts.get(sale.id)),
   );
   return WHOLE_TRANSACTION_DISCOUNT_GROUPS.map(({ key, label }) => {
     const discounted = byKey.get(key) ?? [];
@@ -158,13 +137,14 @@ const wholeTransactionDiscounts = (
 export const computeDiscounts = async (
   scope: SalesAnalyticsScope,
 ): Promise<SalesDiscountsDto> => {
-  const [transactions, lines, tree, promotions, storeNames] = await Promise.all([
+  const [transactions, lines, tree, discounts, stores] = await Promise.all([
     loadTransactions(scope),
     loadLines(scope),
     loadCategoryTree(),
-    loadGlobalPromotions(scope),
-    scope.storeId == null ? loadStoreNames() : null,
+    loadWholeTransactionDiscounts(scope),
+    scope.storeId == null ? loadStores() : null,
   ]);
+  const storeNames = stores && new Map(stores.map((store) => [store.id, store.name]));
   // Discounts count on Sales only: a Refund never gives one back.
   const sales = transactions.filter((t) => t.kind === "sale");
   const saleLines = lines.filter((line) => line.kind === "sale");
@@ -187,10 +167,10 @@ export const computeDiscounts = async (
     gross_revenue: roundCurrency(grossRevenue),
     share_of_gross_revenue: ratio(totalDiscount, grossRevenue),
     sales_count: sales.length,
-    top_categories: topCategories(tree, sales, saleLines),
-    whole_transaction_discounts: wholeTransactionDiscounts(sales, promotions, storeNames),
+    top_categories: topCategories(tree, saleLines),
+    whole_transaction_discounts: wholeTransactionDiscounts(sales, discounts, storeNames),
   };
 };
 
 /** `GET /sales-transactions/analytics/discounts` */
-export const salesAnalyticsDiscounts = salesAnalyticsRoute(computeDiscounts);
+export const salesAnalyticsDiscounts = salesAnalyticsRoute<SalesAnalyticsDiscountsResponse>(computeDiscounts);

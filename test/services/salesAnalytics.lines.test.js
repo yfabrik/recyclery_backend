@@ -73,12 +73,14 @@ describe("loadLines and sumLinesByCategory", () => {
       listValue: 30,
       value: 30,
       net: 27,
+      wholeTransactionDiscount: 3,
     });
     expect(find(rows, jouets).sales).toEqual({
       quantity: 1,
       listValue: 20,
       value: 10,
       net: 9,
+      wholeTransactionDiscount: 1,
     });
   });
 
@@ -88,8 +90,8 @@ describe("loadLines and sumLinesByCategory", () => {
     expect(find(rows, livres)).toBeUndefined();
     expect(find(rows, romans)).toEqual({
       categoryId: romans.id,
-      sales: { quantity: 1, listValue: 10, value: 10, net: 9 },
-      refunds: { quantity: 1, listValue: 10, value: 10, net: 9 },
+      sales: { quantity: 1, listValue: 10, value: 10, net: 9, wholeTransactionDiscount: 1 },
+      refunds: { quantity: 1, listValue: 10, value: 10, net: 9, wholeTransactionDiscount: 0 },
     });
   });
 
@@ -102,6 +104,20 @@ describe("loadLines and sumLinesByCategory", () => {
 
     expect(net).toBeCloseTo(totals.sales.amount - totals.refunds.amount, 9);
     expect(net).toBeCloseTo(36, 9);
+  });
+
+  it("gives each line its share of the whole-transaction discount, the way it shares the amount", async () => {
+    const lines = await loadLines(scope());
+    const share = (kind, category) =>
+      lines.find((l) => l.kind === kind && l.categoryId === category.id)
+        .wholeTransactionDiscount;
+
+    // 5 € off a 50 € Sale: Vaisselle 30, Romans 10 and Jouets 10 after its promotion.
+    expect(share("sale", vaisselle)).toBeCloseTo(3, 9);
+    expect(share("sale", romans)).toBeCloseTo(1, 9);
+    expect(share("sale", jouets)).toBeCloseTo(1, 9);
+    // A Refund stores no discount of its own: its amount is already net of it.
+    expect(share("refund", romans)).toBe(0);
   });
 });
 

@@ -1,3 +1,4 @@
+import type { GiftCardAnalyticsResponse } from "@recyclerie/api/responses/giftCards";
 import {
   giftCardFigures,
   loadGiftCardLedger,
@@ -11,4 +12,6 @@ export const computeGiftCardAnalytics = async (scope: SalesAnalyticsScope) =>
   giftCardFigures(await loadGiftCardLedger(scope.bounds.end), scope);
 
 /** `GET /gift-cards/analytics` */
-export const giftCardAnalytics = salesAnalyticsRoute(computeGiftCardAnalytics);
+export const giftCardAnalytics = salesAnalyticsRoute<GiftCardAnalyticsResponse>(
+  computeGiftCardAnalytics,
+);

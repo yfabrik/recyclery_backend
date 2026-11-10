@@ -1,17 +1,18 @@
 import { roundCurrency } from "@recyclerie/api/domain/cart";
-import type { SalesKpisDto } from "@recyclerie/api/responses/salesAnalytics";
+import type {
+  SalesAnalyticsKpisResponse,
+  SalesKpisDto,
+} from "@recyclerie/api/responses/salesAnalytics";
 import {
   itemsSold,
   loadLines,
   loadTransactions,
   openingDays,
+  ratio,
   salesAnalyticsRoute,
   sumTransactions,
   type SalesAnalyticsScope,
 } from "../../../services/salesAnalytics/index.js";
-
-const ratio = (numerator: number, denominator: number) =>
-  denominator > 0 ? numerator / denominator : 0;
 
 export const computeKpis = async (
   scope: SalesAnalyticsScope,
@@ -37,4 +38,4 @@ export const computeKpis = async (
 };
 
 /** `GET /sales-transactions/analytics/kpis` */
-export const salesAnalyticsKpis = salesAnalyticsRoute(computeKpis);
+export const salesAnalyticsKpis = salesAnalyticsRoute<SalesAnalyticsKpisResponse>(computeKpis);

@@ -1,11 +1,13 @@
 import { roundCurrency } from "@recyclerie/api/domain/cart";
 import { SALES_PAYMENT_METHODS, type SalesPaymentMethod } from "@recyclerie/api/enums";
 import type {
+  SalesAnalyticsPaymentMethodsResponse,
   SalesPaymentMethodDto,
   SalesPaymentMethodsDto,
 } from "@recyclerie/api/responses/salesAnalytics";
 import {
   loadPayments,
+  ratio,
   salesAnalyticsRoute,
   type SalesAnalyticsScope,
 } from "../../../services/salesAnalytics/index.js";
@@ -41,7 +43,7 @@ export const computePaymentMethods = async (
     return {
       method,
       sales_amount: sales,
-      sales_share: salesAmount > 0 ? sales / salesAmount : 0,
+      sales_share: ratio(sales, salesAmount),
       payment_count: t.count,
       refunded_amount: roundCurrency(t.refunded),
     };
@@ -54,4 +56,6 @@ export const computePaymentMethods = async (
 };
 
 /** `GET /sales-transactions/analytics/payment-methods` */
-export const salesAnalyticsPaymentMethods = salesAnalyticsRoute(computePaymentMethods);
+export const salesAnalyticsPaymentMethods = salesAnalyticsRoute<SalesAnalyticsPaymentMethodsResponse>(
+  computePaymentMethods,
+);

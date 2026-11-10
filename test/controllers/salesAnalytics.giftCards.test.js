@@ -46,8 +46,8 @@ async function cardByHand({ cashier }, { at, value }) {
 }
 
 /** Sold through a Sale: a lineless sell and an `issue` movement on it. */
-async function soldCard({ session, cashier }, { at, value }) {
-  const sell = await recordLinelessSell(session, { at, amount: value });
+async function soldCard({ session, cashier }, { at, value, status }) {
+  const sell = await recordLinelessSell(session, { at, amount: value, status });
   const card = await issueGiftCard({
     initialValue: value,
     issuedTransactionId: sell.id,
@@ -63,12 +63,13 @@ const saleOf = ({ session }, { at, price }) =>
   recordSale(session, { at, lines: [{ price, category }] });
 
 /** A Refund paid out as a new card: `issue` movement on the Refund. */
-async function storeCreditCard({ session, cashier }, { at, sold }) {
+async function storeCreditCard({ session, cashier }, { at, sold, status }) {
   const { refund } = await recordRefund(session, {
     at,
     sale: sold.sale,
     lines: [{ item: sold.items[0] }],
     method: "giftcard",
+    status,
   });
   const card = await issueGiftCard({
     initialValue: Number(refund.total_amount),
@@ -98,8 +99,8 @@ async function refundOnto(card, { session, cashier }, { at, sold }) {
 }
 
 /** A top-up from the Gift card page: `refund_recredit` movement on a lineless sell. */
-async function topUp(card, { session, cashier }, { at, amount }) {
-  const sell = await recordLinelessSell(session, { at, amount });
+async function topUp(card, { session, cashier }, { at, amount, status }) {
+  const sell = await recordLinelessSell(session, { at, amount, status });
   await recreditGiftCard({
     giftCardId: card.id,
     salesTransactionId: sell.id,
@@ -110,11 +111,12 @@ async function topUp(card, { session, cashier }, { at, amount }) {
 }
 
 /** A Sale paid with the card: `charge` movement on the Sale. */
-async function payWith(card, { session, cashier }, { at, amount }) {
+async function payWith(card, { session, cashier }, { at, amount, status }) {
   const { sale } = await recordSale(session, {
     at,
     lines: [{ price: amount, category }],
     payments: [{ method: "giftcard", amount }],
+    status,
   });
   await chargeGiftCard({
     giftCardId: card.id,
@@ -295,6 +297,54 @@ describe("GET /gift-cards/analytics comparison", () => {
       // A 50, B 25 and X 100, cancelled on 14 Feb; E is spent.
       outstanding: { count: 3, amount: 175 },
     });
+  });
+});
+
+/*
+ * June 2024: movements tied to a transaction that is not completed.
+ *
+ * G  by hand 50 (3 Jun), paid 20 on a cancelled Sale (10 Jun), topped up 15
+ *                          on a pending sell (12 Jun)                → 45 left
+ * H  sold 25 on a cancelled sell (14 Jun)                           → 25 left
+ * I  store credit 8 from a pending Refund (18 Jun)                  →  8 left
+ *
+ * Left from February: A 36, C 30 (after its 1 Mar use), D 7, F 20.
+ */
+describe("GET /gift-cards/analytics movements of pending or cancelled transactions", () => {
+  const JUNE_2024 = {
+    date_from: "2024-06-01",
+    date_to: "2024-06-30",
+    period: "month",
+    compare: "none",
+  };
+
+  beforeAll(async () => {
+    const cardG = await cardByHand(orgelet, { at: "2024-06-03T10:00:00Z", value: 50 });
+    await payWith(cardG, orgelet, { at: "2024-06-10T10:00:00Z", amount: 20, status: "cancelled" });
+    await topUp(cardG, lons, { at: "2024-06-12T10:00:00Z", amount: 15, status: "pending" });
+    await soldCard(orgelet, { at: "2024-06-14T10:00:00Z", value: 25, status: "cancelled" });
+    const sold = await saleOf(lons, { at: "2024-06-17T10:00:00Z", price: 8 });
+    await storeCreditCard(lons, { at: "2024-06-18T10:00:00Z", sold, status: "pending" });
+  }, 30_000);
+
+  it("leaves them out of the issued and used figures", async () => {
+    const res = await getGiftCards(JUNE_2024);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.current.issued).toEqual({
+      by_hand: { count: 1, amount: 50 },
+      sold: { count: 0, amount: 0 },
+      store_credit: { count: 0, amount: 0 },
+      top_up: { count: 0, amount: 0 },
+    });
+    expect(res.body.data.current.used).toEqual({ count: 0, amount: 0 });
+  });
+
+  it("keeps the balance on the card's own ledger in the outstanding balance", async () => {
+    const res = await getGiftCards(JUNE_2024);
+
+    // A 36 + C 30 + D 7 + F 20, then G 45, H 25 and I 8 as their ledgers hold.
+    expect(res.body.data.current.outstanding).toEqual({ count: 7, amount: 171 });
   });
 });
 

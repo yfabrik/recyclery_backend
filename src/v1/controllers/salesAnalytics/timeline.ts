@@ -1,5 +1,6 @@
 import { roundCurrency } from "@recyclerie/api/domain/cart";
 import type {
+  SalesAnalyticsTimelineResponse,
   SalesTimelineBucketDto,
   SalesTimelineDto,
 } from "@recyclerie/api/responses/salesAnalytics";
@@ -50,4 +51,4 @@ export const computeTimeline = async (
 };
 
 /** `GET /sales-transactions/analytics/timeline` */
-export const salesAnalyticsTimeline = salesAnalyticsRoute(computeTimeline);
+export const salesAnalyticsTimeline = salesAnalyticsRoute<SalesAnalyticsTimelineResponse>(computeTimeline);

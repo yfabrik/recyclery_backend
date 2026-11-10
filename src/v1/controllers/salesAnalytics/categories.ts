@@ -1,5 +1,6 @@
 import { roundCurrency } from "@recyclerie/api/domain/cart";
 import type {
+  SalesAnalyticsCategoriesResponse,
   SalesCategoriesDto,
   SalesCategoryRowDto,
 } from "@recyclerie/api/responses/salesAnalytics";
@@ -14,6 +15,8 @@ import {
   categoryPath,
   loadCategoryTree,
   loadLines,
+  ratio,
+  roundShare,
   salesAnalyticsRoute,
   sumLinesByCategory,
   type SalesAnalyticsScope,
@@ -29,9 +32,6 @@ type CategoryGroup = {
   net: number;
   quantity: number;
 };
-
-const ratio = (numerator: number, denominator: number) =>
-  denominator > 0 ? numerator / denominator : 0;
 
 /**
  * Amounts rounded to the cent so that they still add up to their rounded
@@ -104,7 +104,7 @@ export const computeCategories = async (
         has_subcategories: group.hasSubcategories,
         net_revenue: rounded[index] ?? 0,
         quantity: group.quantity,
-        share: Math.round(ratio(group.net, net) * 10_000) / 10_000,
+        share: roundShare(ratio(group.net, net)),
         average_price: roundCurrency(ratio(group.net, group.quantity)),
       }),
     ),
@@ -112,7 +112,7 @@ export const computeCategories = async (
 };
 
 /** `GET /sales-transactions/analytics/categories` */
-export const salesAnalyticsCategories = salesAnalyticsRoute(
-  computeCategories,
-  salesCategoriesQuerySchema,
-);
+export const salesAnalyticsCategories = salesAnalyticsRoute<
+  SalesAnalyticsCategoriesResponse,
+  SalesCategoriesQuery
+>(computeCategories, salesCategoriesQuerySchema);

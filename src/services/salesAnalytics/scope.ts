@@ -1,5 +1,7 @@
 import { Op, literal, type IncludeOptions } from "sequelize";
 import type { SalesAnalyticsQuery } from "@recyclerie/api/schemas/salesAnalytics";
+import type { TransactionType } from "../../constants/dbEnums.js";
+import type { Models } from "../../models/db-types.js";
 import db from "../../models/index.js";
 import type { ModelWhere } from "../../v1/controllers/types.js";
 import type { DateRange, UtcBounds } from "./ranges.js";
@@ -9,7 +11,7 @@ const { CashRegister, CashSession, SalesTransaction } = db;
 /** The parsed query of an analytics request, with both ranges resolved. */
 export type SalesAnalyticsRequest<Q extends SalesAnalyticsQuery = SalesAnalyticsQuery> = {
   query: Q;
-  storeId: number | null;
+  storeId: Models["Recyclery"]["id"] | null;
   ranges: { current: DateRange; comparison: DateRange | null };
 };
 
@@ -18,7 +20,7 @@ export type SalesAnalyticsScope<Q extends SalesAnalyticsQuery = SalesAnalyticsQu
   range: DateRange;
   bounds: UtcBounds;
   /** null = all Stores. */
-  storeId: number | null;
+  storeId: Models["Recyclery"]["id"] | null;
   /** The whole request, e.g. to size buckets on the current range while computing the comparison. */
   request: SalesAnalyticsRequest<Q>;
 };
@@ -56,6 +58,18 @@ export const REFUND_WHERE: ModelWhere<typeof SalesTransaction> = {
   status: "completed",
 };
 
+/** What a transaction in scope (`transactionWhere`) is: a Sale or a Refund. */
+export type TransactionKind = "sale" | "refund";
+
+const KIND_OF_TYPE = {
+  sell: "sale",
+  refund: "refund",
+} as const satisfies Record<TransactionType, TransactionKind>;
+
+/** Sale or Refund, from the `transactionType` of a transaction in scope. */
+export const transactionKind = (type: TransactionType): TransactionKind =>
+  KIND_OF_TYPE[type];
+
 /** Sales and Refunds created in the scope's range. `pending` and `cancelled` never count. */
 export const transactionWhere = (
   scope: Pick<LoadScope, "bounds">,
@@ -70,7 +84,7 @@ export const transactionWhere = (
  * `col("CashSession.CashRegister.recyclery_id")`; filtered only when a Store
  * is chosen.
  */
-export const storeInclude = (storeId: number | null): IncludeOptions => ({
+export const storeInclude = (storeId: Models["Recyclery"]["id"] | null): IncludeOptions => ({
   model: CashSession,
   required: true,
   attributes: [],
