@@ -41,7 +41,7 @@ const HAS_LINES = literal(
  * **Sale**: `sell`, `completed`, and at least one line. A lineless `sell` is a
  * gift card sale or top-up: counting it would count the same money twice
  * (when the card is bought, then when it pays for goods), so lineless sells
- * belong to the gift card figures only. (Pending confirmation by the user.)
+ * belong to the gift card figures only.
  */
 export const SALE_WHERE: ModelWhere<typeof SalesTransaction> = {
   transactionType: "sell",
