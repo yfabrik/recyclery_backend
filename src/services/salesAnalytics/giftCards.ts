@@ -4,14 +4,20 @@ import type {
   GiftCardFigureDto,
 } from "@recyclerie/api/responses/giftCards";
 import { Op, col } from "sequelize";
-import type {
-  GiftCardStatus,
-  GiftCardTransactionType,
-  SalesTransactionStatus,
-  TransactionType,
+import z from "zod";
+import {
+  GIFT_CARD_STATUSES,
+  GIFT_CARD_TRANSACTION_TYPES,
+  SALES_TRANSACTION_STATUSES,
+  TRANSACTION_TYPES,
+  type GiftCardStatus,
+  type GiftCardTransactionType,
+  type SalesTransactionStatus,
+  type TransactionType,
 } from "../../constants/dbEnums.js";
 import db from "../../models/index.js";
 import type { UtcBounds } from "./ranges.js";
+import { dateColumn, numberColumn, parseRawRows } from "./rawRows.js";
 import { storeInclude, type LoadScope } from "./scope.js";
 
 /*
@@ -62,24 +68,37 @@ export type LedgerMovement = {
 
 export type GiftCardLedger = { cards: LedgerCard[]; movements: LedgerMovement[] };
 
-type CardRow = {
-  id: number | string;
-  initial_value: number | string;
-  issued_at: string | Date;
-  expires_at: string | Date | null;
-  status: GiftCardStatus;
-  updatedAt: string | Date;
-};
+/** A `GiftCards` row, as a `LedgerCard`. */
+const cardRow = z
+  .object({
+    id: numberColumn,
+    initial_value: numberColumn,
+    issued_at: dateColumn,
+    expires_at: dateColumn.nullable(),
+    status: z.enum(GIFT_CARD_STATUSES),
+    updatedAt: dateColumn,
+  })
+  .transform(
+    (row): LedgerCard => ({
+      id: row.id,
+      initialValue: row.initial_value,
+      issuedAt: row.issued_at,
+      expiresAt: row.expires_at,
+      status: row.status,
+      updatedAt: row.updatedAt,
+    }),
+  );
 
-type MovementRow = {
-  giftCardId: number | string;
-  type: GiftCardTransactionType;
-  amount: number | string;
-  occurredAt: string | Date;
-  transactionType: TransactionType;
-  transactionStatus: SalesTransactionStatus;
-  storeId: number | string;
-};
+/** A `giftcard_transactions` row with its transaction's type, status and Store. */
+const movementRow = z.object({
+  giftCardId: numberColumn,
+  type: z.enum(GIFT_CARD_TRANSACTION_TYPES),
+  amount: numberColumn,
+  occurredAt: dateColumn,
+  transactionType: z.enum(TRANSACTION_TYPES),
+  transactionStatus: z.enum(SALES_TRANSACTION_STATUSES),
+  storeId: numberColumn,
+}) satisfies z.ZodType<LedgerMovement>;
 
 /**
  * Every gift card, and every movement before `before` (plus every `issue`
@@ -91,7 +110,7 @@ export const loadGiftCardLedger = async (before: Date): Promise<GiftCardLedger> 
     GiftCard.findAll({
       attributes: ["id", "initial_value", "issued_at", "expires_at", "status", "updatedAt"],
       raw: true,
-    }) as unknown as Promise<CardRow[]>,
+    }),
     GiftCardTransaction.findAll({
       attributes: [
         [col("GiftCardTransaction.gift_card_id"), "giftCardId"],
@@ -112,27 +131,11 @@ export const loadGiftCardLedger = async (before: Date): Promise<GiftCardLedger> 
         },
       ],
       raw: true,
-    }) as unknown as Promise<MovementRow[]>,
+    }),
   ]);
   return {
-    // SQLite returns dates as the text it stores, MariaDB as Dates.
-    cards: cardRows.map((row) => ({
-      id: Number(row.id),
-      initialValue: Number(row.initial_value),
-      issuedAt: new Date(row.issued_at),
-      expiresAt: row.expires_at == null ? null : new Date(row.expires_at),
-      status: row.status,
-      updatedAt: new Date(row.updatedAt),
-    })),
-    movements: movementRows.map((row) => ({
-      giftCardId: Number(row.giftCardId),
-      type: row.type,
-      amount: Number(row.amount),
-      occurredAt: new Date(row.occurredAt),
-      transactionType: row.transactionType,
-      transactionStatus: row.transactionStatus,
-      storeId: Number(row.storeId),
-    })),
+    cards: parseRawRows(cardRow, cardRows),
+    movements: parseRawRows(movementRow, movementRows),
   };
 };
 

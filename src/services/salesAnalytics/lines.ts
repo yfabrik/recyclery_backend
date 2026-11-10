@@ -1,7 +1,9 @@
 import { getCartLinePrice } from "@recyclerie/api/domain/cart";
 import { col } from "sequelize";
-import type { TransactionType } from "../../constants/dbEnums.js";
+import z from "zod";
+import { TRANSACTION_TYPES } from "../../constants/dbEnums.js";
 import db from "../../models/index.js";
+import { numberColumn, parseRawRows } from "./rawRows.js";
 import {
   transactionInclude,
   transactionKind,
@@ -38,23 +40,42 @@ export type AnalyticsLine = {
   wholeTransactionDiscount: number;
 };
 
-type LineRow = {
-  transactionId: number | string;
-  transactionType: TransactionType;
-  transactionAmount: number | string;
-  transactionAmountBeforeDiscount: number | string;
-  storeId: number | string;
-  quantity: number | string;
-  price: number | string;
-  promotionValue: number | string | null;
-  bundleQuantity: number | string | null;
-  bundlePrice: number | string | null;
-  categoryId: number | string | null;
-  subcategoryId: number | string | null;
-};
-
-const toNumberOrNull = (value: number | string | null) =>
-  value == null ? null : Number(value);
+/** A `loadLines` row, valued; its transaction's amounts are shared afterwards. */
+const lineRow = z
+  .object({
+    transactionId: numberColumn,
+    transactionType: z.enum(TRANSACTION_TYPES),
+    transactionAmount: numberColumn,
+    transactionAmountBeforeDiscount: numberColumn,
+    storeId: numberColumn,
+    quantity: numberColumn,
+    price: numberColumn,
+    promotionValue: numberColumn.nullable(),
+    bundleQuantity: numberColumn.nullable(),
+    bundlePrice: numberColumn.nullable(),
+    categoryId: numberColumn.nullable(),
+    subcategoryId: numberColumn.nullable(),
+  })
+  .transform((row) => {
+    const cartLine = {
+      price: row.price,
+      quantity: row.quantity,
+      promotion: row.promotionValue ?? 0,
+      bundleQuantity: row.bundleQuantity,
+      bundlePrice: row.bundlePrice,
+    };
+    return {
+      transactionId: row.transactionId,
+      kind: transactionKind(row.transactionType),
+      storeId: row.storeId,
+      quantity: cartLine.quantity,
+      categoryId: row.subcategoryId ?? row.categoryId,
+      listValue: getCartLinePrice({ ...cartLine, promotion: 0 }),
+      value: getCartLinePrice(cartLine),
+      transactionAmount: row.transactionAmount,
+      transactionAmountBeforeDiscount: row.transactionAmountBeforeDiscount,
+    };
+  });
 
 /**
  * Sale and Refund lines in scope. Line values are computed in JS with the
@@ -63,7 +84,7 @@ const toNumberOrNull = (value: number | string | null) =>
  * shared over its lines. The one pro-rata share of the analytics routes.
  */
 export const loadLines = async (scope: LoadScope): Promise<AnalyticsLine[]> => {
-  const rows = (await TransactionItem.findAll({
+  const rows = await TransactionItem.findAll({
     attributes: [
       [col("TransactionItem.transaction_id"), "transactionId"],
       [col("SalesTransaction.transactionType"), "transactionType"],
@@ -83,28 +104,8 @@ export const loadLines = async (scope: LoadScope): Promise<AnalyticsLine[]> => {
       { model: LabeledItem, required: false, attributes: [] },
     ],
     raw: true,
-  })) as unknown as LineRow[];
-
-  const lines = rows.map((row) => {
-    const cartLine = {
-      price: Number(row.price),
-      quantity: Number(row.quantity),
-      promotion: Number(row.promotionValue ?? 0),
-      bundleQuantity: toNumberOrNull(row.bundleQuantity),
-      bundlePrice: toNumberOrNull(row.bundlePrice),
-    };
-    return {
-      transactionId: Number(row.transactionId),
-      kind: transactionKind(row.transactionType),
-      storeId: Number(row.storeId),
-      quantity: cartLine.quantity,
-      categoryId: toNumberOrNull(row.subcategoryId) ?? toNumberOrNull(row.categoryId),
-      listValue: getCartLinePrice({ ...cartLine, promotion: 0 }),
-      value: getCartLinePrice(cartLine),
-      transactionAmount: Number(row.transactionAmount),
-      transactionAmountBeforeDiscount: Number(row.transactionAmountBeforeDiscount),
-    };
   });
+  const lines = parseRawRows(lineRow, rows);
 
   const byTransaction = new Map<number, { value: number; quantity: number }>();
   for (const line of lines) {

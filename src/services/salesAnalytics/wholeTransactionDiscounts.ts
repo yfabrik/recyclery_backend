@@ -1,15 +1,18 @@
 import type { StoredWholeTransactionDiscount } from "@recyclerie/api/domain/notableDiscounts";
-import type { PromotionType } from "../../constants/dbEnums.js";
+import z from "zod";
+import { PROMOTION_TYPES } from "../../constants/dbEnums.js";
 import db from "../../models/index.js";
+import { numberColumn, parseRawRows } from "./rawRows.js";
 import { transactionInclude, type LoadScope } from "./scope.js";
 
 const { TransactionGlobalPromotion } = db;
 
-type WholeTransactionDiscountRow = {
-  transaction_id: number | string;
-  type: PromotionType | null;
-  value: number | string | null;
-};
+/** A `TransactionGlobalPromotion` row of `loadWholeTransactionDiscounts`. */
+const wholeTransactionDiscountRow = z.object({
+  transaction_id: numberColumn,
+  type: z.enum(PROMOTION_TYPES).nullable(),
+  value: numberColumn.nullable(),
+});
 
 /**
  * The whole-transaction discount (`TransactionGlobalPromotion`, type + value)
@@ -21,17 +24,15 @@ type WholeTransactionDiscountRow = {
 export const loadWholeTransactionDiscounts = async (
   scope: LoadScope,
 ): Promise<Map<number, StoredWholeTransactionDiscount>> => {
-  const rows = (await TransactionGlobalPromotion.findAll({
+  const rows = await TransactionGlobalPromotion.findAll({
     attributes: ["transaction_id", "type", "value"],
     include: [transactionInclude(scope)],
     order: [["id", "ASC"]],
     raw: true,
-  })) as unknown as WholeTransactionDiscountRow[];
+  });
   const discounts = new Map<number, StoredWholeTransactionDiscount>();
-  for (const row of rows) {
-    const transactionId = Number(row.transaction_id);
-    if (!discounts.has(transactionId))
-      discounts.set(transactionId, { type: row.type, value: row.value });
+  for (const { transaction_id, type, value } of parseRawRows(wholeTransactionDiscountRow, rows)) {
+    if (!discounts.has(transaction_id)) discounts.set(transaction_id, { type, value });
   }
   return discounts;
 };

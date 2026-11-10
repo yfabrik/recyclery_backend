@@ -1,8 +1,15 @@
 import { sumCashInPayments } from "@recyclerie/api/domain/cart";
-import type { PaymentMethod, SalesPaymentMethod } from "@recyclerie/api/enums";
+import {
+  PAYMENT_METHODS,
+  SALES_PAYMENT_METHODS,
+  TRANSACTION_TYPES,
+  type PaymentMethod,
+  type SalesPaymentMethod,
+} from "@recyclerie/api/enums";
 import { col } from "sequelize";
-import type { TransactionType } from "../../constants/dbEnums.js";
+import z from "zod";
 import db from "../../models/index.js";
+import { numberColumn, parseRawRows } from "./rawRows.js";
 import {
   transactionInclude,
   transactionKind,
@@ -75,26 +82,28 @@ export const amountsByMethod = (transaction: PaidTransaction): MethodAmount[] =>
   return [...byMethod.values()];
 };
 
-type TransactionRow = {
-  id: number | string;
-  transactionType: TransactionType;
-  total_amount: number | string;
-  payment_method: SalesPaymentMethod;
-  storeId: number | string;
-};
+/** A transaction row of `loadPayments`. */
+const transactionRow = z.object({
+  id: numberColumn,
+  transactionType: z.enum(TRANSACTION_TYPES),
+  total_amount: numberColumn,
+  payment_method: z.enum(SALES_PAYMENT_METHODS),
+  storeId: numberColumn,
+});
 
-type PaymentRow = {
-  transactionId: number | string;
-  method: PaymentMethod;
-  amount: number | string;
-};
+/** A `transaction_payments` row of `loadPayments`. */
+const paymentRow = z.object({
+  transactionId: numberColumn,
+  method: z.enum(PAYMENT_METHODS),
+  amount: numberColumn,
+});
 
 /**
  * What each payment method took in on the Sales in scope and paid out on its
  * Refunds: one entry per transaction and method (see `amountsByMethod`).
  */
 export const loadPayments = async (scope: LoadScope): Promise<AnalyticsPayment[]> => {
-  const [transactions, payments] = (await Promise.all([
+  const [transactionRows, paymentRows] = await Promise.all([
     SalesTransaction.findAll({
       attributes: [
         "id",
@@ -115,19 +124,20 @@ export const loadPayments = async (scope: LoadScope): Promise<AnalyticsPayment[]
       include: [transactionInclude(scope)],
       raw: true,
     }),
-  ])) as unknown as [TransactionRow[], PaymentRow[]];
+  ]);
+  const payments = parseRawRows(paymentRow, paymentRows);
 
-  const rowsByTransaction = Map.groupBy(payments, (row) => Number(row.transactionId));
-  return transactions.flatMap((row) => {
-    const transactionId = Number(row.id);
+  const rowsByTransaction = Map.groupBy(payments, (row) => row.transactionId);
+  return parseRawRows(transactionRow, transactionRows).flatMap((row) => {
+    const transactionId = row.id;
     const kind = transactionKind(row.transactionType);
-    const storeId = Number(row.storeId);
+    const storeId = row.storeId;
     return amountsByMethod({
-      amount: Number(row.total_amount),
+      amount: row.total_amount,
       paymentMethod: row.payment_method,
-      payments: (rowsByTransaction.get(transactionId) ?? []).map((payment) => ({
-        method: payment.method,
-        amount: Number(payment.amount),
+      payments: (rowsByTransaction.get(transactionId) ?? []).map(({ method, amount }) => ({
+        method,
+        amount,
       })),
     }).map((split) => ({ transactionId, kind, storeId, ...split }));
   });

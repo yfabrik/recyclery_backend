@@ -4,6 +4,12 @@ import {
   parisDayBounds,
   transactionKind,
 } from "../../src/services/salesAnalytics/index";
+import {
+  dateColumn,
+  numberColumn,
+  parseRawRows,
+} from "../../src/services/salesAnalytics/rawRows";
+import z from "zod";
 
 const range = (date_from, date_to) => ({ date_from, date_to });
 
@@ -149,5 +155,33 @@ describe("transactionKind", () => {
   it("reads a sell as a Sale and a refund as a Refund", () => {
     expect(transactionKind("sell")).toBe("sale");
     expect(transactionKind("refund")).toBe("refund");
+  });
+});
+
+describe("parseRawRows", () => {
+  const row = z.object({ amount: numberColumn, at: dateColumn, note: z.string().nullable() });
+
+  it("reads MariaDB's DECIMAL strings and Dates and SQLite's numbers and date text alike", () => {
+    expect(
+      parseRawRows(row, [
+        { amount: "12.50", at: new Date("2026-11-08T23:30:00Z"), note: null },
+        { amount: 12.5, at: "2026-11-08 23:30:00.000 +00:00", note: "x" },
+      ]),
+    ).toEqual([
+      { amount: 12.5, at: new Date("2026-11-08T23:30:00Z"), note: null },
+      { amount: 12.5, at: new Date("2026-11-08T23:30:00Z"), note: "x" },
+    ]);
+  });
+
+  it("refuses a row that does not fit with a plain error, not a ZodError (a 500, not a 400)", () => {
+    let error;
+    try {
+      parseRawRows(row, [{ amount: "abc", at: "2026-11-08", note: null }]);
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(z.ZodError);
+    expect(error.message).toMatch(/Unexpected sales analytics row/);
   });
 });
