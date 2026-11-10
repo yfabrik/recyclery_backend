@@ -6,6 +6,7 @@ import type {
 } from "@recyclerie/api/responses/salesAnalytics";
 import {
   loadPayments,
+  ratio,
   salesAnalyticsRoute,
   type SalesAnalyticsScope,
 } from "../../../services/salesAnalytics/index.js";
@@ -41,7 +42,7 @@ export const computePaymentMethods = async (
     return {
       method,
       sales_amount: sales,
-      sales_share: salesAmount > 0 ? sales / salesAmount : 0,
+      sales_share: ratio(sales, salesAmount),
       payment_count: t.count,
       refunded_amount: roundCurrency(t.refunded),
     };

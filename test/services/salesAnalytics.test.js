@@ -2,6 +2,8 @@ import { describe, expect, it } from "@jest/globals";
 import {
   comparisonRange,
   parisDayBounds,
+  ratio,
+  roundShare,
   transactionKind,
 } from "../../src/services/salesAnalytics/index";
 import {
@@ -183,5 +185,21 @@ describe("parseRawRows", () => {
     expect(error).toBeInstanceOf(Error);
     expect(error).not.toBeInstanceOf(z.ZodError);
     expect(error.message).toMatch(/Unexpected sales analytics row/);
+  });
+});
+
+describe("ratio", () => {
+  it("divides, or is 0 when the denominator is not positive", () => {
+    expect(ratio(3, 4)).toBe(0.75);
+    expect(ratio(3, 0)).toBe(0);
+    expect(ratio(3, -2)).toBe(0);
+  });
+});
+
+describe("roundShare", () => {
+  it("rounds a 0–1 share to 4 decimals", () => {
+    expect(roundShare(0.123456)).toBe(0.1235);
+    expect(roundShare(2 / 3)).toBe(0.6667);
+    expect(roundShare(1)).toBe(1);
   });
 });

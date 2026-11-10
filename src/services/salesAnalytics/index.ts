@@ -5,9 +5,11 @@
  * filters; loaders return plain rows and the helpers aggregate them in JS.
  */
 export * from "./categories.js";
+export * from "./figures.js";
 export * from "./handler.js";
 export * from "./lines.js";
 export * from "./payments.js";
 export * from "./ranges.js";
 export * from "./scope.js";
+export * from "./stores.js";
 export * from "./transactions.js";

@@ -140,7 +140,10 @@ export const itemsSold = (lines: AnalyticsLine[]) =>
     0,
   );
 
-export type LineTotals = Pick<AnalyticsLine, "quantity" | "listValue" | "value" | "net">;
+export type LineTotals = Pick<
+  AnalyticsLine,
+  "quantity" | "listValue" | "value" | "net" | "wholeTransactionDiscount"
+>;
 
 export type CategoryLineTotals = {
   categoryId: AnalyticsLine["categoryId"];
@@ -148,11 +151,18 @@ export type CategoryLineTotals = {
   refunds: LineTotals;
 };
 
-const emptyTotals = (): LineTotals => ({ quantity: 0, listValue: 0, value: 0, net: 0 });
+const emptyTotals = (): LineTotals => ({
+  quantity: 0,
+  listValue: 0,
+  value: 0,
+  net: 0,
+  wholeTransactionDiscount: 0,
+});
 
 /**
  * Lines summed per most specific category, Sales and Refunds apart. Roll up
- * with `categoryPath`. `Σ (sales.net − refunds.net)` is net revenue.
+ * with `categoryAtLevel` (or `categoryPath`). `Σ (sales.net − refunds.net)`
+ * is net revenue.
  */
 export const sumLinesByCategory = (lines: AnalyticsLine[]): CategoryLineTotals[] => {
   const byCategory = new Map<AnalyticsLine["categoryId"], CategoryLineTotals>();
@@ -167,6 +177,7 @@ export const sumLinesByCategory = (lines: AnalyticsLine[]): CategoryLineTotals[]
     side.listValue += line.listValue;
     side.value += line.value;
     side.net += line.net;
+    side.wholeTransactionDiscount += line.wholeTransactionDiscount;
     byCategory.set(line.categoryId, entry);
   }
   return [...byCategory.values()];

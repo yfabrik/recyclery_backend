@@ -73,12 +73,14 @@ describe("loadLines and sumLinesByCategory", () => {
       listValue: 30,
       value: 30,
       net: 27,
+      wholeTransactionDiscount: 3,
     });
     expect(find(rows, jouets).sales).toEqual({
       quantity: 1,
       listValue: 20,
       value: 10,
       net: 9,
+      wholeTransactionDiscount: 1,
     });
   });
 
@@ -88,8 +90,8 @@ describe("loadLines and sumLinesByCategory", () => {
     expect(find(rows, livres)).toBeUndefined();
     expect(find(rows, romans)).toEqual({
       categoryId: romans.id,
-      sales: { quantity: 1, listValue: 10, value: 10, net: 9 },
-      refunds: { quantity: 1, listValue: 10, value: 10, net: 9 },
+      sales: { quantity: 1, listValue: 10, value: 10, net: 9, wholeTransactionDiscount: 1 },
+      refunds: { quantity: 1, listValue: 10, value: 10, net: 9, wholeTransactionDiscount: 0 },
     });
   });
 

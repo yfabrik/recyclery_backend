@@ -5,13 +5,11 @@ import {
   loadLines,
   loadTransactions,
   openingDays,
+  ratio,
   salesAnalyticsRoute,
   sumTransactions,
   type SalesAnalyticsScope,
 } from "../../../services/salesAnalytics/index.js";
-
-const ratio = (numerator: number, denominator: number) =>
-  denominator > 0 ? numerator / denominator : 0;
 
 export const computeKpis = async (
   scope: SalesAnalyticsScope,
