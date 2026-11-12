@@ -2,17 +2,20 @@ import type { Weekday } from "@recyclerie/api/enums";
 import type { TaskDto } from "@recyclerie/api/responses/tasks";
 
 import type Employee from "../models/employee.js";
+import type EmployeeTaskTimeRange from "../models/employeetasktimerange.js";
 import type Recyclery from "../models/recyclery.js";
 import type Task from "../models/task.js";
 import { toEmployeeDto } from "./employees.js";
 import { toRecycleryRef } from "./refs.js";
 import { toIsoDateTime, toNumber } from "./serialize.js";
+import { toTimeRangeDto } from "./timeRanges.js";
 import type { MapperInput } from "./types.js";
 
 type TaskMapperInput = MapperInput<Task> & {
   day_of_week?: number | null;
   Recyclery?: MapperInput<Recyclery> | null;
   Employees?: Array<MapperInput<Employee>>;
+  timeRanges?: Array<MapperInput<EmployeeTaskTimeRange>>;
 };
 
 export const toTaskDto = (model: TaskMapperInput): TaskDto =>
@@ -39,4 +42,5 @@ export const toTaskDto = (model: TaskMapperInput): TaskDto =>
     updatedAt: toIsoDateTime(model.updatedAt),
     Recyclery: toRecycleryRef(model.Recyclery) ?? null,
     Employees: model.Employees?.map(toEmployeeDto),
+    ...(model.timeRanges && { timeRanges: model.timeRanges.map(toTimeRangeDto) }),
   }) satisfies TaskDto;

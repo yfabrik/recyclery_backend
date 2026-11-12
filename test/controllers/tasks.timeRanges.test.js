@@ -85,6 +85,178 @@ describe("tasks controller: Time ranges", () => {
     expect(await isAssigned(task.id, employee.id)).toBe(true);
   });
 
+  describe("on a Task that starts off the 15-minute grid", () => {
+    // 08:01Z-15:07Z is 10:01-17:07 local under TZ=Europe/Paris summer time.
+    const createOffGridTask = () =>
+      createTask({
+        start_time: new Date("2030-06-02T08:01:00Z"),
+        end_time: new Date("2030-06-02T15:07:00Z"),
+      });
+
+    it("assigns an Employee to the whole Task", async () => {
+      const task = await createOffGridTask();
+      const employee = await createEmployee();
+      await createWorkday(employee.id, "09:00:00", "18:00:00");
+
+      const res = makeRes();
+      await addUserToTask(
+        makeReq({
+          params: { taskId: task.id },
+          body: { employee_id: employee.id, start_time: "10:01", end_time: "17:07" },
+        }),
+        res,
+      );
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ start_time: "10:01", end_time: "17:07" }),
+        }),
+      );
+    });
+
+    it("assigns an Employee to part of the Task, from the Task's start", async () => {
+      const task = await createOffGridTask();
+      const employee = await createEmployee();
+      await createWorkday(employee.id, "09:00:00", "18:00:00");
+
+      const res = makeRes();
+      await addUserToTask(
+        makeReq({
+          params: { taskId: task.id },
+          body: { employee_id: employee.id, start_time: "10:01", end_time: "12:00" },
+        }),
+        res,
+      );
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ start_time: "10:01", end_time: "12:00" }),
+        }),
+      );
+      expect(await isAssigned(task.id, employee.id)).toBe(true);
+    });
+
+    it("assigns an Employee to part of the Task, up to the Task's end", async () => {
+      const task = await createOffGridTask();
+      const employee = await createEmployee();
+      await createWorkday(employee.id, "09:00:00", "18:00:00");
+
+      const res = makeRes();
+      await addUserToTask(
+        makeReq({
+          params: { taskId: task.id },
+          body: { employee_id: employee.id, start_time: "15:00", end_time: "17:07" },
+        }),
+        res,
+      );
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ start_time: "15:00", end_time: "17:07" }),
+        }),
+      );
+    });
+
+    it("lets a second Employee take the rest after the first one's part", async () => {
+      const task = await createOffGridTask();
+      const first = await createEmployee();
+      const second = await createEmployee();
+      await createWorkday(first.id, "09:00:00", "18:00:00");
+      await createWorkday(second.id, "09:00:00", "18:00:00");
+
+      await addUserToTask(
+        makeReq({
+          params: { taskId: task.id },
+          body: { employee_id: first.id, start_time: "10:01", end_time: "12:00" },
+        }),
+        makeRes(),
+      );
+      const res = makeRes();
+      await addUserToTask(
+        makeReq({
+          params: { taskId: task.id },
+          body: { employee_id: second.id, start_time: "12:00", end_time: "17:07" },
+        }),
+        res,
+      );
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ start_time: "12:00", end_time: "17:07" }),
+        }),
+      );
+    });
+
+    it("lets a busy Employee take the short stretches left around their other Task", async () => {
+      const otherTask = await createTask(); // 09:00-17:00 local
+      const task = await createOffGridTask(); // 10:01-17:07 local
+      const employee = await createEmployee();
+      await createWorkday(employee.id, "09:00:00", "18:00:00");
+
+      await addUserToTask(
+        makeReq({
+          params: { taskId: otherTask.id },
+          body: { employee_id: employee.id, start_time: "10:15", end_time: "17:00" },
+        }),
+        makeRes(),
+      );
+
+      // No range given: the first free window is the 10:01-10:15 leftover.
+      const res = makeRes();
+      await addUserToTask(
+        makeReq({ params: { taskId: task.id }, body: { employee_id: employee.id } }),
+        res,
+      );
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ start_time: "10:01", end_time: "10:15" }),
+        }),
+      );
+
+      // And the leftover at the other end of the Task.
+      const endRes = makeRes();
+      await createTimeRange(
+        makeReq({
+          params: { taskId: task.id, employeeId: employee.id },
+          body: { start_time: "17:00", end_time: "17:07" },
+        }),
+        endRes,
+      );
+      expect(endRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ start_time: "17:00", end_time: "17:07" }),
+        }),
+      );
+      expect(await rangesFor(task.id, employee.id)).toHaveLength(2);
+    });
+
+    it("still rejects a 14-minute range in the middle of the Task", async () => {
+      const task = await createOffGridTask();
+      const employee = await createEmployee();
+      await createWorkday(employee.id, "09:00:00", "18:00:00");
+
+      const req = makeReq({
+        params: { taskId: task.id },
+        body: { employee_id: employee.id, start_time: "12:00", end_time: "12:14" },
+      });
+
+      await expectHttpError(() => addUserToTask(req, makeRes()), 409);
+    });
+
+    it("still rejects an off-grid edge that is not the Task's edge", async () => {
+      const task = await createOffGridTask();
+      const employee = await createEmployee();
+      await createWorkday(employee.id, "09:00:00", "18:00:00");
+
+      const req = makeReq({
+        params: { taskId: task.id },
+        body: { employee_id: employee.id, start_time: "10:05", end_time: "12:00" },
+      });
+
+      await expectHttpError(() => addUserToTask(req, makeRes()), 409);
+    });
+  });
+
   it("picks the first free window when no range is given", async () => {
     const task = await createTask();
     const employee = await createEmployee();
