@@ -5,6 +5,7 @@ import {
   deleteEmployee,
   detailEmployee,
   listEmployees,
+  listEmployeeTasks,
   updateEmployee,
   updateEmployeeSkills,
 } from "../controllers/employees.js";
@@ -14,6 +15,8 @@ export const router = Router();
 router.get("/", asyncHandler(listEmployees));
 
 router.get("/:id", asyncHandler(detailEmployee));
+
+router.get("/:id/tasks", asyncHandler(listEmployeeTasks));
 
 router.post("/", asyncHandler(createEmployee));
 

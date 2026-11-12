@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { col, fn, literal, type Includeable } from "sequelize";
 import {
+  type ListWasteQuery,
   listWasteQuerySchema,
   wasteBodySchema,
   wasteDateRangeQuerySchema,
@@ -42,10 +43,9 @@ const wasteIncludes:Includeable[] = [
   { model: User },
 ]   ;
 
-export const listWaste = async (req: Request, res: Response) => {
-  const filter = listWasteQuerySchema.parse(req.query);
-  const pagination = parsePaginationQuery(req.query);
-
+const buildWasteWhere = (
+  filter: ListWasteQuery,
+): ModelWhere<typeof WasteDisposal> => {
   const where: ModelWhere<typeof WasteDisposal> = {};
   if (filter.category_id) where.category_id = filter.category_id;
   if (filter.subcategory_id) where.subcategory_id = filter.subcategory_id;
@@ -53,6 +53,14 @@ export const listWaste = async (req: Request, res: Response) => {
   if (filter.disposal_type) where.disposal_type = filter.disposal_type;
   const dateRange = formatWhereDateRange(filter.date_from, filter.date_to);
   if (dateRange) where.disposal_date = dateRange;
+  return where;
+};
+
+export const listWaste = async (req: Request, res: Response) => {
+  const filter = listWasteQuerySchema.parse(req.query);
+  const pagination = parsePaginationQuery(req.query);
+
+  const where = buildWasteWhere(filter);
 
   const waste = await WasteDisposal.findAndCountAll({
     where,
@@ -132,11 +140,7 @@ export const deleteWaste = async (req: Request, res: Response) => {
 };
 
 export const wasteStats = async (req: Request, res: Response) => {
-  const filter = wasteDateRangeQuerySchema.parse(req.query);
-
-  const where: ModelWhere<typeof WasteDisposal> = {};
-  const dateRange = formatWhereDateRange(filter.date_from, filter.date_to);
-  if (dateRange) where.disposal_date = dateRange;
+  const where = buildWasteWhere(listWasteQuerySchema.parse(req.query));
 
   const stats = await WasteDisposal.findOne({
     attributes: [

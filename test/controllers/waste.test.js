@@ -4,6 +4,7 @@ import {
   createWaste,
   detailWaste,
   listWaste,
+  wasteStats,
 } from "../../src/v1/controllers/waste";
 const { User, Category } = db;
 
@@ -109,6 +110,27 @@ describe("waste controller functions", () => {
           hasPrevious: false,
         },
       }),
+    );
+  });
+
+  it("should compute stats and apply the list filters to them", async () => {
+    const stats = async (query) => {
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await wasteStats({ query, user: { id: 1, role: "admin" } }, res);
+      return res.json.mock.calls[0][0].data;
+    };
+
+    expect(await stats({})).toEqual(
+      expect.objectContaining({ total_disposals: 1, landfill_disposals: 1 }),
+    );
+    expect(await stats({ disposal_type: "landfill" })).toEqual(
+      expect.objectContaining({ total_disposals: 1, total_weight_kg: 125.5 }),
+    );
+    expect(await stats({ disposal_type: "eco_organism" })).toEqual(
+      expect.objectContaining({ total_disposals: 0 }),
+    );
+    expect(await stats({ category_id: 2 })).toEqual(
+      expect.objectContaining({ total_disposals: 0 }),
     );
   });
 
