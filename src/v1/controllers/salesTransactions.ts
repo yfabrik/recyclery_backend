@@ -44,7 +44,7 @@ import { idSchema } from "../../services/zod.js";
 
 import db from "../../models/index.js";
 
-import { amountsEqual, computeTotalAfterPromotion, getCartLinePrice, getCartTotal, getCartTotalWithGlobalPromotion, isAmountEqual, roundCurrency, type CartLine } from "@recyclerie/api/domain/cart";
+import {  getCartLinePrice, getCartTotal, getCartTotalWithGlobalPromotion, isAmountEqual, roundCurrency, type CartLine } from "@recyclerie/api/domain/cart";
 import { formatWhereDateRange } from "../../helpers.js";
 import { toGiftCardSummaryFromFields } from "../../mappers/giftCards.js";
 import {
@@ -92,7 +92,6 @@ const dataSchema = saleTransactionBaseSchema.superRefine((data, ctx) => {
   //ensure valid total amomunt
   const cartTotal = getCartTotal(data.items as CartLine[]);
   if (!isAmountEqual(cartTotal, data.total_amount_before_promotion))
-    // if (!amountsEqual(cartTotal, data.total_amount_before_promotion))
     ctx.addIssue({
       code: "custom",
       message: "le total avant promo n'est pas correct comparé au items",
@@ -100,13 +99,8 @@ const dataSchema = saleTransactionBaseSchema.superRefine((data, ctx) => {
 
   const globalPromotion = data.global_promotion ? { value: data.global_promotion, type: data.global_promotion_type ?? "percent" } : undefined;
   const totalAmount = getCartTotalWithGlobalPromotion(data.items as CartLine[], globalPromotion);
-  //   const totalAmount = computeTotalAfterPromotion(
-  //   data.total_amount_before_promotion,
-  //   data.global_promotion,
-  //   data.global_promotion_type,
-  // );
+
   if (!isAmountEqual(totalAmount, data.total_amount))
-    // if (!amountsEqual(totalAmount, data.total_amount))
     ctx.addIssue({
       code: "custom",
       message: "le total n'est pas correct",
@@ -129,116 +123,9 @@ const dataSchema = saleTransactionBaseSchema.superRefine((data, ctx) => {
       message: "la somme des paiements doit etre au moins egale au total",
     });
   }
-  //ensure valid payments
-  // try {
-  //   validateSaleAmounts(data);
-  //   normalizePayments(data);
-  // } catch (e) {
-  //   if (createHttpError.isHttpError(e))
-  //     ctx.addIssue({
-  //       code: "custom",
-  //       message: e.message,
-  //     });
-  // }
-  // //TODO check dans front comment il fait
 });
 
-// export type CartItem = z.infer<typeof transactionItemSchema>;
 export type Data = z.infer<typeof dataSchema>;//TODO not good
-
-// type GlobalPromotionType = "percent" | "fixed";
-
-// interface GlobalPromotionInput {
-//   type: GlobalPromotionType;
-//   value: number;
-// }
-// const toAmount = (value?: number | string | null) =>
-
-//   Number.parseFloat(String(value ?? 0));
-
-// const amountsEqual = (a: number | string, b: number | string) =>
-//   Math.abs(toAmount(a) - toAmount(b)) < 0.01;
-
-// const getCartTotal = (cart: SaleCartItem[]) => {
-//   return cart.reduce((prev, current) => (prev += getCartLinePrice(current)), 0);
-// };
-
-// const getGlobalPromotionDiscount = (
-//   subtotal: number,
-//   promotion?: GlobalPromotionInput | null,
-// ) => {
-//   if (!promotion) return 0;
-//   const normalizedValue = Math.max(Number(promotion.value) || 0, 0);
-//   const discount =
-//     promotion.type === "percent"
-//       ? subtotal * (Math.min(normalizedValue, 100) / 100)
-//       : normalizedValue;
-//   return Math.min(discount, subtotal);
-// };
-
-// shared helper — single source of truth
-// export function computeTotalAfterPromotion(
-//   before: number,
-//   promotion: number | null | undefined,
-//   type: "percent" | "fixed" | null | undefined,
-// ) {
-//   const subtotal = Number(before);
-//   //
-//   const promo = getGlobalPromotionDiscount(subtotal, { value: promotion ?? 0, type: type ?? "fixed" })
-//   // const promo = Number(promotion ?? 0);
-//   // if (!promo || !type) return subtotal;
-//   // if (type === "percent") return subtotal * (1 - promo / 100);
-//   return Math.max(subtotal - promo, 0);
-// }
-
-const validateSaleAmounts = (data: Data) => {
-
-  //TODO deja fait ailleur
-  const expectedNet = computeTotalAfterPromotion(
-    data.total_amount_before_promotion,
-    data.global_promotion,
-    data.global_promotion_type,
-  );
-  if (!amountsEqual(expectedNet, data.total_amount)) {
-    throw new createHttpError.BadRequest(
-      "total_amount incohérent avec total_amount_before_promotion et la promotion globale",
-    );
-  }
-  //////
-  const totalPayments = data.payments?.reduce(
-    (acc, p) => acc + roundCurrency(p.amount),
-    0,
-  );
-  if (!amountsEqual(totalPayments ?? 0, data.payment_amount)) {
-    throw new createHttpError.BadRequest(
-      "la somme des paiements doit etre egale au total",
-    );
-  }
-};
-
-const normalizePayments = (data: Data) => {
-  const payments = data.payments ?? [];
-  const totalPayments = payments.reduce(
-    (acc, p) => acc + roundCurrency(p.amount),
-    0,
-  );
-  if (data.total_amount > totalPayments) {
-    // if (!amountsEqual(totalPayments, data.total_amount)) {//TODO FIXME for cash with extra money
-    throw new createHttpError.BadRequest(
-      "la somme des paiements doit etre au moins egale au total",
-    );
-  }
-  //TODO c'est check dans le schema maintenant
-  for (const payment of payments) {
-    if (payment.method === "giftcard" && !payment.gift_card_code) {
-      throw new createHttpError.BadRequest(
-        "gift_card_code est requis pour un paiement giftcard",
-      );
-    }
-  }
-
-  return payments;
-};
 
 export const listTransactions = async (req: Request, res: Response) => {
   const filter = transactionListFilterSchema.parse(req.query);
@@ -389,7 +276,7 @@ export const createTransaction = async (
 ) => {
   const data = dataSchema.parse(req.body);
   // validateSaleAmounts(data);
-  const payments = normalizePayments(data);
+  const payments =data.payments ??[]
   const session = await findByPkOrThrow(
     CashSession,
     data.cash_session_id, //TODO utiliser req.user ?? pour trouver sa caisse ouverte, + safe ?
