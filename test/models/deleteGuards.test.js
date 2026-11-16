@@ -403,8 +403,23 @@ describe("delete guards", () => {
         issuedRefundTransactionId: refundSale.id,
         createdBy: user.id,
       });
+      // The real Refund flow records its payout as a payment line on the card.
+      await TransactionPayment.create({
+        sales_transaction_id: refundSale.id,
+        method: "giftcard",
+        amount: 15,
+        gift_card_id: card.id,
+      });
       await refundSale.destroy();
       expect(await GiftCard.findByPk(card.id)).toBeNull();
+      expect(
+        await GiftCardTransaction.count({ where: { gift_card_id: card.id } }),
+      ).toBe(0);
+      expect(
+        await TransactionPayment.count({
+          where: { sales_transaction_id: refundSale.id },
+        }),
+      ).toBe(0);
     });
   });
 

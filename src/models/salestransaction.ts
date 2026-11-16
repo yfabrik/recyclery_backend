@@ -338,13 +338,22 @@ export default class SalesTransaction extends Model<
                     },
                     transaction: t,
                   });
+                  // A Refund paid out as a new card records its own payout
+                  // line on that card; only other transactions' lines count.
                   const payments = await TransactionPaymentModel.count({
-                    where: { gift_card_id: card.id },
+                    where: {
+                      gift_card_id: card.id,
+                      sales_transaction_id: { [Op.ne]: sale.id },
+                    },
                     transaction: t,
                   });
                   if (nonIssue > 0 || payments > 0) {
+                    const what =
+                      sale.transactionType === "refund"
+                        ? "le remboursement"
+                        : "la vente";
                     throw new createHttpError[424](
-                      "Impossible de supprimer la vente: une carte cadeau émise a déjà été utilisée",
+                      `Impossible de supprimer ${what}: une carte cadeau émise a déjà été utilisée`,
                     );
                   }
                 }
