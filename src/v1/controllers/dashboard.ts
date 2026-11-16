@@ -19,7 +19,8 @@ import {
   toDashboardStoreHistoryDto,
 } from "../../mappers/dashboard.js";
 import { dayjs, now } from "../../utils/dates.js";
-
+import relativeTime from "dayjs/plugin/relativeTime.js"
+dayjs.extend(relativeTime)
 const {
   LabeledItem,
   SalesTransaction,
@@ -35,27 +36,20 @@ const {
 
 // Fonctions utilitaires
 function formatTimeAgo(dateString: string | Date) {
+  return dayjs(dateString).fromNow()
   const date = new Date(dateString);
   const now = new Date();
   const diffInMinutes = Math.floor((+now - +date) / (1000 * 60));
+  const timeAgo = diffInMinutes<0 ? "dans ":"il y a "
+  const absMinutes = Math.abs(diffInMinutes)
 
-  if (diffInMinutes < 60) {
-    return `Il y a ${diffInMinutes}min`;
-  } else if (diffInMinutes < 1440) {
-    return `Il y a ${Math.floor(diffInMinutes / 60)}h`;
+  if (absMinutes < 60 ) {
+    return timeAgo+`${absMinutes}min`;
+  } else if (absMinutes < 1440) {
+    return timeAgo+`${Math.floor(absMinutes / 60)}h`;
   } else {
-    return `Il y a ${Math.floor(diffInMinutes / 1440)}j`;
+    return timeAgo+`${Math.floor(absMinutes / 1440)}j`;
   }
-}
-
-function formatDate(dateString: string | Date) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 
@@ -209,13 +203,12 @@ export const dashboardActivities = async (_req: Request, res: Response) => {
     order: [["scheduled_date", "DESC"]],
     limit: 5,
   });
-
   recentCollections.forEach((collection) => {
     activities.push({
       id: `collection_${collection.id}`,
       type: "collection",
       description: `Collecte: ${collection.location}`,
-      amount: formatDate(collection.scheduled_date),
+      amount: dayjs(collection.scheduled_date).format("DD/MM/YY-HH:mm") ,//formatDate(collection.scheduled_date),
       time: formatTimeAgo(collection.scheduled_date),
       icon: "LocalShipping",
       color: "warning",
