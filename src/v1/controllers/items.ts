@@ -13,6 +13,7 @@ import type {
   DeleteLabeledItemResponse,
   DetailLabeledItemResponse,
   LabeledItemStatsResponse,
+  LabeledItemWithSaleDto,
   ListLabeledItemsResponse,
   TagLabeledItemSoldResponse,
   UpdateLabeledItemResponse,
@@ -31,16 +32,34 @@ import {
 import { idSchema } from "../../services/zod.js";
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import {
-  toLabeledItemDto,
   toLabeledItemStatsDto,
+  toLabeledItemWithSaleDto,
   type LabeledItemStatsRow,
 } from "../../mappers/items.js";
+import { findSaleIdsByItem } from "../../services/itemSales.js";
 
 import db from "../../models/index.js";
 import type { ModelWhere, RequestWithUser } from "./types.js";
 import { formatWhereDateRange } from "../../helpers.js";
 
 const { LabeledItem, Category, User } = db;
+
+/** Maps items to their response shape, each with the id of its Sale. */
+const toItemsWithSale = async (
+  items: Array<InstanceType<typeof LabeledItem>>,
+): Promise<LabeledItemWithSaleDto[]> => {
+  const saleIds = await findSaleIdsByItem(items.map((item) => item.id));
+  return items.map((item) =>
+    toLabeledItemWithSaleDto(item, saleIds.get(item.id) ?? null),
+  );
+};
+
+const toItemWithSale = async (
+  item: InstanceType<typeof LabeledItem>,
+): Promise<LabeledItemWithSaleDto> => {
+  const saleIds = await findSaleIdsByItem([item.id]);
+  return toLabeledItemWithSaleDto(item, saleIds.get(item.id) ?? null);
+};
 
 const parseItemInclude = (query: Request["query"]): LabeledItemIncludeList =>
   labeledItemIncludeSchema.parse(
@@ -109,7 +128,7 @@ export const listLabeledItem = async (req: Request, res: Response) => {
 
   res.json(
     apiPaginated(
-      labeledItems.rows.map(toLabeledItemDto),
+      await toItemsWithSale(labeledItems.rows),
       pagination.paginated
         ? buildPaginationMeta(
             pagination.page,
@@ -130,7 +149,9 @@ export const getItemFromBarcode = async (req: Request, res: Response) => {
   });
 
   if (!item) throw new createHttpError[404]("Article non trouvé");
-  res.json(apiData(toLabeledItemDto(item)) satisfies DetailLabeledItemResponse);
+  res.json(
+    apiData(await toItemWithSale(item)) satisfies DetailLabeledItemResponse,
+  );
 };
 
 export const createLabeledItem = async (
@@ -178,7 +199,7 @@ export const createLabeledItem = async (
   }
 
   res.status(201).json(
-    apiCreated(items.map(toLabeledItemDto), {
+    apiCreated(await toItemsWithSale(items), {
       message:
         quantity > 1
           ? `${quantity} articles créés avec succès`
@@ -212,7 +233,7 @@ export const updateItem = async (req: RequestWithUser, res: Response) => {
   });
 
   res.json(
-    apiData(toLabeledItemDto(item), {
+    apiData(await toItemWithSale(item), {
       message: "Article mis à jour avec succès",
     }) satisfies UpdateLabeledItemResponse,
   );

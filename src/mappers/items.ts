@@ -1,6 +1,7 @@
 import type {
   LabeledItemDto,
   LabeledItemStatsDto,
+  LabeledItemWithSaleDto,
 } from "@recyclerie/api/responses/items";
 
 import type Category from "../models/category.js";
@@ -58,6 +59,15 @@ export const toLabeledItemDto = (
     recyclery: toRecycleryRef(model.recyclery) ,
     createdBy: toUserRef(model.createdBy) ,
   }) satisfies LabeledItemDto;
+
+/** `saleId`: the item's most recent Sale, `null` when no Sale lists it. */
+export const toLabeledItemWithSaleDto = (
+  model: LabeledItemMapperInput,
+  saleId: number | null,
+): LabeledItemWithSaleDto => ({
+  ...toLabeledItemDto(model),
+  sale_id: saleId,
+});
 
 export const toLabeledItemStatsDto = (
   value: LabeledItemStatsRow | null | undefined,
