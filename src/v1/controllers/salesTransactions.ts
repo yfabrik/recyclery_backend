@@ -1207,7 +1207,6 @@ export const updateTransaction = async (
     );
     for (const r of removed) {
       await r.TransactionItem?.destroy({ transaction: t });
-      // await r.update({ status: "available" }, { transaction: t });//TODO changed in model ?
     }
     //quantity changed
     for (const i of prevItems) {
