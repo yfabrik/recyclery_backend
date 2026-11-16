@@ -46,6 +46,7 @@ import db from "../../models/index.js";
 import { logAction } from "../../services/auditLog.js";
 
 const { Arrival, Category, CollectionPoint, User } = db;
+const DELETE_ALLOWED_TIME=1000*60*30
 
 export const listArrivals = async (req: Request, res: Response) => {
   const { date_from, date_to, ...rest } = arrivalFilterSchema.parse(req.query);
@@ -196,7 +197,7 @@ export const deleteArrival = async (req: RequestWithUser, res: Response) => {
   //refuse to delete the arrivals of other
   //refuse to delete after 30min createdAt ?
   if(arrival.processed_by!= req.user.id) throw new createHttpError.Forbidden("not your arrival")
-  if (new Date(arrival.createdAt.getTime()+1000*60*30)<new Date()) throw new createHttpError.Forbidden("too late to change")
+  if (new Date(arrival.createdAt.getTime()+DELETE_ALLOWED_TIME)<new Date()) throw new createHttpError.Forbidden("too late to change")
   await arrival.destroy();
   logAction("arrivals", "arrival.deleted", {
     arrivalId: arrival.id,
