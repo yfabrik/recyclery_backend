@@ -1,5 +1,12 @@
 import createHttpError from "http-errors";
-import { col, fn, literal, Op, type Includeable } from "sequelize";
+import {
+  col,
+  fn,
+  literal,
+  Op,
+  type Includeable,
+  type Transaction,
+} from "sequelize";
 import z from "zod";
 
 import type {
@@ -126,6 +133,25 @@ const dataSchema = saleTransactionBaseSchema.superRefine((data, ctx) => {
 });
 
 export type Data = z.infer<typeof dataSchema>;//TODO not good
+
+/**
+ * Turns an `available` item into `sold` in one conditional update, so two
+ * Sales racing for the same item can't both take it.
+ * @throws 404 when no item has this id, 400 when it is no longer `available`.
+ */
+async function markLabeledItemSold(
+  itemId: number,
+  barcode: string,
+  transaction: Transaction,
+) {
+  const [hit] = await LabeledItem.update(
+    { status: "sold" },
+    { where: { id: itemId, status: "available" }, transaction },
+  );
+  if (hit === 1) return;
+  await findByPkOrThrow(LabeledItem, itemId, "item not found", { transaction });
+  throw new createHttpError.BadRequest(`Article non disponible : ${barcode}`);
+}
 
 export const listTransactions = async (req: Request, res: Response) => {
   const filter = transactionListFilterSchema.parse(req.query);
@@ -340,19 +366,9 @@ export const createTransaction = async (
           },
         );
       } else {
-        const i = await findByPkOrThrow(
-          LabeledItem,
-          +item.barcode,
-          "item not found",
-        );
-        await i.update(
-          {
-            // sold_at: new Date(),
-            status: "sold",
-          },
-          { transaction: t },
-        );
-        await sale.addItem(i, {
+        const itemId = +item.barcode;
+        await markLabeledItemSold(itemId, item.barcode, t);
+        await sale.addItem(itemId, {
           through: {
             name: item.name,
             price: item.price,
