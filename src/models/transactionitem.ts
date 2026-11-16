@@ -7,6 +7,7 @@ import {
   type ForeignKey,
   type InferAttributes,
   type InferCreationAttributes,
+  type ModelStatic,
   type NonAttribute,
   type Sequelize,
 } from "sequelize";
@@ -115,6 +116,8 @@ export default class TransactionItem extends Model<
           },
           afterCreate: (_instance, _options) => {
           },
+          // Restock only when no Sale line still points to the item: a
+          // cancelled Refund leaves it sold (its Sale still lists it).
           afterDestroy: async (instance, options) => {
             await withTransaction(
               instance.sequelize!,
@@ -124,6 +127,20 @@ export default class TransactionItem extends Model<
                   transaction: tx,
                 });
                 if (!item) return;
+                const SalesTransactionModel = instance.sequelize.models
+                  .SalesTransaction as ModelStatic<SalesTransaction>;
+                const saleLines = await TransactionItem.count({
+                  where: { labeled_item_id: item.id },
+                  include: [
+                    {
+                      model: SalesTransactionModel,
+                      where: { transactionType: "sell" },
+                      required: true,
+                    },
+                  ],
+                  transaction: tx,
+                });
+                if (saleLines > 0) return;
                 await item.update({ status: "available" }, { transaction: tx });
               },
             );
