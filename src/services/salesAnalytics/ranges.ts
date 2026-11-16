@@ -14,6 +14,7 @@ import type {
   SalesAnalyticsCompareMode,
   SalesAnalyticsPeriod,
 } from "@recyclerie/api/schemas/salesAnalytics";
+import { assertNever } from "../../utils/assertNever.js";
 import { startOfDay } from "../../utils/dates.js";
 
 /** Inclusive range of Paris calendar dates (`YYYY-MM-DD`). */
@@ -89,6 +90,8 @@ export const comparisonRange = (
           : unit.shift(range.date_to, -1),
       };
     }
+    default:
+      return assertNever(compare);
   }
 };
 
