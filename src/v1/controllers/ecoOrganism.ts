@@ -23,6 +23,7 @@ import {
 import {
   ecoOrganismDataSchema,
   ecoOrganismFilterSchema,
+  ecoOrganismQuartersFilterSchema,
 } from "@recyclerie/api/schemas/ecoOrganism";
 import {
   apiCreated,
@@ -38,7 +39,6 @@ import {
 import { findByPkOrThrow } from "../../services/sequelize.js";
 import { idSchema } from "../../services/zod.js";
 
-import z from "zod";
 import type { Models, ModelWhere } from "../../models/db-types.js";
 import db from "../../models/index.js";
 
@@ -660,10 +660,8 @@ export const ecoOrgaStats = async (_req: Request, res: Response) => {
 };
 
 export const ecoOrgQuarterStats = async (req: Request, res: Response) => {
-  const filterSchema = z.object({
-    point: idSchema().optional(),
-  });
-  const filter = filterSchema.parse(req.query);
+  // TODO: the shared schema also accepts startDate/endDate, but they are not used here yet
+  const filter = ecoOrganismQuartersFilterSchema.parse(req.query);
   const quarterRanges = quartersDateRanges(new Date());
   // Fetch all eco organisms (we want the full list with quarters, including those with 0 waste)
   const ecoOrganisms = await EcoOrganism.findAll({
