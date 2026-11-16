@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "@jest/globals";
 import db from "../../src/models/index";
+import { findSaleIdsByItem } from "../../src/services/itemSales";
 import {
   createRefund,
   createTransaction,
@@ -109,6 +110,9 @@ describe("cancelling a transaction restocks an item only when no Sale lists it",
   };
 
   const statusOf = async (item) => (await LabeledItem.findByPk(item.id)).status;
+  /** The item's `sale_id`, as the labels page gets it. */
+  const saleIdOf = async (item) =>
+    (await findSaleIdsByItem([item.id])).get(item.id) ?? null;
 
   it("cancelling a Refund keeps its items sold, still listed by their Sale", async () => {
     const item = await makeLabeledItem();
@@ -119,6 +123,7 @@ describe("cancelling a transaction restocks an item only when no Sale lists it",
 
     expect(await SalesTransaction.findByPk(refundId)).toBeNull();
     expect(await statusOf(item)).toBe("sold");
+    expect(await saleIdOf(item)).toBe(saleId);
     const saleLine = await TransactionItem.findOne({
       where: { transaction_id: saleId, labeled_item_id: item.id },
     });
@@ -189,6 +194,24 @@ describe("cancelling a transaction restocks an item only when no Sale lists it",
 
     await cancel(secondSaleId);
 
+    expect(await statusOf(item)).toBe("available");
+  });
+
+  it("agrees with sale_id: a sell that isn't completed is no Sale and doesn't keep the item sold", async () => {
+    const item = await makeLabeledItem();
+    const saleId = await createSale([item]);
+    const otherItem = await makeLabeledItem();
+    const pendingId = await createSale([otherItem]);
+    const pending = await SalesTransaction.findByPk(pendingId);
+    await pending.update({ status: "pending" });
+    await pending.addItem(item, {
+      through: { name: `item-${item.id}`, price: Number(item.price), quantity: 1 },
+    });
+    expect(await saleIdOf(item)).toBe(saleId);
+
+    await cancel(saleId);
+
+    expect(await saleIdOf(item)).toBeNull();
     expect(await statusOf(item)).toBe("available");
   });
 });

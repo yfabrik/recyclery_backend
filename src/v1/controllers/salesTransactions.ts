@@ -135,20 +135,22 @@ const dataSchema = saleTransactionBaseSchema.superRefine((data, ctx) => {
 export type Data = z.infer<typeof dataSchema>;//TODO not good
 
 /**
- * Turns an `available` item into `sold` in one conditional update, so two
- * Sales racing for the same item can't both take it.
- * @throws 404 when no item has this id, 400 when it is no longer `available`.
+ * Turns the `available` item with this barcode (its zero-padded id) into
+ * `sold` in one conditional update, so two Sales racing for the same item
+ * can't both take it.
+ * @returns the item's id.
+ * @throws 404 when no item has this barcode, 400 when it is no longer `available`.
  */
 async function markLabeledItemSold(
-  itemId: number,
   barcode: string,
   transaction: Transaction,
-) {
-  const [hit] = await LabeledItem.update(
+): Promise<number> {
+  const itemId = +barcode;
+  const [affectedRows] = await LabeledItem.update(
     { status: "sold" },
     { where: { id: itemId, status: "available" }, transaction },
   );
-  if (hit === 1) return;
+  if (affectedRows === 1) return itemId;
   await findByPkOrThrow(LabeledItem, itemId, "item not found", { transaction });
   throw new createHttpError.BadRequest(`Article non disponible : ${barcode}`);
 }
@@ -366,8 +368,7 @@ export const createTransaction = async (
           },
         );
       } else {
-        const itemId = +item.barcode;
-        await markLabeledItemSold(itemId, item.barcode, t);
+        const itemId = await markLabeledItemSold(item.barcode, t);
         await sale.addItem(itemId, {
           through: {
             name: item.name,
