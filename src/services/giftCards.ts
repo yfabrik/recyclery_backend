@@ -11,11 +11,12 @@ import { withTransaction } from "../utils/transaction.js";
 import { getGiftCardBalanceInTx, toAmount } from "./giftCardLedger.js";
 import { findByPkOrThrow } from "./sequelize.js";
 
+export { isGiftCardUsed } from "./giftCardUsage.js";
+
 const {
   GiftCard,
   GiftCardTransaction,
   CashSession,
-  SalesTransaction,
   sequelize,
 } = db;
 
@@ -115,31 +116,6 @@ export const issueGiftCard = async ({
       return giftCard;
     },
   );
-};
-
-/**
- * True if the card has any non-issue ledger movement or a payment usage.
- */
-export const isGiftCardUsed = async (
-  giftCardId: Models["GiftCard"]["id"],
-  options?: { transaction?: Transaction | null },
-) => {
-  const t = options?.transaction ?? null;
-  const nonIssue = await GiftCardTransaction.count({
-    where: {
-      gift_card_id: giftCardId,
-      type: { [Op.ne]: "issue" },
-    },
-    transaction: t,
-  });
-  if (nonIssue > 0) return true;
-
-  const { TransactionPayment } = db;
-  const payments = await TransactionPayment.count({
-    where: { gift_card_id: giftCardId },
-    transaction: t,
-  });
-  return payments > 0;
 };
 
 /**

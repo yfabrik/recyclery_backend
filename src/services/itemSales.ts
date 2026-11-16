@@ -1,5 +1,6 @@
 import { Op } from "sequelize";
 import db from "../models/index.js";
+import { saleLineInclude } from "../models/transactionitem.js";
 
 const { SalesTransaction, TransactionItem } = db;
 
@@ -7,9 +8,8 @@ const { SalesTransaction, TransactionItem } = db;
 const CHUNK_SIZE = 500;
 
 /**
- * The Sale of each labeled item: the most recent Sale (completed `sell`)
- * that lists it. Refunds, pending and cancelled transactions never count.
- * Items with no Sale are absent from the map.
+ * The Sale of each labeled item: the most recent Sale that lists it (see
+ * `saleLineInclude`). Items with no Sale are absent from the map.
  */
 export const findSaleIdsByItem = async (
   itemIds: readonly number[],
@@ -21,14 +21,7 @@ export const findSaleIdsByItem = async (
     const lines = await TransactionItem.findAll({
       attributes: ["labeled_item_id", "transaction_id"],
       where: { labeled_item_id: { [Op.in]: ids.slice(start, start + CHUNK_SIZE) } },
-      include: [
-        {
-          model: SalesTransaction,
-          attributes: ["id", "createdAt"],
-          where: { transactionType: "sell", status: "completed" },
-          required: true,
-        },
-      ],
+      include: [saleLineInclude({ attributes: ["id", "createdAt"] })],
       order: [
         [SalesTransaction, "createdAt", "DESC"],
         [SalesTransaction, "id", "DESC"],

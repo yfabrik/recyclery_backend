@@ -58,8 +58,9 @@ const toItemsWithSale = async (
 const toItemWithSale = async (
   item: InstanceType<typeof LabeledItem>,
 ): Promise<LabeledItemWithSaleDto> => {
-  const saleIds = await findSaleIdsByItem([item.id]);
-  return toLabeledItemWithSaleDto(item, saleIds.get(item.id) ?? null);
+  const [withSale] = await toItemsWithSale([item]);
+  if (!withSale) throw new Error("toItemsWithSale dropped the item");
+  return withSale;
 };
 
 const parseItemInclude = (query: Request["query"]): LabeledItemIncludeList =>
@@ -270,8 +271,10 @@ export const tagItemAsSell = async (req: RequestWithUser, res: Response) => {
 
 /**
  * Reverse of `tagItemAsSell`: puts an item marked sold by hand back in stock.
- * Refused while any Sale or Refund line points to the item, so stock and
- * Sales never disagree (cancelling the Sale is what restocks such an item).
+ * Refused while any transaction line points to the item, whatever the
+ * transaction's type or status: the same rule as the item's delete hook. So
+ * stock and Sales never disagree (cancelling the Sale is what restocks such
+ * an item).
  */
 export const tagItemAsAvailable = async (
   req: RequestWithUser,
@@ -281,10 +284,10 @@ export const tagItemAsAvailable = async (
   const item = await findByPkOrThrow(LabeledItem, id, "Article non trouvé");
   if (item.status !== "sold")
     throw new createHttpError[400]("Article non vendu");
-  const linked = await TransactionItem.count({
+  const linesOnAnyTransaction = await TransactionItem.count({
     where: { labeled_item_id: item.id },
   });
-  if (linked > 0)
+  if (linesOnAnyTransaction > 0)
     throw new createHttpError[424](
       "Article lié à une vente : annulez la vente pour le remettre disponible",
     );

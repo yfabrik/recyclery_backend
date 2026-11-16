@@ -5,16 +5,35 @@ import {
   type BelongsToSetAssociationMixin,
   type CreationOptional,
   type ForeignKey,
+  type IncludeOptions,
   type InferAttributes,
   type InferCreationAttributes,
-  type ModelStatic,
   type NonAttribute,
   type Sequelize,
+  type WhereOptions,
 } from "sequelize";
 import type { ModelStatics } from "./db-types.ts";
 import type LabeledItem from "./labeleditem.ts";
-import type SalesTransaction from "./salestransaction.ts";
+import SalesTransaction from "./salestransaction.js";
 import { withTransaction } from "../utils/transaction.js";
+
+/**
+ * Keeps only **Sale lines**: lines whose transaction is a Sale (a completed
+ * `sell`). Refunds, pending and cancelled transactions never count. This is
+ * what "a Sale lists the item" means everywhere.
+ */
+export const saleLineInclude = (
+  options: Pick<IncludeOptions, "attributes"> = {},
+) =>
+  ({
+    ...options,
+    model: SalesTransaction,
+    where: {
+      transactionType: "sell",
+      status: "completed",
+    } satisfies WhereOptions<InferAttributes<SalesTransaction>>,
+    required: true,
+  }) satisfies IncludeOptions;
 
 export default class TransactionItem extends Model<
   InferAttributes<TransactionItem>,
@@ -116,8 +135,8 @@ export default class TransactionItem extends Model<
           },
           afterCreate: (_instance, _options) => {
           },
-          // Restock only when no Sale line still points to the item: a
-          // cancelled Refund leaves it sold (its Sale still lists it).
+          // Restock only when no Sale still lists the item: a cancelled
+          // Refund leaves it sold (its Sale still lists it).
           afterDestroy: async (instance, options) => {
             await withTransaction(
               instance.sequelize!,
@@ -127,17 +146,9 @@ export default class TransactionItem extends Model<
                   transaction: tx,
                 });
                 if (!item) return;
-                const SalesTransactionModel = instance.sequelize.models
-                  .SalesTransaction as ModelStatic<SalesTransaction>;
                 const saleLines = await TransactionItem.count({
                   where: { labeled_item_id: item.id },
-                  include: [
-                    {
-                      model: SalesTransactionModel,
-                      where: { transactionType: "sell" },
-                      required: true,
-                    },
-                  ],
+                  include: [saleLineInclude()],
                   transaction: tx,
                 });
                 if (saleLines > 0) return;
