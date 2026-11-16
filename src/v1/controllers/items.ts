@@ -15,6 +15,7 @@ import type {
   LabeledItemStatsResponse,
   LabeledItemWithSaleDto,
   ListLabeledItemsResponse,
+  TagLabeledItemAvailableResponse,
   TagLabeledItemSoldResponse,
   UpdateLabeledItemResponse,
 } from "@recyclerie/api/responses/items";
@@ -42,7 +43,7 @@ import db from "../../models/index.js";
 import type { ModelWhere, RequestWithUser } from "./types.js";
 import { formatWhereDateRange } from "../../helpers.js";
 
-const { LabeledItem, Category, User } = db;
+const { LabeledItem, Category, User, TransactionItem } = db;
 
 /** Maps items to their response shape, each with the id of its Sale. */
 const toItemsWithSale = async (
@@ -264,6 +265,35 @@ export const tagItemAsSell = async (req: RequestWithUser, res: Response) => {
     apiMessage(
       "Article marqué comme vendu",
     ) satisfies TagLabeledItemSoldResponse,
+  );
+};
+
+/**
+ * Reverse of `tagItemAsSell`: puts an item marked sold by hand back in stock.
+ * Refused while any Sale or Refund line points to the item, so stock and
+ * Sales never disagree (cancelling the Sale is what restocks such an item).
+ */
+export const tagItemAsAvailable = async (
+  req: RequestWithUser,
+  res: Response,
+) => {
+  const id = idSchema().parse(req.params.id);
+  const item = await findByPkOrThrow(LabeledItem, id, "Article non trouvé");
+  if (item.status !== "sold")
+    throw new createHttpError[400]("Article non vendu");
+  const linked = await TransactionItem.count({
+    where: { labeled_item_id: item.id },
+  });
+  if (linked > 0)
+    throw new createHttpError[424](
+      "Article lié à une vente : annulez la vente pour le remettre disponible",
+    );
+  await item.update({ status: "available" });
+
+  res.json(
+    apiMessage(
+      "Article remis disponible",
+    ) satisfies TagLabeledItemAvailableResponse,
   );
 };
 

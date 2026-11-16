@@ -7,6 +7,7 @@ import {
   getItemFromBarcode,
   itemsStats,
   listLabeledItem,
+  tagItemAsAvailable,
   tagItemAsSell,
   updateItem,
 } from "../controllers/items.js";
@@ -32,3 +33,6 @@ router.delete("/:id", asyncHandler(deleteLabeledItem));
 
 // POST - Marquer un article comme vendu
 router.post("/:id/sell", asyncHandler(tagItemAsSell));
+
+// POST - Remettre disponible un article marqué vendu à la main
+router.post("/:id/available", asyncHandler(tagItemAsAvailable));
