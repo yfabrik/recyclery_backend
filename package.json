@@ -23,7 +23,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@recyclerie/api": "github:yfabrik/api-recyclerie#v0.5.6",
+    "@recyclerie/api": "github:yfabrik/api-recyclerie#v0.5.7",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dayjs": "^1.11.21",
